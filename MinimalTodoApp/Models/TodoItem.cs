@@ -1,0 +1,209 @@
+﻿using System;
+using System.Text.Json.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
+
+namespace MinimalTodoApp.Models;
+
+/// <summary>任务相对截止日期的状态，用于倒计时文案与颜色.</summary>
+public enum DueState
+{
+    /// <summary>无截止日期.</summary>
+    None,
+    /// <summary>已完成.</summary>
+    Completed,
+    /// <summary>已逾期.</summary>
+    Overdue,
+    /// <summary>今天到期.</summary>
+    Today,
+    /// <summary>临近(3 天内).</summary>
+    Soon,
+    /// <summary>正常(较远).</summary>
+    Normal
+}
+
+/// <summary>任务优先级.数值越大越紧急，用于排序与左侧色条.</summary>
+public enum Priority
+{
+    /// <summary>无优先级(已废弃 UI 不再展示;旧数据加载时会自动迁移为 Medium).</summary>
+    None = 0,
+    /// <summary>低.</summary>
+    Low = 1,
+    /// <summary>中.</summary>
+    Medium = 2,
+    /// <summary>高.</summary>
+    High = 3
+}
+
+/// <summary>
+/// 单个待办任务.使用 CommunityToolkit 的 [ObservableProperty] 源生成器自动实现
+/// INotifyPropertyChanged，所有公共属性均会被 System.Text.Json 序列化.
+/// 注意:这里采用扁平结构(仅保存 GroupId 而非 Group 对象引用)，从根本上避免 JSON 循环引用.
+/// </summary>
+public partial class TodoItem : ObservableObject
+{
+    [ObservableProperty]
+    private Guid id = Guid.NewGuid();
+
+    [ObservableProperty]
+    private string title = string.Empty;
+
+    [ObservableProperty]
+    private bool isCompleted;
+
+    /// <summary>截止日期与时间(精确到分)，可为空.未选时间则为当天 00:00.</summary>
+    [ObservableProperty]
+    private DateTime? dueDate;
+
+    /// <summary>所属分组 Id.</summary>
+    [ObservableProperty]
+    private Guid groupId;
+
+    /// <summary>完成前所属的分组 Id.完成后任务被移入“已完成”分组，取消完成时据此还原.</summary>
+    [ObservableProperty]
+    private Guid? originalGroupId;
+
+    /// <summary>优先级.默认中(无优先级选项已废弃).</summary>
+    [ObservableProperty]
+    private Priority priority = Priority.Medium;
+
+    /// <summary>自定义排序索引，用于持久化拖拽排序结果.</summary>
+    [ObservableProperty]
+    private int orderIndex;
+
+    /// <summary>缩进层级(0 为顶层)，用于以缩进表达”子待办”的父子层级关系.</summary>
+    [ObservableProperty]
+    private int indentLevel;
+
+    /// <summary>父待办的 Id(可选).用于建立明确的父子关系，支持父完成子自动完成等逻辑.</summary>
+    [ObservableProperty]
+    private Guid? parentId;
+
+    /// <summary>是否折叠该待办(仅父待办用,折叠后隐藏所有子孙待办).</summary>
+    [ObservableProperty]
+    private bool isCollapsed;
+
+    /// <summary>是否有子待办(由 ViewModel 维护,用于显示折叠箭头).不参与序列化.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool hasChildren;
+
+    /// <summary>是否启用周期提醒(到点后每隔固定时间反复提醒，直到任务完成).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasReminder))]
+    private bool reminderEnabled;
+
+    /// <summary>周期提醒的间隔分钟数(默认 30 分钟).</summary>
+    [ObservableProperty]
+    private int reminderIntervalMinutes = 30;
+
+    /// <summary>上次提醒的时间(运行时记录，用于计算下次提醒；不参与界面绑定).</summary>
+    [ObservableProperty]
+    private DateTime? lastRemindedAt;
+
+    [ObservableProperty]
+    private DateTime createdAt = DateTime.Now;
+
+    /// <summary>是否处于内联编辑状态(单击标题进入).运行时状态，不序列化.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool isEditing;
+
+    /// <summary>是否设置了截止日期(计算属性，不序列化).</summary>
+    [JsonIgnore]
+    public bool HasDueDate => DueDate.HasValue;
+
+    /// <summary>是否设置了优先级(计算属性，不序列化).</summary>
+    [JsonIgnore]
+    public bool HasPriority => Priority != Priority.None;
+
+    /// <summary>是否开启了周期提醒(计算属性，用于在标题旁显示小铃铛，不序列化).</summary>
+    [JsonIgnore]
+    public bool HasReminder => ReminderEnabled;
+
+    /// <summary>是否已逾期(未完成且截止时间已过).计算属性，不序列化.</summary>
+    [JsonIgnore]
+    public bool IsOverdue =>
+        !IsCompleted && DueDate.HasValue && DueDate.Value < DateTime.Now;
+
+    /// <summary>相对截止时间的状态.计算属性，不序列化.</summary>
+    [JsonIgnore]
+    public DueState DueState
+    {
+        get
+        {
+            if (!DueDate.HasValue) return DueState.None;
+            if (IsCompleted) return DueState.Completed;
+
+            var now = DateTime.Now;
+            if (DueDate.Value < now) return DueState.Overdue;
+
+            int dayDiff = (DueDate.Value.Date - now.Date).Days;
+            if (dayDiff == 0) return DueState.Today;
+            if (dayDiff <= 3) return DueState.Soon;
+            return DueState.Normal;
+        }
+    }
+
+    /// <summary>距离截止时间的倒计时文案(精确到时/分).计算属性，不序列化.</summary>
+    [JsonIgnore]
+    public string DueCountdownText
+    {
+        get
+        {
+            if (!DueDate.HasValue) return string.Empty;
+
+            var now = DateTime.Now;
+            var span = DueDate.Value - now;
+
+            if (IsCompleted)
+                return span.TotalMinutes < 0 ? "已完成 · 曾逾期" : "已完成";
+
+            if (span.TotalMinutes < 0)
+            {
+                var od = now - DueDate.Value;
+                if (od.TotalDays >= 1) return $"已逾期 {(int)od.TotalDays} 天";
+                if (od.TotalHours >= 1) return $"已逾期 {(int)od.TotalHours} 小时";
+                return $"已逾期 {Math.Max(1, (int)od.TotalMinutes)} 分钟";
+            }
+
+            // 未来:按粒度展示
+            if (span.TotalDays >= 1)
+            {
+                int days = (int)span.TotalDays;
+                int hours = span.Hours;
+                return hours > 0 ? $"剩 {days} 天 {hours} 小时" : $"剩 {days} 天";
+            }
+            if (span.TotalHours >= 1)
+            {
+                int hours = (int)span.TotalHours;
+                int mins = span.Minutes;
+                return mins > 0 ? $"剩 {hours} 小时 {mins} 分钟" : $"剩 {hours} 小时";
+            }
+            int m = Math.Max(1, (int)span.TotalMinutes);
+            return $"剩 {m} 分钟";
+        }
+    }
+
+    /// <summary>截止时间的明细展示(用于 ToolTip).计算属性，不序列化.</summary>
+    [JsonIgnore]
+    public string DueDetailText =>
+        DueDate.HasValue ? DueDate.Value.ToString("yyyy-MM-dd HH:mm") : string.Empty;
+
+    /// <summary>由外部定时器调用，随时间推进刷新倒计时显示.</summary>
+    public void RefreshDueState()
+    {
+        OnPropertyChanged(nameof(DueState));
+        OnPropertyChanged(nameof(DueCountdownText));
+        OnPropertyChanged(nameof(IsOverdue));
+    }
+
+    // 当 IsCompleted / DueDate / Priority 改变时，通知派生属性重新计算
+    partial void OnIsCompletedChanged(bool value) => RefreshDueState();
+    partial void OnDueDateChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(HasDueDate));
+        OnPropertyChanged(nameof(DueDetailText));
+        RefreshDueState();
+    }
+    partial void OnPriorityChanged(Priority value) => OnPropertyChanged(nameof(HasPriority));
+}

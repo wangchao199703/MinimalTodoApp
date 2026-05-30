@@ -1,0 +1,23 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 毛玻璃主题：与 AcrylicHelper 模糊叠加，背景需半透明（键名必须一致） -->
+    <SolidColorBrush x:Key="WindowBg"       Color="#33222831" />
+    <SolidColorBrush x:Key="TitleBarBg"     Color="#22000000" />
+    <SolidColorBrush x:Key="SidebarBg"      Color="#22000000" />
+    <SolidColorBrush x:Key="ContentBg"      Color="#00000000" />
+    <SolidColorBrush x:Key="CardBg"         Color="#552B313B" />
+    <SolidColorBrush x:Key="CardHoverBg"    Color="#88333B47" />
+    <SolidColorBrush x:Key="InputBg"        Color="#55222831" />
+    <SolidColorBrush x:Key="PrimaryText"    Color="#F5F7FA" />
+    <SolidColorBrush x:Key="SecondaryText"  Color="#D2D8E0" />
+    <SolidColorBrush x:Key="MutedText"      Color="#9AA4B0" />
+    <SolidColorBrush x:Key="Accent"         Color="#5B9DFF" />
+    <SolidColorBrush x:Key="AccentText"     Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Divider"        Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="SelectedItemBg" Color="#66416A9E" />
+    <SolidColorBrush x:Key="OverdueText"    Color="#FF8A8A" />
+    <SolidColorBrush x:Key="WarningText"    Color="#FFC04D" />
+    <SolidColorBrush x:Key="SuccessText"    Color="#6EE7A0" />
+
+</ResourceDictionary>

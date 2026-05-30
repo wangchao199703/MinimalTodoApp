@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>MinimalTodoApp</RootNamespace>
+    <AssemblyName>MinimalTodoApp</AssemblyName>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <LangVersion>latest</LangVersion>
+
+    <!-- 体积/性能优化：不生成多余的卫星资源、关闭调试符号(发布时) -->
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <DebugType>portable</DebugType>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MVVM 源生成器，零运行时反射，体积极小 -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+    <!-- 轻量级拖拽排序 -->
+    <PackageReference Include="gong-wpf-dragdrop" Version="3.2.1" />
+    <!-- 轻量级系统托盘 -->
+    <PackageReference Include="H.NotifyIcon.Wpf" Version="2.1.0" />
+  </ItemGroup>
+
+</Project>

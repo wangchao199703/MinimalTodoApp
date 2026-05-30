@@ -1,0 +1,1014 @@
+<Window x:Class="MinimalTodoApp.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:dd="urn:gong-wpf-dragdrop"
+        xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="Todo" Height="640" Width="680"
+        MinHeight="420" MinWidth="380"
+        WindowStyle="None" ResizeMode="CanResize"
+        AllowsTransparency="True" Background="Transparent"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Microsoft YaHei UI, Segoe UI">
+
+    <!-- 自定义窗口外观：去掉系统默认标题栏，自绘标题栏，圆角，但保留拖动/缩放/贴边 -->
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="30" ResizeBorderThickness="6"
+                            CornerRadius="0" GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False" />
+    </shell:WindowChrome.WindowChrome>
+
+    <!-- 圆角外壳：AllowsTransparency 下用 Border 自绘圆角 -->
+    <Border x:Name="RootBorder" Background="{DynamicResource WindowBg}" CornerRadius="10"
+            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+            SnapsToDevicePixels="True">
+        <Border.Clip>
+            <RectangleGeometry x:Name="RootClip" RadiusX="10" RadiusY="10"
+                               Rect="0,0,680,640" />
+        </Border.Clip>
+        <Grid>
+            <!-- 系统托盘图标 -->
+            <tb:TaskbarIcon x:Name="TrayIcon"
+                            ToolTipText="Todo 待办"
+                            TrayMouseDoubleClick="TrayIcon_DoubleClick">
+                <tb:TaskbarIcon.IconSource>
+                    <tb:GeneratedIconSource Text="✓" Foreground="White" Background="#3B82F6"
+                                            FontWeight="Bold" FontSize="96" />
+                </tb:TaskbarIcon.IconSource>
+                <tb:TaskbarIcon.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="显示主界面" Click="ShowMenuItem_Click" />
+                        <Separator />
+                        <MenuItem Header="退出" Click="ExitMenuItem_Click" />
+                    </ContextMenu>
+                </tb:TaskbarIcon.ContextMenu>
+            </tb:TaskbarIcon>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- ==================== 自定义标题栏（按钮在右；整条可拖动 + 右键菜单） ==================== -->
+                <Grid Grid.Row="0" Background="{DynamicResource TitleBarBg}"
+                      shell:WindowChrome.IsHitTestVisibleInChrome="True"
+                      MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                    <Grid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="置于顶层（窗口总在最前）" IsCheckable="True"
+                                      IsChecked="{Binding AlwaysOnTop, Mode=TwoWay}" />
+                        </ContextMenu>
+                    </Grid.ContextMenu>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- App 名称（左） -->
+                    <TextBlock Grid.Column="0" Text="✓ Todo" VerticalAlignment="Center"
+                               Margin="14,0,0,0" FontWeight="SemiBold" FontSize="14"
+                               Foreground="{DynamicResource PrimaryText}" />
+
+                    <!-- 设置（三横）按钮：位于交通灯左侧 -->
+                    <Grid Grid.Column="2" VerticalAlignment="Center"
+                          shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <ToggleButton x:Name="SettingsToggle" Style="{StaticResource CaptionToggleButton}"
+                                      Content="☰" FontSize="15" ToolTip="菜单 / 设置" />
+                        <Popup IsOpen="{Binding IsChecked, ElementName=SettingsToggle}"
+                               PlacementTarget="{Binding ElementName=SettingsToggle}"
+                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                            <Border Background="{DynamicResource CardBg}" CornerRadius="8"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                    Padding="6" Margin="6" MinWidth="140">
+                                <Border.Effect>
+                                    <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                </Border.Effect>
+                                <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                        Padding="10,8" Content="⚙  设置" Click="Settings_Click" />
+                            </Border>
+                        </Popup>
+                    </Grid>
+
+                    <!-- 交通灯（右）：关闭(红) / 最小化(黄) / 最大化(绿) -->
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center"
+                                Margin="6,0,12,0"
+                                shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button Style="{StaticResource TrafficLightButton}" Tag="#FF5F57"
+                                Content="✕" Click="HideToTray_Click"
+                                ToolTip="关闭（隐藏到托盘，程序后台常驻；托盘右键可退出）" />
+                        <Button Style="{StaticResource TrafficLightButton}" Tag="#FEBC2E"
+                                Content="–" Click="Minimize_Click" ToolTip="最小化" />
+                        <Button Style="{StaticResource TrafficLightButton}" Tag="#28C840"
+                                Content="+" Click="MaxRestore_Click" ToolTip="最大化 / 还原" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- ==================== 主体 ==================== -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <!-- 左侧单列侧边栏：宽度由代码维护（折叠=窄条，展开=持久化宽度，分隔条可拖动） -->
+                        <ColumnDefinition x:Name="SidebarColumn" Width="150" MinWidth="0" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" MinWidth="150" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- ===== 左侧单列侧边栏（自上而下：全部任务 / 分组 / 新建分组 / 主题 / 三横） ===== -->
+                    <Border x:Name="SidebarPanel" Grid.Column="0" Background="{DynamicResource SidebarBg}">
+                        <Grid Margin="5,8">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <!-- 分组列表占据弹性空间(*)，使“新建分组/使用说明/导入导出/主题/收起”紧贴底部堆叠 -->
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <!-- 全部任务（始终可见：展开=便签图标+文字，折叠=便签图标） -->
+                            <Button Grid.Row="0" Command="{Binding SelectAllCommand}"
+                                    Height="28" Padding="6,0" Cursor="Hand" ToolTip="全部任务">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAllSelected}" Value="True">
+                                                <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📋" FontSize="13" Width="18"
+                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Text="全部任务" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- 分组列表：单击切换；拖动排序；右键操作菜单。折叠时仅显示颜色图标 -->
+                            <ListBox Grid.Row="1" Margin="0,8,0,0" Style="{StaticResource FlatListBox}"
+                                     ItemContainerStyle="{StaticResource SidebarItemStyle}"
+                                     ItemsSource="{Binding Groups}"
+                                     SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"
+                                     dd:DragDrop.IsDragSource="True"
+                                     dd:DragDrop.IsDropTarget="True"
+                                     dd:DragDrop.DropHandler="{Binding}"
+                                     dd:DragDrop.UseDefaultDragAdorner="True">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              ToolTip="{Binding Name}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+
+                                            <!-- 右键菜单：改色（子菜单）/ 清空 / 删除 -->
+                                            <Grid.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="修改颜色">
+                                                        <MenuItem Header="蓝" Click="GroupColor_Click" Tag="#3B82F6" />
+                                                        <MenuItem Header="绿" Click="GroupColor_Click" Tag="#10B981" />
+                                                        <MenuItem Header="橙" Click="GroupColor_Click" Tag="#F59E0B" />
+                                                        <MenuItem Header="红" Click="GroupColor_Click" Tag="#EF4444" />
+                                                        <MenuItem Header="紫" Click="GroupColor_Click" Tag="#8B5CF6" />
+                                                        <MenuItem Header="粉" Click="GroupColor_Click" Tag="#EC4899" />
+                                                        <MenuItem Header="青" Click="GroupColor_Click" Tag="#14B8A6" />
+                                                        <MenuItem Header="灰" Click="GroupColor_Click" Tag="#6B7280" />
+                                                    </MenuItem>
+                                                    <MenuItem Header="清空分组"
+                                                              Command="{Binding PlacementTarget.Tag.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                    <Separator />
+                                                    <MenuItem Header="删除分组"
+                                                              Command="{Binding PlacementTarget.Tag.DeleteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                </ContextMenu>
+                                            </Grid.ContextMenu>
+
+                                            <Ellipse x:Name="GroupDot" Grid.Column="0" Width="10" Height="10" Margin="0"
+                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                     Fill="{Binding Color, Converter={StaticResource StringToBrush}}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center"
+                                                       Margin="6,0,0,0" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                       Foreground="{DynamicResource PrimaryText}"
+                                                       Visibility="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding ItemCount}" Margin="4,0"
+                                                       VerticalAlignment="Center" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}"
+                                                       Visibility="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                        </Grid>
+                                        <DataTemplate.Triggers>
+                                            <!-- 折叠时：颜色点跨满整行并居中，与其它图标对齐 -->
+                                            <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <Setter TargetName="GroupDot" Property="Grid.ColumnSpan" Value="3" />
+                                                <Setter TargetName="GroupDot" Property="HorizontalAlignment" Value="Center" />
+                                                <Setter TargetName="GroupDot" Property="Margin" Value="0" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <!-- 新建分组：展开=图标+文字(左对齐,与“使用说明”一致)；折叠=加号图标，点击新建 -->
+                            <Grid Grid.Row="2" Margin="0,2,0,0">
+                                <!-- 展开态（固定 28 高度，保证按钮态/输入态都与下方各项对齐） -->
+                                <Grid Height="28"
+                                      Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                    <Button Style="{StaticResource GhostButton}" Height="28" Padding="6,0"
+                                            HorizontalContentAlignment="Left"
+                                            Command="{Binding BeginAddGroupCommand}"
+                                            Visibility="{Binding IsAddingGroup, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="＋" FontSize="13" Width="18"
+                                                       TextAlignment="Center" VerticalAlignment="Center" />
+                                            <TextBlock Text="新建分组" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Grid Visibility="{Binding IsAddingGroup, Converter={StaticResource BoolToVis}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="NewGroupBox" Grid.Column="0" Style="{StaticResource FlatTextBox}"
+                                                 Height="26" VerticalAlignment="Center" Padding="8,0" FontSize="12"
+                                                 Text="{Binding NewGroupName, UpdateSourceTrigger=PropertyChanged}">
+                                            <TextBox.InputBindings>
+                                                <KeyBinding Key="Enter" Command="{Binding ConfirmAddGroupCommand}" />
+                                                <KeyBinding Key="Esc" Command="{Binding CancelAddGroupCommand}" />
+                                            </TextBox.InputBindings>
+                                        </TextBox>
+                                        <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="✓"
+                                                Margin="4,0,0,0" ToolTip="确定" Command="{Binding ConfirmAddGroupCommand}" />
+                                        <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="✕"
+                                                ToolTip="取消" Command="{Binding CancelAddGroupCommand}" />
+                                    </Grid>
+                                </Grid>
+
+                                <!-- 折叠态：加号图标 -->
+                                <Button Style="{StaticResource GhostButton}" Content="＋" FontSize="13" Height="28" Padding="0"
+                                        ToolTip="新建分组" Command="{Binding BeginAddGroupCommand}"
+                                        Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                            </Grid>
+
+                            <!-- 使用说明（展开=图标+文字左对齐，折叠=书本图标居中） -->
+                            <Button Grid.Row="3" Margin="0,2,0,0" Height="28" Padding="6,0"
+                                    Click="Help_Click" ToolTip="使用说明">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="📖" FontSize="13" Width="18"
+                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Text="使用说明" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- 导入导出（展开=图标+文字左对齐，折叠=图标居中），与“使用说明”同款 -->
+                            <Grid Grid.Row="4" Margin="0,2,0,0">
+                                <ToggleButton x:Name="IoToggle" Height="28" Padding="6,0" ToolTip="导入导出">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton" BasedOn="{StaticResource SidebarToggleButton}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="📤" FontSize="13" Width="18"
+                                                   TextAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock Text="导入导出" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                                   Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                    </StackPanel>
+                                </ToggleButton>
+                                <Popup IsOpen="{Binding IsChecked, ElementName=IoToggle}"
+                                       PlacementTarget="{Binding ElementName=IoToggle}"
+                                       Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                                    <Border Background="{DynamicResource CardBg}" CornerRadius="10"
+                                            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                            Padding="6" Margin="6" MinWidth="170">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                    Padding="10,8" Click="ExportMarkdown_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="⬆" FontSize="13" Width="18"
+                                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                                    <TextBlock Text="导出为 Markdown" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                                    Padding="10,8" Click="ImportMarkdown_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="⬇" FontSize="13" Width="18"
+                                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                                    <TextBlock Text="从 Markdown 导入" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
+                            <!-- 修改主题（展开=图标+文字左对齐，折叠=主题图标居中），带主题选择 Popup -->
+                            <Grid Grid.Row="5" Margin="0,2,0,0">
+                                <ToggleButton x:Name="ThemeToggle" Height="28" Padding="6,0" ToolTip="修改主题">
+                                    <ToggleButton.Style>
+                                        <Style TargetType="ToggleButton" BasedOn="{StaticResource SidebarToggleButton}">
+                                            <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ToggleButton.Style>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="🎨" FontSize="13" Width="18"
+                                                   TextAlignment="Center" VerticalAlignment="Center" />
+                                        <TextBlock Text="修改主题" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                                   Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                    </StackPanel>
+                                </ToggleButton>
+                                <Popup IsOpen="{Binding IsChecked, ElementName=ThemeToggle}"
+                                       PlacementTarget="{Binding ElementName=ThemeToggle}"
+                                       Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                                    <Border Background="{DynamicResource CardBg}" CornerRadius="10"
+                                            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                            Padding="10" Margin="6">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                        </Border.Effect>
+                                        <StackPanel>
+                                            <TextBlock Text="选择主题" FontWeight="Bold" Margin="2,0,0,8"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <ItemsControl ItemsSource="{Binding Themes}">
+                                                <ItemsControl.ItemsPanel>
+                                                    <ItemsPanelTemplate>
+                                                        <UniformGrid Columns="3" />
+                                                    </ItemsPanelTemplate>
+                                                </ItemsControl.ItemsPanel>
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Button Width="64" Height="46" Margin="3" Cursor="Hand"
+                                                                Click="ThemeOption_Click" Tag="{Binding}"
+                                                                ToolTip="{Binding Display}">
+                                                            <Button.Template>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border x:Name="bd" CornerRadius="8"
+                                                                            BorderThickness="2" BorderBrush="Transparent">
+                                                                        <Border.Background>
+                                                                            <SolidColorBrush Color="{Binding Preview}" />
+                                                                        </Border.Background>
+                                                                        <TextBlock Text="{Binding Display}" FontSize="12"
+                                                                                   HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                            <TextBlock.Foreground>
+                                                                                <SolidColorBrush Color="{Binding PreviewText}" />
+                                                                            </TextBlock.Foreground>
+                                                                        </TextBlock>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource Accent}" />
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Button.Template>
+                                                        </Button>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <Button Content="＋ 自定义主题" Margin="2,8,2,0"
+                                                    Style="{StaticResource GhostButton}"
+                                                    HorizontalContentAlignment="Left"
+                                                    Click="AddCustomTheme_Click" />
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+
+                            <!-- 收起侧边栏（展开=三横图标+文字左对齐，折叠=三横图标居中，最底部） -->
+                            <Button Grid.Row="6" Margin="0,2,0,0" Height="28" Padding="6,0"
+                                    Command="{Binding ToggleSidebarCommand}" ToolTip="显示/隐藏分组栏">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="☰" FontSize="13" Width="18"
+                                               TextAlignment="Center" VerticalAlignment="Center" />
+                                    <TextBlock Text="收起侧边" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+
+                    <!-- 分隔条：拖动调整侧边栏宽度（折叠时隐藏） -->
+                    <GridSplitter x:Name="SidebarSplitter" Grid.Column="1" Width="5"
+                                  HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  Background="Transparent" ResizeBehavior="PreviousAndNext"
+                                  Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+
+                    <!-- ==================== 右侧：任务区 ==================== -->
+                    <Grid Grid.Column="2" Margin="16,16,16,16">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition x:Name="InputBarRow" Height="40" MinHeight="28" />
+                        </Grid.RowDefinitions>
+
+                        <!-- 头部：标题 + 排序（图标按钮，点击弹出选择） -->
+                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding CurrentTitle}" FontSize="22"
+                                       FontWeight="Bold" VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       Foreground="{DynamicResource PrimaryText}" />
+
+                            <Grid Grid.Column="1" VerticalAlignment="Center">
+                                <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
+                                              Content="⇅" FontSize="16"
+                                              ToolTip="{Binding SelectedSortOption.Label, StringFormat=排序：{0}}" />
+                                <Popup IsOpen="{Binding IsChecked, ElementName=SortToggle}"
+                                       PlacementTarget="{Binding ElementName=SortToggle}"
+                                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                                    <Border Background="{DynamicResource CardBg}" CornerRadius="8"
+                                            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                            Padding="6" Margin="6" MinWidth="150">
+                                        <Border.Effect>
+                                            <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                        </Border.Effect>
+                                        <ItemsControl ItemsSource="{Binding SortOptions}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Button Style="{StaticResource GhostButton}"
+                                                            HorizontalContentAlignment="Left" Padding="10,7"
+                                                            Content="{Binding Label}" Tag="{Binding}"
+                                                            Click="SortOption_Click" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                        </Grid>
+
+                        <!-- 任务列表（支持拖拽排序 + 右键菜单 + Tab/Shift+Tab 调整缩进） -->
+                        <ListBox x:Name="TaskList" Grid.Row="1" Style="{StaticResource FlatListBox}"
+                                 ItemContainerStyle="{StaticResource TaskItemStyle}"
+                                 ItemsSource="{Binding Items}"
+                                 PreviewKeyDown="TaskList_PreviewKeyDown"
+                                 dd:DragDrop.IsDragSource="True"
+                                 dd:DragDrop.IsDropTarget="True"
+                                 dd:DragDrop.DropHandler="{Binding}"
+                                 dd:DragDrop.UseDefaultDragAdorner="True">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <!-- Tag 绑定到主窗口 DataContext(=ViewModel)，供 ContextMenu 经 PlacementTarget.Tag 访问命令 -->
+                                    <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                          Margin="{Binding IndentLevel, Converter={StaticResource IndentToMargin}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+
+                                        <!-- 右键菜单：编辑(优先级+DDL) / 清除DDL / 缩进 / 周期提醒 / 完成 / 删除 -->
+                                        <Grid.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="编辑（优先级 / 截止时间）…" Click="EditTask_Click" />
+                                                <MenuItem Header="清除截止日期"
+                                                          Command="{Binding PlacementTarget.Tag.ClearDueDateCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <Separator />
+                                                <MenuItem Header="作为子待办（增加缩进 Tab）"
+                                                          Command="{Binding PlacementTarget.Tag.IndentTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <MenuItem Header="提升一级（减少缩进 Shift+Tab）"
+                                                          Command="{Binding PlacementTarget.Tag.OutdentTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <MenuItem Header="折叠 / 展开子待办"
+                                                          Command="{Binding PlacementTarget.Tag.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <MenuItem Header="切换周期提醒"
+                                                          Command="{Binding PlacementTarget.Tag.ToggleReminderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <!-- 移动到分组：子项动态绑定到普通分组（排除“已完成”） -->
+                                                <MenuItem Header="移动到分组"
+                                                          ItemsSource="{Binding PlacementTarget.Tag.MoveTargetGroups, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
+                                                    <MenuItem.ItemContainerStyle>
+                                                        <Style TargetType="MenuItem">
+                                                            <Setter Property="Header" Value="{Binding Name}" />
+                                                            <EventSetter Event="Click" Handler="MoveToGroup_Click" />
+                                                        </Style>
+                                                    </MenuItem.ItemContainerStyle>
+                                                </MenuItem>
+                                                <Separator />
+                                                <MenuItem Header="标记完成/未完成"
+                                                          Command="{Binding PlacementTarget.Tag.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                <MenuItem Header="删除任务"
+                                                          Command="{Binding PlacementTarget.Tag.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            </ContextMenu>
+                                        </Grid.ContextMenu>
+
+                                        <!-- 优先级色条（左侧），无优先级则透明 -->
+                                        <Border Grid.Column="0" Width="4" Margin="0,1,8,1" CornerRadius="2"
+                                                Background="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
+                                                ToolTip="优先级（右键编辑）" />
+
+                                        <!-- 折叠箭头：仅父待办（HasChildren=true）显示；展开▼ / 折叠▶ -->
+                                        <Button Grid.Column="1" Width="16" Height="16" Margin="0,0,4,0"
+                                                Padding="0" Background="Transparent" BorderThickness="0"
+                                                Cursor="Hand" FontSize="11"
+                                                Foreground="{DynamicResource MutedText}"
+                                                Command="{Binding DataContext.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                CommandParameter="{Binding}"
+                                                ToolTip="展开 / 折叠子待办"
+                                                Visibility="{Binding HasChildren, Converter={StaticResource BoolToVis}}">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Content" Value="▼" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                                            <Setter Property="Content" Value="▶" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+
+                                        <!-- 拖拽手柄提示 -->
+                                        <TextBlock Grid.Column="2" Text="⋮⋮" Margin="0,0,8,0"
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource MutedText}"
+                                                   ToolTip="拖动可排序" />
+
+                                        <!-- 完成勾选 -->
+                                        <CheckBox Grid.Column="3" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                  IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
+
+                                        <!-- 标题：默认显示文本（超长截断显示前部）；单击进入编辑 -->
+                                        <Grid Grid.Column="4">
+                                            <TextBlock x:Name="TitleText" Text="{Binding Title}"
+                                                       VerticalAlignment="Center" Padding="2,1"
+                                                       TextTrimming="CharacterEllipsis" FontSize="14"
+                                                       MouseLeftButtonUp="TaskTitle_Click"
+                                                       Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                                <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                                <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+
+                                            <TextBox x:Name="TitleEdit" Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Style="{StaticResource TaskTitleTextBox}" VerticalAlignment="Center"
+                                                     IsVisibleChanged="TitleEdit_IsVisibleChanged"
+                                                     LostKeyboardFocus="TitleEdit_LostFocus"
+                                                     KeyDown="TitleEdit_KeyDown"
+                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}" />
+                                        </Grid>
+
+                                        <!-- 距离 DDL 的倒计时 -->
+                                        <Border Grid.Column="5" Margin="8,0,2,0" VerticalAlignment="Center"
+                                                Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}"
+                                                ToolTip="{Binding DueDetailText}">
+                                            <TextBlock Text="{Binding DueCountdownText}" FontSize="12.5"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{Binding DueState, Converter={StaticResource DueStateToBrush}}" />
+                                        </Border>
+
+                                        <!-- 周期提醒标识小铃铛 -->
+                                        <TextBlock Grid.Column="6" Text="🔔" FontSize="12" Margin="6,0,2,0"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource WarningText}"
+                                                   Visibility="{Binding HasReminder, Converter={StaticResource BoolToVis}}"
+                                                   ToolTip="已开启周期提醒（右键可切换）" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- 输入任务文本后弹出：优先级（3 个色块）+ 截止时间按钮 + 周期提醒按钮 + 父待办 -->
+                        <Border Grid.Row="2" Margin="0,10,0,0" Padding="10,8"
+                                Background="{DynamicResource CardBg}" CornerRadius="8"
+                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                Visibility="{Binding NewTaskTitle, Converter={StaticResource EmptyToVis}, ConverterParameter=Invert}">
+                            <StackPanel>
+                                <!-- 优先级:3 个色块，点击切换，被选中的有色描边 -->
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="优先级" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                        <!-- 低 -->
+                                        <Button Padding="14,4" Margin="0,0,6,0" FontSize="12" Cursor="Hand"
+                                                Click="PriorityChip_Click" Tag="Low">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                            Background="#1A10B981" BorderBrush="Transparent" BorderThickness="1.5">
+                                                        <TextBlock Text="低" Foreground="#10B981" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="Low">
+                                                            <Setter TargetName="b" Property="BorderBrush" Value="#10B981" />
+                                                            <Setter TargetName="b" Property="Background" Value="#3310B981" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <!-- 中 -->
+                                        <Button Padding="14,4" Margin="0,0,6,0" FontSize="12" Cursor="Hand"
+                                                Click="PriorityChip_Click" Tag="Medium">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                            Background="#1AF59E0B" BorderBrush="Transparent" BorderThickness="1.5">
+                                                        <TextBlock Text="中" Foreground="#F59E0B" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="Medium">
+                                                            <Setter TargetName="b" Property="BorderBrush" Value="#F59E0B" />
+                                                            <Setter TargetName="b" Property="Background" Value="#33F59E0B" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                        <!-- 高 -->
+                                        <Button Padding="14,4" Margin="0,0,6,0" FontSize="12" Cursor="Hand"
+                                                Click="PriorityChip_Click" Tag="High">
+                                            <Button.Template>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
+                                                            Background="#1AEF4444" BorderBrush="Transparent" BorderThickness="1.5">
+                                                        <TextBlock Text="高" Foreground="#EF4444" FontWeight="SemiBold" />
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="High">
+                                                            <Setter TargetName="b" Property="BorderBrush" Value="#EF4444" />
+                                                            <Setter TargetName="b" Property="Background" Value="#33EF4444" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Button.Template>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- 截止时间按钮 + 弹出选择 -->
+                                <Grid Margin="0,4,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="截至时间" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ToggleButton x:Name="DueTimeToggle" Padding="10,4" FontSize="12" MinWidth="120"
+                                                      HorizontalContentAlignment="Left"
+                                                      Style="{StaticResource SidebarToggleButton}"
+                                                      Background="{DynamicResource InputBg}"
+                                                      Content="{Binding NewTaskDueButtonText}" />
+                                        <Button Content="清除" Style="{StaticResource GhostButton}"
+                                                Padding="8,3" Margin="6,0,0,0" FontSize="12"
+                                                Command="{Binding ClearNewTaskDueCommand}"
+                                                Visibility="{Binding HasNewTaskDue, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+
+                                    <Popup IsOpen="{Binding IsChecked, ElementName=DueTimeToggle}"
+                                           PlacementTarget="{Binding ElementName=DueTimeToggle}"
+                                           Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                                        <Border Background="{DynamicResource CardBg}" CornerRadius="10"
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                Padding="10" Margin="6" MinWidth="260">
+                                            <Border.Effect>
+                                                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                            </Border.Effect>
+                                            <StackPanel>
+                                                <!-- 分钟 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="分钟" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="1" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="10" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="10" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="30" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="30" />
+                                                </StackPanel>
+                                                <!-- 小时 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="小时" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="60" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="120" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="300" />
+                                                </StackPanel>
+                                                <!-- 天 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="天" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="1440" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="2880" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="7200" />
+                                                </StackPanel>
+                                                <!-- 周 -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <TextBlock Text="周" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="10080" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="20160" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="4" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskQuickTimeCommand}" CommandParameter="40320" />
+                                                </StackPanel>
+                                                <!-- 自定义时间 -->
+                                                <Border Background="{DynamicResource Divider}" Height="1" Margin="0,0,0,6" />
+                                                <WrapPanel>
+                                                    <TextBlock Text="自定义" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <DatePicker Width="112" Margin="0,0,4,4" VerticalContentAlignment="Center"
+                                                                SelectedDate="{Binding NewTaskCustomDate, Mode=TwoWay}" />
+                                                    <ComboBox Width="46" Margin="0,0,0,4" VerticalAlignment="Center"
+                                                              ItemsSource="{Binding Hours}"
+                                                              SelectedItem="{Binding NewTaskCustomHour, Mode=TwoWay}" />
+                                                    <TextBlock Text=":" VerticalAlignment="Center" Margin="3,0"
+                                                               Foreground="{DynamicResource PrimaryText}" />
+                                                    <ComboBox Width="46" Margin="0,0,4,4" VerticalAlignment="Center"
+                                                              ItemsSource="{Binding Minutes}"
+                                                              SelectedItem="{Binding NewTaskCustomMinute, Mode=TwoWay}" />
+                                                    <Button Content="设为时间" Style="{StaticResource GhostButton}"
+                                                            Padding="9,3" Margin="2,0,0,4" FontSize="12"
+                                                            Background="{DynamicResource InputBg}"
+                                                            Command="{Binding ApplyCustomTimeCommand}" />
+                                                </WrapPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+
+                                <!-- 周期提醒按钮 + 弹出选择 -->
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="周期提醒" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ToggleButton x:Name="ReminderToggle" Padding="10,4" FontSize="12" MinWidth="120"
+                                                      HorizontalContentAlignment="Left"
+                                                      Style="{StaticResource SidebarToggleButton}"
+                                                      Background="{DynamicResource InputBg}"
+                                                      Content="{Binding NewTaskReminderButtonText}" />
+                                        <Button Content="清除" Style="{StaticResource GhostButton}"
+                                                Padding="8,3" Margin="6,0,0,0" FontSize="12"
+                                                Command="{Binding ClearNewTaskReminderCommand}"
+                                                Visibility="{Binding NewTaskReminderEnabled, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+
+                                    <Popup IsOpen="{Binding IsChecked, ElementName=ReminderToggle}"
+                                           PlacementTarget="{Binding ElementName=ReminderToggle}"
+                                           Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                                        <Border Background="{DynamicResource CardBg}" CornerRadius="10"
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                Padding="10" Margin="6" MinWidth="260">
+                                            <Border.Effect>
+                                                <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                            </Border.Effect>
+                                            <StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="分钟" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="1" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="10" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="10" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="30" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="30" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="小时" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="60" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="120" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="300" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                    <TextBlock Text="天" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="1440" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="2880" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="5" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="7200" />
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                    <TextBlock Text="周" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="1" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="10080" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="2" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="20160" />
+                                                    <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
+                                                            Content="4" Background="{DynamicResource InputBg}"
+                                                            Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="40320" />
+                                                </StackPanel>
+                                                <Border Background="{DynamicResource Divider}" Height="1" Margin="0,0,0,6" />
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="自定义" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}" />
+                                                    <TextBox Width="60" Style="{StaticResource FlatTextBox}" Padding="6,3" FontSize="12"
+                                                             Text="{Binding NewTaskReminderCustomValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                                    <ComboBox Width="62" Margin="6,0,0,0" VerticalAlignment="Center"
+                                                              ItemsSource="{Binding ReminderUnits}"
+                                                              SelectedItem="{Binding NewTaskReminderCustomUnit, Mode=TwoWay}" />
+                                                    <Button Content="设为提醒" Style="{StaticResource GhostButton}"
+                                                            Padding="9,3" Margin="6,0,0,0" FontSize="12"
+                                                            Background="{DynamicResource InputBg}"
+                                                            Command="{Binding ApplyCustomReminderCommand}" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+
+                                <!-- 父待办选择（创建子待办） -->
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="父待办" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ComboBox MinWidth="170" VerticalAlignment="Center" FontSize="12"
+                                                  ItemsSource="{Binding ParentCandidates}"
+                                                  SelectedValue="{Binding NewTaskParentId, Mode=TwoWay}"
+                                                  SelectedValuePath="Id"
+                                                  DisplayMemberPath="Title"
+                                                  ToolTip="选择父待办后，新任务将作为子待办创建">
+                                            <ComboBox.ItemContainerStyle>
+                                                <Style TargetType="ComboBoxItem">
+                                                    <Setter Property="Padding" Value="8,4" />
+                                                </Style>
+                                            </ComboBox.ItemContainerStyle>
+                                        </ComboBox>
+                                        <Button Content="清除" Style="{StaticResource GhostButton}"
+                                                Padding="8,3" Margin="6,0,0,0" FontSize="12"
+                                                Command="{Binding ClearNewTaskParentCommand}"
+                                                Visibility="{Binding HasNewTaskParent, Converter={StaticResource BoolToVis}}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 输入栏顶部:可上下拖动的细分隔条，松开后记忆高度 -->
+                        <GridSplitter x:Name="InputBarSplitter" Grid.Row="3" Height="5"
+                                      HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
+                                      Background="Transparent" ResizeBehavior="PreviousAndNext"
+                                      ResizeDirection="Rows" Cursor="SizeNS" Margin="0,4,0,0" />
+
+                        <!-- 添加任务输入栏（底部，可拖动调整高度，持久化） -->
+                        <Border Grid.Row="4" Margin="0,2,0,0">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+
+                                <Grid Grid.Column="0">
+                                    <!-- 回车直接提交;长文本自动换行；高度由 InputBarRow 控制 -->
+                                    <TextBox x:Name="NewTaskBox" Style="{StaticResource FlatTextBox}"
+                                             Padding="6,4" VerticalContentAlignment="Top"
+                                             TextWrapping="Wrap"
+                                             VerticalScrollBarVisibility="Auto"
+                                             Text="{Binding NewTaskTitle, UpdateSourceTrigger=PropertyChanged}">
+                                        <TextBox.InputBindings>
+                                            <KeyBinding Key="Enter" Command="{Binding AddTaskCommand}" />
+                                        </TextBox.InputBindings>
+                                    </TextBox>
+                                    <TextBlock Text="添加新任务，回车确认…" Margin="8,4,0,0"
+                                               VerticalAlignment="Top" IsHitTestVisible="False"
+                                               TextAlignment="Left" HorizontalAlignment="Left">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                                                <!-- 默认隐藏；仅当输入为空、且文本框未获得焦点(未点击进入)时才显示提示，单击进入即移除 -->
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                <Style.Triggers>
+                                                    <MultiDataTrigger>
+                                                        <MultiDataTrigger.Conditions>
+                                                            <Condition Binding="{Binding NewTaskTitle}" Value="" />
+                                                            <Condition Binding="{Binding IsKeyboardFocusWithin, ElementName=NewTaskBox}" Value="False" />
+                                                        </MultiDataTrigger.Conditions>
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </MultiDataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </Grid>
+
+                                <Button Grid.Column="1" Style="{StaticResource AccentButton}" Content="添加"
+                                        Margin="8,0,0,0" VerticalAlignment="Stretch"
+                                        Command="{Binding AddTaskCommand}" />
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+
+            <!-- 完成庆祝：烟花粒子覆盖层（不拦截鼠标，浮于全部内容之上） -->
+            <Canvas x:Name="FxOverlay" IsHitTestVisible="False" ClipToBounds="True" />
+        </Grid>
+    </Border>
+</Window>

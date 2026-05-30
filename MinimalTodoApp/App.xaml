@@ -1,0 +1,14 @@
+<Application x:Class="MinimalTodoApp.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 默认明亮主题，运行时由 ThemeManager 动态替换 index 0 -->
+                <ResourceDictionary Source="pack://application:,,,/MinimalTodoApp;component/Themes/Light.xaml" />
+                <!-- 通用样式 / 转换器（使用 DynamicResource 引用主题颜色） -->
+                <ResourceDictionary Source="pack://application:,,,/MinimalTodoApp;component/Themes/Controls.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

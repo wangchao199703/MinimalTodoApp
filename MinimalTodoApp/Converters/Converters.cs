@@ -1,0 +1,190 @@
+﻿using System;
+using System.Globalization;
+using System.Windows;
+using System.Windows.Data;
+using System.Windows.Media;
+
+namespace MinimalTodoApp.Converters;
+
+/// <summary>value 为 null -> true.参数 "Invert" 可反转.</summary>
+public class NullToBoolConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool isNull = value == null;
+        if (parameter is string s && s.Equals("Invert", StringComparison.OrdinalIgnoreCase))
+            return !isNull;
+        return isNull;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>布尔取反.</summary>
+public class InverseBooleanConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? !b : Binding.DoNothing;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is bool b ? !b : Binding.DoNothing;
+}
+
+/// <summary>空字符串 -> Visible(用于输入框 watermark 占位提示).参数 "Invert" 时改为非空 -> Visible.</summary>
+public class EmptyStringToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool isEmpty = string.IsNullOrEmpty(value as string);
+        if (parameter is string s && s.Equals("Invert", StringComparison.OrdinalIgnoreCase))
+            isEmpty = !isEmpty;
+        return isEmpty ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>bool -> Visibility.参数 "Invert" 可反转.</summary>
+public class BoolToVisibilityConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool b = value is bool v && v;
+        if (parameter is string s && s.Equals("Invert", StringComparison.OrdinalIgnoreCase))
+            b = !b;
+        return b ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>截止日期 -> 友好文本:今天 / 明天 / 逾期 N 天 / MM月dd日.</summary>
+public class DueDateDisplayConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not DateTime due) return string.Empty;
+
+        var days = (due.Date - DateTime.Today).Days;
+        return days switch
+        {
+            0 => "今天",
+            1 => "明天",
+            -1 => "昨天",
+            < 0 => $"逾期 {-days} 天",
+            < 7 => $"{days} 天后",
+            _ => due.ToString("MM月dd日", culture)
+        };
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>十六进制颜色字符串 -> SolidColorBrush.</summary>
+public class StringToBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is string hex && !string.IsNullOrWhiteSpace(hex))
+        {
+            try
+            {
+                return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+            }
+            catch
+            {
+                /* ignore */
+            }
+        }
+        return Brushes.Gray;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>DueState -> 倒计时文字颜色(引用当前主题的动态资源画刷).</summary>
+public class DueStateToBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var state = value is Models.DueState s ? s : Models.DueState.None;
+        var key = state switch
+        {
+            Models.DueState.Overdue => "OverdueText",
+            Models.DueState.Today => "WarningText",
+            Models.DueState.Soon => "WarningText",
+            Models.DueState.Completed => "MutedText",
+            Models.DueState.Normal => "SecondaryText",
+            _ => "MutedText"
+        };
+
+        return Application.Current.TryFindResource(key) as Brush ?? Brushes.Gray;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>Priority -> 左侧色条画刷(高=红，中=橙，低=蓝绿;旧数据 None 视为中).</summary>
+public class PriorityToBrushConverter : IValueConverter
+{
+    public static SolidColorBrush BrushFor(Models.Priority p) => p switch
+    {
+        Models.Priority.High => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#EF4444")),
+        Models.Priority.Low => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#10B981")),
+        _ => new SolidColorBrush((Color)ColorConverter.ConvertFromString("#F59E0B"))   // Medium / None 兜底
+    };
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => BrushFor(value is Models.Priority p ? p : Models.Priority.Medium);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>Priority -> 中文标签.</summary>
+public class PriorityToTextConverter : IValueConverter
+{
+    public static string TextFor(Models.Priority p) => p switch
+    {
+        Models.Priority.High => "高",
+        Models.Priority.Low => "低",
+        _ => "中"
+    };
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => TextFor(value is Models.Priority p ? p : Models.Priority.Medium);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>缩进层级 int -> Thickness 左边距，每级 22px，用于子待办的层级视觉对齐.</summary>
+public class IndentToMarginConverter : IValueConverter
+{
+    public const double Step = 22.0;
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        int level = value is int i ? Math.Max(0, Math.Min(i, 8)) : 0;
+        return new Thickness(level * Step, 0, 0, 0);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>判断值与参数是否相等 -> bool(用于当前主题高亮等).</summary>
+public class EqualityToBoolConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => string.Equals(value?.ToString(), parameter?.ToString(), StringComparison.OrdinalIgnoreCase);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}

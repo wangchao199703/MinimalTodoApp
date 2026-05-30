@@ -1,0 +1,69 @@
+<Window x:Class="MinimalTodoApp.Views.TaskEditDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="编辑任务"
+        SizeToContent="WidthAndHeight"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        FontFamily="Microsoft YaHei UI, Segoe UI">
+
+    <Border Background="{DynamicResource WindowBg}" CornerRadius="12"
+            BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.35" Color="#000000" />
+        </Border.Effect>
+        <StackPanel Margin="20" Width="320">
+            <TextBlock Text="编辑任务" FontSize="16" FontWeight="Bold"
+                       Margin="0,0,0,4" Foreground="{DynamicResource PrimaryText}" />
+            <TextBlock x:Name="TitlePreview" FontSize="12" TextTrimming="CharacterEllipsis"
+                       Margin="0,0,0,14" Foreground="{DynamicResource MutedText}" />
+
+            <!-- 优先级 -->
+            <TextBlock Text="优先级" FontSize="13" Margin="0,0,0,6"
+                       Foreground="{DynamicResource SecondaryText}" />
+            <UniformGrid Rows="1" Columns="3" Margin="0,0,0,16">
+                <RadioButton x:Name="PrioLow" GroupName="Prio" Content="低"
+                             Style="{StaticResource PriorityChip}" Tag="#10B981" />
+                <RadioButton x:Name="PrioMid" GroupName="Prio" Content="中"
+                             Style="{StaticResource PriorityChip}" Tag="#F59E0B" />
+                <RadioButton x:Name="PrioHigh" GroupName="Prio" Content="高"
+                             Style="{StaticResource PriorityChip}" Tag="#EF4444" />
+            </UniformGrid>
+
+            <!-- 截止日期 -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                <TextBlock Text="截止日期" FontSize="13"
+                           Foreground="{DynamicResource SecondaryText}" />
+                <CheckBox x:Name="EnableDue" Content="启用" Margin="12,0,0,0"
+                          VerticalAlignment="Center" Foreground="{DynamicResource MutedText}"
+                          Checked="EnableDue_Changed" Unchecked="EnableDue_Changed" />
+            </StackPanel>
+
+            <Grid x:Name="DuePanel" Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <DatePicker x:Name="DatePick" Grid.Column="0" VerticalContentAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="8,0,0,0"
+                            VerticalAlignment="Center">
+                    <ComboBox x:Name="HourBox" Width="58" />
+                    <TextBlock Text=":" VerticalAlignment="Center" Margin="4,0"
+                               Foreground="{DynamicResource PrimaryText}" />
+                    <ComboBox x:Name="MinBox" Width="58" />
+                </StackPanel>
+            </Grid>
+            <TextBlock Text="未选具体时间则默认为 00:00" FontSize="11"
+                       Margin="0,2,0,0" Foreground="{DynamicResource MutedText}" />
+
+            <!-- 按钮 -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+                <Button Content="取消" Style="{StaticResource GhostButton}"
+                        Click="Cancel_Click" Margin="0,0,8,0" />
+                <Button Content="保存" Style="{StaticResource AccentButton}"
+                        Click="Ok_Click" />
+            </StackPanel>
+        </StackPanel>
+    </Border>
+</Window>

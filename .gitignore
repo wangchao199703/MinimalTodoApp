@@ -1,0 +1,37 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# WPF temp project files
+*_wpftmp.csproj
+
+# Build tool output
+*.binlog
+
+# NuGet
+*.nupkg
+packages/
+.nuget/
+
+# Misc
+*.tmp
+*.cache
+Thumbs.db
