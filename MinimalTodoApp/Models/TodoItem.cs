@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MinimalTodoApp.Infrastructure;
 
 namespace MinimalTodoApp.Models;
 
@@ -156,14 +157,14 @@ public partial class TodoItem : ObservableObject
             var span = DueDate.Value - now;
 
             if (IsCompleted)
-                return span.TotalMinutes < 0 ? "已完成 · 曾逾期" : "已完成";
+                return span.TotalMinutes < 0 ? Loc.T("S.DoneWasOverdue") : Loc.T("S.Done");
 
             if (span.TotalMinutes < 0)
             {
                 var od = now - DueDate.Value;
-                if (od.TotalDays >= 1) return $"已逾期 {(int)od.TotalDays} 天";
-                if (od.TotalHours >= 1) return $"已逾期 {(int)od.TotalHours} 小时";
-                return $"已逾期 {Math.Max(1, (int)od.TotalMinutes)} 分钟";
+                if (od.TotalDays >= 1) return Loc.F("S.Fmt.OverdueDays", (int)od.TotalDays);
+                if (od.TotalHours >= 1) return Loc.F("S.Fmt.OverdueHours", (int)od.TotalHours);
+                return Loc.F("S.Fmt.OverdueMinutes", Math.Max(1, (int)od.TotalMinutes));
             }
 
             // 未来:按粒度展示
@@ -171,16 +172,16 @@ public partial class TodoItem : ObservableObject
             {
                 int days = (int)span.TotalDays;
                 int hours = span.Hours;
-                return hours > 0 ? $"剩 {days} 天 {hours} 小时" : $"剩 {days} 天";
+                return hours > 0 ? Loc.F("S.Fmt.RemainDaysHours", days, hours) : Loc.F("S.Fmt.RemainDays", days);
             }
             if (span.TotalHours >= 1)
             {
                 int hours = (int)span.TotalHours;
                 int mins = span.Minutes;
-                return mins > 0 ? $"剩 {hours} 小时 {mins} 分钟" : $"剩 {hours} 小时";
+                return mins > 0 ? Loc.F("S.Fmt.RemainHoursMinutes", hours, mins) : Loc.F("S.Fmt.RemainHours", hours);
             }
             int m = Math.Max(1, (int)span.TotalMinutes);
-            return $"剩 {m} 分钟";
+            return Loc.F("S.Fmt.RemainMinutes", m);
         }
     }
 

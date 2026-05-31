@@ -61,14 +61,14 @@ public partial class SettingsDialog : Window
 
         if (!ok)
         {
-            StatusText.Text = "操作失败，请重试.";
+            StatusText.Text = Loc.T("S.Settings.OpFailed");
             _initializing = true;
             AutoStartCheck.IsChecked = StartupManager.IsEnabled();
             _initializing = false;
         }
         else
         {
-            StatusText.Text = want ? "已开启: 开机自动启动." : "已关闭开机自启动.";
+            StatusText.Text = want ? Loc.T("S.Settings.AutoStartOn") : Loc.T("S.Settings.AutoStartOff");
         }
     }
 

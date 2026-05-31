@@ -1,7 +1,7 @@
 <Window x:Class="MinimalTodoApp.Views.SettingsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="设置"
+        Title="{DynamicResource S.Settings.Title}"
         SizeToContent="WidthAndHeight"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" ShowInTaskbar="False"
@@ -14,7 +14,7 @@
             <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.35" Color="#000000" />
         </Border.Effect>
         <StackPanel Margin="22" Width="320">
-            <TextBlock Text="设置" FontSize="16" FontWeight="Bold"
+            <TextBlock Text="{DynamicResource S.Settings.Title}" FontSize="16" FontWeight="Bold"
                        Margin="0,0,0,16" Foreground="{DynamicResource PrimaryText}" />
 
             <!-- 开机自启动 -->
@@ -24,9 +24,9 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="开机自启动" FontSize="14"
+                    <TextBlock Text="{DynamicResource S.Settings.AutoStart}" FontSize="14"
                                Foreground="{DynamicResource PrimaryText}" />
-                    <TextBlock Text="登录 Windows 时自动运行（当前用户）" FontSize="11"
+                    <TextBlock Text="{DynamicResource S.Settings.AutoStartDesc}" FontSize="11"
                                Margin="0,2,0,0" Foreground="{DynamicResource MutedText}" />
                 </StackPanel>
                 <CheckBox x:Name="AutoStartCheck" Grid.Column="1" VerticalAlignment="Center"
@@ -42,9 +42,9 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="完成特效" FontSize="14"
+                    <TextBlock Text="{DynamicResource S.Settings.Effects}" FontSize="14"
                                Foreground="{DynamicResource PrimaryText}" />
-                    <TextBlock Text="勾选任务完成时播放烟花庆祝动画" FontSize="11"
+                    <TextBlock Text="{DynamicResource S.Settings.EffectsDesc}" FontSize="11"
                                Margin="0,2,0,0" Foreground="{DynamicResource MutedText}" />
                 </StackPanel>
                 <CheckBox x:Name="EffectsCheck" Grid.Column="1" VerticalAlignment="Center"
@@ -58,9 +58,9 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="完成音效" FontSize="14"
+                    <TextBlock Text="{DynamicResource S.Settings.Sound}" FontSize="14"
                                Foreground="{DynamicResource PrimaryText}" />
-                    <TextBlock Text="勾选任务完成时播放一段振奋的庆祝音乐" FontSize="11"
+                    <TextBlock Text="{DynamicResource S.Settings.SoundDesc}" FontSize="11"
                                Margin="0,2,0,0" Foreground="{DynamicResource MutedText}" />
                 </StackPanel>
                 <CheckBox x:Name="SoundCheck" Grid.Column="1" VerticalAlignment="Center"
@@ -74,9 +74,9 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="周期提醒声音" FontSize="14"
+                    <TextBlock Text="{DynamicResource S.Settings.ReminderSound}" FontSize="14"
                                Foreground="{DynamicResource PrimaryText}" />
-                    <TextBlock Text="周期提醒触发时播放一声轻提示音（关闭后仅显示左下角通知）"
+                    <TextBlock Text="{DynamicResource S.Settings.ReminderSoundDesc}"
                                FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource MutedText}" />
                 </StackPanel>
@@ -88,7 +88,7 @@
                        Foreground="{DynamicResource MutedText}" TextWrapping="Wrap" />
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-                <Button Content="关闭" Style="{StaticResource AccentButton}" Click="Close_Click" />
+                <Button Content="{DynamicResource S.Close}" Style="{StaticResource AccentButton}" Click="Close_Click" />
             </StackPanel>
         </StackPanel>
     </Border>

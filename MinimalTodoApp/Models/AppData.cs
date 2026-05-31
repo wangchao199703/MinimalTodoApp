@@ -16,6 +16,9 @@ public class AppData
     /// <summary>主题名称(对应 Themes 目录下的 xaml 文件名).</summary>
     public string Theme { get; set; } = "Light";
 
+    /// <summary>界面语言(zh-CN / en).对应 Lang 目录下的 Strings.{lang}.xaml.</summary>
+    public string Language { get; set; } = "zh-CN";
+
     /// <summary>上次选中的分组 Id(null 表示“全部任务”).</summary>
     public Guid? SelectedGroupId { get; set; }
 

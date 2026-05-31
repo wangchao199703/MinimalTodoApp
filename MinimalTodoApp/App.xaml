@@ -6,7 +6,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <!-- 默认明亮主题，运行时由 ThemeManager 动态替换 index 0 -->
                 <ResourceDictionary Source="pack://application:,,,/MinimalTodoApp;component/Themes/Light.xaml" />
-                <!-- 通用样式 / 转换器（使用 DynamicResource 引用主题颜色） -->
+                <!-- 默认中文字符串，运行时由 LanguageManager 动态替换 -->
+                <ResourceDictionary Source="pack://application:,,,/MinimalTodoApp;component/Lang/Strings.zh.xaml" />
+                <!-- 通用样式 / 转换器（使用 DynamicResource 引用主题颜色与字符串） -->
                 <ResourceDictionary Source="pack://application:,,,/MinimalTodoApp;component/Themes/Controls.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

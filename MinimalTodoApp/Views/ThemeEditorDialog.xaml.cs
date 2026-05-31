@@ -26,19 +26,19 @@ public partial class ThemeEditorDialog : Window
         private string value = "#FFFFFF";
     }
 
-    // 在编辑器里直接编辑的颜色(其余颜色从基础主题复制)
-    private static readonly (string Key, string Label)[] Editable =
+    // 在编辑器里直接编辑的颜色(其余颜色从基础主题复制).Label 用资源 key,构建字段时按当前语言解析.
+    private static readonly (string Key, string LabelKey)[] Editable =
     {
-        ("WindowBg", "窗口背景"),
-        ("TitleBarBg", "标题栏"),
-        ("SidebarBg", "侧边栏"),
-        ("CardBg", "卡片"),
-        ("InputBg", "输入框"),
-        ("PrimaryText", "主文字"),
-        ("SecondaryText", "次文字"),
-        ("Accent", "强调色"),
-        ("AccentText", "强调文字"),
-        ("Divider", "分隔线"),
+        ("WindowBg", "S.ThemeField.WindowBg"),
+        ("TitleBarBg", "S.ThemeField.TitleBar"),
+        ("SidebarBg", "S.ThemeField.Sidebar"),
+        ("CardBg", "S.ThemeField.Card"),
+        ("InputBg", "S.ThemeField.Input"),
+        ("PrimaryText", "S.ThemeField.PrimaryText"),
+        ("SecondaryText", "S.ThemeField.SecondaryText"),
+        ("Accent", "S.ThemeField.Accent"),
+        ("AccentText", "S.ThemeField.AccentText"),
+        ("Divider", "S.ThemeField.Divider"),
     };
 
     private readonly ObservableCollection<ColorField> _fields = new();
@@ -68,10 +68,10 @@ public partial class ThemeEditorDialog : Window
         var colors = ThemeManager.ReadColors(info.Key);
 
         _fields.Clear();
-        foreach (var (key, label) in Editable)
+        foreach (var (key, labelKey) in Editable)
         {
             colors.TryGetValue(key, out var hex);
-            _fields.Add(new ColorField { Key = key, Label = label, Value = hex ?? "#FFFFFF" });
+            _fields.Add(new ColorField { Key = key, Label = Loc.T(labelKey), Value = hex ?? "#FFFFFF" });
         }
     }
 
@@ -89,7 +89,7 @@ public partial class ThemeEditorDialog : Window
             if (!colors.ContainsKey(key))
                 colors[key] = "#FF808080";
 
-        var name = string.IsNullOrWhiteSpace(NameBox.Text) ? "我的主题" : NameBox.Text.Trim();
+        var name = string.IsNullOrWhiteSpace(NameBox.Text) ? Loc.T("S.ThemeEditor.DefaultName") : NameBox.Text.Trim();
 
         ResultTheme = new CustomTheme
         {

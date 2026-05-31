@@ -1,0 +1,268 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ============ Common ============ -->
+    <sys:String x:Key="S.AppName">Todo</sys:String>
+    <sys:String x:Key="S.Confirm">OK</sys:String>
+    <sys:String x:Key="S.Cancel">Cancel</sys:String>
+    <sys:String x:Key="S.Save">Save</sys:String>
+    <sys:String x:Key="S.SaveApply">Save &amp; Apply</sys:String>
+    <sys:String x:Key="S.Close">Close</sys:String>
+    <sys:String x:Key="S.Clear">Clear</sys:String>
+    <sys:String x:Key="S.Custom">Custom</sys:String>
+    <sys:String x:Key="S.SetAsTime">Set time</sys:String>
+    <sys:String x:Key="S.SetAsReminder">Set reminder</sys:String>
+
+    <!-- ============ Title bar / tray / hamburger menu ============ -->
+    <sys:String x:Key="S.Tray.ToolTip">Todo</sys:String>
+    <sys:String x:Key="S.Tray.Show">Show main window</sys:String>
+    <sys:String x:Key="S.Tray.Exit">Exit</sys:String>
+    <sys:String x:Key="S.Tip.Menu">Menu / Settings</sys:String>
+    <sys:String x:Key="S.Tip.Minimize">Minimize</sys:String>
+    <sys:String x:Key="S.Tip.MaxRestore">Maximize / Restore</sys:String>
+    <sys:String x:Key="S.Tip.Close">Close (hide to tray; app keeps running in background, right-click the tray icon to quit)</sys:String>
+    <sys:String x:Key="S.AlwaysOnTop">Always on top (keep window in front)</sys:String>
+    <sys:String x:Key="S.MenuSettings">⚙  Settings</sys:String>
+    <sys:String x:Key="S.MenuLanguage">🌐  Language</sys:String>
+
+    <!-- ============ Sidebar ============ -->
+    <sys:String x:Key="S.AllTasks">All Tasks</sys:String>
+    <sys:String x:Key="S.Group.AllUncompleted">All To-dos</sys:String>
+    <sys:String x:Key="S.Group.Completed">Done</sys:String>
+    <sys:String x:Key="S.NewGroup">New Group</sys:String>
+    <sys:String x:Key="S.Help">Help</sys:String>
+    <sys:String x:Key="S.ImportExport">Import / Export</sys:String>
+    <sys:String x:Key="S.ChangeTheme">Theme</sys:String>
+    <sys:String x:Key="S.ChooseTheme">Choose theme</sys:String>
+    <sys:String x:Key="S.AddCustomTheme">＋ Custom theme</sys:String>
+    <sys:String x:Key="S.CollapseSidebar">Collapse</sys:String>
+    <sys:String x:Key="S.Tip.ToggleSidebar">Show / hide the group bar</sys:String>
+    <sys:String x:Key="S.Export.Md">Export to Markdown</sys:String>
+    <sys:String x:Key="S.Import.Md">Import from Markdown</sys:String>
+
+    <!-- ============ Group context menu ============ -->
+    <sys:String x:Key="S.Group.ChangeColor">Change color</sys:String>
+    <sys:String x:Key="S.Group.Clear">Clear group</sys:String>
+    <sys:String x:Key="S.Group.Delete">Delete group</sys:String>
+    <sys:String x:Key="S.GroupColor.Blue">Blue</sys:String>
+    <sys:String x:Key="S.GroupColor.Green">Green</sys:String>
+    <sys:String x:Key="S.GroupColor.Orange">Orange</sys:String>
+    <sys:String x:Key="S.GroupColor.Red">Red</sys:String>
+    <sys:String x:Key="S.GroupColor.Purple">Purple</sys:String>
+    <sys:String x:Key="S.GroupColor.Pink">Pink</sys:String>
+    <sys:String x:Key="S.GroupColor.Teal">Teal</sys:String>
+    <sys:String x:Key="S.GroupColor.Gray">Gray</sys:String>
+
+    <!-- ============ Task context menu ============ -->
+    <sys:String x:Key="S.Task.Edit">Edit (priority / due time)…</sys:String>
+    <sys:String x:Key="S.Task.ClearDue">Clear due date</sys:String>
+    <sys:String x:Key="S.Task.Indent">Make subtask (indent, Tab)</sys:String>
+    <sys:String x:Key="S.Task.Outdent">Promote one level (outdent, Shift+Tab)</sys:String>
+    <sys:String x:Key="S.Task.ToggleCollapse">Collapse / expand subtasks</sys:String>
+    <sys:String x:Key="S.Task.ToggleReminder">Toggle recurring reminder</sys:String>
+    <sys:String x:Key="S.Task.MoveToGroup">Move to group</sys:String>
+    <sys:String x:Key="S.Task.ToggleComplete">Mark complete / incomplete</sys:String>
+    <sys:String x:Key="S.Task.Delete">Delete task</sys:String>
+
+    <!-- ============ Task row tooltips ============ -->
+    <sys:String x:Key="S.Tip.PriorityBar">Priority (right-click to edit)</sys:String>
+    <sys:String x:Key="S.Tip.CollapseArrow">Expand / collapse subtasks</sys:String>
+    <sys:String x:Key="S.Tip.Drag">Drag to reorder</sys:String>
+    <sys:String x:Key="S.Tip.ReminderBell">Recurring reminder on (right-click to toggle)</sys:String>
+
+    <!-- ============ New task panel ============ -->
+    <sys:String x:Key="S.Label.Priority">Priority</sys:String>
+    <sys:String x:Key="S.Label.DueTime">Due time</sys:String>
+    <sys:String x:Key="S.Label.Reminder">Reminder</sys:String>
+    <sys:String x:Key="S.Label.Parent">Parent</sys:String>
+    <sys:String x:Key="S.Tip.Parent">Pick a parent task and the new task becomes its subtask</sys:String>
+    <sys:String x:Key="S.Priority.High">High</sys:String>
+    <sys:String x:Key="S.Priority.Medium">Med</sys:String>
+    <sys:String x:Key="S.Priority.Low">Low</sys:String>
+    <sys:String x:Key="S.Unit.Minute">Minutes</sys:String>
+    <sys:String x:Key="S.Unit.Hour">Hours</sys:String>
+    <sys:String x:Key="S.Unit.Day">Days</sys:String>
+    <sys:String x:Key="S.Unit.Week">Weeks</sys:String>
+    <sys:String x:Key="S.Input.Placeholder">Add a new task, press Enter…</sys:String>
+    <sys:String x:Key="S.Tip.Voice">Voice input (Windows system dictation, Win+H)</sys:String>
+    <sys:String x:Key="S.Add">Add</sys:String>
+
+    <!-- ============ Sorting ============ -->
+    <sys:String x:Key="S.Sort.Custom">Custom (drag)</sys:String>
+    <sys:String x:Key="S.Sort.DueDate">By due date</sys:String>
+    <sys:String x:Key="S.Sort.Priority">By priority</sys:String>
+    <sys:String x:Key="S.Sort.Completed">By status</sys:String>
+    <sys:String x:Key="S.Sort.Created">By created time</sys:String>
+    <sys:String x:Key="S.Sort.Title">By title</sys:String>
+    <sys:String x:Key="S.Fmt.SortTooltip">Sort: {0}</sys:String>
+
+    <!-- ============ Priority dropdown ============ -->
+    <sys:String x:Key="S.PriorityOpt.Low">Low priority</sys:String>
+    <sys:String x:Key="S.PriorityOpt.Medium">Medium priority</sys:String>
+    <sys:String x:Key="S.PriorityOpt.High">High priority</sys:String>
+
+    <!-- ============ Quick times ============ -->
+    <sys:String x:Key="S.Quick.5m">In 5 min</sys:String>
+    <sys:String x:Key="S.Quick.10m">In 10 min</sys:String>
+    <sys:String x:Key="S.Quick.30m">In 30 min</sys:String>
+    <sys:String x:Key="S.Quick.1h">In 1 hour</sys:String>
+    <sys:String x:Key="S.Quick.2h">In 2 hours</sys:String>
+    <sys:String x:Key="S.Quick.5h">In 5 hours</sys:String>
+    <sys:String x:Key="S.Quick.1d">In 1 day</sys:String>
+    <sys:String x:Key="S.Quick.2d">In 2 days</sys:String>
+    <sys:String x:Key="S.Quick.5d">In 5 days</sys:String>
+    <sys:String x:Key="S.Quick.1w">In 1 week</sys:String>
+
+    <!-- ============ New task computed text ============ -->
+    <sys:String x:Key="S.NoTimeSet">No time set</sys:String>
+    <sys:String x:Key="S.ChooseDueTime">Choose due time</sys:String>
+    <sys:String x:Key="S.ChooseReminder">Choose reminder</sys:String>
+    <sys:String x:Key="S.Fmt.EveryWeeks">Every {0} weeks</sys:String>
+    <sys:String x:Key="S.Fmt.EveryDays">Every {0} days</sys:String>
+    <sys:String x:Key="S.Fmt.EveryHours">Every {0} hours</sys:String>
+    <sys:String x:Key="S.Fmt.EveryMinutes">Every {0} min</sys:String>
+
+    <!-- ============ Countdown (task row) ============ -->
+    <sys:String x:Key="S.Done">Done</sys:String>
+    <sys:String x:Key="S.DoneWasOverdue">Done · was overdue</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueDays">{0}d overdue</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueHours">{0}h overdue</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueMinutes">{0}m overdue</sys:String>
+    <sys:String x:Key="S.Fmt.RemainDaysHours">{0}d {1}h left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainDays">{0}d left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainHoursMinutes">{0}h {1}m left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainHours">{0}h left</sys:String>
+    <sys:String x:Key="S.Fmt.RemainMinutes">{0}m left</sys:String>
+
+    <!-- ============ Friendly date (converter) ============ -->
+    <sys:String x:Key="S.Today">Today</sys:String>
+    <sys:String x:Key="S.Tomorrow">Tomorrow</sys:String>
+    <sys:String x:Key="S.Yesterday">Yesterday</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueDaysShort">{0}d overdue</sys:String>
+    <sys:String x:Key="S.Fmt.DaysLater">in {0} days</sys:String>
+    <sys:String x:Key="S.Fmt.MonthDay">MMM d</sys:String>
+
+    <!-- ============ Reminder / import-export / messages (code) ============ -->
+    <sys:String x:Key="S.Fmt.ReminderToastTitle">Task: {0}</sys:String>
+    <sys:String x:Key="S.Fmt.IntervalHours">{0} hours</sys:String>
+    <sys:String x:Key="S.Fmt.IntervalMinutes">{0} minutes</sys:String>
+    <sys:String x:Key="S.Fmt.ReminderMsgWithDue">{0} due. Reminding every {1}.</sys:String>
+    <sys:String x:Key="S.Fmt.ReminderMsg">Reminding every {0}.</sys:String>
+    <sys:String x:Key="S.Toast.ExportTitle">Export complete</sys:String>
+    <sys:String x:Key="S.Fmt.ExportSaved">Saved to: {0}</sys:String>
+    <sys:String x:Key="S.Dialog.ExportTitle">Export to Markdown</sys:String>
+    <sys:String x:Key="S.Md.Filter">Markdown files (*.md)|*.md|All files (*.*)|*.*</sys:String>
+    <sys:String x:Key="S.Fmt.ExportFileName">Todo List {0}.md</sys:String>
+    <sys:String x:Key="S.Fmt.ExportFailed">Export failed: {0}</sys:String>
+    <sys:String x:Key="S.Dialog.ImportTitle">Import from Markdown</sys:String>
+    <sys:String x:Key="S.Md.ImportFilter">Markdown files (*.md;*.markdown;*.txt)|*.md;*.markdown;*.txt|All files (*.*)|*.*</sys:String>
+    <sys:String x:Key="S.Toast.ImportTitle">Import complete</sys:String>
+    <sys:String x:Key="S.Fmt.ImportDone">Imported {0} tasks</sys:String>
+    <sys:String x:Key="S.Import.NoTasks">No task lines recognized (check the Markdown format)</sys:String>
+    <sys:String x:Key="S.Fmt.ImportFailed">Import failed: {0}</sys:String>
+    <sys:String x:Key="S.Voice.HelpTitle">Voice input</sys:String>
+    <sys:String x:Key="S.Voice.HelpBody" xml:space="preserve">Could not start system voice input. Enable it or invoke it manually:
+
+1. Make sure you are on Windows 10 (version 1809 or later) or Windows 11.
+2. Open Settings → Privacy &amp; security → Speech (or Time &amp; language → Speech), turn on Online speech recognition, and allow microphone access under Accessibility → Speech.
+3. Put the cursor in the input box below and press Win + H to open the voice typing bar, then speak into your microphone.
+   First use may require downloading speech components online and granting microphone permission.</sys:String>
+    <sys:String x:Key="S.Fmt.VoiceErrorDetail">Error details: {0}</sys:String>
+
+    <!-- ============ Settings dialog ============ -->
+    <sys:String x:Key="S.Settings.Title">Settings</sys:String>
+    <sys:String x:Key="S.Settings.AutoStart">Run at startup</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartDesc">Launch automatically when you sign in to Windows (current user)</sys:String>
+    <sys:String x:Key="S.Settings.Effects">Completion effect</sys:String>
+    <sys:String x:Key="S.Settings.EffectsDesc">Play a fireworks animation when a task is completed</sys:String>
+    <sys:String x:Key="S.Settings.Sound">Completion sound</sys:String>
+    <sys:String x:Key="S.Settings.SoundDesc">Play an upbeat celebration tune when a task is completed</sys:String>
+    <sys:String x:Key="S.Settings.ReminderSound">Reminder sound</sys:String>
+    <sys:String x:Key="S.Settings.ReminderSoundDesc">Play a soft chime when a recurring reminder fires (off = bottom-left notification only)</sys:String>
+    <sys:String x:Key="S.Settings.OpFailed">Operation failed, please try again.</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartOn">Enabled: run at startup.</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartOff">Disabled: run at startup.</sys:String>
+
+    <!-- ============ Help dialog ============ -->
+    <sys:String x:Key="S.Help.Title">📖  Help</sys:String>
+    <sys:String x:Key="S.Help.Ok">Got it</sys:String>
+
+    <sys:String x:Key="S.Help.Tasks.Title">Tasks</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L1">Type in the bottom-right box and press Enter or click "Add" to create a task.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L2">After typing, a panel with priority, due time and the "Reminder" toggle pops up above.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L3">Pick a quick time (in 5 min … in 1 week) or use "Custom" down to the minute.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L4">Click a task title to edit it; right-click a task to edit, clear the due date, complete or delete it.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L5">Completed tasks move into the "Done" group automatically; unchecking restores them.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L6">Drag tasks to reorder; long titles show only the beginning.</sys:String>
+
+    <sys:String x:Key="S.Help.Subtasks.Title">Subtasks &amp; indenting</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L1">Select a task and press Tab to indent it into a subtask of the one above; Shift+Tab promotes it.</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L2">The right-click menu also offers "Make subtask / Promote", up to 6 nesting levels.</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L3">Indent levels are preserved through Markdown import/export (expressed as list nesting).</sys:String>
+
+    <sys:String x:Key="S.Help.Voice.Title">Voice input</sys:String>
+    <sys:String x:Key="S.Help.Voice.L1">The 🎤 button next to the new-task box triggers Windows dictation (same as Win+H).</sys:String>
+    <sys:String x:Key="S.Help.Voice.L2">First use requires enabling voice typing under Settings → Time &amp; language → Speech.</sys:String>
+
+    <sys:String x:Key="S.Help.Reminder.Title">Recurring reminders</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L1">When creating a task, tick "Reminder" and set an interval (30 min by default).</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L2">When it fires, a bottom-left notification appears and, if "Reminder sound" is on, a soft chime plays.</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L3">Reminders stop once a task is completed; right-click a task to toggle the switch anytime.</sys:String>
+
+    <sys:String x:Key="S.Help.IO.Title">Import / Export Markdown</sys:String>
+    <sys:String x:Key="S.Help.IO.L1">"Import / Export" in the sidebar exports the current list to .md, or imports tasks from a .md file.</sys:String>
+    <sys:String x:Key="S.Help.IO.L2">The format is editor-friendly: groups use ## headings, each task line is - [ ] / - [x].</sys:String>
+    <sys:String x:Key="S.Help.IO.L3">Subtask indents are written as two spaces per level and restored on import.</sys:String>
+
+    <sys:String x:Key="S.Help.Dock.Title">Edge auto-hide</sys:String>
+    <sys:String x:Key="S.Help.Dock.L1">Drag the window to the top / left / right screen edge and it slides out and hides.</sys:String>
+    <sys:String x:Key="S.Help.Dock.L2">Move the mouse to that screen edge to slide it back; it hides again once you move away.</sys:String>
+    <sys:String x:Key="S.Help.Dock.L3">Drag the title bar again to undock and return to a normal window.</sys:String>
+
+    <sys:String x:Key="S.Help.Group.Title">Groups</sys:String>
+    <sys:String x:Key="S.Help.Group.L1">The left sidebar is the group bar: click "All Tasks" to see everything, or a group name to switch.</sys:String>
+    <sys:String x:Key="S.Help.Group.L2">"New Group" adds a custom group; drag groups to reorder them.</sys:String>
+    <sys:String x:Key="S.Help.Group.L3">Right-click a group to change color / clear / delete it ("Done" cannot be deleted).</sys:String>
+    <sys:String x:Key="S.Help.Group.L4">Drag to resize the sidebar; "Collapse" folds it into a narrow icon rail, click again to expand.</sys:String>
+
+    <sys:String x:Key="S.Help.Theme.Title">Themes &amp; settings</sys:String>
+    <sys:String x:Key="S.Help.Theme.L1">"Theme" switches built-in themes (incl. transparent, glass) or creates a custom theme.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L2">The top-right menu → "Settings" toggles run-at-startup, completion effect, completion sound and reminder sound.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L3">Click the sort button (⇅ right of the title) to choose a sort order.</sys:String>
+
+    <sys:String x:Key="S.Help.Window.Title">Window</sys:String>
+    <sys:String x:Key="S.Help.Window.L1">Top-right red / yellow / green: close to tray / minimize / maximize-restore.</sys:String>
+    <sys:String x:Key="S.Help.Window.L2">Closing only hides to the system tray; double-click the tray icon to restore, right-click to quit.</sys:String>
+
+    <sys:String x:Key="S.Help.Contact.Title">Contact the developer</sys:String>
+    <sys:String x:Key="S.Help.Contact.L1">This app is entirely AI-generated. For suggestions, contact 1248792327@qq.com</sys:String>
+
+    <!-- ============ Custom theme editor ============ -->
+    <sys:String x:Key="S.ThemeEditor.Title">Custom theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.Name">Theme name</sys:String>
+    <sys:String x:Key="S.ThemeEditor.DefaultName">My theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.BaseOn">Based on an existing theme (auto-fills the rest)</sys:String>
+    <sys:String x:Key="S.ThemeEditor.ColorHint">Colors accept #RRGGBB or #AARRGGBB with alpha.</sys:String>
+    <sys:String x:Key="S.ThemeField.WindowBg">Window bg</sys:String>
+    <sys:String x:Key="S.ThemeField.TitleBar">Title bar</sys:String>
+    <sys:String x:Key="S.ThemeField.Sidebar">Sidebar</sys:String>
+    <sys:String x:Key="S.ThemeField.Card">Card</sys:String>
+    <sys:String x:Key="S.ThemeField.Input">Input</sys:String>
+    <sys:String x:Key="S.ThemeField.PrimaryText">Primary text</sys:String>
+    <sys:String x:Key="S.ThemeField.SecondaryText">Secondary text</sys:String>
+    <sys:String x:Key="S.ThemeField.Accent">Accent</sys:String>
+    <sys:String x:Key="S.ThemeField.AccentText">Accent text</sys:String>
+    <sys:String x:Key="S.ThemeField.Divider">Divider</sys:String>
+
+    <!-- ============ Edit task dialog ============ -->
+    <sys:String x:Key="S.TaskEdit.Title">Edit task</sys:String>
+    <sys:String x:Key="S.TaskEdit.DueDate">Due date</sys:String>
+    <sys:String x:Key="S.TaskEdit.Enable">Enable</sys:String>
+    <sys:String x:Key="S.TaskEdit.DefaultTimeHint">No time picked defaults to 00:00</sys:String>
+
+    <!-- ============ Toast notification ============ -->
+    <sys:String x:Key="S.Toast.DefaultTitle">Todo reminder</sys:String>
+    <sys:String x:Key="S.Toast.ClickToClose">Click to close</sys:String>
+
+</ResourceDictionary>

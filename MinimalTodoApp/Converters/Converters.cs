@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
+using MinimalTodoApp.Infrastructure;
 
 namespace MinimalTodoApp.Converters;
 
@@ -71,12 +72,12 @@ public class DueDateDisplayConverter : IValueConverter
         var days = (due.Date - DateTime.Today).Days;
         return days switch
         {
-            0 => "今天",
-            1 => "明天",
-            -1 => "昨天",
-            < 0 => $"逾期 {-days} 天",
-            < 7 => $"{days} 天后",
-            _ => due.ToString("MM月dd日", culture)
+            0 => Loc.T("S.Today"),
+            1 => Loc.T("S.Tomorrow"),
+            -1 => Loc.T("S.Yesterday"),
+            < 0 => Loc.F("S.Fmt.OverdueDaysShort", -days),
+            < 7 => Loc.F("S.Fmt.DaysLater", days),
+            _ => due.ToString(Loc.T("S.Fmt.MonthDay"), culture)
         };
     }
 
@@ -152,9 +153,9 @@ public class PriorityToTextConverter : IValueConverter
 {
     public static string TextFor(Models.Priority p) => p switch
     {
-        Models.Priority.High => "高",
-        Models.Priority.Low => "低",
-        _ => "中"
+        Models.Priority.High => Loc.T("S.Priority.High"),
+        Models.Priority.Low => Loc.T("S.Priority.Low"),
+        _ => Loc.T("S.Priority.Medium")
     };
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

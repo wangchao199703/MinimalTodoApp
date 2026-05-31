@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MinimalTodoApp.Infrastructure;
 
 namespace MinimalTodoApp.Models;
 
@@ -14,6 +15,21 @@ public partial class TodoGroup : ObservableObject
 
     [ObservableProperty]
     private string name = string.Empty;
+
+    /// <summary>
+    /// 用于界面显示的分组名:内置“所有待办/已完成”分组返回本地化文案，
+    /// 普通分组返回用户自定义的 Name(用户数据不翻译).不参与序列化.
+    /// </summary>
+    [JsonIgnore]
+    public string DisplayName =>
+        IsAllUncompletedGroup ? Loc.T("S.Group.AllUncompleted")
+        : IsCompletedGroup ? Loc.T("S.Group.Completed")
+        : Name;
+
+    /// <summary>语言切换时由 ViewModel 调用,刷新内置分组的本地化显示名.</summary>
+    public void RefreshDisplayName() => OnPropertyChanged(nameof(DisplayName));
+
+    partial void OnNameChanged(string value) => OnPropertyChanged(nameof(DisplayName));
 
     [ObservableProperty]
     private int orderIndex;

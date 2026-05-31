@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -121,13 +122,13 @@ public partial class MainWindow : Window
             if (Vm.ReminderSoundEnabled) ReminderSound.Play();
 
             string interval = item.ReminderIntervalMinutes >= 60
-                ? $"{item.ReminderIntervalMinutes / 60.0:0.#} 小时"
-                : $"{item.ReminderIntervalMinutes} 分钟";
+                ? Loc.F("S.Fmt.IntervalHours", (item.ReminderIntervalMinutes / 60.0).ToString("0.#"))
+                : Loc.F("S.Fmt.IntervalMinutes", item.ReminderIntervalMinutes);
             var msg = item.DueDate.HasValue
-                ? $"{item.DueDetailText} 到期.每 {interval} 提醒一次."
-                : $"每 {interval} 提醒一次.";
+                ? Loc.F("S.Fmt.ReminderMsgWithDue", item.DueDetailText, interval)
+                : Loc.F("S.Fmt.ReminderMsg", interval);
 
-            new ToastWindow($"待办:{item.Title}", msg).Show();
+            new ToastWindow(Loc.F("S.Fmt.ReminderToastTitle", item.Title), msg).Show();
         }
         catch
         {
@@ -702,9 +703,9 @@ public partial class MainWindow : Window
 
         var dlg = new SaveFileDialog
         {
-            Title = "导出为 Markdown",
-            Filter = "Markdown 文件 (*.md)|*.md|所有文件 (*.*)|*.*",
-            FileName = $"待办清单 {DateTime.Now:yyyyMMdd-HHmm}.md",
+            Title = Loc.T("S.Dialog.ExportTitle"),
+            Filter = Loc.T("S.Md.Filter"),
+            FileName = Loc.F("S.Fmt.ExportFileName", DateTime.Now.ToString("yyyyMMdd-HHmm")),
             DefaultExt = ".md",
             AddExtension = true,
         };
@@ -713,11 +714,11 @@ public partial class MainWindow : Window
         try
         {
             File.WriteAllText(dlg.FileName, Vm.BuildMarkdown(), new UTF8Encoding(false));
-            new ToastWindow("导出完成", $"已保存到: {dlg.FileName}").Show();
+            new ToastWindow(Loc.T("S.Toast.ExportTitle"), Loc.F("S.Fmt.ExportSaved", dlg.FileName)).Show();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "导出失败: " + ex.Message, "待办",
+            MessageBox.Show(this, Loc.F("S.Fmt.ExportFailed", ex.Message), Loc.T("S.AppName"),
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -729,8 +730,8 @@ public partial class MainWindow : Window
 
         var dlg = new OpenFileDialog
         {
-            Title = "从 Markdown 导入",
-            Filter = "Markdown 文件 (*.md;*.markdown;*.txt)|*.md;*.markdown;*.txt|所有文件 (*.*)|*.*",
+            Title = Loc.T("S.Dialog.ImportTitle"),
+            Filter = Loc.T("S.Md.ImportFilter"),
             Multiselect = false,
         };
         if (dlg.ShowDialog(this) != true) return;
@@ -739,13 +740,13 @@ public partial class MainWindow : Window
         {
             var text = File.ReadAllText(dlg.FileName);
             int count = Vm.ImportMarkdown(text);
-            new ToastWindow("导入完成", count > 0
-                ? $"已导入 {count} 条任务"
-                : "未识别到任务行(请检查 Markdown 格式)").Show();
+            new ToastWindow(Loc.T("S.Toast.ImportTitle"), count > 0
+                ? Loc.F("S.Fmt.ImportDone", count)
+                : Loc.T("S.Import.NoTasks")).Show();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "导入失败: " + ex.Message, "待办",
+            MessageBox.Show(this, Loc.F("S.Fmt.ImportFailed", ex.Message), Loc.T("S.AppName"),
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
@@ -797,21 +798,22 @@ public partial class MainWindow : Window
     /// <summary>语音输入调用失败时的指引：如何开启系统语音输入、如何手动唤起.</summary>
     private void ShowVoiceInputHelp(Exception? ex = null)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("无法调用系统语音输入。请按以下步骤开启或手动调用：");
-        sb.AppendLine();
-        sb.AppendLine("1. 确认系统为 Windows 10（version 1809 及以上）或 Windows 11。");
-        sb.AppendLine("2. 打开「设置 → 隐私和安全性 → 语音」(或「时间和语言 → 语音」)，");
-        sb.AppendLine("   开启「在线语音识别」，并在「辅助功能 → 语音」中允许使用麦克风。");
-        sb.AppendLine("3. 把光标放进下方输入框，按键盘 Win + H 打开语音输入浮窗，对着麦克风说话即可。");
-        sb.AppendLine("   首次使用可能需要联网下载语音组件并授予麦克风权限。");
+        var body = Loc.T("S.Voice.HelpBody");
         if (ex != null)
-        {
-            sb.AppendLine();
-            sb.AppendLine("错误详情：" + ex.Message);
-        }
-        MessageBox.Show(this, sb.ToString(), "语音输入",
+            body += Environment.NewLine + Environment.NewLine + Loc.F("S.Fmt.VoiceErrorDetail", ex.Message);
+        MessageBox.Show(this, body, Loc.T("S.Voice.HelpTitle"),
             MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    // ===== 语言切换(☰ 菜单) =====
+
+    /// <summary>从 ☰ 菜单点击语言项:按 Tag(zh-CN / en) 切换并收起菜单.</summary>
+    private void Language_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsToggle.IsChecked = false;
+        if (Vm == null || sender is not FrameworkElement fe || fe.Tag is not string key) return;
+        var target = Vm.Languages.FirstOrDefault(l => l.Key == key);
+        if (target != null) Vm.SelectedLanguage = target;
     }
 
     // ===== 排序弹出选择 =====

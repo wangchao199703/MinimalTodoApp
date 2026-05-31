@@ -83,14 +83,20 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         SortOptions = new List<SortOption>
         {
-            new("自定义(拖拽)", SortMode.Custom),
-            new("按截止日期", SortMode.DueDate),
-            new("按优先级", SortMode.Priority),
-            new("按完成状态", SortMode.Completed),
-            new("按创建时间", SortMode.Created),
-            new("按标题", SortMode.Title),
+            new("S.Sort.Custom", SortMode.Custom),
+            new("S.Sort.DueDate", SortMode.DueDate),
+            new("S.Sort.Priority", SortMode.Priority),
+            new("S.Sort.Completed", SortMode.Completed),
+            new("S.Sort.Created", SortMode.Created),
+            new("S.Sort.Title", SortMode.Title),
         };
         selectedSortOption = SortOptions.FirstOrDefault(o => o.Mode == _data.Sort) ?? SortOptions[0];
+
+        // 语言:从持久化恢复,并订阅切换事件以刷新动态生成的文案(App 启动时会显式 Apply 一次)
+        currentLanguage = string.IsNullOrWhiteSpace(_data.Language) ? LanguageManager.Chinese : _data.Language;
+        Languages = LanguageManager.AllLanguages();
+        selectedLanguage = Languages.FirstOrDefault(l => l.Key == currentLanguage) ?? Languages[0];
+        LanguageManager.LanguageChanged += OnLanguageChanged;
 
         // 恢复上次选中的分组(null 表示“全部任务”)
         selectedGroup = _data.SelectedGroupId.HasValue
@@ -134,24 +140,24 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>新任务优先级下拉选项(默认中;不再提供“无”).</summary>
     public List<PriorityOption> PriorityOptions { get; } = new()
     {
-        new("低优先级", Priority.Low),
-        new("中优先级", Priority.Medium),
-        new("高优先级", Priority.High),
+        new("S.PriorityOpt.Low", Priority.Low),
+        new("S.PriorityOpt.Medium", Priority.Medium),
+        new("S.PriorityOpt.High", Priority.High),
     };
 
     /// <summary>新任务的常用快捷时间(点击即设为“此刻 + 间隔”).</summary>
     public List<QuickTimeOption> QuickTimeOptions { get; } = new()
     {
-        new("5 分钟后", 5),
-        new("10 分钟后", 10),
-        new("30 分钟后", 30),
-        new("1 小时后", 60),
-        new("2 小时后", 120),
-        new("5 小时后", 300),
-        new("1 天后", 1440),
-        new("2 天后", 2880),
-        new("5 天后", 7200),
-        new("1 周后", 10080),
+        new("S.Quick.5m", 5),
+        new("S.Quick.10m", 10),
+        new("S.Quick.30m", 30),
+        new("S.Quick.1h", 60),
+        new("S.Quick.2h", 120),
+        new("S.Quick.5h", 300),
+        new("S.Quick.1d", 1440),
+        new("S.Quick.2d", 2880),
+        new("S.Quick.5d", 7200),
+        new("S.Quick.1w", 10080),
     };
 
     /// <summary>自定义时间用:小时 0–23.</summary>
@@ -232,11 +238,11 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     /// <summary>新任务已选截止时间的友好文案(未选则为提示).</summary>
     public string NewTaskDueDisplay =>
-        NewTaskDueDate.HasValue ? NewTaskDueDate.Value.ToString("MM-dd HH:mm") : "未设置时间";
+        NewTaskDueDate.HasValue ? NewTaskDueDate.Value.ToString("MM-dd HH:mm") : Loc.T("S.NoTimeSet");
 
     /// <summary>新任务“截止时间”按钮上的显示文案(未选时显示提示，已选则显示具体时间).</summary>
     public string NewTaskDueButtonText =>
-        NewTaskDueDate.HasValue ? NewTaskDueDate.Value.ToString("MM-dd HH:mm") : "选择截止时间";
+        NewTaskDueDate.HasValue ? NewTaskDueDate.Value.ToString("MM-dd HH:mm") : Loc.T("S.ChooseDueTime");
 
     /// <summary>新任务是否已选截止时间.</summary>
     public bool HasNewTaskDue => NewTaskDueDate.HasValue;
@@ -271,26 +277,32 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     [ObservableProperty]
     private int newTaskReminderCustomValue = 30;
 
-    /// <summary>自定义周期提醒的单位:分钟/小时/天/周.</summary>
+    /// <summary>自定义周期提醒的单位(以分钟倍率标识:分钟=1/小时=60/天=1440/周=10080).</summary>
     [ObservableProperty]
-    private string newTaskReminderCustomUnit = "分钟";
+    private int newTaskReminderCustomUnitMinutes = 1;
 
     /// <summary>新任务“周期提醒”按钮上的显示文案(未启用时显示提示，已启用则显示间隔).</summary>
     public string NewTaskReminderButtonText
     {
         get
         {
-            if (!NewTaskReminderEnabled) return "选择周期提醒";
+            if (!NewTaskReminderEnabled) return Loc.T("S.ChooseReminder");
             int m = Math.Max(1, NewTaskReminderInterval);
-            if (m >= 10080 && m % 10080 == 0) return $"每 {m / 10080} 周";
-            if (m >= 1440 && m % 1440 == 0) return $"每 {m / 1440} 天";
-            if (m >= 60 && m % 60 == 0) return $"每 {m / 60} 小时";
-            return $"每 {m} 分钟";
+            if (m >= 10080 && m % 10080 == 0) return Loc.F("S.Fmt.EveryWeeks", m / 10080);
+            if (m >= 1440 && m % 1440 == 0) return Loc.F("S.Fmt.EveryDays", m / 1440);
+            if (m >= 60 && m % 60 == 0) return Loc.F("S.Fmt.EveryHours", m / 60);
+            return Loc.F("S.Fmt.EveryMinutes", m);
         }
     }
 
-    /// <summary>周期提醒自定义单位下拉框可选项.</summary>
-    public List<string> ReminderUnits { get; } = new() { "分钟", "小时", "天", "周" };
+    /// <summary>周期提醒自定义单位下拉框可选项(分钟/小时/天/周).</summary>
+    public List<ReminderUnitOption> ReminderUnits { get; } = new()
+    {
+        new("S.Unit.Minute", 1),
+        new("S.Unit.Hour", 60),
+        new("S.Unit.Day", 1440),
+        new("S.Unit.Week", 10080),
+    };
 
     /// <summary>新任务的父待办 Id(可选).选择后新任务将作为该待办的子待办创建.</summary>
     [ObservableProperty]
@@ -315,8 +327,30 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>当前是否选中“全部任务”.</summary>
     public bool IsAllSelected => SelectedGroup == null;
 
-    /// <summary>右侧标题:当前分组名 / “全部任务”.</summary>
-    public string CurrentTitle => SelectedGroup?.Name ?? "全部任务";
+    /// <summary>右侧标题:当前分组名 / “全部任务”(内置分组用本地化显示名).</summary>
+    public string CurrentTitle => SelectedGroup?.DisplayName ?? Loc.T("S.AllTasks");
+
+    /// <summary>排序按钮 ToolTip(“排序：xxx”).</summary>
+    public string SortTooltip => Loc.F("S.Fmt.SortTooltip", SelectedSortOption?.Label ?? string.Empty);
+
+    // ===== 语言切换 =====
+
+    /// <summary>可选语言列表(中文 / English).</summary>
+    public List<LanguageInfo> Languages { get; } = null!;
+
+    /// <summary>当前语言 Key(zh-CN / en).</summary>
+    [ObservableProperty]
+    private string currentLanguage = LanguageManager.Chinese;
+
+    /// <summary>当前选中的语言项(绑定到 ☰ 菜单).</summary>
+    [ObservableProperty]
+    private LanguageInfo selectedLanguage = null!;
+
+    /// <summary>当前是否为中文(用于 ☰ 菜单打勾).</summary>
+    public bool IsChineseSelected => CurrentLanguage == LanguageManager.Chinese;
+
+    /// <summary>当前是否为英文(用于 ☰ 菜单打勾).</summary>
+    public bool IsEnglishSelected => CurrentLanguage == LanguageManager.English;
 
     /// <summary>内置“已完成”分组.</summary>
     public TodoGroup? CompletedGroup => Groups.FirstOrDefault(g => g.IsCompletedGroup);
@@ -348,6 +382,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     partial void OnSelectedSortOptionChanged(SortOption value)
     {
+        OnPropertyChanged(nameof(SortTooltip));
         RefreshItems();
         SaveData();
     }
@@ -358,6 +393,39 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         CurrentTheme = value.Key;
         ThemeManager.Apply(value.Key);
         SaveData();
+    }
+
+    partial void OnSelectedLanguageChanged(LanguageInfo value)
+    {
+        if (value == null) return;
+        CurrentLanguage = value.Key;
+        LanguageManager.Apply(value.Key);   // 触发 LanguageChanged -> OnLanguageChanged 刷新动态文案
+        SaveData();
+    }
+
+    partial void OnCurrentLanguageChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsChineseSelected));
+        OnPropertyChanged(nameof(IsEnglishSelected));
+    }
+
+    /// <summary>语言切换后:刷新所有由 C# 动态生成的文案(静态 XAML 由 DynamicResource 自动更新).</summary>
+    private void OnLanguageChanged()
+    {
+        foreach (var o in SortOptions) o.RefreshLabel();
+        foreach (var o in PriorityOptions) o.RefreshLabel();
+        foreach (var o in QuickTimeOptions) o.RefreshLabel();
+        foreach (var o in ReminderUnits) o.RefreshLabel();
+        foreach (var g in Groups) g.RefreshDisplayName();
+
+        OnPropertyChanged(nameof(CurrentTitle));
+        OnPropertyChanged(nameof(SortTooltip));
+        OnPropertyChanged(nameof(NewTaskDueDisplay));
+        OnPropertyChanged(nameof(NewTaskDueButtonText));
+        OnPropertyChanged(nameof(NewTaskReminderButtonText));
+
+        // 任务行倒计时文案随语言变化重新生成
+        foreach (var item in _allItems) item.RefreshDueState();
     }
 
     partial void OnSidebarWidthChanged(double value) => SaveData();
@@ -483,13 +551,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     [RelayCommand]
     private void ApplyCustomReminder()
     {
-        int mult = NewTaskReminderCustomUnit switch
-        {
-            "小时" => 60,
-            "天"   => 1440,
-            "周"   => 10080,
-            _       => 1,           // 分钟
-        };
+        int mult = Math.Max(1, NewTaskReminderCustomUnitMinutes);   // 1/60/1440/10080
         int total = Math.Max(1, NewTaskReminderCustomValue) * mult;
         NewTaskReminderEnabled = true;
         NewTaskReminderInterval = total;
@@ -1227,6 +1289,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.Groups = Groups.ToList();
         _data.Items = _allItems;
         _data.Theme = CurrentTheme;
+        _data.Language = CurrentLanguage;
         _data.SelectedGroupId = SelectedGroup?.Id;
         _data.Sort = SelectedSortOption?.Mode ?? SortMode.Custom;
         _data.SidebarWidth = SidebarWidth;

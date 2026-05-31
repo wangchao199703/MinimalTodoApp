@@ -29,7 +29,7 @@
         <Grid>
             <!-- 系统托盘图标 -->
             <tb:TaskbarIcon x:Name="TrayIcon"
-                            ToolTipText="Todo 待办"
+                            ToolTipText="{DynamicResource S.Tray.ToolTip}"
                             TrayMouseDoubleClick="TrayIcon_DoubleClick">
                 <tb:TaskbarIcon.IconSource>
                     <tb:GeneratedIconSource Text="✓" Foreground="White" Background="#3B82F6"
@@ -37,9 +37,9 @@
                 </tb:TaskbarIcon.IconSource>
                 <tb:TaskbarIcon.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="显示主界面" Click="ShowMenuItem_Click" />
+                        <MenuItem Header="{DynamicResource S.Tray.Show}" Click="ShowMenuItem_Click" />
                         <Separator />
-                        <MenuItem Header="退出" Click="ExitMenuItem_Click" />
+                        <MenuItem Header="{DynamicResource S.Tray.Exit}" Click="ExitMenuItem_Click" />
                     </ContextMenu>
                 </tb:TaskbarIcon.ContextMenu>
             </tb:TaskbarIcon>
@@ -56,7 +56,7 @@
                       MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                     <Grid.ContextMenu>
                         <ContextMenu>
-                            <MenuItem Header="置于顶层（窗口总在最前）" IsCheckable="True"
+                            <MenuItem Header="{DynamicResource S.AlwaysOnTop}" IsCheckable="True"
                                       IsChecked="{Binding AlwaysOnTop, Mode=TwoWay}" />
                         </ContextMenu>
                     </Grid.ContextMenu>
@@ -76,18 +76,41 @@
                     <Grid Grid.Column="2" VerticalAlignment="Center"
                           shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <ToggleButton x:Name="SettingsToggle" Style="{StaticResource CaptionToggleButton}"
-                                      Content="☰" FontSize="15" ToolTip="菜单 / 设置" />
+                                      Content="☰" FontSize="15" ToolTip="{DynamicResource S.Tip.Menu}" />
                         <Popup IsOpen="{Binding IsChecked, ElementName=SettingsToggle}"
                                PlacementTarget="{Binding ElementName=SettingsToggle}"
                                Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
                             <Border Background="{DynamicResource CardBg}" CornerRadius="8"
                                     BorderBrush="{DynamicResource Divider}" BorderThickness="1"
-                                    Padding="6" Margin="6" MinWidth="140">
+                                    Padding="6" Margin="6" MinWidth="160">
                                 <Border.Effect>
                                     <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3" Color="#000000" />
                                 </Border.Effect>
-                                <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
-                                        Padding="10,8" Content="⚙  设置" Click="Settings_Click" />
+                                <StackPanel>
+                                    <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                            Padding="10,8" Content="{DynamicResource S.MenuSettings}" Click="Settings_Click" />
+
+                                    <!-- 语言切换:🌐 语言 标题 + 中文/English 选项(当前项打勾) -->
+                                    <Border Height="1" Background="{DynamicResource Divider}" Margin="4,6" />
+                                    <TextBlock Text="{DynamicResource S.MenuLanguage}" Margin="10,2,0,4"
+                                               FontSize="12" Foreground="{DynamicResource MutedText}" />
+                                    <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                            Padding="10,7" Tag="zh-CN" Click="Language_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="✓" Width="16" FontSize="12"
+                                                       Visibility="{Binding IsChineseSelected, Converter={StaticResource BoolToVis}}" />
+                                            <TextBlock Text="中文" FontSize="13" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
+                                            Padding="10,7" Tag="en" Click="Language_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="✓" Width="16" FontSize="12"
+                                                       Visibility="{Binding IsEnglishSelected, Converter={StaticResource BoolToVis}}" />
+                                            <TextBlock Text="English" FontSize="13" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </Border>
                         </Popup>
                     </Grid>
@@ -98,11 +121,11 @@
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <Button Style="{StaticResource TrafficLightButton}" Tag="#FF5F57"
                                 Content="✕" Click="HideToTray_Click"
-                                ToolTip="关闭（隐藏到托盘，程序后台常驻；托盘右键可退出）" />
+                                ToolTip="{DynamicResource S.Tip.Close}" />
                         <Button Style="{StaticResource TrafficLightButton}" Tag="#FEBC2E"
-                                Content="–" Click="Minimize_Click" ToolTip="最小化" />
+                                Content="–" Click="Minimize_Click" ToolTip="{DynamicResource S.Tip.Minimize}" />
                         <Button Style="{StaticResource TrafficLightButton}" Tag="#28C840"
-                                Content="+" Click="MaxRestore_Click" ToolTip="最大化 / 还原" />
+                                Content="+" Click="MaxRestore_Click" ToolTip="{DynamicResource S.Tip.MaxRestore}" />
                     </StackPanel>
                 </Grid>
 
@@ -131,7 +154,7 @@
 
                             <!-- 全部任务（始终可见：展开=便签图标+文字，折叠=便签图标） -->
                             <Button Grid.Row="0" Command="{Binding SelectAllCommand}"
-                                    Height="28" Padding="6,0" Cursor="Hand" ToolTip="全部任务">
+                                    Height="28" Padding="6,0" Cursor="Hand" ToolTip="{DynamicResource S.AllTasks}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
                                         <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
@@ -149,7 +172,7 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📋" FontSize="13" Width="18"
                                                TextAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Text="全部任务" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                    <TextBlock Text="{DynamicResource S.AllTasks}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
                                 </StackPanel>
                             </Button>
@@ -166,7 +189,7 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
-                                              ToolTip="{Binding Name}">
+                                              ToolTip="{Binding DisplayName}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition x:Name="GroupDotCol" Width="20" />
                                                 <ColumnDefinition Width="*" />
@@ -176,21 +199,21 @@
                                             <!-- 右键菜单：改色（子菜单）/ 清空 / 删除 -->
                                             <Grid.ContextMenu>
                                                 <ContextMenu>
-                                                    <MenuItem Header="修改颜色">
-                                                        <MenuItem Header="蓝" Click="GroupColor_Click" Tag="#3B82F6" />
-                                                        <MenuItem Header="绿" Click="GroupColor_Click" Tag="#10B981" />
-                                                        <MenuItem Header="橙" Click="GroupColor_Click" Tag="#F59E0B" />
-                                                        <MenuItem Header="红" Click="GroupColor_Click" Tag="#EF4444" />
-                                                        <MenuItem Header="紫" Click="GroupColor_Click" Tag="#8B5CF6" />
-                                                        <MenuItem Header="粉" Click="GroupColor_Click" Tag="#EC4899" />
-                                                        <MenuItem Header="青" Click="GroupColor_Click" Tag="#14B8A6" />
-                                                        <MenuItem Header="灰" Click="GroupColor_Click" Tag="#6B7280" />
+                                                    <MenuItem Header="{DynamicResource S.Group.ChangeColor}">
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Blue}" Click="GroupColor_Click" Tag="#3B82F6" />
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Green}" Click="GroupColor_Click" Tag="#10B981" />
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Orange}" Click="GroupColor_Click" Tag="#F59E0B" />
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Red}" Click="GroupColor_Click" Tag="#EF4444" />
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Purple}" Click="GroupColor_Click" Tag="#8B5CF6" />
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Pink}" Click="GroupColor_Click" Tag="#EC4899" />
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Teal}" Click="GroupColor_Click" Tag="#14B8A6" />
+                                                        <MenuItem Header="{DynamicResource S.GroupColor.Gray}" Click="GroupColor_Click" Tag="#6B7280" />
                                                     </MenuItem>
-                                                    <MenuItem Header="清空分组"
+                                                    <MenuItem Header="{DynamicResource S.Group.Clear}"
                                                               Command="{Binding PlacementTarget.Tag.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                               CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                     <Separator />
-                                                    <MenuItem Header="删除分组"
+                                                    <MenuItem Header="{DynamicResource S.Group.Delete}"
                                                               Command="{Binding PlacementTarget.Tag.DeleteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                               CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 </ContextMenu>
@@ -199,7 +222,7 @@
                                             <Ellipse x:Name="GroupDot" Grid.Column="0" Width="10" Height="10" Margin="0"
                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                                      Fill="{Binding Color, Converter={StaticResource StringToBrush}}" />
-                                            <TextBlock Grid.Column="1" Text="{Binding Name}" VerticalAlignment="Center"
+                                            <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"
                                                        Margin="6,0,0,0" FontSize="12" TextTrimming="CharacterEllipsis"
                                                        Foreground="{DynamicResource PrimaryText}"
                                                        Visibility="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
@@ -235,7 +258,7 @@
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="＋" FontSize="13" Width="18"
                                                        TextAlignment="Center" VerticalAlignment="Center" />
-                                            <TextBlock Text="新建分组" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                            <TextBlock Text="{DynamicResource S.NewGroup}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
                                         </StackPanel>
                                     </Button>
 
@@ -254,21 +277,21 @@
                                             </TextBox.InputBindings>
                                         </TextBox>
                                         <Button Grid.Column="1" Style="{StaticResource IconButton}" Content="✓"
-                                                Margin="4,0,0,0" ToolTip="确定" Command="{Binding ConfirmAddGroupCommand}" />
+                                                Margin="4,0,0,0" ToolTip="{DynamicResource S.Confirm}" Command="{Binding ConfirmAddGroupCommand}" />
                                         <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="✕"
-                                                ToolTip="取消" Command="{Binding CancelAddGroupCommand}" />
+                                                ToolTip="{DynamicResource S.Cancel}" Command="{Binding CancelAddGroupCommand}" />
                                     </Grid>
                                 </Grid>
 
                                 <!-- 折叠态：加号图标 -->
                                 <Button Style="{StaticResource GhostButton}" Content="＋" FontSize="13" Height="28" Padding="0"
-                                        ToolTip="新建分组" Command="{Binding BeginAddGroupCommand}"
+                                        ToolTip="{DynamicResource S.NewGroup}" Command="{Binding BeginAddGroupCommand}"
                                         Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
                             </Grid>
 
                             <!-- 使用说明（展开=图标+文字左对齐，折叠=书本图标居中） -->
                             <Button Grid.Row="3" Margin="0,2,0,0" Height="28" Padding="6,0"
-                                    Click="Help_Click" ToolTip="使用说明">
+                                    Click="Help_Click" ToolTip="{DynamicResource S.Help}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
                                         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -282,14 +305,14 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="📖" FontSize="13" Width="18"
                                                TextAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Text="使用说明" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                    <TextBlock Text="{DynamicResource S.Help}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
                                 </StackPanel>
                             </Button>
 
                             <!-- 导入导出（展开=图标+文字左对齐，折叠=图标居中），与“使用说明”同款 -->
                             <Grid Grid.Row="4" Margin="0,2,0,0">
-                                <ToggleButton x:Name="IoToggle" Height="28" Padding="6,0" ToolTip="导入导出">
+                                <ToggleButton x:Name="IoToggle" Height="28" Padding="6,0" ToolTip="{DynamicResource S.ImportExport}">
                                     <ToggleButton.Style>
                                         <Style TargetType="ToggleButton" BasedOn="{StaticResource SidebarToggleButton}">
                                             <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -303,7 +326,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="📤" FontSize="13" Width="18"
                                                    TextAlignment="Center" VerticalAlignment="Center" />
-                                        <TextBlock Text="导入导出" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                        <TextBlock Text="{DynamicResource S.ImportExport}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                    Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
                                     </StackPanel>
                                 </ToggleButton>
@@ -322,7 +345,7 @@
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="⬆" FontSize="13" Width="18"
                                                                TextAlignment="Center" VerticalAlignment="Center" />
-                                                    <TextBlock Text="导出为 Markdown" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{DynamicResource S.Export.Md}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
                                                 </StackPanel>
                                             </Button>
                                             <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
@@ -330,7 +353,7 @@
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="⬇" FontSize="13" Width="18"
                                                                TextAlignment="Center" VerticalAlignment="Center" />
-                                                    <TextBlock Text="从 Markdown 导入" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
+                                                    <TextBlock Text="{DynamicResource S.Import.Md}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
@@ -340,7 +363,7 @@
 
                             <!-- 修改主题（展开=图标+文字左对齐，折叠=主题图标居中），带主题选择 Popup -->
                             <Grid Grid.Row="5" Margin="0,2,0,0">
-                                <ToggleButton x:Name="ThemeToggle" Height="28" Padding="6,0" ToolTip="修改主题">
+                                <ToggleButton x:Name="ThemeToggle" Height="28" Padding="6,0" ToolTip="{DynamicResource S.ChangeTheme}">
                                     <ToggleButton.Style>
                                         <Style TargetType="ToggleButton" BasedOn="{StaticResource SidebarToggleButton}">
                                             <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -354,7 +377,7 @@
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock Text="🎨" FontSize="13" Width="18"
                                                    TextAlignment="Center" VerticalAlignment="Center" />
-                                        <TextBlock Text="修改主题" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                        <TextBlock Text="{DynamicResource S.ChangeTheme}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                    Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
                                     </StackPanel>
                                 </ToggleButton>
@@ -368,7 +391,7 @@
                                             <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
                                         </Border.Effect>
                                         <StackPanel>
-                                            <TextBlock Text="选择主题" FontWeight="Bold" Margin="2,0,0,8"
+                                            <TextBlock Text="{DynamicResource S.ChooseTheme}" FontWeight="Bold" Margin="2,0,0,8"
                                                        Foreground="{DynamicResource PrimaryText}" />
                                             <ItemsControl ItemsSource="{Binding Themes}">
                                                 <ItemsControl.ItemsPanel>
@@ -406,7 +429,7 @@
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
                                             </ItemsControl>
-                                            <Button Content="＋ 自定义主题" Margin="2,8,2,0"
+                                            <Button Content="{DynamicResource S.AddCustomTheme}" Margin="2,8,2,0"
                                                     Style="{StaticResource GhostButton}"
                                                     HorizontalContentAlignment="Left"
                                                     Click="AddCustomTheme_Click" />
@@ -417,7 +440,7 @@
 
                             <!-- 收起侧边栏（展开=三横图标+文字左对齐，折叠=三横图标居中，最底部） -->
                             <Button Grid.Row="6" Margin="0,2,0,0" Height="28" Padding="6,0"
-                                    Command="{Binding ToggleSidebarCommand}" ToolTip="显示/隐藏分组栏">
+                                    Command="{Binding ToggleSidebarCommand}" ToolTip="{DynamicResource S.Tip.ToggleSidebar}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
                                         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -431,7 +454,7 @@
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="☰" FontSize="13" Width="18"
                                                TextAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Text="收起侧边" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
+                                    <TextBlock Text="{DynamicResource S.CollapseSidebar}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
                                 </StackPanel>
                             </Button>
@@ -468,7 +491,7 @@
                             <Grid Grid.Column="1" VerticalAlignment="Center">
                                 <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
                                               Content="⇅" FontSize="16"
-                                              ToolTip="{Binding SelectedSortOption.Label, StringFormat=排序：{0}}" />
+                                              ToolTip="{Binding SortTooltip}" />
                                 <Popup IsOpen="{Binding IsChecked, ElementName=SortToggle}"
                                        PlacementTarget="{Binding ElementName=SortToggle}"
                                        Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
@@ -520,25 +543,25 @@
                                         <!-- 右键菜单：编辑(优先级+DDL) / 清除DDL / 缩进 / 周期提醒 / 完成 / 删除 -->
                                         <Grid.ContextMenu>
                                             <ContextMenu>
-                                                <MenuItem Header="编辑（优先级 / 截止时间）…" Click="EditTask_Click" />
-                                                <MenuItem Header="清除截止日期"
+                                                <MenuItem Header="{DynamicResource S.Task.Edit}" Click="EditTask_Click" />
+                                                <MenuItem Header="{DynamicResource S.Task.ClearDue}"
                                                           Command="{Binding PlacementTarget.Tag.ClearDueDateCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 <Separator />
-                                                <MenuItem Header="作为子待办（增加缩进 Tab）"
+                                                <MenuItem Header="{DynamicResource S.Task.Indent}"
                                                           Command="{Binding PlacementTarget.Tag.IndentTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="提升一级（减少缩进 Shift+Tab）"
+                                                <MenuItem Header="{DynamicResource S.Task.Outdent}"
                                                           Command="{Binding PlacementTarget.Tag.OutdentTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="折叠 / 展开子待办"
+                                                <MenuItem Header="{DynamicResource S.Task.ToggleCollapse}"
                                                           Command="{Binding PlacementTarget.Tag.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="切换周期提醒"
+                                                <MenuItem Header="{DynamicResource S.Task.ToggleReminder}"
                                                           Command="{Binding PlacementTarget.Tag.ToggleReminderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 <!-- 移动到分组：子项动态绑定到普通分组（排除“已完成”） -->
-                                                <MenuItem Header="移动到分组"
+                                                <MenuItem Header="{DynamicResource S.Task.MoveToGroup}"
                                                           ItemsSource="{Binding PlacementTarget.Tag.MoveTargetGroups, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
                                                     <MenuItem.ItemContainerStyle>
                                                         <Style TargetType="MenuItem">
@@ -548,10 +571,10 @@
                                                     </MenuItem.ItemContainerStyle>
                                                 </MenuItem>
                                                 <Separator />
-                                                <MenuItem Header="标记完成/未完成"
+                                                <MenuItem Header="{DynamicResource S.Task.ToggleComplete}"
                                                           Command="{Binding PlacementTarget.Tag.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="删除任务"
+                                                <MenuItem Header="{DynamicResource S.Task.Delete}"
                                                           Command="{Binding PlacementTarget.Tag.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                             </ContextMenu>
@@ -560,7 +583,7 @@
                                         <!-- 优先级色条（左侧），无优先级则透明 -->
                                         <Border Grid.Column="0" Width="4" Margin="0,1,8,1" CornerRadius="2"
                                                 Background="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
-                                                ToolTip="优先级（右键编辑）" />
+                                                ToolTip="{DynamicResource S.Tip.PriorityBar}" />
 
                                         <!-- 折叠箭头：仅父待办（HasChildren=true）显示；展开▼ / 折叠▶ -->
                                         <Button Grid.Column="1" Width="16" Height="16" Margin="0,0,4,0"
@@ -569,7 +592,7 @@
                                                 Foreground="{DynamicResource MutedText}"
                                                 Command="{Binding DataContext.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 CommandParameter="{Binding}"
-                                                ToolTip="展开 / 折叠子待办"
+                                                ToolTip="{DynamicResource S.Tip.CollapseArrow}"
                                                 Visibility="{Binding HasChildren, Converter={StaticResource BoolToVis}}">
                                             <Button.Style>
                                                 <Style TargetType="Button">
@@ -586,7 +609,7 @@
                                         <!-- 拖拽手柄提示 -->
                                         <TextBlock Grid.Column="2" Text="⋮⋮" Margin="0,0,8,0"
                                                    VerticalAlignment="Center" Foreground="{DynamicResource MutedText}"
-                                                   ToolTip="拖动可排序" />
+                                                   ToolTip="{DynamicResource S.Tip.Drag}" />
 
                                         <!-- 完成勾选 -->
                                         <CheckBox Grid.Column="3" VerticalAlignment="Center" Margin="0,0,8,0"
@@ -634,7 +657,7 @@
                                                    VerticalAlignment="Center"
                                                    Foreground="{DynamicResource WarningText}"
                                                    Visibility="{Binding HasReminder, Converter={StaticResource BoolToVis}}"
-                                                   ToolTip="已开启周期提醒（右键可切换）" />
+                                                   ToolTip="{DynamicResource S.Tip.ReminderBell}" />
                                     </Grid>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
@@ -652,7 +675,7 @@
                                         <ColumnDefinition Width="58" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="优先级" VerticalAlignment="Center" FontSize="12"
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.Priority}" VerticalAlignment="Center" FontSize="12"
                                                Foreground="{DynamicResource SecondaryText}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <!-- 低 -->
@@ -662,7 +685,7 @@
                                                 <ControlTemplate TargetType="Button">
                                                     <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
                                                             Background="#1A10B981" BorderBrush="Transparent" BorderThickness="1.5">
-                                                        <TextBlock Text="低" Foreground="#10B981" FontWeight="SemiBold" />
+                                                        <TextBlock Text="{DynamicResource S.Priority.Low}" Foreground="#10B981" FontWeight="SemiBold" />
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="Low">
@@ -680,7 +703,7 @@
                                                 <ControlTemplate TargetType="Button">
                                                     <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
                                                             Background="#1AF59E0B" BorderBrush="Transparent" BorderThickness="1.5">
-                                                        <TextBlock Text="中" Foreground="#F59E0B" FontWeight="SemiBold" />
+                                                        <TextBlock Text="{DynamicResource S.Priority.Medium}" Foreground="#F59E0B" FontWeight="SemiBold" />
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="Medium">
@@ -698,7 +721,7 @@
                                                 <ControlTemplate TargetType="Button">
                                                     <Border x:Name="b" CornerRadius="6" Padding="{TemplateBinding Padding}"
                                                             Background="#1AEF4444" BorderBrush="Transparent" BorderThickness="1.5">
-                                                        <TextBlock Text="高" Foreground="#EF4444" FontWeight="SemiBold" />
+                                                        <TextBlock Text="{DynamicResource S.Priority.High}" Foreground="#EF4444" FontWeight="SemiBold" />
                                                     </Border>
                                                     <ControlTemplate.Triggers>
                                                         <DataTrigger Binding="{Binding DataContext.NewTaskPriority, RelativeSource={RelativeSource AncestorType=Window}}" Value="High">
@@ -718,7 +741,7 @@
                                         <ColumnDefinition Width="58" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="截至时间" VerticalAlignment="Center" FontSize="12"
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.DueTime}" VerticalAlignment="Center" FontSize="12"
                                                Foreground="{DynamicResource SecondaryText}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                         <ToggleButton x:Name="DueTimeToggle" Padding="10,4" FontSize="12" MinWidth="120"
@@ -726,7 +749,7 @@
                                                       Style="{StaticResource SidebarToggleButton}"
                                                       Background="{DynamicResource InputBg}"
                                                       Content="{Binding NewTaskDueButtonText}" />
-                                        <Button Content="清除" Style="{StaticResource GhostButton}"
+                                        <Button Content="{DynamicResource S.Clear}" Style="{StaticResource GhostButton}"
                                                 Padding="8,3" Margin="6,0,0,0" FontSize="12"
                                                 Command="{Binding ClearNewTaskDueCommand}"
                                                 Visibility="{Binding HasNewTaskDue, Converter={StaticResource BoolToVis}}" />
@@ -744,7 +767,7 @@
                                             <StackPanel>
                                                 <!-- 分钟 -->
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                    <TextBlock Text="分钟" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Minute}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -758,7 +781,7 @@
                                                 </StackPanel>
                                                 <!-- 小时 -->
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                    <TextBlock Text="小时" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Hour}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -772,7 +795,7 @@
                                                 </StackPanel>
                                                 <!-- 天 -->
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                    <TextBlock Text="天" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Day}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -786,7 +809,7 @@
                                                 </StackPanel>
                                                 <!-- 周 -->
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                    <TextBlock Text="周" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Week}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -801,7 +824,7 @@
                                                 <!-- 自定义时间 -->
                                                 <Border Background="{DynamicResource Divider}" Height="1" Margin="0,0,0,6" />
                                                 <WrapPanel>
-                                                    <TextBlock Text="自定义" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Custom}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <DatePicker Width="112" Margin="0,0,4,4" VerticalContentAlignment="Center"
                                                                 SelectedDate="{Binding NewTaskCustomDate, Mode=TwoWay}" />
@@ -813,7 +836,7 @@
                                                     <ComboBox Width="46" Margin="0,0,4,4" VerticalAlignment="Center"
                                                               ItemsSource="{Binding Minutes}"
                                                               SelectedItem="{Binding NewTaskCustomMinute, Mode=TwoWay}" />
-                                                    <Button Content="设为时间" Style="{StaticResource GhostButton}"
+                                                    <Button Content="{DynamicResource S.SetAsTime}" Style="{StaticResource GhostButton}"
                                                             Padding="9,3" Margin="2,0,0,4" FontSize="12"
                                                             Background="{DynamicResource InputBg}"
                                                             Command="{Binding ApplyCustomTimeCommand}" />
@@ -829,7 +852,7 @@
                                         <ColumnDefinition Width="58" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="周期提醒" VerticalAlignment="Center" FontSize="12"
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.Reminder}" VerticalAlignment="Center" FontSize="12"
                                                Foreground="{DynamicResource SecondaryText}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                         <ToggleButton x:Name="ReminderToggle" Padding="10,4" FontSize="12" MinWidth="120"
@@ -837,7 +860,7 @@
                                                       Style="{StaticResource SidebarToggleButton}"
                                                       Background="{DynamicResource InputBg}"
                                                       Content="{Binding NewTaskReminderButtonText}" />
-                                        <Button Content="清除" Style="{StaticResource GhostButton}"
+                                        <Button Content="{DynamicResource S.Clear}" Style="{StaticResource GhostButton}"
                                                 Padding="8,3" Margin="6,0,0,0" FontSize="12"
                                                 Command="{Binding ClearNewTaskReminderCommand}"
                                                 Visibility="{Binding NewTaskReminderEnabled, Converter={StaticResource BoolToVis}}" />
@@ -854,7 +877,7 @@
                                             </Border.Effect>
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                    <TextBlock Text="分钟" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Minute}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -867,7 +890,7 @@
                                                             Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="30" />
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                    <TextBlock Text="小时" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Hour}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -880,7 +903,7 @@
                                                             Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="300" />
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                                    <TextBlock Text="天" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Day}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -893,7 +916,7 @@
                                                             Command="{Binding SetNewTaskReminderQuickCommand}" CommandParameter="7200" />
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                    <TextBlock Text="周" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Unit.Week}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <Button Style="{StaticResource GhostButton}" Padding="9,3" Margin="0,0,5,0" FontSize="12"
                                                             Content="1" Background="{DynamicResource InputBg}"
@@ -907,14 +930,16 @@
                                                 </StackPanel>
                                                 <Border Background="{DynamicResource Divider}" Height="1" Margin="0,0,0,6" />
                                                 <StackPanel Orientation="Horizontal">
-                                                    <TextBlock Text="自定义" Width="36" VerticalAlignment="Center" FontSize="12"
+                                                    <TextBlock Text="{DynamicResource S.Custom}" Width="36" VerticalAlignment="Center" FontSize="12"
                                                                Foreground="{DynamicResource MutedText}" />
                                                     <TextBox Width="60" Style="{StaticResource FlatTextBox}" Padding="6,3" FontSize="12"
                                                              Text="{Binding NewTaskReminderCustomValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                                                     <ComboBox Width="62" Margin="6,0,0,0" VerticalAlignment="Center"
                                                               ItemsSource="{Binding ReminderUnits}"
-                                                              SelectedItem="{Binding NewTaskReminderCustomUnit, Mode=TwoWay}" />
-                                                    <Button Content="设为提醒" Style="{StaticResource GhostButton}"
+                                                              DisplayMemberPath="Label"
+                                                              SelectedValuePath="Minutes"
+                                                              SelectedValue="{Binding NewTaskReminderCustomUnitMinutes, Mode=TwoWay}" />
+                                                    <Button Content="{DynamicResource S.SetAsReminder}" Style="{StaticResource GhostButton}"
                                                             Padding="9,3" Margin="6,0,0,0" FontSize="12"
                                                             Background="{DynamicResource InputBg}"
                                                             Command="{Binding ApplyCustomReminderCommand}" />
@@ -930,7 +955,7 @@
                                         <ColumnDefinition Width="58" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="父待办" VerticalAlignment="Center" FontSize="12"
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Label.Parent}" VerticalAlignment="Center" FontSize="12"
                                                Foreground="{DynamicResource SecondaryText}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                         <ComboBox MinWidth="170" VerticalAlignment="Center" FontSize="12"
@@ -938,14 +963,14 @@
                                                   SelectedValue="{Binding NewTaskParentId, Mode=TwoWay}"
                                                   SelectedValuePath="Id"
                                                   DisplayMemberPath="Title"
-                                                  ToolTip="选择父待办后，新任务将作为子待办创建">
+                                                  ToolTip="{DynamicResource S.Tip.Parent}">
                                             <ComboBox.ItemContainerStyle>
                                                 <Style TargetType="ComboBoxItem">
                                                     <Setter Property="Padding" Value="8,4" />
                                                 </Style>
                                             </ComboBox.ItemContainerStyle>
                                         </ComboBox>
-                                        <Button Content="清除" Style="{StaticResource GhostButton}"
+                                        <Button Content="{DynamicResource S.Clear}" Style="{StaticResource GhostButton}"
                                                 Padding="8,3" Margin="6,0,0,0" FontSize="12"
                                                 Command="{Binding ClearNewTaskParentCommand}"
                                                 Visibility="{Binding HasNewTaskParent, Converter={StaticResource BoolToVis}}" />
@@ -980,7 +1005,7 @@
                                             <KeyBinding Key="Enter" Command="{Binding AddTaskCommand}" />
                                         </TextBox.InputBindings>
                                     </TextBox>
-                                    <TextBlock Text="添加新任务，回车确认…" Margin="8,4,0,0"
+                                    <TextBlock Text="{DynamicResource S.Input.Placeholder}" Margin="8,4,0,0"
                                                VerticalAlignment="Top" IsHitTestVisible="False"
                                                TextAlignment="Left" HorizontalAlignment="Left">
                                         <TextBlock.Style>
@@ -1007,10 +1032,10 @@
                                         FontSize="16" Margin="8,0,0,0" Padding="10,0"
                                         VerticalAlignment="Stretch"
                                         Background="{DynamicResource InputBg}"
-                                        ToolTip="语音输入（调用 Windows 系统语音输入 Win+H）"
+                                        ToolTip="{DynamicResource S.Tip.Voice}"
                                         Click="VoiceInput_Click" />
 
-                                <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="添加"
+                                <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="{DynamicResource S.Add}"
                                         Margin="8,0,0,0" VerticalAlignment="Stretch"
                                         Command="{Binding AddTaskCommand}" />
                             </Grid>

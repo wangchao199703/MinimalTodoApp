@@ -1,0 +1,268 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <!-- ============ 通用 ============ -->
+    <sys:String x:Key="S.AppName">待办</sys:String>
+    <sys:String x:Key="S.Confirm">确定</sys:String>
+    <sys:String x:Key="S.Cancel">取消</sys:String>
+    <sys:String x:Key="S.Save">保存</sys:String>
+    <sys:String x:Key="S.SaveApply">保存并应用</sys:String>
+    <sys:String x:Key="S.Close">关闭</sys:String>
+    <sys:String x:Key="S.Clear">清除</sys:String>
+    <sys:String x:Key="S.Custom">自定义</sys:String>
+    <sys:String x:Key="S.SetAsTime">设为时间</sys:String>
+    <sys:String x:Key="S.SetAsReminder">设为提醒</sys:String>
+
+    <!-- ============ 标题栏 / 托盘 / ☰ 菜单 ============ -->
+    <sys:String x:Key="S.Tray.ToolTip">Todo 待办</sys:String>
+    <sys:String x:Key="S.Tray.Show">显示主界面</sys:String>
+    <sys:String x:Key="S.Tray.Exit">退出</sys:String>
+    <sys:String x:Key="S.Tip.Menu">菜单 / 设置</sys:String>
+    <sys:String x:Key="S.Tip.Minimize">最小化</sys:String>
+    <sys:String x:Key="S.Tip.MaxRestore">最大化 / 还原</sys:String>
+    <sys:String x:Key="S.Tip.Close">关闭（隐藏到托盘，程序后台常驻；托盘右键可退出）</sys:String>
+    <sys:String x:Key="S.AlwaysOnTop">置于顶层（窗口总在最前）</sys:String>
+    <sys:String x:Key="S.MenuSettings">⚙  设置</sys:String>
+    <sys:String x:Key="S.MenuLanguage">🌐  语言</sys:String>
+
+    <!-- ============ 侧边栏 ============ -->
+    <sys:String x:Key="S.AllTasks">全部任务</sys:String>
+    <sys:String x:Key="S.Group.AllUncompleted">所有待办</sys:String>
+    <sys:String x:Key="S.Group.Completed">已完成</sys:String>
+    <sys:String x:Key="S.NewGroup">新建分组</sys:String>
+    <sys:String x:Key="S.Help">使用说明</sys:String>
+    <sys:String x:Key="S.ImportExport">导入导出</sys:String>
+    <sys:String x:Key="S.ChangeTheme">修改主题</sys:String>
+    <sys:String x:Key="S.ChooseTheme">选择主题</sys:String>
+    <sys:String x:Key="S.AddCustomTheme">＋ 自定义主题</sys:String>
+    <sys:String x:Key="S.CollapseSidebar">收起侧边</sys:String>
+    <sys:String x:Key="S.Tip.ToggleSidebar">显示/隐藏分组栏</sys:String>
+    <sys:String x:Key="S.Export.Md">导出为 Markdown</sys:String>
+    <sys:String x:Key="S.Import.Md">从 Markdown 导入</sys:String>
+
+    <!-- ============ 分组右键菜单 ============ -->
+    <sys:String x:Key="S.Group.ChangeColor">修改颜色</sys:String>
+    <sys:String x:Key="S.Group.Clear">清空分组</sys:String>
+    <sys:String x:Key="S.Group.Delete">删除分组</sys:String>
+    <sys:String x:Key="S.GroupColor.Blue">蓝</sys:String>
+    <sys:String x:Key="S.GroupColor.Green">绿</sys:String>
+    <sys:String x:Key="S.GroupColor.Orange">橙</sys:String>
+    <sys:String x:Key="S.GroupColor.Red">红</sys:String>
+    <sys:String x:Key="S.GroupColor.Purple">紫</sys:String>
+    <sys:String x:Key="S.GroupColor.Pink">粉</sys:String>
+    <sys:String x:Key="S.GroupColor.Teal">青</sys:String>
+    <sys:String x:Key="S.GroupColor.Gray">灰</sys:String>
+
+    <!-- ============ 任务右键菜单 ============ -->
+    <sys:String x:Key="S.Task.Edit">编辑（优先级 / 截止时间）…</sys:String>
+    <sys:String x:Key="S.Task.ClearDue">清除截止日期</sys:String>
+    <sys:String x:Key="S.Task.Indent">作为子待办（增加缩进 Tab）</sys:String>
+    <sys:String x:Key="S.Task.Outdent">提升一级（减少缩进 Shift+Tab）</sys:String>
+    <sys:String x:Key="S.Task.ToggleCollapse">折叠 / 展开子待办</sys:String>
+    <sys:String x:Key="S.Task.ToggleReminder">切换周期提醒</sys:String>
+    <sys:String x:Key="S.Task.MoveToGroup">移动到分组</sys:String>
+    <sys:String x:Key="S.Task.ToggleComplete">标记完成/未完成</sys:String>
+    <sys:String x:Key="S.Task.Delete">删除任务</sys:String>
+
+    <!-- ============ 任务行 ToolTip ============ -->
+    <sys:String x:Key="S.Tip.PriorityBar">优先级（右键编辑）</sys:String>
+    <sys:String x:Key="S.Tip.CollapseArrow">展开 / 折叠子待办</sys:String>
+    <sys:String x:Key="S.Tip.Drag">拖动可排序</sys:String>
+    <sys:String x:Key="S.Tip.ReminderBell">已开启周期提醒（右键可切换）</sys:String>
+
+    <!-- ============ 新建任务面板 ============ -->
+    <sys:String x:Key="S.Label.Priority">优先级</sys:String>
+    <sys:String x:Key="S.Label.DueTime">截至时间</sys:String>
+    <sys:String x:Key="S.Label.Reminder">周期提醒</sys:String>
+    <sys:String x:Key="S.Label.Parent">父待办</sys:String>
+    <sys:String x:Key="S.Tip.Parent">选择父待办后，新任务将作为子待办创建</sys:String>
+    <sys:String x:Key="S.Priority.High">高</sys:String>
+    <sys:String x:Key="S.Priority.Medium">中</sys:String>
+    <sys:String x:Key="S.Priority.Low">低</sys:String>
+    <sys:String x:Key="S.Unit.Minute">分钟</sys:String>
+    <sys:String x:Key="S.Unit.Hour">小时</sys:String>
+    <sys:String x:Key="S.Unit.Day">天</sys:String>
+    <sys:String x:Key="S.Unit.Week">周</sys:String>
+    <sys:String x:Key="S.Input.Placeholder">添加新任务，回车确认…</sys:String>
+    <sys:String x:Key="S.Tip.Voice">语音输入（调用 Windows 系统语音输入 Win+H）</sys:String>
+    <sys:String x:Key="S.Add">添加</sys:String>
+
+    <!-- ============ 排序 ============ -->
+    <sys:String x:Key="S.Sort.Custom">自定义(拖拽)</sys:String>
+    <sys:String x:Key="S.Sort.DueDate">按截止日期</sys:String>
+    <sys:String x:Key="S.Sort.Priority">按优先级</sys:String>
+    <sys:String x:Key="S.Sort.Completed">按完成状态</sys:String>
+    <sys:String x:Key="S.Sort.Created">按创建时间</sys:String>
+    <sys:String x:Key="S.Sort.Title">按标题</sys:String>
+    <sys:String x:Key="S.Fmt.SortTooltip">排序：{0}</sys:String>
+
+    <!-- ============ 优先级下拉 ============ -->
+    <sys:String x:Key="S.PriorityOpt.Low">低优先级</sys:String>
+    <sys:String x:Key="S.PriorityOpt.Medium">中优先级</sys:String>
+    <sys:String x:Key="S.PriorityOpt.High">高优先级</sys:String>
+
+    <!-- ============ 快捷时间 ============ -->
+    <sys:String x:Key="S.Quick.5m">5 分钟后</sys:String>
+    <sys:String x:Key="S.Quick.10m">10 分钟后</sys:String>
+    <sys:String x:Key="S.Quick.30m">30 分钟后</sys:String>
+    <sys:String x:Key="S.Quick.1h">1 小时后</sys:String>
+    <sys:String x:Key="S.Quick.2h">2 小时后</sys:String>
+    <sys:String x:Key="S.Quick.5h">5 小时后</sys:String>
+    <sys:String x:Key="S.Quick.1d">1 天后</sys:String>
+    <sys:String x:Key="S.Quick.2d">2 天后</sys:String>
+    <sys:String x:Key="S.Quick.5d">5 天后</sys:String>
+    <sys:String x:Key="S.Quick.1w">1 周后</sys:String>
+
+    <!-- ============ 新任务计算文案 ============ -->
+    <sys:String x:Key="S.NoTimeSet">未设置时间</sys:String>
+    <sys:String x:Key="S.ChooseDueTime">选择截止时间</sys:String>
+    <sys:String x:Key="S.ChooseReminder">选择周期提醒</sys:String>
+    <sys:String x:Key="S.Fmt.EveryWeeks">每 {0} 周</sys:String>
+    <sys:String x:Key="S.Fmt.EveryDays">每 {0} 天</sys:String>
+    <sys:String x:Key="S.Fmt.EveryHours">每 {0} 小时</sys:String>
+    <sys:String x:Key="S.Fmt.EveryMinutes">每 {0} 分钟</sys:String>
+
+    <!-- ============ 倒计时(任务行) ============ -->
+    <sys:String x:Key="S.Done">已完成</sys:String>
+    <sys:String x:Key="S.DoneWasOverdue">已完成 · 曾逾期</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueDays">已逾期 {0} 天</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueHours">已逾期 {0} 小时</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueMinutes">已逾期 {0} 分钟</sys:String>
+    <sys:String x:Key="S.Fmt.RemainDaysHours">剩 {0} 天 {1} 小时</sys:String>
+    <sys:String x:Key="S.Fmt.RemainDays">剩 {0} 天</sys:String>
+    <sys:String x:Key="S.Fmt.RemainHoursMinutes">剩 {0} 小时 {1} 分钟</sys:String>
+    <sys:String x:Key="S.Fmt.RemainHours">剩 {0} 小时</sys:String>
+    <sys:String x:Key="S.Fmt.RemainMinutes">剩 {0} 分钟</sys:String>
+
+    <!-- ============ 日期友好显示(转换器) ============ -->
+    <sys:String x:Key="S.Today">今天</sys:String>
+    <sys:String x:Key="S.Tomorrow">明天</sys:String>
+    <sys:String x:Key="S.Yesterday">昨天</sys:String>
+    <sys:String x:Key="S.Fmt.OverdueDaysShort">逾期 {0} 天</sys:String>
+    <sys:String x:Key="S.Fmt.DaysLater">{0} 天后</sys:String>
+    <sys:String x:Key="S.Fmt.MonthDay">MM月dd日</sys:String>
+
+    <!-- ============ 提醒 / 导入导出 / 消息(代码) ============ -->
+    <sys:String x:Key="S.Fmt.ReminderToastTitle">待办:{0}</sys:String>
+    <sys:String x:Key="S.Fmt.IntervalHours">{0} 小时</sys:String>
+    <sys:String x:Key="S.Fmt.IntervalMinutes">{0} 分钟</sys:String>
+    <sys:String x:Key="S.Fmt.ReminderMsgWithDue">{0} 到期.每 {1} 提醒一次.</sys:String>
+    <sys:String x:Key="S.Fmt.ReminderMsg">每 {0} 提醒一次.</sys:String>
+    <sys:String x:Key="S.Toast.ExportTitle">导出完成</sys:String>
+    <sys:String x:Key="S.Fmt.ExportSaved">已保存到: {0}</sys:String>
+    <sys:String x:Key="S.Dialog.ExportTitle">导出为 Markdown</sys:String>
+    <sys:String x:Key="S.Md.Filter">Markdown 文件 (*.md)|*.md|所有文件 (*.*)|*.*</sys:String>
+    <sys:String x:Key="S.Fmt.ExportFileName">待办清单 {0}.md</sys:String>
+    <sys:String x:Key="S.Fmt.ExportFailed">导出失败: {0}</sys:String>
+    <sys:String x:Key="S.Dialog.ImportTitle">从 Markdown 导入</sys:String>
+    <sys:String x:Key="S.Md.ImportFilter">Markdown 文件 (*.md;*.markdown;*.txt)|*.md;*.markdown;*.txt|所有文件 (*.*)|*.*</sys:String>
+    <sys:String x:Key="S.Toast.ImportTitle">导入完成</sys:String>
+    <sys:String x:Key="S.Fmt.ImportDone">已导入 {0} 条任务</sys:String>
+    <sys:String x:Key="S.Import.NoTasks">未识别到任务行(请检查 Markdown 格式)</sys:String>
+    <sys:String x:Key="S.Fmt.ImportFailed">导入失败: {0}</sys:String>
+    <sys:String x:Key="S.Voice.HelpTitle">语音输入</sys:String>
+    <sys:String x:Key="S.Voice.HelpBody" xml:space="preserve">无法调用系统语音输入。请按以下步骤开启或手动调用：
+
+1. 确认系统为 Windows 10（version 1809 及以上）或 Windows 11。
+2. 打开「设置 → 隐私和安全性 → 语音」(或「时间和语言 → 语音」)，开启「在线语音识别」，并在「辅助功能 → 语音」中允许使用麦克风。
+3. 把光标放进下方输入框，按键盘 Win + H 打开语音输入浮窗，对着麦克风说话即可。
+   首次使用可能需要联网下载语音组件并授予麦克风权限。</sys:String>
+    <sys:String x:Key="S.Fmt.VoiceErrorDetail">错误详情：{0}</sys:String>
+
+    <!-- ============ 设置对话框 ============ -->
+    <sys:String x:Key="S.Settings.Title">设置</sys:String>
+    <sys:String x:Key="S.Settings.AutoStart">开机自启动</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartDesc">登录 Windows 时自动运行（当前用户）</sys:String>
+    <sys:String x:Key="S.Settings.Effects">完成特效</sys:String>
+    <sys:String x:Key="S.Settings.EffectsDesc">勾选任务完成时播放烟花庆祝动画</sys:String>
+    <sys:String x:Key="S.Settings.Sound">完成音效</sys:String>
+    <sys:String x:Key="S.Settings.SoundDesc">勾选任务完成时播放一段振奋的庆祝音乐</sys:String>
+    <sys:String x:Key="S.Settings.ReminderSound">周期提醒声音</sys:String>
+    <sys:String x:Key="S.Settings.ReminderSoundDesc">周期提醒触发时播放一声轻提示音（关闭后仅显示左下角通知）</sys:String>
+    <sys:String x:Key="S.Settings.OpFailed">操作失败，请重试.</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartOn">已开启: 开机自动启动.</sys:String>
+    <sys:String x:Key="S.Settings.AutoStartOff">已关闭开机自启动.</sys:String>
+
+    <!-- ============ 使用说明对话框 ============ -->
+    <sys:String x:Key="S.Help.Title">📖  使用说明</sys:String>
+    <sys:String x:Key="S.Help.Ok">知道了</sys:String>
+
+    <sys:String x:Key="S.Help.Tasks.Title">任务</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L1">在右下角输入框输入文字、回车或点「添加」即可新建任务.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L2">输入文字后上方会弹出优先级、截止时间与「周期提醒」开关.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L3">时间可选常用快捷项(5 分钟后…1 周后)，也可用「自定义」精确到分钟.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L4">单击任务标题可直接编辑文字；右键任务可编辑、清除截止日期、标记完成、删除.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L5">勾选完成的任务会自动移入「已完成」分组，取消勾选则还原.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L6">拖动任务可自定义排序；标题超长时只显示前部.</sys:String>
+
+    <sys:String x:Key="S.Help.Subtasks.Title">子待办与缩进</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L1">选中任务后按 Tab 键即可缩进一级，成为上一条的子待办；Shift+Tab 提升一级.</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L2">右键菜单亦可「作为子待办 / 提升一级」，最多支持 6 级嵌套.</sys:String>
+    <sys:String x:Key="S.Help.Subtasks.L3">缩进信息会随导入导出 Markdown 一起保留(用列表项的层级表达).</sys:String>
+
+    <sys:String x:Key="S.Help.Voice.Title">语音输入</sys:String>
+    <sys:String x:Key="S.Help.Voice.L1">新任务输入框右侧的🎤按钮会触发 Windows 自带语音听写(等价于 Win+H).</sys:String>
+    <sys:String x:Key="S.Help.Voice.L2">首次使用需在「设置 → 时间和语言 → 语音」中启用语音输入.</sys:String>
+
+    <sys:String x:Key="S.Help.Reminder.Title">周期提醒</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L1">创建任务时勾选「周期提醒」并设置间隔(默认 30 分钟)即可.</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L2">到点后会弹出左下角通知，并在「设置 → 周期提醒声音」开启时播放轻提示音.</sys:String>
+    <sys:String x:Key="S.Help.Reminder.L3">任务被勾选完成后自动停止提醒；右键任务可随时切换该开关.</sys:String>
+
+    <sys:String x:Key="S.Help.IO.Title">导入 / 导出 Markdown</sys:String>
+    <sys:String x:Key="S.Help.IO.L1">侧边栏「导入导出」可把当前清单导出为 .md，或从 .md 文件导入任务.</sys:String>
+    <sys:String x:Key="S.Help.IO.L2">导出格式与主流编辑器兼容:分组用 ## 二级标题，每行 - [ ] / - [x] 表示任务.</sys:String>
+    <sys:String x:Key="S.Help.IO.L3">子待办的缩进按每级两个空格写入，导入时自动还原层级.</sys:String>
+
+    <sys:String x:Key="S.Help.Dock.Title">贴边自动隐藏</sys:String>
+    <sys:String x:Key="S.Help.Dock.L1">把窗口拖到屏幕的上 / 左 / 右边，窗口会播放滑出动画并自动隐藏.</sys:String>
+    <sys:String x:Key="S.Help.Dock.L2">需要时把鼠标移到对应屏幕边缘，窗口会自动滑回；移开后再次自动收起.</sys:String>
+    <sys:String x:Key="S.Help.Dock.L3">再次拖动标题栏即可取消贴边，恢复为普通窗口.</sys:String>
+
+    <sys:String x:Key="S.Help.Group.Title">分组</sys:String>
+    <sys:String x:Key="S.Help.Group.L1">左侧为分组栏:点「全部任务」查看所有任务，点分组名切换.</sys:String>
+    <sys:String x:Key="S.Help.Group.L2">「新建分组」可添加自定义分组；拖动分组可调整顺序.</sys:String>
+    <sys:String x:Key="S.Help.Group.L3">右键分组可:修改颜色 / 清空分组 / 删除分组(「已完成」不可删除).</sys:String>
+    <sys:String x:Key="S.Help.Group.L4">侧边栏可拖动调整宽度；点「收起侧边栏」折叠为窄条图标，再点展开.</sys:String>
+
+    <sys:String x:Key="S.Help.Theme.Title">主题与设置</sys:String>
+    <sys:String x:Key="S.Help.Theme.L1">点「修改主题」可切换内置主题(含透明、毛玻璃)，或新建自定义主题.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L2">右上角菜单 →「设置」可开启 / 关闭开机自启动、完成特效、完成音效、周期提醒声音.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L3">排序按钮(标题右侧 ⇅)点击后选择排序方式.</sys:String>
+
+    <sys:String x:Key="S.Help.Window.Title">窗口</sys:String>
+    <sys:String x:Key="S.Help.Window.L1">右上角红 / 黄 / 绿:关闭到托盘 / 最小化 / 最大化还原.</sys:String>
+    <sys:String x:Key="S.Help.Window.L2">关闭仅隐藏到系统托盘，程序后台常驻；双击托盘图标恢复，右键托盘可退出.</sys:String>
+
+    <sys:String x:Key="S.Help.Contact.Title">联系开发者</sys:String>
+    <sys:String x:Key="S.Help.Contact.L1">该软件全部由 AI 生成，有任何建议联系 1248792327@qq.com</sys:String>
+
+    <!-- ============ 自定义主题编辑器 ============ -->
+    <sys:String x:Key="S.ThemeEditor.Title">自定义主题</sys:String>
+    <sys:String x:Key="S.ThemeEditor.Name">主题名称</sys:String>
+    <sys:String x:Key="S.ThemeEditor.DefaultName">我的主题</sys:String>
+    <sys:String x:Key="S.ThemeEditor.BaseOn">基于现有主题（自动填充其余颜色）</sys:String>
+    <sys:String x:Key="S.ThemeEditor.ColorHint">颜色支持 #RRGGBB 或含透明度的 #AARRGGBB。</sys:String>
+    <sys:String x:Key="S.ThemeField.WindowBg">窗口背景</sys:String>
+    <sys:String x:Key="S.ThemeField.TitleBar">标题栏</sys:String>
+    <sys:String x:Key="S.ThemeField.Sidebar">侧边栏</sys:String>
+    <sys:String x:Key="S.ThemeField.Card">卡片</sys:String>
+    <sys:String x:Key="S.ThemeField.Input">输入框</sys:String>
+    <sys:String x:Key="S.ThemeField.PrimaryText">主文字</sys:String>
+    <sys:String x:Key="S.ThemeField.SecondaryText">次文字</sys:String>
+    <sys:String x:Key="S.ThemeField.Accent">强调色</sys:String>
+    <sys:String x:Key="S.ThemeField.AccentText">强调文字</sys:String>
+    <sys:String x:Key="S.ThemeField.Divider">分隔线</sys:String>
+
+    <!-- ============ 编辑任务对话框 ============ -->
+    <sys:String x:Key="S.TaskEdit.Title">编辑任务</sys:String>
+    <sys:String x:Key="S.TaskEdit.DueDate">截止日期</sys:String>
+    <sys:String x:Key="S.TaskEdit.Enable">启用</sys:String>
+    <sys:String x:Key="S.TaskEdit.DefaultTimeHint">未选具体时间则默认为 00:00</sys:String>
+
+    <!-- ============ Toast 通知 ============ -->
+    <sys:String x:Key="S.Toast.DefaultTitle">待办提醒</sys:String>
+    <sys:String x:Key="S.Toast.ClickToClose">点击关闭</sys:String>
+
+</ResourceDictionary>
