@@ -132,7 +132,11 @@ if ($LASTEXITCODE -ne 0) { Fail "推送标签失败" }
 # ---------- 10. 获取访问令牌 ----------
 $Token = $env:GH_TOKEN
 if ([string]::IsNullOrWhiteSpace($Token)) {
-    $credOut = "protocol=https`nhost=github.com`n`n" | & git credential fill 2>$null
+    # 以「逐行数组」喂给 git credential fill(每个元素一行)，比单条多行字符串可靠:
+    # 单条多行字符串经 PowerShell 管道传给原生 exe 时，编码/换行处理可能让 git 收到的
+    # 首行不是 protocol= 而报“missing protocol field”。数组形式由 PS 逐行追加换行,稳定.
+    $credIn = @("protocol=https", "host=github.com", "")
+    $credOut = $credIn | & git credential fill
     $pwLine = $credOut | Where-Object { $_ -like 'password=*' } | Select-Object -First 1
     if ($pwLine) { $Token = $pwLine.Substring('password='.Length) }
 }
