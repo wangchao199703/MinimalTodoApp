@@ -336,6 +336,86 @@
         </Setter>
     </Style>
 
+    <!-- ===================== 现代细长滚动条 ===================== -->
+    <!-- 半透明灰：在明亮/暗黑/透明等所有主题上都清晰可辨，无需逐主题配色 -->
+    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#73888888" />
+    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#B3888888" />
+
+    <!-- 翻页区：完全透明、不抢焦点（去掉默认的方块/箭头按钮） -->
+    <Style x:Key="ScrollBarPageButton" TargetType="RepeatButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="Transparent" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 圆角滑块：默认半透明，悬停/拖动时加深 -->
+    <Style x:Key="ScrollThumb" TargetType="Thumb">
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+        <Setter Property="IsTabStop" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border x:Name="t" CornerRadius="4" Margin="2"
+                            Background="{DynamicResource ScrollThumbBrush}" />
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="t" Property="Background" Value="{DynamicResource ScrollThumbHoverBrush}" />
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="t" Property="Background" Value="{DynamicResource ScrollThumbHoverBrush}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- 默认（无 Key）样式：应用到所有 ScrollBar，含任务列表内的滚动条 -->
+    <Style TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Width" Value="10" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="Transparent" SnapsToDevicePixels="True">
+                        <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}"
+                               IsDirectionReversed="True">
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ScrollBarPageButton}"
+                                              Command="ScrollBar.PageUpCommand" />
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton Style="{StaticResource ScrollBarPageButton}"
+                                              Command="ScrollBar.PageDownCommand" />
+                            </Track.IncreaseRepeatButton>
+                            <Track.Thumb>
+                                <Thumb Style="{StaticResource ScrollThumb}" MinHeight="28" MinWidth="28" />
+                            </Track.Thumb>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto" />
+                <Setter Property="Height" Value="10" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <!-- ===================== 优先级选择 Chip（对话框用） ===================== -->
     <Style x:Key="PriorityChip" TargetType="RadioButton">
         <Setter Property="Margin" Value="3,0" />

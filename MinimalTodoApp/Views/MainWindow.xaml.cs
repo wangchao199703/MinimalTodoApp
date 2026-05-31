@@ -773,6 +773,47 @@ public partial class MainWindow : Window
             Vm.NewTaskPriority = p;
     }
 
+    // ===== 语音输入：调用 Windows 系统语音输入(Win+H) =====
+
+    /// <summary>
+    /// 先聚焦任务输入框，再模拟 Win+H 唤起系统语音输入浮窗；识别的文字会落入输入框。
+    /// 调用失败(如系统不支持/无 user32)时弹出指引，告知如何开启与手动调用。
+    /// </summary>
+    private void VoiceInput_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            NewTaskBox.Focus();
+            Keyboard.Focus(NewTaskBox);
+            NewTaskBox.CaretIndex = NewTaskBox.Text?.Length ?? 0;
+            NativeMethods.SendWinH();
+        }
+        catch (Exception ex)
+        {
+            ShowVoiceInputHelp(ex);
+        }
+    }
+
+    /// <summary>语音输入调用失败时的指引：如何开启系统语音输入、如何手动唤起.</summary>
+    private void ShowVoiceInputHelp(Exception? ex = null)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("无法调用系统语音输入。请按以下步骤开启或手动调用：");
+        sb.AppendLine();
+        sb.AppendLine("1. 确认系统为 Windows 10（version 1809 及以上）或 Windows 11。");
+        sb.AppendLine("2. 打开「设置 → 隐私和安全性 → 语音」(或「时间和语言 → 语音」)，");
+        sb.AppendLine("   开启「在线语音识别」，并在「辅助功能 → 语音」中允许使用麦克风。");
+        sb.AppendLine("3. 把光标放进下方输入框，按键盘 Win + H 打开语音输入浮窗，对着麦克风说话即可。");
+        sb.AppendLine("   首次使用可能需要联网下载语音组件并授予麦克风权限。");
+        if (ex != null)
+        {
+            sb.AppendLine();
+            sb.AppendLine("错误详情：" + ex.Message);
+        }
+        MessageBox.Show(this, sb.ToString(), "语音输入",
+            MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
     // ===== 排序弹出选择 =====
 
     private void SortOption_Click(object sender, RoutedEventArgs e)

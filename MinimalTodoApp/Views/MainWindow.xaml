@@ -168,7 +168,7 @@
                                         <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
                                               ToolTip="{Binding Name}">
                                             <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="20" />
+                                                <ColumnDefinition x:Name="GroupDotCol" Width="20" />
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
@@ -209,8 +209,11 @@
                                                        Visibility="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
                                         </Grid>
                                         <DataTemplate.Triggers>
-                                            <!-- 折叠时：颜色点跨满整行并居中，与其它图标对齐 -->
+                                            <!-- 折叠时：颜色点跨满整行并居中，与其它图标对齐。
+                                                 注意：必须把首列固定宽度 20 改成 *，否则在 39px 窄条里
+                                                 20px 列比可用内容区还宽，居中的色点会被挤到右侧并被裁掉一半。 -->
                                             <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                <Setter TargetName="GroupDotCol" Property="Width" Value="*" />
                                                 <Setter TargetName="GroupDot" Property="Grid.ColumnSpan" Value="3" />
                                                 <Setter TargetName="GroupDot" Property="HorizontalAlignment" Value="Center" />
                                                 <Setter TargetName="GroupDot" Property="Margin" Value="0" />
@@ -963,6 +966,7 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
 
                                 <Grid Grid.Column="0">
@@ -998,7 +1002,15 @@
                                     </TextBlock>
                                 </Grid>
 
-                                <Button Grid.Column="1" Style="{StaticResource AccentButton}" Content="添加"
+                                <!-- 语音输入：调起 Windows 系统语音输入(Win+H)，识别文字直接进入输入框 -->
+                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="🎤"
+                                        FontSize="16" Margin="8,0,0,0" Padding="10,0"
+                                        VerticalAlignment="Stretch"
+                                        Background="{DynamicResource InputBg}"
+                                        ToolTip="语音输入（调用 Windows 系统语音输入 Win+H）"
+                                        Click="VoiceInput_Click" />
+
+                                <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="添加"
                                         Margin="8,0,0,0" VerticalAlignment="Stretch"
                                         Command="{Binding AddTaskCommand}" />
                             </Grid>

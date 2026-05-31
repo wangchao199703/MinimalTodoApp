@@ -133,4 +133,25 @@ public static class NativeMethods
         }
         catch { /* 静默失败 */ }
     }
+
+    // ===== 调起 Windows 系统语音输入(Win+H) =====
+
+    [DllImport("user32.dll")]
+    private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+    private const byte VK_LWIN = 0x5B;
+    private const byte VK_H = 0x48;
+    private const uint KEYEVENTF_KEYUP = 0x0002;
+
+    /// <summary>
+    /// 模拟按下 Win+H，唤起 Windows 10/11 自带的「语音输入(听写)」浮窗，
+    /// 识别到的文字会输入到当前获得焦点的控件。调用前应先把目标输入框聚焦。
+    /// </summary>
+    public static void SendWinH()
+    {
+        keybd_event(VK_LWIN, 0, 0, UIntPtr.Zero);
+        keybd_event(VK_H, 0, 0, UIntPtr.Zero);
+        keybd_event(VK_H, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+    }
 }
