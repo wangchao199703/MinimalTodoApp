@@ -1,0 +1,23 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Haze 雾霭主题（冷调低饱和蓝灰） -->
+    <SolidColorBrush x:Key="WindowBg"       Color="#F0F2F5" />
+    <SolidColorBrush x:Key="TitleBarBg"     Color="#E4E8ED" />
+    <SolidColorBrush x:Key="SidebarBg"      Color="#E8EBF0" />
+    <SolidColorBrush x:Key="ContentBg"      Color="#F0F2F5" />
+    <SolidColorBrush x:Key="CardBg"         Color="#F8FAFC" />
+    <SolidColorBrush x:Key="CardHoverBg"    Color="#E4E8ED" />
+    <SolidColorBrush x:Key="InputBg"        Color="#E4E8ED" />
+    <SolidColorBrush x:Key="PrimaryText"    Color="#2F3640" />
+    <SolidColorBrush x:Key="SecondaryText"  Color="#5C6672" />
+    <SolidColorBrush x:Key="MutedText"      Color="#97A1AE" />
+    <SolidColorBrush x:Key="Accent"         Color="#6E8CA8" />
+    <SolidColorBrush x:Key="AccentText"     Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Divider"        Color="#DCE1E8" />
+    <SolidColorBrush x:Key="SelectedItemBg" Color="#DDE5EE" />
+    <SolidColorBrush x:Key="OverdueText"    Color="#B26B6B" />
+    <SolidColorBrush x:Key="WarningText"    Color="#B08A4E" />
+    <SolidColorBrush x:Key="SuccessText"    Color="#6E9B7A" />
+
+</ResourceDictionary>

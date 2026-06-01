@@ -15,9 +15,14 @@
         </Border.Effect>
         <StackPanel Margin="20" Width="320">
             <TextBlock Text="{DynamicResource S.TaskEdit.Title}" FontSize="16" FontWeight="Bold"
-                       Margin="0,0,0,4" Foreground="{DynamicResource PrimaryText}" />
-            <TextBlock x:Name="TitlePreview" FontSize="12" TextTrimming="CharacterEllipsis"
-                       Margin="0,0,0,14" Foreground="{DynamicResource MutedText}" />
+                       Margin="0,0,0,12" Foreground="{DynamicResource PrimaryText}" />
+
+            <!-- 任务内容(可编辑) -->
+            <TextBlock Text="{DynamicResource S.TaskEdit.Content}" FontSize="13" Margin="0,0,0,6"
+                       Foreground="{DynamicResource SecondaryText}" />
+            <TextBox x:Name="TitleEdit" Style="{StaticResource FlatTextBox}"
+                     Margin="0,0,0,16" MaxLength="500"
+                     TextWrapping="Wrap" AcceptsReturn="False" />
 
             <!-- 优先级 -->
             <TextBlock Text="{DynamicResource S.Label.Priority}" FontSize="13" Margin="0,0,0,6"

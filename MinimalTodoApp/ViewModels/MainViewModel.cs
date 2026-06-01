@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -31,6 +32,31 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     /// <summary>整族完成期间(父勾选时自动完成所有子)抑制重复的父子联动 / 动画触发.</summary>
     private bool _completingFamily;
+
+    /// <summary>整族取消完成期间(取消勾选时向上向下联动)抑制重复的父子联动.</summary>
+    private bool _uncompletingFamily;
+
+    /// <summary>拖拽进行中:为真时禁止重建 Items(避免拖拽 Adorner 失去宿主残留为桌面"鬼影").</summary>
+    private bool _isDragging;
+
+    /// <summary>拖拽期间被抑制的刷新请求,拖拽结束后补刷一次.</summary>
+    private bool _pendingRefresh;
+
+    /// <summary>由视图层在拖拽开始/结束时设置;结束时若有挂起刷新则立即补刷.</summary>
+    public bool IsDragging
+    {
+        get => _isDragging;
+        set
+        {
+            if (_isDragging == value) return;
+            _isDragging = value;
+            if (!value && _pendingRefresh)
+            {
+                _pendingRefresh = false;
+                RefreshItems();
+            }
+        }
+    }
 
     /// <summary>每分钟刷新一次倒计时文案(跨零点也能正确更新).</summary>
     private readonly DispatcherTimer _countdownTimer;
@@ -461,15 +487,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         if (target == null)
             target = CreateGroupInternal("收件箱");
 
-        int nextIndex = _allItems.Where(i => i.GroupId == target.Id)
-                                 .Select(i => i.OrderIndex)
-                                 .DefaultIfEmpty(-1).Max() + 1;
-
-        // 如果选择了父待办，自动设置缩进层级为父待办的层级+1
+        // 如果选择了父待办，自动设置缩进层级为父待办的层级+1，并定位到父所在分组
         int indentLevel = 0;
+        TodoItem? parent = null;
         if (NewTaskParentId.HasValue)
         {
-            var parent = _allItems.FirstOrDefault(i => i.Id == NewTaskParentId.Value);
+            parent = _allItems.FirstOrDefault(i => i.Id == NewTaskParentId.Value);
             if (parent != null)
             {
                 indentLevel = Math.Min(parent.IndentLevel + 1, 6);
@@ -478,13 +501,38 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             }
         }
 
+        // 计算插入位置:有父待办时插到“父及其全部子孙”之后(紧贴父待办下方)，
+        // 否则追加到当前分组末尾。
+        int orderIndex;
+        if (parent != null)
+        {
+            int insertAfter = parent.OrderIndex;
+            foreach (var d in GetDescendants(parent))
+                if (d.GroupId == target.Id && d.OrderIndex > insertAfter)
+                    insertAfter = d.OrderIndex;
+
+            // 把插入点之后的同组任务整体后移一位，腾出位置
+            _suppressSave = true;
+            foreach (var sib in _allItems.Where(i => i.GroupId == target.Id && i.OrderIndex > insertAfter))
+                sib.OrderIndex++;
+            _suppressSave = false;
+
+            orderIndex = insertAfter + 1;
+        }
+        else
+        {
+            orderIndex = _allItems.Where(i => i.GroupId == target.Id)
+                                  .Select(i => i.OrderIndex)
+                                  .DefaultIfEmpty(-1).Max() + 1;
+        }
+
         var item = new TodoItem
         {
             Title = NewTaskTitle.Trim(),
             GroupId = target.Id,
             DueDate = NewTaskDueDate,
             Priority = NewTaskPriority,
-            OrderIndex = nextIndex,
+            OrderIndex = orderIndex,
             CreatedAt = DateTime.Now,
             ReminderEnabled = NewTaskReminderEnabled,
             ReminderIntervalMinutes = NewTaskReminderInterval,
@@ -602,14 +650,19 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         item.IsCompleted = !item.IsCompleted; // 触发 OnItemPropertyChanged -> 自动保存
     }
 
-    /// <summary>统一应用任务编辑(截止时间 + 优先级)，由右键编辑对话框回填.</summary>
-    public void ApplyTaskEdits(TodoItem item, DateTime? due, Priority priority)
+    /// <summary>统一应用任务编辑(任务内容 + 截止时间 + 优先级)，由右键编辑对话框回填.</summary>
+    public void ApplyTaskEdits(TodoItem item, DateTime? due, Priority priority, string? title = null)
     {
         if (item == null) return;
+        if (!string.IsNullOrWhiteSpace(title))
+            item.Title = title.Trim();   // 触发 OnTitleChanged + 自动保存
         item.DueDate = due;        // 触发 OnDueDateChanged + 自动保存
         item.Priority = priority;  // 触发 OnPriorityChanged + 自动保存
         RefreshItems();
     }
+
+    /// <summary>设置了截止日期的全部任务(供日程/日历视图按日期聚合展示).</summary>
+    public IEnumerable<TodoItem> DatedTasks => _allItems.Where(i => i.DueDate.HasValue);
 
     /// <summary>
     /// 把任务移动到指定分组(右键「移动到分组」).不支持移动到内置“已完成”分组；
@@ -884,6 +937,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         bool groupMove = dropInfo.Data is TodoGroup && dropInfo.TargetItem is TodoGroup;
         if (taskMove || groupMove)
         {
+            // DragOver 在拖拽过程中持续触发,作为兜底标记拖拽态(防止刷新重建 Items 残留鬼影)
+            IsDragging = true;
             dropInfo.DropTargetAdorner = DropTargetAdorners.Insert;
             dropInfo.Effects = DragDropEffects.Move;
         }
@@ -903,7 +958,21 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         if (newIndex > oldIndex) newIndex--;   // 移除原项后目标索引前移
         if (newIndex < 0) newIndex = 0;
         if (newIndex >= Items.Count) newIndex = Items.Count - 1;
-        if (newIndex == oldIndex) return;
+
+        // 水平为主的拖拽 -> 修改层级:右拖降级(+1)、左拖升级(-1)，不做纵向重排.
+        // 横向位移换算到列表坐标系，与缩进步长(IndentToMarginConverter.Step=22)对齐.
+        if (newIndex == oldIndex)
+        {
+            const double indentStep = 22.0;
+            double dx = HorizontalDragDelta(dropInfo);
+            if (Math.Abs(dx) >= indentStep)
+            {
+                int delta = (int)(dx / indentStep);
+                if (delta == 0) delta = dx > 0 ? 1 : -1;
+                ChangeIndent(source, delta);
+            }
+            return;   // 原地拖拽(无纵向移动)不重排
+        }
 
         Items.Move(oldIndex, newIndex);
 
@@ -939,6 +1008,21 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Groups[i].OrderIndex = i;
 
         SaveData();
+    }
+
+    /// <summary>拖拽过程中相对起点的横向位移(换算到放置目标列表坐标系);用于判定左右拖动改层级.</summary>
+    private static double HorizontalDragDelta(IDropInfo dropInfo)
+    {
+        try
+        {
+            if (dropInfo.DragInfo?.VisualSource is Visual src && dropInfo.VisualTarget is Visual tgt)
+            {
+                var startInTarget = src.TransformToVisual(tgt).Transform(dropInfo.DragInfo.DragStartPosition);
+                return dropInfo.DropPosition.X - startInTarget.X;
+            }
+        }
+        catch { /* 坐标变换异常时按无横向位移处理 */ }
+        return 0;
     }
 
     #endregion
@@ -1076,6 +1160,14 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     private void RefreshItems()
     {
+        // 拖拽进行中切勿重建 Items(Clear/Add 会让拖拽 Adorner 失去宿主容器，
+        // 残留为桌面上不可点击的"鬼影")。挂起请求,拖拽结束后补刷.
+        if (_isDragging)
+        {
+            _pendingRefresh = true;
+            return;
+        }
+
         // 每次刷新顺带更新 HasChildren,用于父待办左侧的折叠箭头显示控制
         var childIdSet = _allItems.Where(i => i.ParentId.HasValue)
                                   .Select(i => i.ParentId!.Value)
@@ -1164,8 +1256,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         if (e.PropertyName == nameof(TodoItem.IsCompleted))
         {
-            // 整族完成期间(由父勾选连带触发的所有子)，只保存，不再分支重入
-            if (_completingFamily)
+            // 整族完成/取消完成期间(连带触发的祖先与子孙)，只保存，不再分支重入
+            if (_completingFamily || _uncompletingFamily)
             {
                 SaveData();
                 return;
@@ -1194,9 +1286,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
                 return;
             }
 
-            // 取消完成:立即移回原分组并刷新
+            // 取消完成:整族(向上所有祖先 + 向下所有子孙)一并取消完成并移回原分组
             if (sender is TodoItem it)
-                MoveForCompletion(it);
+                UncompleteFamily(it);
             RefreshGroupCounts();
             RefreshItems();
             OnPropertyChanged(nameof(ParentCandidates));
@@ -1217,6 +1309,43 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         finally
         {
             _completingFamily = false;
+        }
+    }
+
+    /// <summary>
+    /// 取消完成某项时的整族联动:把它自身、向上所有祖先、向下所有子孙都置为未完成并移回原分组.
+    /// (兄弟及其子树不受影响——父虽取消完成,其它已完成的子仍可作为"活子待办"保留.)
+    /// </summary>
+    private void UncompleteFamily(TodoItem item)
+    {
+        _uncompletingFamily = true;
+        try
+        {
+            var family = new List<TodoItem> { item };
+
+            // 向上:沿 ParentId 链收集所有祖先
+            var cur = item;
+            int safety = 16;
+            while (cur.ParentId.HasValue && safety-- > 0)
+            {
+                var p = _allItems.FirstOrDefault(i => i.Id == cur.ParentId.Value);
+                if (p == null) break;
+                family.Add(p);
+                cur = p;
+            }
+
+            // 向下:收集所有递归子孙
+            family.AddRange(GetDescendants(item));
+
+            foreach (var f in family.Distinct())
+            {
+                if (f.IsCompleted) f.IsCompleted = false;   // 守卫下不会重入分支
+                MoveForCompletion(f);                       // 移回各自原分组
+            }
+        }
+        finally
+        {
+            _uncompletingFamily = false;
         }
     }
 

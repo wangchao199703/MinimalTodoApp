@@ -40,6 +40,11 @@ public static class ThemeManager
         new ThemeInfo("Ocean", "S.Theme.Ocean", "#173540", "#E0F2F1"),
         new ThemeInfo("Forest","S.Theme.Forest","#EAEFE0", "#26331F"),
         new ThemeInfo("Rose",  "S.Theme.Rose",  "#FDEBF0", "#3D1F2A"),
+        // 低饱和主题
+        new ThemeInfo("Oat",      "S.Theme.Oat",      "#F5F2EC", "#3A352D"),
+        new ThemeInfo("Haze",     "S.Theme.Haze",     "#F0F2F5", "#2F3640"),
+        new ThemeInfo("Sage",     "S.Theme.Sage",     "#EEF1EC", "#313A30"),
+        new ThemeInfo("Graphite", "S.Theme.Graphite", "#2A2C2E", "#E4E6E8"),
         new ThemeInfo("Transparent", "S.Theme.Transparent", "#80FFFFFF", "#1F2329"),
         new ThemeInfo("Glass", "S.Theme.Glass", "#80222831", "#F5F7FA"),
     };

@@ -43,6 +43,10 @@
     <sys:String x:Key="S.Theme.Ocean">Ocean</sys:String>
     <sys:String x:Key="S.Theme.Forest">Forest</sys:String>
     <sys:String x:Key="S.Theme.Rose">Rose</sys:String>
+    <sys:String x:Key="S.Theme.Oat">Oat</sys:String>
+    <sys:String x:Key="S.Theme.Haze">Haze</sys:String>
+    <sys:String x:Key="S.Theme.Sage">Sage</sys:String>
+    <sys:String x:Key="S.Theme.Graphite">Graphite</sys:String>
     <sys:String x:Key="S.Theme.Transparent">Transparent</sys:String>
     <sys:String x:Key="S.Theme.Glass">Glass</sys:String>
     <!-- Single-instance prompt -->
@@ -269,9 +273,25 @@
 
     <!-- ============ Edit task dialog ============ -->
     <sys:String x:Key="S.TaskEdit.Title">Edit task</sys:String>
+    <sys:String x:Key="S.TaskEdit.Content">Task content</sys:String>
     <sys:String x:Key="S.TaskEdit.DueDate">Due date</sys:String>
     <sys:String x:Key="S.TaskEdit.Enable">Enable</sys:String>
     <sys:String x:Key="S.TaskEdit.DefaultTimeHint">No time picked defaults to 00:00</sys:String>
+
+    <!-- ============ Schedule / calendar ============ -->
+    <sys:String x:Key="S.Schedule.Title">Schedule</sys:String>
+    <sys:String x:Key="S.Schedule.Tooltip">View todos on a calendar by due date</sys:String>
+    <sys:String x:Key="S.Schedule.Day">Day</sys:String>
+    <sys:String x:Key="S.Schedule.Week">Week</sys:String>
+    <sys:String x:Key="S.Schedule.Month">Month</sys:String>
+    <sys:String x:Key="S.Schedule.Today">Today</sys:String>
+    <sys:String x:Key="S.Schedule.Prev">Previous</sys:String>
+    <sys:String x:Key="S.Schedule.Next">Next</sys:String>
+    <sys:String x:Key="S.Schedule.NoTasks">No due-dated todos in this period</sys:String>
+    <sys:String x:Key="S.Schedule.WeekdayHeaders">Mon,Tue,Wed,Thu,Fri,Sat,Sun</sys:String>
+    <sys:String x:Key="S.Schedule.Done">Done</sys:String>
+    <sys:String x:Key="S.Fmt.YearMonth">{1}/{0}</sys:String>
+    <sys:String x:Key="S.Fmt.MoreCount">+{0}</sys:String>
 
     <!-- ============ Toast notification ============ -->
     <sys:String x:Key="S.Toast.DefaultTitle">Todo reminder</sys:String>

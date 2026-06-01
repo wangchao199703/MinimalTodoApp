@@ -14,12 +14,14 @@ public partial class TaskEditDialog : Window
 {
     public DateTime? ResultDue { get; private set; }
     public Priority ResultPriority { get; private set; }
+    public string ResultTitle { get; private set; } = string.Empty;
 
     public TaskEditDialog(TodoItem item)
     {
         InitializeComponent();
 
-        TitlePreview.Text = item.Title;
+        ResultTitle = item.Title;
+        TitleEdit.Text = item.Title;
 
         // 小时 / 分钟下拉
         for (int h = 0; h < 24; h++) HourBox.Items.Add(h.ToString("D2"));
@@ -83,6 +85,10 @@ public partial class TaskEditDialog : Window
 
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
+        // 任务内容:留空则保留原标题
+        var title = TitleEdit.Text?.Trim();
+        if (!string.IsNullOrEmpty(title)) ResultTitle = title;
+
         ResultPriority = ReadPriority();
 
         if (EnableDue.IsChecked == true && DatePick.SelectedDate.HasValue)

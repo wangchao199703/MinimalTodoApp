@@ -57,6 +57,12 @@ public partial class MainWindow : Window
             System.Windows.Controls.Primitives.Thumb.DragCompletedEvent,
             new System.Windows.Controls.Primitives.DragCompletedEventHandler((_, _) => SyncInputBarHeightBack()),
             true);
+
+        // 拖拽结束兜底:任何鼠标左键释放都清除拖拽态(无论拖拽是正常放下还是被取消)，
+        // 配合 VM 在拖拽期间挂起的刷新一并补刷，避免桌面残留拖拽"鬼影"。
+        AddHandler(PreviewMouseLeftButtonUpEvent,
+            new MouseButtonEventHandler((_, _) => { if (Vm != null) Vm.IsDragging = false; }),
+            true);
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
@@ -830,6 +836,15 @@ public partial class MainWindow : Window
         }
     }
 
+    // ===== 日程 / 日历:按截止时间查看待办(天/周/月) =====
+
+    private void Schedule_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm == null) return;
+        var dlg = new CalendarDialog(Vm) { Owner = this };
+        dlg.ShowDialog();
+    }
+
     // ===== 分组右键:修改颜色 =====
 
     private void GroupColor_Click(object sender, RoutedEventArgs e)
@@ -880,7 +895,7 @@ public partial class MainWindow : Window
 
         var dlg = new TaskEditDialog(item) { Owner = this };
         if (dlg.ShowDialog() == true)
-            Vm.ApplyTaskEdits(item, dlg.ResultDue, dlg.ResultPriority);
+            Vm.ApplyTaskEdits(item, dlg.ResultDue, dlg.ResultPriority, dlg.ResultTitle);
     }
 
     // ===== 右键:移动到分组 =====
