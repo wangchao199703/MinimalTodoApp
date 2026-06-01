@@ -1,9 +1,159 @@
 # MinimalTodoApp
 
+**English | [简体中文](#简体中文)**
+
+A lightweight, fast-starting **local to-do app for Windows**.
+
+- **Tech stack**: C# + WPF (.NET 8) + standard MVVM (CommunityToolkit.Mvvm source generators, zero runtime reflection)
+- **Highlights**: local storage, save-on-change, publishable as a self-contained single-file exe (no .NET runtime required on the target machine)
+- **In-app language switch**: 简体中文 / English, switchable at runtime with no restart (title-bar ☰ menu → Language)
+
+---
+
+## ✨ Features
+
+- ✅ Add / delete / edit tasks and mark them done; click the title to edit text, right-click for the action menu
+- ☑️ Built-in "Done" group: checked tasks are auto-collected, unchecking restores the original group
+- 📅 Due date + countdown to the deadline (Today / Tomorrow / N days left / Overdue)
+- ⏱️ After typing a task, a priority dropdown + quick time presets pop up above (5 minutes – 1 week, minute precision)
+- 🗂️ Custom groups (switch in the sidebar; defaults: Work / Life / Study / Done), right-click to change color / clear / delete
+- ↔️ Resizable sidebar by dragging; ☰ at the bottom-left collapses / expands it
+- ↕️ Multiple sort modes: Custom (drag) / Due date / Priority / Completion / Created time / Title
+- 💾 Local `data.json` storage, saved on change and loaded on start (System.Text.Json)
+- 🎨 8 built-in themes + custom themes: Light / Dark / Nord / Ocean / Forest / Rose / Transparent / Glass
+- ⚙️ Settings window: run-at-startup toggle (title-bar ☰ → Settings)
+- 🪟 Custom-drawn title bar (traffic-light buttons at the top-right) + rounded window
+- 🔔 Stays on the desktop: the close button hides to the tray, right-click the tray icon to quit, double-click to restore
+
+---
+
+## 📁 Project structure
+
+```
+todo_project/
+├─ build.ps1 / build.bat        # one-click scripts to publish the self-contained single-file exe
+└─ MinimalTodoApp/
+   ├─ MinimalTodoApp.csproj      # project file (.NET 8 / WPF)
+   ├─ App.xaml(.cs)              # app entry point
+   ├─ Models/                    # data models (TodoItem / TodoGroup / AppData / theme / sort)
+   ├─ ViewModels/                # MainViewModel (MVVM core)
+   ├─ Views/                     # windows & dialogs (main / settings / task edit / theme edit / toast)
+   ├─ Services/                  # DataService (local JSON read/write)
+   ├─ Infrastructure/            # theme manager, run-at-startup, sound, Markdown, native API wrappers, i18n
+   ├─ Converters/                # XAML value converters
+   ├─ Lang/                      # Strings.zh.xaml / Strings.en.xaml (translation resources)
+   └─ Themes/                    # 8 built-in theme resource dictionaries
+```
+
+---
+
+## 🚀 Getting started
+
+### Prerequisite: install the .NET 8 SDK
+
+```powershell
+winget install Microsoft.DotNet.SDK.8
+```
+
+Or download "SDK x64" from <https://dotnet.microsoft.com/download/dotnet/8.0>. Open a new terminal and verify:
+
+```powershell
+dotnet --list-sdks
+```
+
+### Build & run
+
+In the `MinimalTodoApp` directory (containing `MinimalTodoApp.csproj`):
+
+```powershell
+dotnet restore        # restore NuGet packages (internet needed the first time)
+dotnet run            # run directly (debug)
+dotnet build -c Release   # or build Release
+```
+
+---
+
+## 📦 Package as a dependency-free single-file exe (recommended)
+
+Just run the script in the repo root (the scripts contain no Chinese):
+
+```powershell
+.\build.ps1     # PowerShell
+```
+
+or
+
+```bat
+build.bat       :: command line
+```
+
+The script publishes a **self-contained single file**; the target machine needs no .NET runtime installed.
+
+Output path:
+
+```
+MinimalTodoApp\bin\Release\net8.0-windows\win-x64\publish\MinimalTodoApp.exe   (~63 MB)
+```
+
+Equivalent command:
+
+```powershell
+dotnet publish MinimalTodoApp\MinimalTodoApp.csproj -c Release -r win-x64 `
+  --self-contained true -p:PublishSingleFile=true `
+  -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
+  -p:DebugType=none -p:SatelliteResourceLanguages=en
+```
+
+> If the target machine already has the .NET 8 Desktop Runtime, you can publish framework-dependent for a ~1.7 MB single file instead:
+> `--self-contained false -p:PublishSingleFile=true -p:DebugType=none`
+
+---
+
+## 💾 Data file location
+
+```
+%AppData%\MinimalTodoApp\data.json
+```
+
+---
+
+## 🔧 Dependencies (all lightweight libraries)
+
+| Library | Purpose |
+|---------|---------|
+| CommunityToolkit.Mvvm | MVVM source generators, zero reflection |
+| gong-wpf-dragdrop | drag-and-drop list reordering |
+| H.NotifyIcon.Wpf | system tray |
+
+> If `dotnet restore` reports a missing package version, change the corresponding `Version` in `.csproj` to the latest stable version reported by `dotnet add package <name>`.
+
+---
+
+## 💻 System requirements
+
+Windows 10 (1809+) / Windows 11, x64
+
+---
+
+## 📄 More docs
+
+- [Sub-project notes](MinimalTodoApp/README.md)
+- [Optimization log](MinimalTodoApp/优化记录.md)
+
+---
+<br>
+
+<a name="简体中文"></a>
+
+# MinimalTodoApp（简体中文）
+
+**[English](#minimaltodoapp) | 简体中文**
+
 一款占用内存小、启动快的 **Windows 本地待办事项软件**。
 
 - **技术栈**：C# + WPF (.NET 8) + 标准 MVVM（CommunityToolkit.Mvvm 源生成器，零运行时反射）
 - **特点**：本地存储、即改即存、自包含单文件可发布（目标机无需安装 .NET 运行时）
+- **应用内多语言**：简体中文 / English，运行时一键切换无需重启（标题栏 ☰ 菜单 → 语言）
 
 ---
 
@@ -36,8 +186,9 @@ todo_project/
    ├─ ViewModels/                # MainViewModel（MVVM 核心）
    ├─ Views/                     # 窗口与对话框（主窗口 / 设置 / 任务编辑 / 主题编辑 / 提示）
    ├─ Services/                  # DataService（本地 JSON 读写）
-   ├─ Infrastructure/            # 主题管理、开机自启、声音、Markdown、原生 API 封装
+   ├─ Infrastructure/            # 主题管理、开机自启、声音、Markdown、原生 API 封装、国际化
    ├─ Converters/                # XAML 值转换器
+   ├─ Lang/                      # Strings.zh.xaml / Strings.en.xaml（翻译资源）
    └─ Themes/                    # 8 套内置主题资源字典
 ```
 
@@ -125,7 +276,14 @@ dotnet publish MinimalTodoApp\MinimalTodoApp.csproj -c Release -r win-x64 `
 
 ---
 
+## 💻 系统要求
+
+Windows 10（1809+）/ Windows 11，x64
+
+---
+
 ## 📄 更多文档
 
 - [子项目说明](MinimalTodoApp/README.md)
 - [优化记录](MinimalTodoApp/优化记录.md)
+</content>
