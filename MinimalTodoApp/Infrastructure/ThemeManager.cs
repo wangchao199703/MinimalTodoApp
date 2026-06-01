@@ -30,17 +30,18 @@ public static class ThemeManager
         "Divider", "SelectedItemBg", "OverdueText", "WarningText", "SuccessText"
     };
 
-    /// <summary>内置主题(文件名 Key 必须与 Themes 目录下 xaml 同名).</summary>
+    /// <summary>内置主题(文件名 Key 必须与 Themes 目录下 xaml 同名).
+    /// 第二字段存的是翻译键(S.Theme.*)，在 <see cref="AllThemes"/> 中按当前语言解析为 Display.</summary>
     private static readonly List<ThemeInfo> Builtin = new()
     {
-        new ThemeInfo("Light", "明亮", "#FFFFFF", "#1F2329"),
-        new ThemeInfo("Dark",  "暗黑", "#26282C", "#E6E8EB"),
-        new ThemeInfo("Nord",  "极地", "#3B4252", "#ECEFF4"),
-        new ThemeInfo("Ocean", "海洋", "#173540", "#E0F2F1"),
-        new ThemeInfo("Forest","森林", "#EAEFE0", "#26331F"),
-        new ThemeInfo("Rose",  "玫瑰", "#FDEBF0", "#3D1F2A"),
-        new ThemeInfo("Transparent", "透明", "#80FFFFFF", "#1F2329"),
-        new ThemeInfo("Glass", "毛玻璃", "#80222831", "#F5F7FA"),
+        new ThemeInfo("Light", "S.Theme.Light", "#FFFFFF", "#1F2329"),
+        new ThemeInfo("Dark",  "S.Theme.Dark",  "#26282C", "#E6E8EB"),
+        new ThemeInfo("Nord",  "S.Theme.Nord",  "#3B4252", "#ECEFF4"),
+        new ThemeInfo("Ocean", "S.Theme.Ocean", "#173540", "#E0F2F1"),
+        new ThemeInfo("Forest","S.Theme.Forest","#EAEFE0", "#26331F"),
+        new ThemeInfo("Rose",  "S.Theme.Rose",  "#FDEBF0", "#3D1F2A"),
+        new ThemeInfo("Transparent", "S.Theme.Transparent", "#80FFFFFF", "#1F2329"),
+        new ThemeInfo("Glass", "S.Theme.Glass", "#80222831", "#F5F7FA"),
     };
 
     private static readonly Dictionary<string, CustomTheme> Custom =
@@ -54,9 +55,11 @@ public static class ThemeManager
 
     public static string Current { get; private set; } = Light;
 
-    /// <summary>内置 + 自定义的完整主题列表(供 UI 绑定).</summary>
+    /// <summary>内置 + 自定义的完整主题列表(供 UI 绑定).内置项的 Display 按当前语言解析.</summary>
     public static List<ThemeInfo> AllThemes() =>
-        Builtin.Concat(Custom.Values.Select(ToInfo)).ToList();
+        Builtin.Select(t => t with { Display = Loc.T(t.Display) })
+               .Concat(Custom.Values.Select(ToInfo))
+               .ToList();
 
     private static ThemeInfo ToInfo(CustomTheme c) =>
         new(c.Key, c.Display, c.Preview, c.PreviewText, IsCustom: true);

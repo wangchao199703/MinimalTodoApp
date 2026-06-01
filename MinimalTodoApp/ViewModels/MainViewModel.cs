@@ -418,6 +418,14 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         foreach (var o in ReminderUnits) o.RefreshLabel();
         foreach (var g in Groups) g.RefreshDisplayName();
 
+        // 内置主题名随语言切换:重建列表并按 Key 复位选中项(ThemeInfo 为不可变 record)
+        var selectedKey = SelectedTheme?.Key;
+        Themes.Clear();
+        foreach (var t in ThemeManager.AllThemes())
+            Themes.Add(t);
+        var reselected = Themes.FirstOrDefault(t => t.Key == selectedKey);
+        if (reselected != null) SelectedTheme = reselected;
+
         OnPropertyChanged(nameof(CurrentTitle));
         OnPropertyChanged(nameof(SortTooltip));
         OnPropertyChanged(nameof(NewTaskDueDisplay));

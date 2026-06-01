@@ -36,6 +36,18 @@
     <sys:String x:Key="S.ChangeTheme">Theme</sys:String>
     <sys:String x:Key="S.ChooseTheme">Choose theme</sys:String>
     <sys:String x:Key="S.AddCustomTheme">＋ Custom theme</sys:String>
+    <!-- Built-in theme names -->
+    <sys:String x:Key="S.Theme.Light">Light</sys:String>
+    <sys:String x:Key="S.Theme.Dark">Dark</sys:String>
+    <sys:String x:Key="S.Theme.Nord">Nord</sys:String>
+    <sys:String x:Key="S.Theme.Ocean">Ocean</sys:String>
+    <sys:String x:Key="S.Theme.Forest">Forest</sys:String>
+    <sys:String x:Key="S.Theme.Rose">Rose</sys:String>
+    <sys:String x:Key="S.Theme.Transparent">Transparent</sys:String>
+    <sys:String x:Key="S.Theme.Glass">Glass</sys:String>
+    <!-- Single-instance prompt -->
+    <sys:String x:Key="S.SingleInstance.Title">Notice</sys:String>
+    <sys:String x:Key="S.SingleInstance.Message">An existing instance is running. Exit it and start this version?</sys:String>
     <sys:String x:Key="S.CollapseSidebar">Collapse</sys:String>
     <sys:String x:Key="S.Tip.ToggleSidebar">Show / hide the group bar</sys:String>
     <sys:String x:Key="S.Export.Md">Export to Markdown</sys:String>

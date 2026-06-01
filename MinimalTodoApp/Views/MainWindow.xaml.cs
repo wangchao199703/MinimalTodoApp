@@ -577,16 +577,19 @@ public partial class MainWindow : Window
             switch (_dockEdge)
             {
                 case 1:
-                    // 上边:鼠标到达屏幕上边缘即触发(不限制横向范围)
-                    trigger = pos.Y >= wa.Top - 1 && pos.Y <= wa.Top + VisibleStripPx + 2;
+                    // 上边:鼠标到达屏幕上边缘,且横向落在窗口所在区段内才触发
+                    trigger = pos.Y >= wa.Top - 1 && pos.Y <= wa.Top + VisibleStripPx + 2
+                              && pos.X >= Left - 2 && pos.X <= Left + Width + 2;
                     break;
                 case 2:
-                    // 左边:鼠标到达屏幕左边缘即触发(不限制纵向范围)
-                    trigger = pos.X >= wa.Left - 1 && pos.X <= wa.Left + VisibleStripPx + 2;
+                    // 左边:鼠标到达屏幕左边缘,且纵向落在窗口所在区段内才触发
+                    trigger = pos.X >= wa.Left - 1 && pos.X <= wa.Left + VisibleStripPx + 2
+                              && pos.Y >= Top - 2 && pos.Y <= Top + Height + 2;
                     break;
                 case 3:
-                    // 右边:鼠标到达屏幕右边缘即触发(不限制纵向范围)
-                    trigger = pos.X >= wa.Right - VisibleStripPx - 2 && pos.X <= wa.Right + 1;
+                    // 右边:鼠标到达屏幕右边缘,且纵向落在窗口所在区段内才触发
+                    trigger = pos.X >= wa.Right - VisibleStripPx - 2 && pos.X <= wa.Right + 1
+                              && pos.Y >= Top - 2 && pos.Y <= Top + Height + 2;
                     break;
             }
             if (trigger) ShowFromEdge();

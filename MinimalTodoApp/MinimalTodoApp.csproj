@@ -11,9 +11,9 @@
     <LangVersion>latest</LangVersion>
 
     <!-- 版本信息（随 Release 维护） -->
-    <Version>1.1.0</Version>
-    <FileVersion>1.1.0.0</FileVersion>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <Version>1.1.1</Version>
+    <FileVersion>1.1.1.0</FileVersion>
+    <AssemblyVersion>1.1.1.0</AssemblyVersion>
 
     <!-- 体积/性能优化：不生成多余的卫星资源、关闭调试符号(发布时) -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>

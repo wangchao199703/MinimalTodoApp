@@ -36,6 +36,18 @@
     <sys:String x:Key="S.ChangeTheme">修改主题</sys:String>
     <sys:String x:Key="S.ChooseTheme">选择主题</sys:String>
     <sys:String x:Key="S.AddCustomTheme">＋ 自定义主题</sys:String>
+    <!-- 内置主题名称 -->
+    <sys:String x:Key="S.Theme.Light">明亮</sys:String>
+    <sys:String x:Key="S.Theme.Dark">暗黑</sys:String>
+    <sys:String x:Key="S.Theme.Nord">极地</sys:String>
+    <sys:String x:Key="S.Theme.Ocean">海洋</sys:String>
+    <sys:String x:Key="S.Theme.Forest">森林</sys:String>
+    <sys:String x:Key="S.Theme.Rose">玫瑰</sys:String>
+    <sys:String x:Key="S.Theme.Transparent">透明</sys:String>
+    <sys:String x:Key="S.Theme.Glass">毛玻璃</sys:String>
+    <!-- 单实例提示 -->
+    <sys:String x:Key="S.SingleInstance.Title">提示</sys:String>
+    <sys:String x:Key="S.SingleInstance.Message">检测到旧版本正在运行，是否退出旧版本并启动当前版本？</sys:String>
     <sys:String x:Key="S.CollapseSidebar">收起侧边</sys:String>
     <sys:String x:Key="S.Tip.ToggleSidebar">显示/隐藏分组栏</sys:String>
     <sys:String x:Key="S.Export.Md">导出为 Markdown</sys:String>
