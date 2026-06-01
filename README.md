@@ -137,7 +137,6 @@ Windows 10 (1809+) / Windows 11, x64
 
 ## 📄 More docs
 
-- [Sub-project notes](MinimalTodoApp/README.md)
 - [Optimization log](MinimalTodoApp/优化记录.md)
 
 ---
@@ -284,6 +283,5 @@ Windows 10（1809+）/ Windows 11，x64
 
 ## 📄 更多文档
 
-- [子项目说明](MinimalTodoApp/README.md)
 - [优化记录](MinimalTodoApp/优化记录.md)
 </content>
