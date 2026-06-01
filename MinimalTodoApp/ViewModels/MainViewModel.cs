@@ -563,6 +563,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         NewTaskReminderInterval = 30;
         NewTaskParentId = null;
 
+        // 添加子待办后展开父待办,确保新子项立即可见
+        if (parent != null) parent.IsCollapsed = false;
+
         RecomputeParents();
         RefreshItems();
         RefreshGroupCounts();
@@ -1005,6 +1008,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         // 顺序与当前一致；若本就是自定义排序则不触发，下方再显式保存一次兜底.
         SelectedSortOption = SortOptions.First(o => o.Mode == SortMode.Custom);
 
+        // 显式补刷:父子关系变化后需重算 HasChildren，使父待办折叠箭头立即出现
+        // (本就是自定义排序时上面赋值不触发刷新)。拖拽进行中会经 _pendingRefresh 在拖拽结束时补刷.
+        RefreshItems();
+
         SaveData();
     }
 
@@ -1226,8 +1233,13 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             };
         }
 
+        // 置顶前移:在上面排序结果之上做一次稳定排序,把"根被置顶"的家族整体浮到最前.
+        // OrderByDescending 稳定,保留各分区内已有顺序与整族连续性;无论何种排序模式都生效.
+        var ordered = query.ToList();
+        ordered = ordered.OrderByDescending(RootIsPinned).ToList();
+
         Items.Clear();
-        foreach (var item in query)
+        foreach (var item in ordered)
             Items.Add(item);
     }
 
@@ -1286,6 +1298,34 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         item.IsCollapsed = !item.IsCollapsed;
         RefreshItems();
     }
+
+    /// <summary>切换任务置顶.置顶作用于其根祖先,整族随之浮到列表最上方(右键菜单).</summary>
+    [RelayCommand]
+    private void TogglePin(TodoItem? item)
+    {
+        if (item == null) return;
+        var root = RootOf(item);
+        root.IsPinned = !root.IsPinned;
+        RefreshItems();
+        SaveData();
+    }
+
+    /// <summary>沿 ParentId 上溯到根任务(含安全计数防环).</summary>
+    private TodoItem RootOf(TodoItem item)
+    {
+        var cur = item;
+        int safety = 8;
+        while (cur.ParentId.HasValue && safety-- > 0)
+        {
+            var parent = _allItems.FirstOrDefault(i => i.Id == cur.ParentId.Value);
+            if (parent == null) break;
+            cur = parent;
+        }
+        return cur;
+    }
+
+    /// <summary>该项所属家族的根任务是否置顶(用于整族置顶前移).</summary>
+    private bool RootIsPinned(TodoItem item) => RootOf(item).IsPinned;
 
     private void RefreshGroupCounts()
     {

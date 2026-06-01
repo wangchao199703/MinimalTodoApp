@@ -75,6 +75,7 @@
 
     <!-- ============ 任务右键菜单 ============ -->
     <sys:String x:Key="S.Task.Edit">编辑（优先级 / 截止时间）…</sys:String>
+    <sys:String x:Key="S.Task.TogglePin">置顶 / 取消置顶</sys:String>
     <sys:String x:Key="S.Task.ClearDue">清除截止日期</sys:String>
     <sys:String x:Key="S.Task.Indent">作为子待办（增加缩进 Tab）</sys:String>
     <sys:String x:Key="S.Task.Outdent">提升一级（减少缩进 Shift+Tab）</sys:String>
@@ -292,6 +293,7 @@
     <sys:String x:Key="S.Schedule.Next">下一页</sys:String>
     <sys:String x:Key="S.Schedule.NoTasks">本时段没有带截止时间的待办</sys:String>
     <sys:String x:Key="S.Schedule.WeekdayHeaders">一,二,三,四,五,六,日</sys:String>
+    <sys:String x:Key="S.Schedule.AllDay">全天 / 未定时</sys:String>
     <sys:String x:Key="S.Schedule.Done">已完成</sys:String>
     <sys:String x:Key="S.Fmt.YearMonth">{0}年{1}月</sys:String>
     <sys:String x:Key="S.Fmt.DayTitle">{0}年{1}月{2}日 周{3}</sys:String>

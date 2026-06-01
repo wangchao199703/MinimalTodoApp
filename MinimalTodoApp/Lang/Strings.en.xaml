@@ -75,6 +75,7 @@
 
     <!-- ============ Task context menu ============ -->
     <sys:String x:Key="S.Task.Edit">Edit (priority / due time)…</sys:String>
+    <sys:String x:Key="S.Task.TogglePin">Pin / Unpin to top</sys:String>
     <sys:String x:Key="S.Task.ClearDue">Clear due date</sys:String>
     <sys:String x:Key="S.Task.Indent">Make subtask (indent, Tab)</sys:String>
     <sys:String x:Key="S.Task.Outdent">Promote one level (outdent, Shift+Tab)</sys:String>
@@ -292,6 +293,7 @@
     <sys:String x:Key="S.Schedule.Next">Next</sys:String>
     <sys:String x:Key="S.Schedule.NoTasks">No due-dated todos in this period</sys:String>
     <sys:String x:Key="S.Schedule.WeekdayHeaders">Mon,Tue,Wed,Thu,Fri,Sat,Sun</sys:String>
+    <sys:String x:Key="S.Schedule.AllDay">All-day / no time</sys:String>
     <sys:String x:Key="S.Schedule.Done">Done</sys:String>
     <sys:String x:Key="S.Fmt.YearMonth">{1}/{0}</sys:String>
     <sys:String x:Key="S.Fmt.DayTitle">{0}-{1}-{2} ({3})</sys:String>

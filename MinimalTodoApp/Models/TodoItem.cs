@@ -83,6 +83,10 @@ public partial class TodoItem : ObservableObject
     [ObservableProperty]
     private bool isCollapsed;
 
+    /// <summary>是否置顶.置顶作用于顶层任务,其整族始终排在列表最上方(无论排序模式).参与序列化.</summary>
+    [ObservableProperty]
+    private bool isPinned;
+
     /// <summary>是否有子待办(由 ViewModel 维护,用于显示折叠箭头).不参与序列化.</summary>
     [ObservableProperty]
     [property: JsonIgnore]
