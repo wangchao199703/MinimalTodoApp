@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:dd="urn:gong-wpf-dragdrop"
         xmlns:tb="clr-namespace:H.NotifyIcon;assembly=H.NotifyIcon.Wpf"
+        xmlns:v="clr-namespace:MinimalTodoApp.Views"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Todo" Height="640" Width="680"
         MinHeight="420" MinWidth="380"
@@ -136,6 +137,9 @@
                         <ColumnDefinition x:Name="SidebarColumn" Width="150" MinWidth="0" />
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" MinWidth="150" />
+                        <!-- 右侧日程分隔条 + 日程面板(默认收起,宽度=0) -->
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition x:Name="ScheduleColumn" Width="0" />
                     </Grid.ColumnDefinitions>
 
                     <!-- ===== 左侧单列侧边栏（自上而下：全部任务 / 分组 / 新建分组 / 主题 / 三横） ===== -->
@@ -1048,6 +1052,19 @@
                             </Grid>
                         </Border>
                     </Grid>
+
+                    <!-- 日程分隔条:拖动调整中间任务区与右侧日程的宽度(收起时隐藏) -->
+                    <GridSplitter x:Name="ScheduleSplitter" Grid.Column="3" Width="5"
+                                  HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                                  Background="Transparent" ResizeBehavior="PreviousAndNext"
+                                  Visibility="Collapsed" />
+
+                    <!-- ==================== 右侧:日程面板(嵌入,可拖宽) ==================== -->
+                    <Border x:Name="SchedulePanel" Grid.Column="4" Visibility="Collapsed"
+                            Background="{DynamicResource SidebarBg}"
+                            BorderBrush="{DynamicResource Divider}" BorderThickness="1,0,0,0">
+                        <v:CalendarView x:Name="ScheduleView" />
+                    </Border>
                 </Grid>
             </Grid>
 

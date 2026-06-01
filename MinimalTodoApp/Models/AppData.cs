@@ -34,6 +34,12 @@ public class AppData
     /// <summary>添加任务输入栏的高度(可由分隔条上下拖动调整，持久化).</summary>
     public double InputBarHeight { get; set; } = 40;
 
+    /// <summary>右侧日程面板宽度(可由分隔条拖动调整，持久化).</summary>
+    public double ScheduleWidth { get; set; } = 300;
+
+    /// <summary>右侧日程面板是否展开(持久化，上次展开则下次启动也展开).</summary>
+    public bool ScheduleOpen { get; set; }
+
     /// <summary>用户自定义主题列表.</summary>
     public List<CustomTheme> CustomThemes { get; set; } = new();
 

@@ -83,6 +83,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         sidebarWidth = _data.SidebarWidth > 0 ? _data.SidebarWidth : 113;
         sidebarCollapsed = _data.SidebarCollapsed;
         inputBarHeight = _data.InputBarHeight > 0 ? _data.InputBarHeight : 40;
+        scheduleWidth = _data.ScheduleWidth > 0 ? _data.ScheduleWidth : 300;
+        scheduleOpen = _data.ScheduleOpen;
         alwaysOnTop = _data.AlwaysOnTop;
         effectsEnabled = _data.EffectsEnabled;
         soundEnabled = _data.SoundEnabled;
@@ -214,6 +216,14 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>底部输入栏高度(GridSplitter 拖动 + 持久化).</summary>
     [ObservableProperty]
     private double inputBarHeight = 40;
+
+    /// <summary>右侧日程面板宽度(GridSplitter 拖动 + 持久化).</summary>
+    [ObservableProperty]
+    private double scheduleWidth = 300;
+
+    /// <summary>右侧日程面板是否展开(持久化).</summary>
+    [ObservableProperty]
+    private bool scheduleOpen;
 
     /// <summary>左侧分组栏是否折叠隐藏.</summary>
     [ObservableProperty]
@@ -464,6 +474,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     partial void OnSidebarWidthChanged(double value) => SaveData();
     partial void OnInputBarHeightChanged(double value) => SaveData();
+    partial void OnScheduleWidthChanged(double value) => SaveData();
+    partial void OnScheduleOpenChanged(bool value) => SaveData();
     partial void OnSidebarCollapsedChanged(bool value) => SaveData();
     partial void OnAlwaysOnTopChanged(bool value) => SaveData();
     partial void OnEffectsEnabledChanged(bool value) => SaveData();
@@ -731,6 +743,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         {
             foreach (var grp in Groups)
             {
+                // 已完成分组聚合了多个原分组的家庭，OrderIndex 互相碰撞;若在此按位置重派生
+                // ParentId，会把子待办错误重挂到无关项。完成的家庭迁入时父子关系已正确，应冻结。
+                if (grp.IsCompletedGroup || grp.IsAllUncompletedGroup) continue;
+
                 var groupItems = _allItems.Where(i => i.GroupId == grp.Id)
                                            .OrderBy(i => i.OrderIndex)
                                            .ToList();
@@ -1189,19 +1205,62 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         // 任一祖先被折叠则隐藏(用于父待办折叠时收起所有子孙)
         query = query.Where(i => !IsHiddenByCollapsedAncestor(i));
 
-        query = (SelectedSortOption?.Mode ?? SortMode.Custom) switch
+        var mode = SelectedSortOption?.Mode ?? SortMode.Custom;
+
+        // 已完成分组在默认(自定义)排序下用层级 DFS:聚合的多家庭按 OrderIndex 平铺会让
+        // 子待办脱离父待办，改为"根按 OrderIndex、子紧随父"保证整族连续、子在父下。
+        if (mode == SortMode.Custom && SelectedGroup != null && SelectedGroup.IsCompletedGroup)
         {
-            SortMode.DueDate   => query.OrderBy(i => i.DueDate ?? DateTime.MaxValue),
-            SortMode.Priority  => query.OrderByDescending(i => (int)i.Priority).ThenBy(i => i.OrderIndex),
-            SortMode.Completed => query.OrderBy(i => i.IsCompleted).ThenBy(i => i.OrderIndex),
-            SortMode.Created   => query.OrderByDescending(i => i.CreatedAt),
-            SortMode.Title     => query.OrderBy(i => i.Title, StringComparer.CurrentCulture),
-            _                  => query.OrderBy(i => i.OrderIndex),
-        };
+            query = OrderHierarchically(query);
+        }
+        else
+        {
+            query = mode switch
+            {
+                SortMode.DueDate   => query.OrderBy(i => i.DueDate ?? DateTime.MaxValue),
+                SortMode.Priority  => query.OrderByDescending(i => (int)i.Priority).ThenBy(i => i.OrderIndex),
+                SortMode.Completed => query.OrderBy(i => i.IsCompleted).ThenBy(i => i.OrderIndex),
+                SortMode.Created   => query.OrderByDescending(i => i.CreatedAt),
+                SortMode.Title     => query.OrderBy(i => i.Title, StringComparer.CurrentCulture),
+                _                  => query.OrderBy(i => i.OrderIndex),
+            };
+        }
 
         Items.Clear();
         foreach (var item in query)
             Items.Add(item);
+    }
+
+    /// <summary>
+    /// 层级排序:把集合按"根(ParentId 为空或父不在集合内)→深度优先输出子孙"排列，
+    /// 根与同级子均按 OrderIndex 排序，保证子待办紧贴父待办、整族连续.
+    /// </summary>
+    private static IEnumerable<TodoItem> OrderHierarchically(IEnumerable<TodoItem> items)
+    {
+        var list = items.ToList();
+        var idSet = list.Select(i => i.Id).ToHashSet();
+        var childrenByParent = list
+            .Where(i => i.ParentId.HasValue && idSet.Contains(i.ParentId.Value))
+            .GroupBy(i => i.ParentId!.Value)
+            .ToDictionary(g => g.Key, g => g.OrderBy(x => x.OrderIndex).ToList());
+
+        var roots = list
+            .Where(i => !i.ParentId.HasValue || !idSet.Contains(i.ParentId.Value))
+            .OrderBy(i => i.OrderIndex);
+
+        var result = new List<TodoItem>(list.Count);
+        var visited = new HashSet<Guid>();
+        void Emit(TodoItem node)
+        {
+            if (!visited.Add(node.Id)) return;   // 防环
+            result.Add(node);
+            if (childrenByParent.TryGetValue(node.Id, out var kids))
+                foreach (var k in kids) Emit(k);
+        }
+        foreach (var r in roots) Emit(r);
+        // 兜底:任何未被纳入(异常数据)的项追加到末尾
+        foreach (var it in list) if (!visited.Contains(it.Id)) result.Add(it);
+        return result;
     }
 
     /// <summary>是否任一祖先处于折叠状态(用于在折叠父时隐藏其所有递归子待办).</summary>
@@ -1431,6 +1490,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.Sort = SelectedSortOption?.Mode ?? SortMode.Custom;
         _data.SidebarWidth = SidebarWidth;
         _data.InputBarHeight = InputBarHeight;
+        _data.ScheduleWidth = ScheduleWidth;
+        _data.ScheduleOpen = ScheduleOpen;
         _data.SidebarCollapsed = SidebarCollapsed;
         _data.AlwaysOnTop = AlwaysOnTop;
         _data.EffectsEnabled = EffectsEnabled;

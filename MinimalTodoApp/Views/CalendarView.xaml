@@ -1,0 +1,84 @@
+<UserControl x:Class="MinimalTodoApp.Views.CalendarView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="Microsoft YaHei UI, Segoe UI">
+
+    <UserControl.Resources>
+        <!-- 分段切换标签(天/周/月):连体、加宽、中性配色，选中用 Accent -->
+        <Style x:Key="SegTab" TargetType="RadioButton">
+            <Setter Property="MinWidth" Value="56" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="b" Background="Transparent" CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <TextBlock Text="{TemplateBinding Content}" HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="{DynamicResource Accent}" />
+                                <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <DockPanel>
+        <!-- 工具栏:视图切换 + 时段标题 + 导航 -->
+        <Grid DockPanel.Dock="Top" Margin="12,12,12,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 分段切换(加宽、连体) -->
+            <Border Grid.Column="0" VerticalAlignment="Center" CornerRadius="8" Padding="2"
+                    Background="{DynamicResource CardBg}" BorderBrush="{DynamicResource Divider}"
+                    BorderThickness="1">
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton x:Name="DayTab" GroupName="View" Style="{StaticResource SegTab}"
+                                 Content="{DynamicResource S.Schedule.Day}" Checked="ViewTab_Checked" Tag="Day" />
+                    <RadioButton x:Name="WeekTab" GroupName="View" Style="{StaticResource SegTab}"
+                                 Content="{DynamicResource S.Schedule.Week}" Checked="ViewTab_Checked" Tag="Week"
+                                 IsChecked="True" />
+                    <RadioButton x:Name="MonthTab" GroupName="View" Style="{StaticResource SegTab}"
+                                 Content="{DynamicResource S.Schedule.Month}" Checked="ViewTab_Checked" Tag="Month" />
+                </StackPanel>
+            </Border>
+
+            <!-- 时段标题 -->
+            <TextBlock Grid.Column="1" x:Name="PeriodTitle" HorizontalAlignment="Center"
+                       VerticalAlignment="Center" FontSize="15" FontWeight="SemiBold"
+                       TextTrimming="CharacterEllipsis" Margin="8,0"
+                       Foreground="{DynamicResource PrimaryText}" />
+
+            <!-- 导航 -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <Button Style="{StaticResource GhostButton}" Content="‹" FontSize="16" Padding="9,3"
+                        ToolTip="{DynamicResource S.Schedule.Prev}" Click="Prev_Click" />
+                <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Schedule.Today}"
+                        Padding="9,5" Margin="5,0" Click="Today_Click" />
+                <Button Style="{StaticResource GhostButton}" Content="›" FontSize="16" Padding="9,3"
+                        ToolTip="{DynamicResource S.Schedule.Next}" Click="Next_Click" />
+            </StackPanel>
+        </Grid>
+
+        <!-- 日历主体(代码动态填充) -->
+        <Border Margin="12,0,12,12" CornerRadius="8" Background="{DynamicResource ContentBg}"
+                BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+            <Grid x:Name="CalendarHost" />
+        </Border>
+    </DockPanel>
+</UserControl>

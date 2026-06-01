@@ -58,6 +58,12 @@ public partial class MainWindow : Window
             new System.Windows.Controls.Primitives.DragCompletedEventHandler((_, _) => SyncInputBarHeightBack()),
             true);
 
+        // 日程分隔条:拖动调整右侧日程面板宽度，松开后记忆
+        ScheduleSplitter.AddHandler(
+            System.Windows.Controls.Primitives.Thumb.DragCompletedEvent,
+            new System.Windows.Controls.Primitives.DragCompletedEventHandler((_, _) => SyncScheduleWidthBack()),
+            true);
+
         // 拖拽结束兜底:任何鼠标左键释放都清除拖拽态(无论拖拽是正常放下还是被取消)，
         // 配合 VM 在拖拽期间挂起的刷新一并补刷，避免桌面残留拖拽"鬼影"。
         AddHandler(PreviewMouseLeftButtonUpEvent,
@@ -75,6 +81,9 @@ public partial class MainWindow : Window
         ApplyAcrylicForTheme();
         ApplyAlwaysOnTop();
         RestoreDockOnLoad();
+
+        // 恢复上次的日程面板展开状态(上次展开则启动也展开，窗口随之加宽)
+        if (Vm != null && Vm.ScheduleOpen) OpenSchedule();
 
         // 禁用 Windows Aero Snap 手势，避免拖到边缘触发系统的自动最大化/分屏
         var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
@@ -836,13 +845,67 @@ public partial class MainWindow : Window
         }
     }
 
-    // ===== 日程 / 日历:按截止时间查看待办(天/周/月) =====
+    // ===== 日程 / 日历:嵌入主窗口右侧的可调面板(展开/收起 + 加宽/还原) =====
 
-    private void Schedule_Click(object sender, RoutedEventArgs e)
+    private const double ScheduleSplitterWidth = 5;
+
+    /// <summary>面板当前是否真正展开(UI 状态);与持久化的 Vm.ScheduleOpen 区分，避免启动恢复时被门槛挡住.</summary>
+    private bool _scheduleShown;
+
+    private void Schedule_Click(object sender, RoutedEventArgs e) => ToggleSchedule();
+
+    private void ToggleSchedule()
     {
-        if (Vm == null) return;
-        var dlg = new CalendarDialog(Vm) { Owner = this };
-        dlg.ShowDialog();
+        if (_scheduleShown) CloseSchedule();
+        else OpenSchedule();
+    }
+
+    private void OpenSchedule()
+    {
+        if (Vm == null || _scheduleShown) return;
+
+        ScheduleView.Init(Vm);
+
+        double w = Vm.ScheduleWidth > 0 ? Vm.ScheduleWidth : 300;
+        ScheduleColumn.MinWidth = 220;
+        ScheduleColumn.Width = new GridLength(w);
+        SchedulePanel.Visibility = Visibility.Visible;
+        ScheduleSplitter.Visibility = Visibility.Visible;
+
+        // 正常态下向右扩展出面板宽度(侧边栏与中间任务区尺寸不变;红绿灯/☰ 随标题栏自动右移)
+        if (WindowState == WindowState.Normal)
+            Width += w + ScheduleSplitterWidth;
+
+        _scheduleShown = true;
+        Vm.ScheduleOpen = true;
+        ScheduleView.Refresh();
+    }
+
+    private void CloseSchedule()
+    {
+        if (Vm == null || !_scheduleShown) return;
+
+        SyncScheduleWidthBack();
+        double space = ScheduleColumn.ActualWidth + ScheduleSplitterWidth;
+
+        SchedulePanel.Visibility = Visibility.Collapsed;
+        ScheduleSplitter.Visibility = Visibility.Collapsed;
+        ScheduleColumn.MinWidth = 0;
+        ScheduleColumn.Width = new GridLength(0);
+
+        // 收回面板占用的宽度，侧边栏 + 中间任务区精确还原为展开前的尺寸
+        if (WindowState == WindowState.Normal)
+            Width = Math.Max(MinWidth, Width - space);
+
+        _scheduleShown = false;
+        Vm.ScheduleOpen = false;
+    }
+
+    private void SyncScheduleWidthBack()
+    {
+        if (Vm == null || ScheduleColumn == null) return;
+        double w = ScheduleColumn.ActualWidth;
+        if (w > 0) Vm.ScheduleWidth = w;
     }
 
     // ===== 分组右键:修改颜色 =====

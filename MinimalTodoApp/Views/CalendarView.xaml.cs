@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,32 +13,44 @@ using MinimalTodoApp.ViewModels;
 namespace MinimalTodoApp.Views;
 
 /// <summary>
-/// 日程 / 日历对话框:按截止时间(DueDate)展示待办，支持天 / 周 / 月三种视图.
-/// 单击某条待办弹出任务编辑框(查看 + 编辑)，编辑后即时刷新.
+/// 日程 / 日历面板:按截止时间(DueDate)展示待办，支持天 / 周 / 月三种视图(默认周).
+/// 待办以"按优先级着色的矩形块"呈现(绿/黄/红，与列表一致);单击弹出任务编辑框(查看 + 编辑).
+/// 内嵌于主窗口右侧，可由分隔条调整宽度.
 /// </summary>
-public partial class CalendarDialog : Window
+public partial class CalendarView : UserControl
 {
     private enum ViewMode { Day, Week, Month }
 
-    private readonly MainViewModel _vm;
-    private ViewMode _mode = ViewMode.Month;
-    private DateTime _anchor = DateTime.Today;   // 当前展示时段的参考日期
+    private MainViewModel? _vm;
+    private ViewMode _mode = ViewMode.Week;      // 默认周视图
+    private DateTime _anchor = DateTime.Today;   // 当前展示时段的参考日期(周视图=本周, 月视图=本月)
 
-    public CalendarDialog(MainViewModel vm)
+    // 优先级配色(与列表一致):低=绿 中=黄 高=红
+    private static readonly Brush LowBrush = Frozen("#10B981");
+    private static readonly Brush MidBrush = Frozen("#F59E0B");
+    private static readonly Brush HighBrush = Frozen("#EF4444");
+
+    public CalendarView()
     {
         InitializeComponent();
-        _vm = vm;
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) Close(); };
-        Loaded += (_, _) => Render();
     }
 
-    // ===== 标题栏拖动 / 关闭 =====
-    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    /// <summary>绑定 ViewModel 并订阅主列表变化(新增/完成/删除时自动刷新).</summary>
+    public void Init(MainViewModel vm)
     {
-        if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+        if (_vm != null)
+            _vm.Items.CollectionChanged -= OnItemsChanged;
+        _vm = vm;
+        _vm.Items.CollectionChanged += OnItemsChanged;
     }
 
-    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+    private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (IsVisible) Render();
+    }
+
+    /// <summary>对外刷新入口(面板展开时调用).</summary>
+    public void Refresh() => Render();
 
     // ===== 视图切换 / 导航 =====
     private void ViewTab_Checked(object sender, RoutedEventArgs e)
@@ -52,9 +65,9 @@ public partial class CalendarDialog : Window
 
     private void Today_Click(object sender, RoutedEventArgs e) { _anchor = DateTime.Today; Render(); }
 
-    private void Prev_Click(object sender, RoutedEventArgs e) { Shift(-1); }
+    private void Prev_Click(object sender, RoutedEventArgs e) => Shift(-1);
 
-    private void Next_Click(object sender, RoutedEventArgs e) { Shift(+1); }
+    private void Next_Click(object sender, RoutedEventArgs e) => Shift(+1);
 
     private void Shift(int dir)
     {
@@ -70,6 +83,7 @@ public partial class CalendarDialog : Window
     // ===== 渲染入口 =====
     private void Render()
     {
+        if (_vm == null) return;
         CalendarHost.Children.Clear();
         CalendarHost.RowDefinitions.Clear();
         CalendarHost.ColumnDefinitions.Clear();
@@ -85,7 +99,8 @@ public partial class CalendarDialog : Window
     // ===== 天视图 =====
     private void BuildDay()
     {
-        PeriodTitle.Text = _anchor.ToString("yyyy-MM-dd") + "  " + WeekdayName(_anchor);
+        // 天视图标题:友好格式，不出现区间分隔符与 ISO 短横
+        PeriodTitle.Text = DayTitle(_anchor);
 
         var list = new StackPanel { Margin = new Thickness(14) };
         var tasks = TasksOn(_anchor);
@@ -165,7 +180,6 @@ public partial class CalendarDialog : Window
         for (int r = 0; r < 6; r++)
             CalendarHost.RowDefinitions.Add(new RowDefinition());                          // 6 周
 
-        // 星期表头
         var heads = WeekdayHeaders();
         for (int c = 0; c < 7; c++)
         {
@@ -235,7 +249,7 @@ public partial class CalendarDialog : Window
         return cell;
     }
 
-    // ===== 待办"胶囊" =====
+    // ===== 待办"优先级矩形色块" =====
     private FrameworkElement MakeChip(TodoItem item, bool showTime, bool big)
     {
         string text = item.Title;
@@ -247,17 +261,18 @@ public partial class CalendarDialog : Window
             Text = text,
             FontSize = big ? 13 : 11,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            Foreground = DueBrush(item),
+            Foreground = Brushes.White,
             TextDecorations = item.IsCompleted ? TextDecorations.Strikethrough : null
         };
 
         var chip = new Border
         {
             CornerRadius = new CornerRadius(4),
-            Background = Brush("CardBg"),
+            Background = PriorityBrush(item.Priority),
             Padding = new Thickness(6, big ? 5 : 2, 6, big ? 5 : 2),
             Margin = new Thickness(0, 1, 0, 1),
             Cursor = Cursors.Hand,
+            Opacity = item.IsCompleted ? 0.5 : 1.0,   // 已完成弱化
             ToolTip = item.Title,
             Tag = item,
             Child = label
@@ -274,7 +289,8 @@ public partial class CalendarDialog : Window
 
     private void OpenEdit(TodoItem item)
     {
-        var dlg = new TaskEditDialog(item) { Owner = this };
+        if (_vm == null) return;
+        var dlg = new TaskEditDialog(item) { Owner = Window.GetWindow(this) };
         if (dlg.ShowDialog() == true)
             _vm.ApplyTaskEdits(item, dlg.ResultDue, dlg.ResultPriority, dlg.ResultTitle);
         Render();   // 截止时间可能变化,刷新日历
@@ -282,10 +298,11 @@ public partial class CalendarDialog : Window
 
     // ===== 辅助 =====
     private List<TodoItem> TasksOn(DateTime date) =>
-        _vm.DatedTasks
-           .Where(t => t.DueDate!.Value.Date == date.Date)
-           .OrderBy(t => t.DueDate!.Value)
-           .ToList();
+        _vm == null ? new List<TodoItem>()
+        : _vm.DatedTasks
+             .Where(t => t.DueDate!.Value.Date == date.Date)
+             .OrderBy(t => t.DueDate!.Value)
+             .ToList();
 
     private static DateTime StartOfWeek(DateTime date)
     {
@@ -308,6 +325,14 @@ public partial class CalendarDialog : Window
         return WeekdayHeaders()[idx];
     }
 
+    /// <summary>天视图标题:中文"x年x月x日 周X"、英文"MMM d, yyyy (ddd)"，均无区间短横.</summary>
+    private static string DayTitle(DateTime d)
+    {
+        if (LanguageManager.Current == LanguageManager.English)
+            return d.ToString("MMM d, yyyy") + "  (" + WeekdayName(d) + ")";
+        return Loc.F("S.Fmt.DayTitle", d.Year, d.Month, d.Day, WeekdayName(d));
+    }
+
     private TextBlock EmptyHint() => new()
     {
         Text = Loc.T("S.Schedule.NoTasks"),
@@ -316,16 +341,18 @@ public partial class CalendarDialog : Window
         Margin = new Thickness(4, 8, 0, 0)
     };
 
-    private Brush DueBrush(TodoItem item)
+    private static Brush PriorityBrush(Priority p) => p switch
     {
-        if (item.IsCompleted) return Brush("MutedText");
-        return item.DueState switch
-        {
-            DueState.Overdue => Brush("OverdueText"),
-            DueState.Today => Brush("WarningText"),
-            DueState.Soon => Brush("Accent"),
-            _ => Brush("PrimaryText"),
-        };
+        Priority.High => HighBrush,
+        Priority.Low => LowBrush,
+        _ => MidBrush,   // Medium / None 兜底
+    };
+
+    private static Brush Frozen(string hex)
+    {
+        var b = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
+        b.Freeze();
+        return b;
     }
 
     private Brush Brush(string key) =>

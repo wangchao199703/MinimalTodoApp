@@ -45,6 +45,9 @@ public static class ThemeManager
         new ThemeInfo("Haze",     "S.Theme.Haze",     "#F0F2F5", "#2F3640"),
         new ThemeInfo("Sage",     "S.Theme.Sage",     "#EEF1EC", "#313A30"),
         new ThemeInfo("Graphite", "S.Theme.Graphite", "#2A2C2E", "#E4E6E8"),
+        new ThemeInfo("Clay",     "S.Theme.Clay",     "#F3EEEA", "#3B332E"),
+        new ThemeInfo("Fog",      "S.Theme.Fog",      "#F1F3F4", "#313539"),
+        new ThemeInfo("Slate",    "S.Theme.Slate",    "#282D33", "#DDE3EA"),
         new ThemeInfo("Transparent", "S.Theme.Transparent", "#80FFFFFF", "#1F2329"),
         new ThemeInfo("Glass", "S.Theme.Glass", "#80222831", "#F5F7FA"),
     };

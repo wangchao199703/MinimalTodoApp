@@ -47,6 +47,9 @@
     <sys:String x:Key="S.Theme.Haze">Haze</sys:String>
     <sys:String x:Key="S.Theme.Sage">Sage</sys:String>
     <sys:String x:Key="S.Theme.Graphite">Graphite</sys:String>
+    <sys:String x:Key="S.Theme.Clay">Clay</sys:String>
+    <sys:String x:Key="S.Theme.Fog">Fog</sys:String>
+    <sys:String x:Key="S.Theme.Slate">Slate</sys:String>
     <sys:String x:Key="S.Theme.Transparent">Transparent</sys:String>
     <sys:String x:Key="S.Theme.Glass">Glass</sys:String>
     <!-- Single-instance prompt -->
@@ -291,6 +294,7 @@
     <sys:String x:Key="S.Schedule.WeekdayHeaders">Mon,Tue,Wed,Thu,Fri,Sat,Sun</sys:String>
     <sys:String x:Key="S.Schedule.Done">Done</sys:String>
     <sys:String x:Key="S.Fmt.YearMonth">{1}/{0}</sys:String>
+    <sys:String x:Key="S.Fmt.DayTitle">{0}-{1}-{2} ({3})</sys:String>
     <sys:String x:Key="S.Fmt.MoreCount">+{0}</sys:String>
 
     <!-- ============ Toast notification ============ -->

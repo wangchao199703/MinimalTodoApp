@@ -47,6 +47,9 @@
     <sys:String x:Key="S.Theme.Haze">雾霭</sys:String>
     <sys:String x:Key="S.Theme.Sage">鼠尾草</sys:String>
     <sys:String x:Key="S.Theme.Graphite">石墨</sys:String>
+    <sys:String x:Key="S.Theme.Clay">陶土</sys:String>
+    <sys:String x:Key="S.Theme.Fog">雾灰</sys:String>
+    <sys:String x:Key="S.Theme.Slate">板岩</sys:String>
     <sys:String x:Key="S.Theme.Transparent">透明</sys:String>
     <sys:String x:Key="S.Theme.Glass">毛玻璃</sys:String>
     <!-- 单实例提示 -->
@@ -291,6 +294,7 @@
     <sys:String x:Key="S.Schedule.WeekdayHeaders">一,二,三,四,五,六,日</sys:String>
     <sys:String x:Key="S.Schedule.Done">已完成</sys:String>
     <sys:String x:Key="S.Fmt.YearMonth">{0}年{1}月</sys:String>
+    <sys:String x:Key="S.Fmt.DayTitle">{0}年{1}月{2}日 周{3}</sys:String>
     <sys:String x:Key="S.Fmt.MoreCount">+{0}</sys:String>
 
     <!-- ============ Toast 通知 ============ -->
