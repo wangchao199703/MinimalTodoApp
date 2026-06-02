@@ -6,6 +6,7 @@
         xmlns:v="clr-namespace:MinimalTodoApp.Views"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Todo" Height="640" Width="680"
+        Icon="/Assets/app.ico"
         MinHeight="420" MinWidth="380"
         WindowStyle="None" ResizeMode="CanResize"
         AllowsTransparency="True" Background="Transparent"
@@ -31,11 +32,8 @@
             <!-- 系统托盘图标 -->
             <tb:TaskbarIcon x:Name="TrayIcon"
                             ToolTipText="{DynamicResource S.Tray.ToolTip}"
+                            IconSource="/Assets/app.ico"
                             TrayMouseDoubleClick="TrayIcon_DoubleClick">
-                <tb:TaskbarIcon.IconSource>
-                    <tb:GeneratedIconSource Text="✓" Foreground="White" Background="#3B82F6"
-                                            FontWeight="Bold" FontSize="96" />
-                </tb:TaskbarIcon.IconSource>
                 <tb:TaskbarIcon.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="{DynamicResource S.Tray.Show}" Click="ShowMenuItem_Click" />
