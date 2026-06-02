@@ -20,13 +20,17 @@ public static class FontManager
     /// <summary>系统默认字体回退链(用户选择"跟随系统"或字段为空时使用).</summary>
     public const string SystemDefault = "Microsoft YaHei UI, Segoe UI";
 
-    /// <summary>字号可调范围.</summary>
-    public const double MinSize = 12;
+    /// <summary>字号可调范围(默认中=12).</summary>
+    public const double MinSize = 10;
     public const double MaxSize = 18;
 
-    /// <summary>行距倍率可调范围.</summary>
-    public const double MinSpacing = 0.9;
+    /// <summary>行距倍率可调范围(默认 0.9).</summary>
+    public const double MinSpacing = 0.8;
     public const double MaxSpacing = 1.8;
+
+    /// <summary>勾选框圆环直径可调范围(默认≈字号+2).</summary>
+    public const double MinCheckbox = 12;
+    public const double MaxCheckbox = 26;
 
     /// <summary>可选字体列表(Key 为 FontFamily 字符串，空串=跟随系统).</summary>
     private static readonly List<FontInfo> Builtin = new()
@@ -48,12 +52,14 @@ public static class FontManager
     /// <summary>当前注入的字体资源字典(用于切换时移除).</summary>
     private static ResourceDictionary? _current;
 
-    /// <summary>应用字体设置:family 为空则跟随系统;size/spacing 自动夹取到合理范围.</summary>
-    public static void Apply(string? family, double size, double spacing)
+    /// <summary>应用字体设置:family 为空则跟随系统;size/spacing/checkboxSize 自动夹取到合理范围.</summary>
+    public static void Apply(string? family, double size, double spacing, double checkboxSize)
     {
         if (string.IsNullOrWhiteSpace(family)) family = SystemDefault;
-        size = Math.Clamp(size <= 0 ? 14 : size, MinSize, MaxSize);
-        spacing = Math.Clamp(spacing <= 0 ? 1.0 : spacing, MinSpacing, MaxSpacing);
+        size = Math.Clamp(size <= 0 ? 12 : size, MinSize, MaxSize);
+        spacing = Math.Clamp(spacing <= 0 ? 0.9 : spacing, MinSpacing, MaxSpacing);
+        // 勾选框直径:未设置(≤0)时默认≈字号+2(视觉与文字等高)，否则夹取到合理范围
+        checkboxSize = Math.Clamp(checkboxSize <= 0 ? size + 2 : checkboxSize, MinCheckbox, MaxCheckbox);
 
         var rd = new ResourceDictionary
         {
@@ -63,6 +69,8 @@ public static class FontManager
             ["AppLineHeight"] = size * spacing * 1.35,
             // 任务行间距:基准 3px 随行距放大(更紧凑，同屏可见更多待办)
             ["AppTaskItemMargin"] = new Thickness(0, Math.Round(3 * spacing), 0, Math.Round(3 * spacing)),
+            // 勾选框圆环直径(任务行 TaskCheckBox 用 DynamicResource 引用)
+            ["AppCheckBoxSize"] = checkboxSize,
         };
 
         var dicts = Application.Current.Resources.MergedDictionaries;

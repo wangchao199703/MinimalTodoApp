@@ -113,7 +113,7 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.FontSize}" FontSize="13"
                            VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
-                <Slider Grid.Column="1" Minimum="12" Maximum="18" Value="{Binding FontSize, Mode=TwoWay}"
+                <Slider Grid.Column="1" Minimum="10" Maximum="18" Value="{Binding FontSize, Mode=TwoWay}"
                         TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2" Text="{Binding FontSize, StringFormat={}{0:0}}" FontSize="12"
                            HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -128,13 +128,13 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Size.Small}"
-                            Tag="12" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
+                            Tag="10" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
                             Margin="0,0,8,0" Background="{DynamicResource InputBg}" />
                     <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Size.Medium}"
-                            Tag="14" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
+                            Tag="12" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
                             Margin="0,0,8,0" Background="{DynamicResource InputBg}" />
                     <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Size.Large}"
-                            Tag="16" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
+                            Tag="14" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
                             Background="{DynamicResource InputBg}" />
                 </StackPanel>
             </Grid>
@@ -148,9 +148,25 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.LineSpacing}" FontSize="13"
                            VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
-                <Slider Grid.Column="1" Minimum="0.9" Maximum="1.8" Value="{Binding LineSpacing, Mode=TwoWay}"
+                <Slider Grid.Column="1" Minimum="0.8" Maximum="1.8" Value="{Binding LineSpacing, Mode=TwoWay}"
                         TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                 <TextBlock Grid.Column="2" Text="{Binding LineSpacing, StringFormat={}{0:0.0}}" FontSize="12"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedText}" />
+            </Grid>
+
+            <!-- 勾选框大小 -->
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="36" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.CheckboxSize}" FontSize="13"
+                           VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
+                <Slider Grid.Column="1" Minimum="12" Maximum="24" Value="{Binding CheckboxSize, Mode=TwoWay}"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding CheckboxSize, StringFormat={}{0:0}}" FontSize="12"
                            HorizontalAlignment="Right" VerticalAlignment="Center"
                            Foreground="{DynamicResource MutedText}" />
             </Grid>

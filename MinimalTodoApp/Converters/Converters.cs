@@ -180,6 +180,24 @@ public class IndentToMarginConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>
+/// 根据缩进层级 + 基准字号计算任务标题字号:父待办(顶层 indent=0)用基准字号，
+/// 子待办每深一级缩小 2(最多缩 2 级)，地板 9。values[0]=IndentLevel, values[1]=基准字号(VM.FontSize)。
+/// </summary>
+public class IndentFontSizeConverter : IMultiValueConverter
+{
+    public object Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        int indent = values.Length > 0 && values[0] is int i ? i : 0;
+        double baseSize = values.Length > 1 && values[1] is double d && d > 0 ? d : 12;
+        double size = baseSize - Math.Min(Math.Max(indent, 0), 2) * 2;
+        return Math.Max(size, 9.0);
+    }
+
+    public object[] ConvertBack(object value, Type[] targetTypes, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>判断值与参数是否相等 -> bool(用于当前主题高亮等).</summary>
 public class EqualityToBoolConverter : IValueConverter
 {

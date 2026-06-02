@@ -2,27 +2,27 @@
 
 ### English
 
-This update polishes the new card-based task list: fixes icon rendering, the collapsed-sidebar dots, tighter rows, a bigger checkbox, and an adjustable task font (small/medium/large).
+More refinements to the card-based task list: a smaller/adjustable checkbox, a centered checkmark, parent/child font sizing, and tidier defaults.
 
-- **Icons fixed** — the always-on-top pin, menu, sort, schedule and microphone glyphs no longer show as empty boxes.
-- **Collapsed sidebar dots** — when the sidebar is collapsed each group now shows a clean, centered, correctly-colored round dot (no more squished square).
-- **More todos on screen** — task rows are more compact (smaller padding and gaps) so more fit at once.
-- **Bigger checkbox** — the circular checkbox ring is a bit larger and easier to hit.
-- **Adjustable task font** — task text now follows the font-size setting, with new Small / Medium / Large quick presets in Settings; the default is a touch smaller so you see more todos.
+- **Smaller, adjustable checkbox** — the circle is now about the size of the text by default, with a new "Checkbox" size slider in Settings.
+- **Centered checkmark + strikethrough** — completed tasks show a cleanly centered white checkmark in the priority-colored circle, with the title struck through and dimmed.
+- **Parent vs. child font size** — top-level todos use a larger font; indented subtasks are smaller, so hierarchy reads at a glance.
+- **Tidier defaults & spacing** — default size is now Medium (12) with tighter line spacing (0.9), quick Small/Medium/Large presets, and a smaller gap between the circle and the text.
+- **Icon fixes carried over** — the title-bar pin/menu/sort/calendar and the microphone icons all render correctly.
 
-Data stays fully compatible and every theme adapts automatically.
+Your data stays fully compatible and every theme adapts automatically.
 
 Download `MinimalTodoApp-v1.1.3-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
 
 ### 简体中文
 
-本次打磨新的卡片式待办列表：修复图标、收起侧边栏的分组色点，行更紧凑、勾选圆圈更大，并支持调节待办字号（小/中/大）。
+对卡片式待办列表的进一步打磨：更小且可调的勾选框、居中的对勾、父子待办分级字号，以及更合理的默认值。
 
-- **图标修复** —— 标题栏置顶图钉、菜单、排序、日程以及麦克风图标不再显示为空方框。
-- **收起侧边栏色点** —— 侧边栏收起后，每个分组显示为居中、颜色正确的正圆色点（不再被挤成方块）。
-- **同屏显示更多待办** —— 待办行更紧凑（更小的内边距与间距），一屏能放下更多。
-- **勾选圆圈更大** —— 圆环勾选框略微放大，更易点击。
-- **可调待办字号** —— 待办文字现在跟随字号设置，并在设置里新增「小 / 中 / 大」一键档位；默认略小，看到的待办更多。
+- **勾选框更小、可调** —— 圆圈默认约与文字等高，并在设置里新增「勾选框」大小滑块。
+- **对勾居中 + 删除线** —— 已完成任务在优先级色圆圈里显示居中的白色对勾，标题加删除线并置灰。
+- **父子待办分级字号** —— 顶层待办字号更大、缩进子待办字号更小，层级一目了然。
+- **更合理的默认与间距** —— 默认字号改为「中(12)」、行距更紧凑(0.9)，提供小/中/大一键档位，圆圈与文字的间距也收紧了。
+- **延续图标修复** —— 标题栏置顶/菜单/排序/日历以及麦克风图标均正常显示。
 
 数据完全兼容，所有主题自动适配。
 

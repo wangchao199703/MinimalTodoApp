@@ -82,8 +82,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         // 字体设置(字体/字号/行距):从持久化恢复，App 启动时会显式 FontManager.Apply 一次
         fontFamily = string.IsNullOrWhiteSpace(_data.FontFamily) ? FontManager.SystemDefault : _data.FontFamily;
-        fontSize = _data.FontSize > 0 ? _data.FontSize : 14;
-        lineSpacing = _data.LineSpacing > 0 ? _data.LineSpacing : 1.0;
+        fontSize = _data.FontSize > 0 ? _data.FontSize : 12;
+        lineSpacing = _data.LineSpacing > 0 ? _data.LineSpacing : 0.9;
+        // 勾选框直径:未设置时默认≈字号+2(与文字等高)，之后可在设置里单独调整
+        checkboxSize = _data.CheckboxSize > 0 ? _data.CheckboxSize : Math.Round(fontSize + 2);
         Fonts = new ObservableCollection<FontInfo>(FontManager.AllFonts());
         selectedFont = Fonts.FirstOrDefault(f => f.Key == fontFamily) ?? Fonts[0];
 
@@ -235,6 +237,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>行距倍率(设置里滑块调整，同时影响文字行高与任务行间距，持久化).</summary>
     [ObservableProperty]
     private double lineSpacing = 1.0;
+
+    /// <summary>勾选框圆环直径(设置里滑块调整，默认≈字号+2，持久化).</summary>
+    [ObservableProperty]
+    private double checkboxSize = 14;
 
     /// <summary>左侧分组栏宽度(GridSplitter 拖动 + 持久化).</summary>
     [ObservableProperty]
@@ -466,19 +472,25 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     partial void OnFontFamilyChanged(string value)
     {
-        FontManager.Apply(FontFamily, FontSize, LineSpacing);
+        FontManager.Apply(FontFamily, FontSize, LineSpacing, CheckboxSize);
         SaveData();
     }
 
     partial void OnFontSizeChanged(double value)
     {
-        FontManager.Apply(FontFamily, FontSize, LineSpacing);
+        FontManager.Apply(FontFamily, FontSize, LineSpacing, CheckboxSize);
         SaveData();
     }
 
     partial void OnLineSpacingChanged(double value)
     {
-        FontManager.Apply(FontFamily, FontSize, LineSpacing);
+        FontManager.Apply(FontFamily, FontSize, LineSpacing, CheckboxSize);
+        SaveData();
+    }
+
+    partial void OnCheckboxSizeChanged(double value)
+    {
+        FontManager.Apply(FontFamily, FontSize, LineSpacing, CheckboxSize);
         SaveData();
     }
 
@@ -1609,6 +1621,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.FontFamily = FontFamily;
         _data.FontSize = FontSize;
         _data.LineSpacing = LineSpacing;
+        _data.CheckboxSize = CheckboxSize;
         _data.SelectedGroupId = SelectedGroup?.Id;
         _data.Sort = SelectedSortOption?.Mode ?? SortMode.Custom;
         _data.SidebarWidth = SidebarWidth;

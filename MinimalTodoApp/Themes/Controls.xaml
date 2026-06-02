@@ -14,6 +14,7 @@
     <conv:PriorityToTextConverter x:Key="PriorityToText" />
     <conv:EqualityToBoolConverter x:Key="EqualityToBool" />
     <conv:IndentToMarginConverter x:Key="IndentToMargin" />
+    <conv:IndentFontSizeConverter x:Key="IndentFontSize" />
 
     <!-- ===================== 基础文字（字体/字号/行距随设置实时变化） ===================== -->
     <Style TargetType="TextBlock">
@@ -213,17 +214,21 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
-                    <Grid Width="24" Height="24" Background="Transparent">
-                        <!-- 外圆环：颜色取自 BorderBrush（= 优先级色） -->
-                        <Ellipse x:Name="ring" Width="22" Height="22"
-                                 Stroke="{TemplateBinding BorderBrush}" StrokeThickness="2"
+                    <!-- 圆环直径随设置(AppCheckBoxSize，默认≈字号+2)，对勾用 Viewbox 等比缩放并在 24×24 设计稿内视觉居中 -->
+                    <Grid Width="{DynamicResource AppCheckBoxSize}" Height="{DynamicResource AppCheckBoxSize}"
+                          Background="Transparent">
+                        <!-- 外圆环：填满容器，颜色取自 BorderBrush（= 优先级色） -->
+                        <Ellipse x:Name="ring" Stroke="{TemplateBinding BorderBrush}" StrokeThickness="2"
                                  Fill="Transparent" />
-                        <!-- 完成时的白色对勾 -->
-                        <Path x:Name="check" Data="M 7 12 L 10.3 15.3 L 16.5 8"
-                              HorizontalAlignment="Center" VerticalAlignment="Center"
-                              Stroke="White" StrokeThickness="2.4"
-                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
-                              StrokeLineJoin="Round" Opacity="0" />
+                        <!-- 完成时的白色对勾：放在 24×24 设计稿内，顶点略低于中心(≈60%)以视觉居中，Viewbox 等比缩放到圆环大小 -->
+                        <Viewbox x:Name="checkbox" Stretch="Uniform" Opacity="0">
+                            <Grid Width="24" Height="24">
+                                <Path Data="M 5.8 12.2 L 10 15 L 18.2 6.7"
+                                      Stroke="White" StrokeThickness="3.4"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round" />
+                            </Grid>
+                        </Viewbox>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -232,7 +237,7 @@
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="ring" Property="Fill"
                                     Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}" />
-                            <Setter TargetName="check" Property="Opacity" Value="1" />
+                            <Setter TargetName="checkbox" Property="Opacity" Value="1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

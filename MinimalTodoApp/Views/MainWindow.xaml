@@ -591,7 +591,7 @@
 
                                         <!-- 圆形勾选框（Col0）：圆环按优先级着色，完成时填充 + 白勾；与标题首行顶对齐 -->
                                         <CheckBox Grid.Column="0" Style="{StaticResource TaskCheckBox}"
-                                                  VerticalAlignment="Top" Margin="0,1,12,0"
+                                                  VerticalAlignment="Top" Margin="0,1,3,0"
                                                   BorderBrush="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
                                                   IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
 
@@ -602,9 +602,15 @@
                                                 <TextBlock x:Name="TitleText" Text="{Binding Title}"
                                                            VerticalAlignment="Center" Padding="2,1"
                                                            TextTrimming="CharacterEllipsis"
-                                                           FontSize="{DynamicResource AppFontSize}"
                                                            MouseLeftButtonUp="TaskTitle_Click"
                                                            Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                                    <!-- 父待办(顶层)字号大、子待办(缩进)字号小，并跟随设置的基准字号 -->
+                                                    <TextBlock.FontSize>
+                                                        <MultiBinding Converter="{StaticResource IndentFontSize}">
+                                                            <Binding Path="IndentLevel" />
+                                                            <Binding Path="DataContext.FontSize" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                        </MultiBinding>
+                                                    </TextBlock.FontSize>
                                                     <TextBlock.Style>
                                                         <Style TargetType="TextBlock">
                                                             <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
@@ -623,7 +629,14 @@
                                                          IsVisibleChanged="TitleEdit_IsVisibleChanged"
                                                          LostKeyboardFocus="TitleEdit_LostFocus"
                                                          KeyDown="TitleEdit_KeyDown"
-                                                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}" />
+                                                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}">
+                                                    <TextBox.FontSize>
+                                                        <MultiBinding Converter="{StaticResource IndentFontSize}">
+                                                            <Binding Path="IndentLevel" />
+                                                            <Binding Path="DataContext.FontSize" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                        </MultiBinding>
+                                                    </TextBox.FontSize>
+                                                </TextBox>
                                             </Grid>
 
                                             <!-- 子任务折叠行：仅父待办（HasChildren=true）显示——圆角小箭头 + “子任务 (n/m)”，点击折叠/展开 -->
@@ -637,10 +650,10 @@
                                                         <Border x:Name="bg" Background="Transparent" CornerRadius="6"
                                                                 Padding="{TemplateBinding Padding}">
                                                             <StackPanel Orientation="Horizontal">
-                                                                <TextBlock x:Name="chev" Text="&#x2304;" FontSize="13" FontWeight="Bold"
+                                                                <TextBlock x:Name="chev" Text="&#x2304;" FontSize="12" FontWeight="Bold"
                                                                            VerticalAlignment="Center" Margin="0,0,5,0"
                                                                            Foreground="{DynamicResource SecondaryText}" />
-                                                                <TextBlock Text="{Binding SubtaskText}" FontSize="12.5"
+                                                                <TextBlock Text="{Binding SubtaskText}" FontSize="11"
                                                                            VerticalAlignment="Center"
                                                                            Foreground="{DynamicResource SecondaryText}" />
                                                             </StackPanel>
