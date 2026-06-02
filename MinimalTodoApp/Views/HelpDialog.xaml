@@ -20,7 +20,7 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="{DynamicResource S.Help.Title}" FontSize="16" FontWeight="Bold"
+            <TextBlock Grid.Row="0" Text="{DynamicResource S.Help.Title}" FontSize="17" FontWeight="SemiBold"
                        Margin="0,0,0,12" Foreground="{DynamicResource PrimaryText}" />
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="460">

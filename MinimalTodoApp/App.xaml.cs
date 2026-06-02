@@ -32,8 +32,9 @@ public partial class App : Application
             return;
         }
 
-        // 2. 应用持久化的主题
+        // 2. 应用持久化的主题与字体设置
         ThemeManager.Apply(ViewModel.CurrentTheme);
+        FontManager.Apply(ViewModel.FontFamily, ViewModel.FontSize, ViewModel.LineSpacing);
 
         // 3. 创建主窗口并显示
         var window = new MainWindow { DataContext = ViewModel };

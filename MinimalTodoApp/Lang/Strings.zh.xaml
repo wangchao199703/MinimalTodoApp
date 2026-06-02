@@ -23,8 +23,8 @@
     <sys:String x:Key="S.Tip.MaxRestore">最大化 / 还原</sys:String>
     <sys:String x:Key="S.Tip.Close">关闭（隐藏到托盘，程序后台常驻；托盘右键可退出）</sys:String>
     <sys:String x:Key="S.AlwaysOnTop">置于顶层（窗口总在最前）</sys:String>
-    <sys:String x:Key="S.MenuSettings">⚙  设置</sys:String>
-    <sys:String x:Key="S.MenuLanguage">🌐  语言</sys:String>
+    <sys:String x:Key="S.MenuSettings">设置</sys:String>
+    <sys:String x:Key="S.MenuLanguage">语言</sys:String>
 
     <!-- ============ 侧边栏 ============ -->
     <sys:String x:Key="S.AllTasks">全部任务</sys:String>
@@ -203,9 +203,24 @@
     <sys:String x:Key="S.Settings.OpFailed">操作失败，请重试.</sys:String>
     <sys:String x:Key="S.Settings.AutoStartOn">已开启: 开机自动启动.</sys:String>
     <sys:String x:Key="S.Settings.AutoStartOff">已关闭开机自启动.</sys:String>
+    <sys:String x:Key="S.Settings.Font">字体</sys:String>
+    <sys:String x:Key="S.Settings.FontDesc">调整任务与正文文字的字体、字号与行距（图标等界面元素不受影响）</sys:String>
+    <sys:String x:Key="S.Settings.FontFamily">字体</sys:String>
+    <sys:String x:Key="S.Settings.FontSize">字号</sys:String>
+    <sys:String x:Key="S.Settings.LineSpacing">行距</sys:String>
+
+    <!-- ============ 字体名称 ============ -->
+    <sys:String x:Key="S.Font.System">跟随系统</sys:String>
+    <sys:String x:Key="S.Font.YaHei">微软雅黑</sys:String>
+    <sys:String x:Key="S.Font.SimSun">宋体</sys:String>
+    <sys:String x:Key="S.Font.KaiTi">楷体</sys:String>
+    <sys:String x:Key="S.Font.SimHei">黑体</sys:String>
+    <sys:String x:Key="S.Font.FangSong">仿宋</sys:String>
+    <sys:String x:Key="S.Font.SegoeUI">Segoe UI</sys:String>
+    <sys:String x:Key="S.Font.Consolas">Consolas</sys:String>
 
     <!-- ============ 使用说明对话框 ============ -->
-    <sys:String x:Key="S.Help.Title">📖  使用说明</sys:String>
+    <sys:String x:Key="S.Help.Title">使用说明</sys:String>
     <sys:String x:Key="S.Help.Ok">知道了</sys:String>
 
     <sys:String x:Key="S.Help.Tasks.Title">任务</sys:String>
@@ -215,14 +230,21 @@
     <sys:String x:Key="S.Help.Tasks.L4">单击任务标题可直接编辑文字；右键任务可编辑、清除截止日期、标记完成、删除.</sys:String>
     <sys:String x:Key="S.Help.Tasks.L5">勾选完成的任务会自动移入「已完成」分组，取消勾选则还原.</sys:String>
     <sys:String x:Key="S.Help.Tasks.L6">拖动任务可自定义排序；标题超长时只显示前部.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L7">右键任务选「置顶 / 取消置顶」：置顶的顶层任务会连同其子待办整族始终排在列表最上方，不受排序方式影响.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L8">设置截止时间或周期提醒时，选好日期/时分或填好数值即自动生效，无需再点「设定」；两处的「清除」按钮可随时撤销.</sys:String>
 
     <sys:String x:Key="S.Help.Subtasks.Title">子待办与缩进</sys:String>
     <sys:String x:Key="S.Help.Subtasks.L1">选中任务后按 Tab 键即可缩进一级，成为上一条的子待办；Shift+Tab 提升一级.</sys:String>
     <sys:String x:Key="S.Help.Subtasks.L2">右键菜单亦可「作为子待办 / 提升一级」，最多支持 6 级嵌套.</sys:String>
     <sys:String x:Key="S.Help.Subtasks.L3">缩进信息会随导入导出 Markdown 一起保留(用列表项的层级表达).</sys:String>
 
+    <sys:String x:Key="S.Help.Schedule.Title">日程 / 日历</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L1">点内容区右上角的日历按钮，可在右侧展开 / 收起内嵌的日程面板.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L2">可切换天 / 周 / 月视图；天与周视图左侧带 0–24 小时刻度轴，按截止时间纵向定位任务，且一屏即可看完 24 小时.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L3">点日历中的任务块可查看并编辑；拖动分隔条可调整面板宽度.</sys:String>
+
     <sys:String x:Key="S.Help.Voice.Title">语音输入</sys:String>
-    <sys:String x:Key="S.Help.Voice.L1">新任务输入框右侧的🎤按钮会触发 Windows 自带语音听写(等价于 Win+H).</sys:String>
+    <sys:String x:Key="S.Help.Voice.L1">新任务输入框右侧的麦克风按钮会触发 Windows 自带语音听写(等价于 Win+H).</sys:String>
     <sys:String x:Key="S.Help.Voice.L2">首次使用需在「设置 → 时间和语言 → 语音」中启用语音输入.</sys:String>
 
     <sys:String x:Key="S.Help.Reminder.Title">周期提醒</sys:String>
@@ -249,11 +271,13 @@
     <sys:String x:Key="S.Help.Theme.Title">主题与设置</sys:String>
     <sys:String x:Key="S.Help.Theme.L1">点「修改主题」可切换内置主题(含透明、毛玻璃)，或新建自定义主题.</sys:String>
     <sys:String x:Key="S.Help.Theme.L2">右上角菜单 →「设置」可开启 / 关闭开机自启动、完成特效、完成音效、周期提醒声音.</sys:String>
-    <sys:String x:Key="S.Help.Theme.L3">排序按钮(标题右侧 ⇅)点击后选择排序方式.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L3">点标题右侧的排序按钮即可选择排序方式.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L4">「设置」里可调整任务与正文文字的字体、字号与行距，改动即时生效并自动保存.</sys:String>
 
     <sys:String x:Key="S.Help.Window.Title">窗口</sys:String>
     <sys:String x:Key="S.Help.Window.L1">右上角红 / 黄 / 绿:关闭到托盘 / 最小化 / 最大化还原.</sys:String>
     <sys:String x:Key="S.Help.Window.L2">关闭仅隐藏到系统托盘，程序后台常驻；双击托盘图标恢复，右键托盘可退出.</sys:String>
+    <sys:String x:Key="S.Help.Window.L3">标题栏菜单按钮左侧的图钉按钮可让窗口始终置于最前(应用置顶).</sys:String>
 
     <sys:String x:Key="S.Help.Contact.Title">联系开发者</sys:String>
     <sys:String x:Key="S.Help.Contact.L1">该软件全部由 AI 生成，有任何建议联系 1248792327@qq.com</sys:String>

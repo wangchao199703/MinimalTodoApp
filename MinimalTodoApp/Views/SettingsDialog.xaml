@@ -84,6 +84,58 @@
                           Checked="ReminderSound_Changed" Unchecked="ReminderSound_Changed" />
             </Grid>
 
+            <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
+
+            <!-- 字体 / 字号 / 行距(作用于任务与正文文字) -->
+            <TextBlock Text="{DynamicResource S.Settings.Font}" FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,2" />
+            <TextBlock Text="{DynamicResource S.Settings.FontDesc}" FontSize="11" Margin="0,0,0,12"
+                       TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+
+            <!-- 字体 -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.FontFamily}" FontSize="13"
+                           VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
+                <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}" SelectedItem="{Binding SelectedFont}"
+                          DisplayMemberPath="Display" VerticalContentAlignment="Center" />
+            </Grid>
+
+            <!-- 字号 -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="36" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.FontSize}" FontSize="13"
+                           VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
+                <Slider Grid.Column="1" Minimum="12" Maximum="18" Value="{Binding FontSize, Mode=TwoWay}"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding FontSize, StringFormat={}{0:0}}" FontSize="12"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedText}" />
+            </Grid>
+
+            <!-- 行距 -->
+            <Grid Margin="0,0,0,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="36" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.LineSpacing}" FontSize="13"
+                           VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
+                <Slider Grid.Column="1" Minimum="0.9" Maximum="1.8" Value="{Binding LineSpacing, Mode=TwoWay}"
+                        TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="2" Text="{Binding LineSpacing, StringFormat={}{0:0.0}}" FontSize="12"
+                           HorizontalAlignment="Right" VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedText}" />
+            </Grid>
+
             <TextBlock x:Name="StatusText" FontSize="11" Margin="0,12,0,0"
                        Foreground="{DynamicResource MutedText}" TextWrapping="Wrap" />
 

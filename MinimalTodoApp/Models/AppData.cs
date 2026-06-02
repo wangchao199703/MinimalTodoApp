@@ -19,6 +19,15 @@ public class AppData
     /// <summary>界面语言(zh-CN / en).对应 Lang 目录下的 Strings.{lang}.xaml.</summary>
     public string Language { get; set; } = "zh-CN";
 
+    /// <summary>正文/任务文字字体(可在设置里调整，持久化).空串表示跟随系统默认字体.</summary>
+    public string FontFamily { get; set; } = "Microsoft YaHei UI, Segoe UI";
+
+    /// <summary>正文/任务文字基准字号(可在设置里调整，持久化).</summary>
+    public double FontSize { get; set; } = 14;
+
+    /// <summary>行距倍率(1.0=标准)，同时影响文字行高与任务行间距，持久化.</summary>
+    public double LineSpacing { get; set; } = 1.0;
+
     /// <summary>上次选中的分组 Id(null 表示“全部任务”).</summary>
     public Guid? SelectedGroupId { get; set; }
 

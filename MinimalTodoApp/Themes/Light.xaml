@@ -12,10 +12,10 @@
     <SolidColorBrush x:Key="PrimaryText"    Color="#1F2329" />
     <SolidColorBrush x:Key="SecondaryText"  Color="#5A6470" />
     <SolidColorBrush x:Key="MutedText"      Color="#9AA4B0" />
-    <SolidColorBrush x:Key="Accent"         Color="#3B82F6" />
+    <SolidColorBrush x:Key="Accent"         Color="#007AFF" />
     <SolidColorBrush x:Key="AccentText"     Color="#FFFFFF" />
     <SolidColorBrush x:Key="Divider"        Color="#E6E8EB" />
-    <SolidColorBrush x:Key="SelectedItemBg" Color="#E8F0FE" />
+    <SolidColorBrush x:Key="SelectedItemBg" Color="#EAF2FF" />
     <SolidColorBrush x:Key="OverdueText"    Color="#E5484D" />
     <SolidColorBrush x:Key="WarningText"    Color="#D9820B" />
     <SolidColorBrush x:Key="SuccessText"    Color="#16A34A" />

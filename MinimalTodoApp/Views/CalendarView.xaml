@@ -66,11 +66,13 @@
 
             <!-- 导航 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button Style="{StaticResource GhostButton}" Content="‹" FontSize="16" Padding="9,3"
+                <Button Style="{StaticResource GhostButton}" Content="&#xE76B;"
+                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Padding="9,4"
                         ToolTip="{DynamicResource S.Schedule.Prev}" Click="Prev_Click" />
                 <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Schedule.Today}"
                         Padding="9,5" Margin="5,0" Click="Today_Click" />
-                <Button Style="{StaticResource GhostButton}" Content="›" FontSize="16" Padding="9,3"
+                <Button Style="{StaticResource GhostButton}" Content="&#xE76C;"
+                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13" Padding="9,4"
                         ToolTip="{DynamicResource S.Schedule.Next}" Click="Next_Click" />
             </StackPanel>
         </Grid>

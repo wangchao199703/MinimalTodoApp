@@ -25,9 +25,6 @@ public partial class CalendarView : UserControl
     private ViewMode _mode = ViewMode.Week;      // 默认周视图
     private DateTime _anchor = DateTime.Today;   // 当前展示时段的参考日期(周视图=本周, 月视图=本月)
 
-    // 小时轴每小时的像素高度(天/周视图按时间纵向定位任务)
-    private const double HourHeight = 44.0;
-
     // 优先级配色(与列表一致):低=绿 中=黄 高=红
     private static readonly Brush LowBrush = Frozen("#10B981");
     private static readonly Brush MidBrush = Frozen("#F59E0B");
@@ -99,7 +96,7 @@ public partial class CalendarView : UserControl
         }
     }
 
-    // ===== 天视图(左侧 0–24 小时刻度轴 + 任务按时间纵向定位) =====
+    // ===== 天视图(左侧 0–24 小时刻度轴 + 任务按时间纵向定位；高度自适应,一屏展示 24 小时) =====
     private void BuildDay()
     {
         // 天视图标题:友好格式，不出现区间分隔符与 ISO 短横
@@ -108,17 +105,13 @@ public partial class CalendarView : UserControl
         var tasks = TasksOn(_anchor);
         if (tasks.Count == 0)
         {
-            CalendarHost.Children.Add(new ScrollViewer
-            {
-                VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                Content = new StackPanel { Margin = new Thickness(14), Children = { EmptyHint() } }
-            });
+            CalendarHost.Children.Add(new StackPanel { Margin = new Thickness(14), Children = { EmptyHint() } });
             return;
         }
 
         var root = new Grid();
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });           // 全天/未定时
-        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });   // 全天/未定时
+        root.RowDefinitions.Add(new RowDefinition());                              // 24 小时网格(填满可视高度)
 
         // 全天/未定时(DueDate 为当天 00:00 视为未指定具体时间)放到顶部带区,避免堆在 0 点
         var untimed = tasks.Where(IsUntimed).ToList();
@@ -129,8 +122,8 @@ public partial class CalendarView : UserControl
             root.Children.Add(band);
         }
 
-        // 时间轴 + 当天任务
-        var inner = new Grid { Margin = new Thickness(0, 4, 0, 8) };
+        // 时间轴 + 当天任务:不滚动,网格填满剩余高度(每小时像素 = 高度/24)
+        var inner = new Grid { Margin = new Thickness(0, 4, 0, 8), ClipToBounds = true };
         inner.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         inner.ColumnDefinitions.Add(new ColumnDefinition());
         var gutter = BuildHourGutter();
@@ -139,10 +132,8 @@ public partial class CalendarView : UserControl
         Grid.SetColumn(dayCanvas, 1);
         inner.Children.Add(gutter);
         inner.Children.Add(dayCanvas);
-
-        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = inner };
-        Grid.SetRow(scroll, 1);
-        root.Children.Add(scroll);
+        Grid.SetRow(inner, 1);
+        root.Children.Add(inner);
 
         CalendarHost.Children.Add(root);
     }
@@ -209,8 +200,9 @@ public partial class CalendarView : UserControl
         }
         if (anyUntimed) { Grid.SetRow(allDay, 1); root.Children.Add(allDay); }
 
-        // 小时网格:列 0 小时轴 + 列 1–7 每天一个定时画布
+        // 小时网格:列 0 小时轴 + 列 1–7 每天一个定时画布;不滚动,填满剩余高度(一屏 24 小时)
         var grid = NewDayColsGrid();
+        grid.ClipToBounds = true;
         var gutter = BuildHourGutter();
         Grid.SetColumn(gutter, 0);
         grid.Children.Add(gutter);
@@ -227,17 +219,17 @@ public partial class CalendarView : UserControl
             Grid.SetColumn(wrap, c + 1);
             grid.Children.Add(wrap);
         }
-        var scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Content = grid };
-        Grid.SetRow(scroll, 2);
-        root.Children.Add(scroll);
+        Grid.SetRow(grid, 2);
+        root.Children.Add(grid);
 
         CalendarHost.Children.Add(root);
     }
 
-    /// <summary>左侧 0–24 小时刻度轴(固定高度 = 24*HourHeight,与日列对齐).</summary>
+    /// <summary>左侧 0–24 小时刻度轴(高度自适应:标签按 小时/24 × 可视高度 定位,与日列对齐).</summary>
     private FrameworkElement BuildHourGutter()
     {
-        var canvas = new Canvas { Width = 46, Height = 24 * HourHeight };
+        var canvas = new Canvas { Width = 46 };
+        var labels = new List<TextBlock>();
         for (int h = 0; h < 24; h++)
         {
             var lbl = new TextBlock
@@ -248,19 +240,27 @@ public partial class CalendarView : UserControl
                 TextAlignment = TextAlignment.Right,
                 Foreground = Brush("MutedText")
             };
-            Canvas.SetTop(lbl, h == 0 ? 0 : h * HourHeight - 7);
             Canvas.SetLeft(lbl, 0);
             canvas.Children.Add(lbl);
+            labels.Add(lbl);
         }
+        // 高度自适应:每小时像素 = ActualHeight/24,标签随之重新纵向定位
+        canvas.SizeChanged += (_, _) =>
+        {
+            double h = canvas.ActualHeight;
+            for (int i = 0; i < 24; i++)
+                Canvas.SetTop(labels[i], i == 0 ? 0 : i * h / 24.0 - 7);
+        };
         return canvas;
     }
 
-    /// <summary>单日定时任务画布:24 条小时分隔线 + 任务按其时间 Canvas.Top 定位.宽度随面板自适应.</summary>
+    /// <summary>单日定时任务画布:24 条小时分隔线 + 任务按其时间定位.宽度与高度均随面板自适应(一屏 24 小时).</summary>
     private FrameworkElement BuildDayCanvas(DateTime day, bool bigChips)
     {
-        var canvas = new Canvas { Height = 24 * HourHeight, Background = Brushes.Transparent };
+        var canvas = new Canvas { Background = Brushes.Transparent };
 
         // 小时分隔线(无 Child 的 Border,用于和任务块区分)
+        var lines = new List<Border>();
         for (int h = 0; h < 24; h++)
         {
             var line = new Border
@@ -270,31 +270,36 @@ public partial class CalendarView : UserControl
                 BorderThickness = new Thickness(0, 1, 0, 0),
                 Opacity = 0.6
             };
-            Canvas.SetTop(line, h * HourHeight);
             Canvas.SetLeft(line, 0);
             canvas.Children.Add(line);
+            lines.Add(line);
         }
 
-        var chips = new List<FrameworkElement>();
+        // 任务块:记录其"小时比例"(0..1),布局时按比例 × 可视高度定位
+        var chips = new List<(FrameworkElement chip, double frac)>();
         foreach (var t in TasksOn(day).Where(t => !IsUntimed(t)))
         {
-            double top = (t.DueDate!.Value.Hour + t.DueDate.Value.Minute / 60.0) * HourHeight;
+            double frac = (t.DueDate!.Value.Hour + t.DueDate.Value.Minute / 60.0) / 24.0;
             var chip = MakeChip(t, showTime: true, big: bigChips);
-            Canvas.SetTop(chip, top + 1);
             Canvas.SetLeft(chip, 4);
             canvas.Children.Add(chip);
-            chips.Add(chip);
+            chips.Add((chip, frac));
         }
 
-        // 宽度自适应:分隔线铺满列宽,任务块留左右内边距
+        // 宽/高自适应:分隔线铺满列宽并按小时均分高度,任务块按时间比例定位
         canvas.SizeChanged += (_, _) =>
         {
-            double w = canvas.ActualWidth;
-            foreach (var child in canvas.Children)
-                if (child is Border b && b.Child == null)
-                    b.Width = Math.Max(0, w);
-            foreach (var chip in chips)
+            double w = canvas.ActualWidth, h = canvas.ActualHeight;
+            for (int i = 0; i < 24; i++)
+            {
+                lines[i].Width = Math.Max(0, w);
+                Canvas.SetTop(lines[i], i * h / 24.0);
+            }
+            foreach (var (chip, frac) in chips)
+            {
                 chip.Width = Math.Max(0, w - 8);
+                Canvas.SetTop(chip, frac * h + 1);
+            }
         };
 
         return canvas;

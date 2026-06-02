@@ -15,24 +15,27 @@
     <conv:EqualityToBoolConverter x:Key="EqualityToBool" />
     <conv:IndentToMarginConverter x:Key="IndentToMargin" />
 
-    <!-- ===================== 基础文字 ===================== -->
+    <!-- ===================== 基础文字（字体/字号/行距随设置实时变化） ===================== -->
     <Style TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
-        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI" />
+        <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
+        <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
+        <Setter Property="LineHeight" Value="{DynamicResource AppLineHeight}" />
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
     </Style>
 
     <!-- ===================== 主按钮 ===================== -->
     <Style x:Key="AccentButton" TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
         <Setter Property="Background" Value="{DynamicResource Accent}" />
-        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="Padding" Value="16,9" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="b" Background="{TemplateBinding Background}"
-                            CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            CornerRadius="8" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -52,7 +55,7 @@
     <Style x:Key="GhostButton" TargetType="Button">
         <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Padding" Value="10,6" />
+        <Setter Property="Padding" Value="12,7" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="HorizontalContentAlignment" Value="Center" />
@@ -60,7 +63,7 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="b" Background="{TemplateBinding Background}"
-                            CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            CornerRadius="8" Padding="{TemplateBinding Padding}">
                         <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="Center" />
                     </Border>
@@ -106,15 +109,15 @@
         <Setter Property="CaretBrush" Value="{DynamicResource PrimaryText}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="10,7" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="TextAlignment" Value="Left" />
-        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI" />
+        <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="6"
+                    <Border Background="{TemplateBinding Background}" CornerRadius="8"
                             Padding="{TemplateBinding Padding}">
                         <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center" />
                     </Border>
@@ -130,9 +133,9 @@
         <Setter Property="CaretBrush" Value="{DynamicResource PrimaryText}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="2,1" />
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
-        <Setter Property="FontFamily" Value="Microsoft YaHei UI, Segoe UI" />
+        <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
@@ -160,7 +163,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Border x:Name="b" Background="Transparent" CornerRadius="6" Padding="8,7">
+                    <Border x:Name="b" Background="Transparent" CornerRadius="8" Padding="10,8">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -179,13 +182,13 @@
     <!-- ===================== 任务项容器 ===================== -->
     <Style x:Key="TaskItemStyle" TargetType="ListBoxItem">
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="Margin" Value="0,3" />
+        <Setter Property="Margin" Value="{DynamicResource AppTaskItemMargin}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="b" Background="{DynamicResource CardBg}"
                             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
-                            CornerRadius="8" Padding="10,8">
+                            CornerRadius="10" Padding="12,10">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -205,8 +208,8 @@
         <Setter Property="Width" Value="36" />
         <Setter Property="Height" Value="26" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FontFamily" Value="Segoe UI Symbol" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        <Setter Property="FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -231,8 +234,8 @@
         <Setter Property="Width" Value="32" />
         <Setter Property="Height" Value="26" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FontFamily" Value="Segoe UI Symbol" />
-        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+        <Setter Property="FontSize" Value="14" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">

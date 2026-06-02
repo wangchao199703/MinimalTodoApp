@@ -23,8 +23,8 @@
     <sys:String x:Key="S.Tip.MaxRestore">Maximize / Restore</sys:String>
     <sys:String x:Key="S.Tip.Close">Close (hide to tray; app keeps running in background, right-click the tray icon to quit)</sys:String>
     <sys:String x:Key="S.AlwaysOnTop">Always on top (keep window in front)</sys:String>
-    <sys:String x:Key="S.MenuSettings">⚙  Settings</sys:String>
-    <sys:String x:Key="S.MenuLanguage">🌐  Language</sys:String>
+    <sys:String x:Key="S.MenuSettings">Settings</sys:String>
+    <sys:String x:Key="S.MenuLanguage">Language</sys:String>
 
     <!-- ============ Sidebar ============ -->
     <sys:String x:Key="S.AllTasks">All Tasks</sys:String>
@@ -203,9 +203,24 @@
     <sys:String x:Key="S.Settings.OpFailed">Operation failed, please try again.</sys:String>
     <sys:String x:Key="S.Settings.AutoStartOn">Enabled: run at startup.</sys:String>
     <sys:String x:Key="S.Settings.AutoStartOff">Disabled: run at startup.</sys:String>
+    <sys:String x:Key="S.Settings.Font">Font</sys:String>
+    <sys:String x:Key="S.Settings.FontDesc">Adjust the font, size and line spacing of task &amp; body text (icons and chrome are unaffected)</sys:String>
+    <sys:String x:Key="S.Settings.FontFamily">Font</sys:String>
+    <sys:String x:Key="S.Settings.FontSize">Size</sys:String>
+    <sys:String x:Key="S.Settings.LineSpacing">Spacing</sys:String>
+
+    <!-- ============ Font names ============ -->
+    <sys:String x:Key="S.Font.System">System default</sys:String>
+    <sys:String x:Key="S.Font.YaHei">Microsoft YaHei</sys:String>
+    <sys:String x:Key="S.Font.SimSun">SimSun (Song)</sys:String>
+    <sys:String x:Key="S.Font.KaiTi">KaiTi</sys:String>
+    <sys:String x:Key="S.Font.SimHei">SimHei (Gothic)</sys:String>
+    <sys:String x:Key="S.Font.FangSong">FangSong</sys:String>
+    <sys:String x:Key="S.Font.SegoeUI">Segoe UI</sys:String>
+    <sys:String x:Key="S.Font.Consolas">Consolas</sys:String>
 
     <!-- ============ Help dialog ============ -->
-    <sys:String x:Key="S.Help.Title">📖  Help</sys:String>
+    <sys:String x:Key="S.Help.Title">Help</sys:String>
     <sys:String x:Key="S.Help.Ok">Got it</sys:String>
 
     <sys:String x:Key="S.Help.Tasks.Title">Tasks</sys:String>
@@ -215,14 +230,21 @@
     <sys:String x:Key="S.Help.Tasks.L4">Click a task title to edit it; right-click a task to edit, clear the due date, complete or delete it.</sys:String>
     <sys:String x:Key="S.Help.Tasks.L5">Completed tasks move into the "Done" group automatically; unchecking restores them.</sys:String>
     <sys:String x:Key="S.Help.Tasks.L6">Drag tasks to reorder; long titles show only the beginning.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L7">Right-click a task and choose "Pin / Unpin to top": a pinned top-level task keeps its whole family at the very top, regardless of the sort order.</sys:String>
+    <sys:String x:Key="S.Help.Tasks.L8">When setting a due time or recurring reminder, just pick the date/time or enter a value and it applies instantly — no "Set" button needed; the "Clear" button on each undoes it anytime.</sys:String>
 
     <sys:String x:Key="S.Help.Subtasks.Title">Subtasks &amp; indenting</sys:String>
     <sys:String x:Key="S.Help.Subtasks.L1">Select a task and press Tab to indent it into a subtask of the one above; Shift+Tab promotes it.</sys:String>
     <sys:String x:Key="S.Help.Subtasks.L2">The right-click menu also offers "Make subtask / Promote", up to 6 nesting levels.</sys:String>
     <sys:String x:Key="S.Help.Subtasks.L3">Indent levels are preserved through Markdown import/export (expressed as list nesting).</sys:String>
 
+    <sys:String x:Key="S.Help.Schedule.Title">Schedule / calendar</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L1">Click the calendar button at the top-right of the content header to open or close the embedded schedule panel on the right.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L2">Switch Day / Week / Month. Day and Week show a 0–24 hour axis on the left and place tasks by their due time — all 24 hours fit in one screen.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L3">Click a task block in the calendar to view and edit it; drag the divider to resize the panel.</sys:String>
+
     <sys:String x:Key="S.Help.Voice.Title">Voice input</sys:String>
-    <sys:String x:Key="S.Help.Voice.L1">The 🎤 button next to the new-task box triggers Windows dictation (same as Win+H).</sys:String>
+    <sys:String x:Key="S.Help.Voice.L1">The microphone button next to the new-task box triggers Windows dictation (same as Win+H).</sys:String>
     <sys:String x:Key="S.Help.Voice.L2">First use requires enabling voice typing under Settings → Time &amp; language → Speech.</sys:String>
 
     <sys:String x:Key="S.Help.Reminder.Title">Recurring reminders</sys:String>
@@ -249,11 +271,13 @@
     <sys:String x:Key="S.Help.Theme.Title">Themes &amp; settings</sys:String>
     <sys:String x:Key="S.Help.Theme.L1">"Theme" switches built-in themes (incl. transparent, glass) or creates a custom theme.</sys:String>
     <sys:String x:Key="S.Help.Theme.L2">The top-right menu → "Settings" toggles run-at-startup, completion effect, completion sound and reminder sound.</sys:String>
-    <sys:String x:Key="S.Help.Theme.L3">Click the sort button (⇅ right of the title) to choose a sort order.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L3">Click the sort button to the right of the title to choose a sort order.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L4">"Settings" lets you adjust the font, size and line spacing of task &amp; body text; changes apply instantly and are saved automatically.</sys:String>
 
     <sys:String x:Key="S.Help.Window.Title">Window</sys:String>
     <sys:String x:Key="S.Help.Window.L1">Top-right red / yellow / green: close to tray / minimize / maximize-restore.</sys:String>
     <sys:String x:Key="S.Help.Window.L2">Closing only hides to the system tray; double-click the tray icon to restore, right-click to quit.</sys:String>
+    <sys:String x:Key="S.Help.Window.L3">The pin button to the left of the menu button keeps the window always on top.</sys:String>
 
     <sys:String x:Key="S.Help.Contact.Title">Contact the developer</sys:String>
     <sys:String x:Key="S.Help.Contact.L1">This app is entirely AI-generated. For suggestions, contact 1248792327@qq.com</sys:String>

@@ -80,11 +80,19 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         Themes = new ObservableCollection<ThemeInfo>(ThemeManager.AllThemes());
         selectedTheme = Themes.FirstOrDefault(t => t.Key == currentTheme) ?? Themes[0];
 
+        // 字体设置(字体/字号/行距):从持久化恢复，App 启动时会显式 FontManager.Apply 一次
+        fontFamily = string.IsNullOrWhiteSpace(_data.FontFamily) ? FontManager.SystemDefault : _data.FontFamily;
+        fontSize = _data.FontSize > 0 ? _data.FontSize : 14;
+        lineSpacing = _data.LineSpacing > 0 ? _data.LineSpacing : 1.0;
+        Fonts = new ObservableCollection<FontInfo>(FontManager.AllFonts());
+        selectedFont = Fonts.FirstOrDefault(f => f.Key == fontFamily) ?? Fonts[0];
+
         sidebarWidth = _data.SidebarWidth > 0 ? _data.SidebarWidth : 113;
         sidebarCollapsed = _data.SidebarCollapsed;
         inputBarHeight = _data.InputBarHeight > 0 ? _data.InputBarHeight : 40;
         scheduleWidth = _data.ScheduleWidth > 0 ? _data.ScheduleWidth : 300;
-        scheduleOpen = _data.ScheduleOpen;
+        // 首次启动(尚未初始化)默认隐藏日程；老用户沿用上次的展开偏好
+        scheduleOpen = _data.StartupInitialized && _data.ScheduleOpen;
         alwaysOnTop = _data.AlwaysOnTop;
         effectsEnabled = _data.EffectsEnabled;
         soundEnabled = _data.SoundEnabled;
@@ -197,6 +205,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>可选主题列表(内置 + 自定义，可运行时增减).</summary>
     public ObservableCollection<ThemeInfo> Themes { get; }
 
+    /// <summary>可选字体列表(供设置面板下拉，Display 随语言刷新).</summary>
+    public ObservableCollection<FontInfo> Fonts { get; }
+
     [ObservableProperty]
     private TodoGroup? selectedGroup;
 
@@ -208,6 +219,22 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     [ObservableProperty]
     private ThemeInfo selectedTheme = null!;
+
+    /// <summary>正文/任务文字字体(设置里下拉选择，持久化).</summary>
+    [ObservableProperty]
+    private string fontFamily = FontManager.SystemDefault;
+
+    /// <summary>设置面板里当前选中的字体项(变更后回写 <see cref="FontFamily"/>).</summary>
+    [ObservableProperty]
+    private FontInfo selectedFont = null!;
+
+    /// <summary>正文/任务文字基准字号(设置里滑块调整，持久化).</summary>
+    [ObservableProperty]
+    private double fontSize = 14;
+
+    /// <summary>行距倍率(设置里滑块调整，同时影响文字行高与任务行间距，持久化).</summary>
+    [ObservableProperty]
+    private double lineSpacing = 1.0;
 
     /// <summary>左侧分组栏宽度(GridSplitter 拖动 + 持久化).</summary>
     [ObservableProperty]
@@ -431,6 +458,30 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         SaveData();
     }
 
+    partial void OnSelectedFontChanged(FontInfo value)
+    {
+        if (value == null) return;
+        FontFamily = value.Key;   // 触发 OnFontFamilyChanged 实际应用并持久化
+    }
+
+    partial void OnFontFamilyChanged(string value)
+    {
+        FontManager.Apply(FontFamily, FontSize, LineSpacing);
+        SaveData();
+    }
+
+    partial void OnFontSizeChanged(double value)
+    {
+        FontManager.Apply(FontFamily, FontSize, LineSpacing);
+        SaveData();
+    }
+
+    partial void OnLineSpacingChanged(double value)
+    {
+        FontManager.Apply(FontFamily, FontSize, LineSpacing);
+        SaveData();
+    }
+
     partial void OnSelectedLanguageChanged(LanguageInfo value)
     {
         if (value == null) return;
@@ -461,6 +512,14 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Themes.Add(t);
         var reselected = Themes.FirstOrDefault(t => t.Key == selectedKey);
         if (reselected != null) SelectedTheme = reselected;
+
+        // 字体显示名随语言切换:重建列表并按 Key 复位选中项(FontInfo 为不可变 record)
+        var selectedFontKey = SelectedFont?.Key;
+        Fonts.Clear();
+        foreach (var f in FontManager.AllFonts())
+            Fonts.Add(f);
+        var reFont = Fonts.FirstOrDefault(f => f.Key == selectedFontKey);
+        if (reFont != null) SelectedFont = reFont;
 
         OnPropertyChanged(nameof(CurrentTitle));
         OnPropertyChanged(nameof(SortTooltip));
@@ -635,6 +694,14 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         NewTaskReminderEnabled = false;
         NewTaskReminderInterval = 30;
     }
+
+    // ===== 选了即设定:自定义截止时间 / 周期提醒在用户调整选项时自动应用，无需再点"设定"按钮 =====
+    // (字段初始化器不会触发 OnChanged，故启动/重置时不会误设；清除按钮不改这些字段，故不会被反弹回填)
+    partial void OnNewTaskCustomDateChanged(DateTime value) => ApplyCustomTime();
+    partial void OnNewTaskCustomHourChanged(int value) => ApplyCustomTime();
+    partial void OnNewTaskCustomMinuteChanged(int value) => ApplyCustomTime();
+    partial void OnNewTaskReminderCustomValueChanged(int value) => ApplyCustomReminder();
+    partial void OnNewTaskReminderCustomUnitMinutesChanged(int value) => ApplyCustomReminder();
 
     private static int ParseMinutes(object? raw)
     {
@@ -1526,6 +1593,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.Items = _allItems;
         _data.Theme = CurrentTheme;
         _data.Language = CurrentLanguage;
+        _data.FontFamily = FontFamily;
+        _data.FontSize = FontSize;
+        _data.LineSpacing = LineSpacing;
         _data.SelectedGroupId = SelectedGroup?.Id;
         _data.Sort = SelectedSortOption?.Mode ?? SortMode.Custom;
         _data.SidebarWidth = SidebarWidth;

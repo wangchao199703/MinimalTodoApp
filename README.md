@@ -21,7 +21,7 @@ A lightweight, fast-starting **local to-do app for Windows**.
 - ↕️ Multiple sort modes: Custom (drag) / Due date / Priority / Completion / Created time / Title
 - 💾 Local `data.json` storage, saved on change and loaded on start (System.Text.Json)
 - 🎨 8 built-in themes + custom themes: Light / Dark / Nord / Ocean / Forest / Rose / Transparent / Glass
-- ⚙️ Settings window: run-at-startup toggle (title-bar ☰ → Settings)
+- ⚙️ Settings window: run-at-startup toggle + adjustable font / size / line spacing for task & body text (title-bar ☰ → Settings)
 - 🪟 Custom-drawn title bar (traffic-light buttons at the top-right) + rounded window
 - 🔔 Stays on the desktop: the close button hides to the tray, right-click the tray icon to quit, double-click to restore
 
@@ -167,7 +167,7 @@ Windows 10 (1809+) / Windows 11, x64
 - ↕️ 多种排序：自定义(拖拽) / 截止日期 / 优先级 / 完成状态 / 创建时间 / 标题
 - 💾 本地 `data.json` 存储，变动即存、启动即载（System.Text.Json）
 - 🎨 8 套内置主题 + 自定义主题：明亮 / 暗黑 / 极地 / 海洋 / 森林 / 玫瑰 / 透明 / 毛玻璃
-- ⚙️ 设置窗口：开机自启动开关（标题栏 ☰ → 设置）
+- ⚙️ 设置窗口：开机自启动开关 + 任务/正文文字的字体、字号、行距可调（标题栏 ☰ → 设置）
 - 🪟 自绘标题栏（交通灯按钮在右上角）+ 圆角窗口
 - 🔔 常驻桌面：关闭按钮 = 隐藏到托盘，右键托盘菜单退出，双击托盘恢复
 

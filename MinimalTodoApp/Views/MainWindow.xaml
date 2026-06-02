@@ -72,12 +72,12 @@
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <!-- 应用置顶图钉：勾选则窗口始终最前(替代旧的右键标题栏菜单) -->
                         <ToggleButton x:Name="AlwaysOnTopToggle" Style="{StaticResource CaptionToggleButton}"
-                                      Content="📌" FontSize="13"
+                                      Content="&#xE718;"
                                       IsChecked="{Binding AlwaysOnTop, Mode=TwoWay}"
                                       ToolTip="{DynamicResource S.AlwaysOnTop}" />
                     <Grid VerticalAlignment="Center">
                         <ToggleButton x:Name="SettingsToggle" Style="{StaticResource CaptionToggleButton}"
-                                      Content="☰" FontSize="15" ToolTip="{DynamicResource S.Tip.Menu}" />
+                                      Content="&#xE700;" ToolTip="{DynamicResource S.Tip.Menu}" />
                         <Popup IsOpen="{Binding IsChecked, ElementName=SettingsToggle}"
                                PlacementTarget="{Binding ElementName=SettingsToggle}"
                                Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
@@ -89,12 +89,22 @@
                                 </Border.Effect>
                                 <StackPanel>
                                     <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
-                                            Padding="10,8" Content="{DynamicResource S.MenuSettings}" Click="Settings_Click" />
+                                            Padding="10,8" Click="Settings_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE713;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Width="20" VerticalAlignment="Center" />
+                                            <TextBlock Text="{DynamicResource S.MenuSettings}" FontSize="13" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
 
                                     <!-- 语言切换:🌐 语言 标题 + 中文/English 选项(当前项打勾) -->
                                     <Border Height="1" Background="{DynamicResource Divider}" Margin="4,6" />
-                                    <TextBlock Text="{DynamicResource S.MenuLanguage}" Margin="10,2,0,4"
-                                               FontSize="12" Foreground="{DynamicResource MutedText}" />
+                                    <StackPanel Orientation="Horizontal" Margin="10,2,0,4">
+                                        <TextBlock Text="&#xE774;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="13" Width="20" Foreground="{DynamicResource MutedText}" VerticalAlignment="Center" />
+                                        <TextBlock Text="{DynamicResource S.MenuLanguage}"
+                                                   FontSize="12" Foreground="{DynamicResource MutedText}" VerticalAlignment="Center" />
+                                    </StackPanel>
                                     <Button Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left"
                                             Padding="10,7" Tag="zh-CN" Click="Language_Click">
                                         <StackPanel Orientation="Horizontal">
@@ -157,33 +167,10 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <!-- 全部任务（始终可见：展开=便签图标+文字，折叠=便签图标） -->
-                            <Button Grid.Row="0" Command="{Binding SelectAllCommand}"
-                                    Height="28" Padding="6,0" Cursor="Hand" ToolTip="{DynamicResource S.AllTasks}">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
-                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsAllSelected}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="📋" FontSize="13" Width="18"
-                                               TextAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Text="{DynamicResource S.AllTasks}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
-                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
-                                </StackPanel>
-                            </Button>
+                            <!-- (已移除"全部任务"按钮：分组列表直接顶到侧栏顶部) -->
 
                             <!-- 分组列表：单击切换；拖动排序；右键操作菜单。折叠时仅显示颜色图标 -->
-                            <ListBox Grid.Row="1" Margin="0,8,0,0" Style="{StaticResource FlatListBox}"
+                            <ListBox Grid.Row="1" Margin="0" Style="{StaticResource FlatListBox}"
                                      ItemContainerStyle="{StaticResource SidebarItemStyle}"
                                      ItemsSource="{Binding Groups}"
                                      SelectedItem="{Binding SelectedGroup, Mode=TwoWay}"
@@ -261,7 +248,7 @@
                                             Command="{Binding BeginAddGroupCommand}"
                                             Visibility="{Binding IsAddingGroup, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
                                         <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="＋" FontSize="13" Width="18"
+                                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
                                                        TextAlignment="Center" VerticalAlignment="Center" />
                                             <TextBlock Text="{DynamicResource S.NewGroup}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
                                         </StackPanel>
@@ -289,7 +276,8 @@
                                 </Grid>
 
                                 <!-- 折叠态：加号图标 -->
-                                <Button Style="{StaticResource GhostButton}" Content="＋" FontSize="13" Height="28" Padding="0"
+                                <Button Style="{StaticResource GhostButton}" Content="&#xE710;"
+                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Height="28" Padding="0"
                                         ToolTip="{DynamicResource S.NewGroup}" Command="{Binding BeginAddGroupCommand}"
                                         Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
                             </Grid>
@@ -308,7 +296,7 @@
                                     </Style>
                                 </Button.Style>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="📖" FontSize="13" Width="18"
+                                    <TextBlock Text="&#xE82D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
                                                TextAlignment="Center" VerticalAlignment="Center" />
                                     <TextBlock Text="{DynamicResource S.Help}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
@@ -329,7 +317,7 @@
                                         </Style>
                                     </ToggleButton.Style>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="📤" FontSize="13" Width="18"
+                                        <TextBlock Text="&#xE72D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
                                                    TextAlignment="Center" VerticalAlignment="Center" />
                                         <TextBlock Text="{DynamicResource S.ImportExport}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                    Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
@@ -380,7 +368,7 @@
                                         </Style>
                                     </ToggleButton.Style>
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="🎨" FontSize="13" Width="18"
+                                        <TextBlock Text="&#xE790;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
                                                    TextAlignment="Center" VerticalAlignment="Center" />
                                         <TextBlock Text="{DynamicResource S.ChangeTheme}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                    Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
@@ -457,7 +445,7 @@
                                     </Style>
                                 </Button.Style>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="☰" FontSize="13" Width="18"
+                                    <TextBlock Text="&#xE700;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
                                                TextAlignment="Center" VerticalAlignment="Center" />
                                     <TextBlock Text="{DynamicResource S.CollapseSidebar}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
                                                Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
@@ -483,20 +471,20 @@
                         </Grid.RowDefinitions>
 
                         <!-- 头部：标题 + 排序（图标按钮，点击弹出选择） -->
-                        <Grid Grid.Row="0" Margin="0,0,0,14">
+                        <Grid Grid.Row="0" Margin="0,0,0,8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding CurrentTitle}" FontSize="22"
-                                       FontWeight="Bold" VerticalAlignment="Center"
+                            <TextBlock Grid.Column="0" Text="{Binding CurrentTitle}" FontSize="15"
+                                       FontWeight="SemiBold" VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource PrimaryText}" />
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <Grid VerticalAlignment="Center">
                                 <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
-                                              Content="⇅" FontSize="16"
+                                              Content="&#xE8CB;"
                                               ToolTip="{Binding SortTooltip}" />
                                 <Popup IsOpen="{Binding IsChecked, ElementName=SortToggle}"
                                        PlacementTarget="{Binding ElementName=SortToggle}"
@@ -522,7 +510,7 @@
                             </Grid>
                             <!-- 日程/日历:按截止时间在日历中查看待办(天/周/月) -->
                             <Button x:Name="ScheduleButton" Style="{StaticResource CaptionButton}"
-                                    Content="📅" FontSize="15" Margin="2,0,0,0"
+                                    Content="&#xE787;" Margin="2,0,0,0"
                                     ToolTip="{DynamicResource S.Schedule.Tooltip}"
                                     Click="Schedule_Click" />
                             </StackPanel>
@@ -636,7 +624,8 @@
                                         </Button>
 
                                         <!-- 拖拽手柄提示 -->
-                                        <TextBlock Grid.Column="2" Text="⋮⋮" Margin="0,0,8,0"
+                                        <TextBlock Grid.Column="2" Text="&#xE76F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="13" Margin="0,0,8,0"
                                                    VerticalAlignment="Center" Foreground="{DynamicResource MutedText}"
                                                    ToolTip="{DynamicResource S.Tip.Drag}" />
 
@@ -683,11 +672,13 @@
 
                                         <!-- 置顶图钉 + 周期提醒小铃铛 -->
                                         <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="📌" FontSize="12" Margin="6,0,0,0"
-                                                       VerticalAlignment="Center"
+                                            <TextBlock Text="&#xE718;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="12" Margin="6,0,0,0"
+                                                       VerticalAlignment="Center" Foreground="{DynamicResource Accent}"
                                                        Visibility="{Binding IsPinned, Converter={StaticResource BoolToVis}}"
                                                        ToolTip="{DynamicResource S.Task.TogglePin}" />
-                                            <TextBlock Text="🔔" FontSize="12" Margin="6,0,2,0"
+                                            <TextBlock Text="&#xE7ED;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="12" Margin="6,0,2,0"
                                                        VerticalAlignment="Center"
                                                        Foreground="{DynamicResource WarningText}"
                                                        Visibility="{Binding HasReminder, Converter={StaticResource BoolToVis}}"
@@ -871,10 +862,7 @@
                                                     <ComboBox Width="46" Margin="0,0,4,4" VerticalAlignment="Center"
                                                               ItemsSource="{Binding Minutes}"
                                                               SelectedItem="{Binding NewTaskCustomMinute, Mode=TwoWay}" />
-                                                    <Button Content="{DynamicResource S.SetAsTime}" Style="{StaticResource GhostButton}"
-                                                            Padding="9,3" Margin="2,0,0,4" FontSize="12"
-                                                            Background="{DynamicResource InputBg}"
-                                                            Command="{Binding ApplyCustomTimeCommand}" />
+                                                    <!-- (选了日期/时/分即自动设定，无需"设定"按钮) -->
                                                 </WrapPanel>
                                             </StackPanel>
                                         </Border>
@@ -974,10 +962,7 @@
                                                               DisplayMemberPath="Label"
                                                               SelectedValuePath="Minutes"
                                                               SelectedValue="{Binding NewTaskReminderCustomUnitMinutes, Mode=TwoWay}" />
-                                                    <Button Content="{DynamicResource S.SetAsReminder}" Style="{StaticResource GhostButton}"
-                                                            Padding="9,3" Margin="6,0,0,0" FontSize="12"
-                                                            Background="{DynamicResource InputBg}"
-                                                            Command="{Binding ApplyCustomReminderCommand}" />
+                                                    <!-- (输入数值/选单位即自动设为提醒，无需"设为提醒"按钮) -->
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
@@ -1063,8 +1048,9 @@
                                 </Grid>
 
                                 <!-- 语音输入：调起 Windows 系统语音输入(Win+H)，识别文字直接进入输入框 -->
-                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="🎤"
-                                        FontSize="16" Margin="8,0,0,0" Padding="10,0"
+                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="&#xE720;"
+                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                        FontSize="15" Margin="8,0,0,0" Padding="10,0"
                                         VerticalAlignment="Stretch"
                                         Background="{DynamicResource InputBg}"
                                         ToolTip="{DynamicResource S.Tip.Voice}"

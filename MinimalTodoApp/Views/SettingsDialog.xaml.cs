@@ -17,6 +17,7 @@ public partial class SettingsDialog : Window
     {
         InitializeComponent();
         _vm = vm;
+        DataContext = vm;   // 字体下拉/字号/行距滑块通过绑定读写 ViewModel
 
         _initializing = true;
         AutoStartCheck.IsChecked = StartupManager.IsEnabled();
