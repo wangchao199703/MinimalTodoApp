@@ -8,6 +8,7 @@
         Title="Todo" Height="640" Width="680"
         Icon="/Assets/app.ico"
         MinHeight="420" MinWidth="380"
+        ShowInTaskbar="False"
         WindowStyle="None" ResizeMode="CanResize"
         AllowsTransparency="True" Background="Transparent"
         WindowStartupLocation="CenterScreen"

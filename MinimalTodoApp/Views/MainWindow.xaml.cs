@@ -637,8 +637,15 @@ public partial class MainWindow : Window
 
     // ===== 标题栏按钮(Mac 交通灯) =====
 
+    /// <summary>
+    /// 最小化:因应用不在任务栏显示(ShowInTaskbar=False),最小化无处可去,
+    /// 故直接隐藏到通知栏托盘(与“关闭”一致),后续双击托盘图标即可重新唤出.
+    /// </summary>
     private void Minimize_Click(object sender, RoutedEventArgs e)
-        => WindowState = WindowState.Minimized;
+    {
+        SyncSidebarWidthBack();
+        Hide();
+    }
 
     private void MaxRestore_Click(object sender, RoutedEventArgs e)
         => WindowState = WindowState == WindowState.Maximized
@@ -668,11 +675,17 @@ public partial class MainWindow : Window
 
     private void ShowMenuItem_Click(object sender, RoutedEventArgs e) => ShowMainWindow();
 
-    private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
+    private void ExitMenuItem_Click(object sender, RoutedEventArgs e) => ForceExit();
+
+    /// <summary>
+    /// 真正退出应用:允许关闭(绕过“关闭=隐藏到托盘”) → 回写侧栏宽度 → 释放托盘图标 → 关闭应用.
+    /// 托盘“退出”菜单与「被新版本优雅接管」(App.OnExitSignalReceived)共用此入口.
+    /// </summary>
+    public void ForceExit()
     {
         _allowClose = true;
         SyncSidebarWidthBack();
-        TrayIcon.Dispose();          // 释放托盘图标，避免残留
+        try { TrayIcon.Dispose(); } catch { /* 托盘已释放,忽略 */ }   // 释放托盘图标，避免残留
         Application.Current.Shutdown();
     }
 
