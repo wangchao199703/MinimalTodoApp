@@ -13,15 +13,29 @@ namespace MinimalTodoApp.Views;
 /// <summary>分组图标选择器:内置多分类字形图标 + 自定义图片导入。点击即应用并关闭。</summary>
 public partial class IconPickerDialog : Window
 {
-    private readonly MainViewModel _vm;
-    private readonly TodoGroup _group;
+    private readonly MainViewModel? _vm;
+    private readonly TodoGroup? _group;
+    private bool _pickOnly;
     private readonly FontFamily _iconFont = new("Segoe Fluent Icons, Segoe MDL2 Assets");
 
-    public IconPickerDialog(MainViewModel vm, TodoGroup group)
+    /// <summary>「仅选择」模式下的结果:选中的字形(优先)。</summary>
+    public string? ResultGlyph { get; private set; }
+    /// <summary>「仅选择」模式下的结果:选中/导入的自定义图片路径。</summary>
+    public string? ResultImage { get; private set; }
+
+    /// <summary>应用到具体分组:点击即写入该分组并关闭。</summary>
+    public IconPickerDialog(MainViewModel vm, TodoGroup group) : this()
     {
-        InitializeComponent();
         _vm = vm;
         _group = group;
+        _pickOnly = false;
+    }
+
+    /// <summary>仅选择:不绑定分组，点击把结果写入 ResultGlyph/ResultImage 并 DialogResult=true(供新建分组用)。</summary>
+    public IconPickerDialog()
+    {
+        InitializeComponent();
+        _pickOnly = true;   // 由带参构造覆盖为 false
 
         BuildCategoryButtons();
         if (GroupIcons.Categories.Count > 0) ShowGlyphCategory(GroupIcons.Categories[0]);
@@ -85,11 +99,17 @@ public partial class IconPickerDialog : Window
 
     private void Glyph_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button b && b.Tag is string glyph)
+        if (sender is not Button b || b.Tag is not string glyph) return;
+        if (_pickOnly)
         {
-            _vm.SetGroupIcon(_group, glyph);
-            Close();
+            ResultGlyph = glyph;
+            DialogResult = true;
         }
+        else
+        {
+            _vm?.SetGroupIcon(_group, glyph);
+        }
+        Close();
     }
 
     private void ShowCustom()
@@ -111,11 +131,17 @@ public partial class IconPickerDialog : Window
 
     private void Image_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button b && b.Tag is string path)
+        if (sender is not Button b || b.Tag is not string path) return;
+        if (_pickOnly)
         {
-            _vm.SetGroupIconImage(_group, path);
-            Close();
+            ResultImage = path;
+            DialogResult = true;
         }
+        else
+        {
+            _vm?.SetGroupIconImage(_group, path);
+        }
+        Close();
     }
 
     private void Import_Click(object sender, RoutedEventArgs e)
@@ -127,11 +153,17 @@ public partial class IconPickerDialog : Window
         if (dlg.ShowDialog() != true) return;
 
         var dest = GroupIcons.ImportImage(dlg.FileName);
-        if (dest != null)
+        if (dest == null) return;
+        if (_pickOnly)
         {
-            _vm.SetGroupIconImage(_group, dest);
-            Close();
+            ResultImage = dest;
+            DialogResult = true;
         }
+        else
+        {
+            _vm?.SetGroupIconImage(_group, dest);
+        }
+        Close();
     }
 
     private Button MakeCell() => new()

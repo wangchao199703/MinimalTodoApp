@@ -31,6 +31,9 @@ public class AppData
     /// <summary>勾选框圆环直径(可在设置里调整，持久化).0=未设置(首次按字号+2，约与文字等高).</summary>
     public double CheckboxSize { get; set; }
 
+    /// <summary>分组默认图标是否已初始化.false 时启动会给 所有待办/已完成/工作/学习/生活 强制赋默认图标一次.</summary>
+    public bool GroupIconsInitialized { get; set; }
+
     /// <summary>上次选中的分组 Id(null 表示“全部任务”).</summary>
     public Guid? SelectedGroupId { get; set; }
 

@@ -268,10 +268,13 @@ public partial class MainWindow : Window
     private void ApplyAcrylicForTheme()
     {
         if (Vm == null) return;
-        if (string.Equals(Vm.CurrentTheme, ThemeManager.Glass, StringComparison.OrdinalIgnoreCase))
+        bool glass = string.Equals(Vm.CurrentTheme, ThemeManager.Glass, StringComparison.OrdinalIgnoreCase);
+        if (glass)
             AcrylicHelper.Enable(this, 0x33222831);   // 半透明深色玻璃底
         else
             AcrylicHelper.Disable(this);
+        // 毛玻璃下窗口方形 HWND 会让 Acrylic 填满直角,用 Win11 DWM 圆角修正;其余主题已由 WPF 圆角裁剪
+        AcrylicHelper.SetRoundedCorners(this, glass);
     }
 
     /// <summary>同步圆角裁剪区域到当前尺寸(AllowsTransparency 圆角必须手动裁剪).</summary>
@@ -923,6 +926,21 @@ public partial class MainWindow : Window
         if (Vm == null || sender is not MenuItem mi || mi.DataContext is not TodoGroup g) return;
         var dlg = new IconPickerDialog(Vm, g) { Owner = this };
         dlg.ShowDialog();
+    }
+
+    // ===== 新建分组:选择图标(仅选择模式) =====
+
+    private void NewGroupIcon_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm == null) return;
+        var dlg = new IconPickerDialog { Owner = this };
+        if (dlg.ShowDialog() == true)
+        {
+            if (!string.IsNullOrEmpty(dlg.ResultImage)) Vm.NewGroupIconImage = dlg.ResultImage;
+            else if (!string.IsNullOrEmpty(dlg.ResultGlyph)) { Vm.NewGroupIcon = dlg.ResultGlyph; Vm.NewGroupIconImage = ""; }
+        }
+        // 重新聚焦输入框，方便继续输入名称
+        NewGroupBox.Focus();
     }
 
     // ===== 任务标题:单击进入编辑，回车/失焦退出 =====

@@ -8,7 +8,7 @@
         WindowStartupLocation="CenterOwner"
         FontFamily="Microsoft YaHei UI, Segoe UI">
 
-    <Border Background="{DynamicResource WindowBg}" CornerRadius="12"
+    <Border Background="{DynamicResource PopupBg}" CornerRadius="12"
             BorderBrush="{DynamicResource Divider}" BorderThickness="1">
         <Border.Effect>
             <DropShadowEffect BlurRadius="20" ShadowDepth="0" Opacity="0.35" Color="#000000" />

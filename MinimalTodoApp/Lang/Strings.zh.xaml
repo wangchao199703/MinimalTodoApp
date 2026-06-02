@@ -71,6 +71,8 @@
     <sys:String x:Key="S.IconCat.Work">工作</sys:String>
     <sys:String x:Key="S.IconCat.Study">学习</sys:String>
     <sys:String x:Key="S.IconCat.Life">生活</sys:String>
+    <sys:String x:Key="S.IconCat.Travel">出行</sys:String>
+    <sys:String x:Key="S.IconCat.Symbol">符号</sys:String>
     <sys:String x:Key="S.IconCat.Custom">自定义</sys:String>
     <sys:String x:Key="S.Group.Clear">清空分组</sys:String>
     <sys:String x:Key="S.Group.Delete">删除分组</sys:String>
@@ -297,7 +299,7 @@
     <sys:String x:Key="S.Help.Window.L3">标题栏菜单按钮左侧的图钉按钮可让窗口始终置于最前(应用置顶).</sys:String>
 
     <sys:String x:Key="S.Help.Contact.Title">联系开发者</sys:String>
-    <sys:String x:Key="S.Help.Contact.L1">该软件全部由 AI 生成，有任何建议联系 1248792327@qq.com</sys:String>
+    <sys:String x:Key="S.Help.Contact.L1">本项目的 GitHub 地址是 https://github.com/wangchao199703/MinimalTodoApp</sys:String>
 
     <!-- ============ 自定义主题编辑器 ============ -->
     <sys:String x:Key="S.ThemeEditor.Title">自定义主题</sys:String>

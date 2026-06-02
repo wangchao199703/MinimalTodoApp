@@ -181,8 +181,32 @@ public class IndentToMarginConverter : IValueConverter
 }
 
 /// <summary>
+/// 缩进层级 -> 任务卡片 Margin:左缩进 = 层级×16(卡片整体右移变窄，卡内对勾到卡片左边框距离与父任务一致)，
+/// 上下间距取 AppTaskItemMargin;子任务(缩进>0)上下间距减半，让展开后更紧凑。
+/// </summary>
+public class IndentToCardMarginConverter : IValueConverter
+{
+    public const double Step = 16.0;
+
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        int level = value is int i ? Math.Max(0, Math.Min(i, 8)) : 0;
+
+        double v = 4;   // 兜底竖直间距
+        if (Application.Current?.TryFindResource("AppTaskItemMargin") is Thickness t)
+            v = t.Top;
+        if (level > 0) v = Math.Round(v / 2.0);   // 子任务之间间隔减半
+
+        return new Thickness(level * Step, v, 0, v);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// 根据缩进层级 + 基准字号计算任务标题字号:父待办(顶层 indent=0)用基准字号，
-/// 子待办每深一级缩小 2(最多缩 2 级)，地板 9。values[0]=IndentLevel, values[1]=基准字号(VM.FontSize)。
+/// 子待办每深一级 ×0.75(约为父任务 3/4，最多缩 2 级)，地板 9。values[0]=IndentLevel, values[1]=基准字号(VM.FontSize)。
 /// </summary>
 public class IndentFontSizeConverter : IMultiValueConverter
 {
@@ -190,7 +214,7 @@ public class IndentFontSizeConverter : IMultiValueConverter
     {
         int indent = values.Length > 0 && values[0] is int i ? i : 0;
         double baseSize = values.Length > 1 && values[1] is double d && d > 0 ? d : 12;
-        double size = baseSize - Math.Min(Math.Max(indent, 0), 2) * 2;
+        double size = baseSize * Math.Pow(0.75, Math.Min(Math.Max(indent, 0), 2));
         return Math.Max(size, 9.0);
     }
 

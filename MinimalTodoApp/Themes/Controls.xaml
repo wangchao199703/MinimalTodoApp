@@ -14,6 +14,7 @@
     <conv:PriorityToTextConverter x:Key="PriorityToText" />
     <conv:EqualityToBoolConverter x:Key="EqualityToBool" />
     <conv:IndentToMarginConverter x:Key="IndentToMargin" />
+    <conv:IndentToCardMarginConverter x:Key="IndentToCardMargin" />
     <conv:IndentFontSizeConverter x:Key="IndentFontSize" />
     <conv:PathToImageConverter x:Key="PathToImage" />
 
@@ -188,13 +189,14 @@
     <!-- ===================== 任务项容器 ===================== -->
     <Style x:Key="TaskItemStyle" TargetType="ListBoxItem">
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-        <Setter Property="Margin" Value="{DynamicResource AppTaskItemMargin}" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
+                    <!-- 卡片本身按缩进左移变窄;卡内"对勾到卡片左边框"的距离(Padding)与父任务一致;子任务上下间距减半 -->
                     <Border x:Name="b" Background="{DynamicResource CardBg}"
                             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
-                            CornerRadius="12" Padding="12,8">
+                            CornerRadius="12" Padding="12,8"
+                            Margin="{Binding IndentLevel, Converter={StaticResource IndentToCardMargin}}">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -491,6 +493,26 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <!-- ===================== 右键菜单（不透明背景 + 主题文字，修复毛玻璃/透明下看不清） ===================== -->
+    <Style TargetType="ContextMenu">
+        <Setter Property="Background" Value="{DynamicResource PopupBg}" />
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Divider}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
+    </Style>
+
+    <Style TargetType="MenuItem">
+        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+        <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
+        <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <Style TargetType="Separator">
+        <Setter Property="Background" Value="{DynamicResource Divider}" />
+        <Setter Property="Margin" Value="6,3" />
     </Style>
 
 </ResourceDictionary>

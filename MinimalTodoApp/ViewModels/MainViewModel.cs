@@ -114,6 +114,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         EnsureAllUncompletedGroup();
         EnsureCompletedGroup();
         AssignDefaultGroupIcons();   // 旧数据(无图标)按类型/名称补默认图标
+        InitDefaultGroupIconsOnce(); // 首次启动:强制标准分组用默认图标(修正旧的随手选)
         MigrateCompletedItems();
         MigrateNonePriority();
         _suppressSave = false;
@@ -392,7 +393,25 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>新建分组输入框文本.</summary>
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConfirmAddGroupCommand))]
+    [NotifyPropertyChangedFor(nameof(NewGroupIconGlyph))]
     private string newGroupName = string.Empty;
+
+    /// <summary>新建分组时用户选的字形图标(空=按名称自动)。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NewGroupIconGlyph))]
+    private string newGroupIcon = string.Empty;
+
+    /// <summary>新建分组时用户导入的图片图标路径(非空时优先于字形)。</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNewGroupIconImage))]
+    private string newGroupIconImage = string.Empty;
+
+    /// <summary>新建分组输入行图标按钮当前显示的字形(未手选时按名称预制)。</summary>
+    public string NewGroupIconGlyph =>
+        !string.IsNullOrEmpty(NewGroupIcon) ? NewGroupIcon : GroupIcons.IconForName(NewGroupName);
+
+    /// <summary>新建分组是否选了图片图标。</summary>
+    public bool HasNewGroupIconImage => !string.IsNullOrEmpty(NewGroupIconImage);
 
     /// <summary>当前是否选中“全部任务”.</summary>
     public bool IsAllSelected => SelectedGroup == null;
@@ -947,6 +966,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     {
         IsAddingGroup = false;
         NewGroupName = string.Empty;
+        NewGroupIcon = string.Empty;
+        NewGroupIconImage = string.Empty;
     }
 
     private bool CanConfirmAddGroup() => !string.IsNullOrWhiteSpace(NewGroupName);
@@ -955,7 +976,13 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     private void ConfirmAddGroup()
     {
         var g = CreateGroupInternal(NewGroupName.Trim());
+        // 用户在新建行选了图标/图片则覆盖按名称的默认图标
+        if (!string.IsNullOrEmpty(NewGroupIconImage)) g.IconImage = NewGroupIconImage;
+        else if (!string.IsNullOrEmpty(NewGroupIcon)) { g.Icon = NewGroupIcon; g.IconImage = ""; }
+
         NewGroupName = string.Empty;
+        NewGroupIcon = string.Empty;
+        NewGroupIconImage = string.Empty;
         IsAddingGroup = false;
         SelectedGroup = g;        // 自动切到新分组
         SaveData();
@@ -1054,6 +1081,22 @@ public partial class MainViewModel : ObservableObject, IDropTarget
                    : g.IsCompletedGroup ? GroupIcons.Completed
                    : GroupIcons.IconForName(g.Name);
         }
+    }
+
+    /// <summary>
+    /// 一次性初始化标准分组(所有待办/已完成/工作/学习/生活)的默认图标:
+    /// 旧版本里这些分组可能带着随手选的图标，本方法首次启动时强制改回默认图标，之后用户自选不再覆盖。
+    /// </summary>
+    private void InitDefaultGroupIconsOnce()
+    {
+        if (_data.GroupIconsInitialized) return;
+        foreach (var g in Groups)
+        {
+            if (g.IsAllUncompletedGroup) g.Icon = GroupIcons.AllTodos;
+            else if (g.IsCompletedGroup) g.Icon = GroupIcons.Completed;
+            else if (g.Name is "工作" or "学习" or "生活") g.Icon = GroupIcons.IconForName(g.Name);
+        }
+        _data.GroupIconsInitialized = true;
     }
 
     #endregion
@@ -1342,24 +1385,18 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         var mode = SelectedSortOption?.Mode ?? SortMode.Custom;
 
-        // 已完成分组在默认(自定义)排序下用层级 DFS:聚合的多家庭按 OrderIndex 平铺会让
-        // 子待办脱离父待办，改为"根按 OrderIndex、子紧随父"保证整族连续、子在父下。
-        if (mode == SortMode.Custom && SelectedGroup != null && SelectedGroup.IsCompletedGroup)
+        // 所有分组、所有排序模式都层级化输出:把"根任务"按所选排序键排序，再把每个根的子孙
+        // 紧随其后(DFS)。这样无论何种排序，子待办都紧贴父待办、整族连续(新增子任务也立即在父下方)。
+        Func<IEnumerable<TodoItem>, IEnumerable<TodoItem>> rootSort = mode switch
         {
-            query = OrderHierarchically(query);
-        }
-        else
-        {
-            query = mode switch
-            {
-                SortMode.DueDate   => query.OrderBy(i => i.DueDate ?? DateTime.MaxValue),
-                SortMode.Priority  => query.OrderByDescending(i => (int)i.Priority).ThenBy(i => i.OrderIndex),
-                SortMode.Completed => query.OrderBy(i => i.IsCompleted).ThenBy(i => i.OrderIndex),
-                SortMode.Created   => query.OrderByDescending(i => i.CreatedAt),
-                SortMode.Title     => query.OrderBy(i => i.Title, StringComparer.CurrentCulture),
-                _                  => query.OrderBy(i => i.OrderIndex),
-            };
-        }
+            SortMode.DueDate   => r => r.OrderBy(i => i.DueDate ?? DateTime.MaxValue),
+            SortMode.Priority  => r => r.OrderByDescending(i => (int)i.Priority).ThenBy(i => i.OrderIndex),
+            SortMode.Completed => r => r.OrderBy(i => i.IsCompleted).ThenBy(i => i.OrderIndex),
+            SortMode.Created   => r => r.OrderByDescending(i => i.CreatedAt),
+            SortMode.Title     => r => r.OrderBy(i => i.Title, StringComparer.CurrentCulture),
+            _                  => r => r.OrderBy(i => i.OrderIndex),
+        };
+        query = OrderHierarchically(query, rootSort);
 
         // 置顶前移:在上面排序结果之上做一次稳定排序,把"根被置顶"的家族整体浮到最前.
         // OrderByDescending 稳定,保留各分区内已有顺序与整族连续性;无论何种排序模式都生效.
@@ -1375,7 +1412,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// 层级排序:把集合按"根(ParentId 为空或父不在集合内)→深度优先输出子孙"排列，
     /// 根与同级子均按 OrderIndex 排序，保证子待办紧贴父待办、整族连续.
     /// </summary>
-    private static IEnumerable<TodoItem> OrderHierarchically(IEnumerable<TodoItem> items)
+    private static IEnumerable<TodoItem> OrderHierarchically(
+        IEnumerable<TodoItem> items,
+        Func<IEnumerable<TodoItem>, IEnumerable<TodoItem>> rootSort)
     {
         var list = items.ToList();
         var idSet = list.Select(i => i.Id).ToHashSet();
@@ -1384,9 +1423,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             .GroupBy(i => i.ParentId!.Value)
             .ToDictionary(g => g.Key, g => g.OrderBy(x => x.OrderIndex).ToList());
 
-        var roots = list
-            .Where(i => !i.ParentId.HasValue || !idSet.Contains(i.ParentId.Value))
-            .OrderBy(i => i.OrderIndex);
+        // 根任务(无父或父不在当前集合)按调用方提供的排序键排序;子任务始终紧随父并按 OrderIndex
+        var roots = rootSort(list
+            .Where(i => !i.ParentId.HasValue || !idSet.Contains(i.ParentId.Value)));
 
         var result = new List<TodoItem>(list.Count);
         var visited = new HashSet<Guid>();

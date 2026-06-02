@@ -20,4 +20,5 @@
     <SolidColorBrush x:Key="WarningText"    Color="#D9820B" />
     <SolidColorBrush x:Key="SuccessText"    Color="#16A34A" />
 
+    <SolidColorBrush x:Key="PopupBg"        Color="#FFFFFF" />
 </ResourceDictionary>

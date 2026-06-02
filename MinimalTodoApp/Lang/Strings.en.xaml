@@ -71,6 +71,8 @@
     <sys:String x:Key="S.IconCat.Work">Work</sys:String>
     <sys:String x:Key="S.IconCat.Study">Study</sys:String>
     <sys:String x:Key="S.IconCat.Life">Life</sys:String>
+    <sys:String x:Key="S.IconCat.Travel">Travel</sys:String>
+    <sys:String x:Key="S.IconCat.Symbol">Symbols</sys:String>
     <sys:String x:Key="S.IconCat.Custom">Custom</sys:String>
     <sys:String x:Key="S.Group.Clear">Clear group</sys:String>
     <sys:String x:Key="S.Group.Delete">Delete group</sys:String>
@@ -297,7 +299,7 @@
     <sys:String x:Key="S.Help.Window.L3">The pin button to the left of the menu button keeps the window always on top.</sys:String>
 
     <sys:String x:Key="S.Help.Contact.Title">Contact the developer</sys:String>
-    <sys:String x:Key="S.Help.Contact.L1">This app is entirely AI-generated. For suggestions, contact 1248792327@qq.com</sys:String>
+    <sys:String x:Key="S.Help.Contact.L1">This project on GitHub: https://github.com/wangchao199703/MinimalTodoApp</sys:String>
 
     <!-- ============ Custom theme editor ============ -->
     <sys:String x:Key="S.ThemeEditor.Title">Custom theme</sys:String>

@@ -36,6 +36,32 @@ public static class AcrylicHelper
     [DllImport("user32.dll")]
     private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WindowCompositionAttributeData data);
 
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+
+    private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    private const int DWMWCP_DEFAULT = 0;
+    private const int DWMWCP_ROUND = 2;
+
+    /// <summary>
+    /// Windows 11:让 DWM 把窗口(含 Acrylic 模糊背景)四角圆角。毛玻璃主题下窗口为方形 HWND，
+    /// Acrylic 会填满方角，需用此让系统圆角。其余主题已由 WPF 圆角边框裁剪，传 false 还原默认。
+    /// </summary>
+    public static void SetRoundedCorners(Window window, bool rounded)
+    {
+        try
+        {
+            var hwnd = new WindowInteropHelper(window).Handle;
+            if (hwnd == IntPtr.Zero) return;
+            int pref = rounded ? DWMWCP_ROUND : DWMWCP_DEFAULT;
+            DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref pref, sizeof(int));
+        }
+        catch
+        {
+            // 旧系统(< Win11)无此属性,忽略
+        }
+    }
+
     /// <summary>开启毛玻璃模糊.tintArgb 为玻璃底色(含透明度，AARRGGBB).</summary>
     public static void Enable(Window window, uint tintArgb)
     {
