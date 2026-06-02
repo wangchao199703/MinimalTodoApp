@@ -1258,12 +1258,25 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             return;
         }
 
-        // 每次刷新顺带更新 HasChildren,用于父待办左侧的折叠箭头显示控制
-        var childIdSet = _allItems.Where(i => i.ParentId.HasValue)
-                                  .Select(i => i.ParentId!.Value)
-                                  .ToHashSet();
+        // 每次刷新顺带更新 HasChildren / 子任务计数,用于父待办的折叠行"子任务 (n/m)"
+        var childrenByParent = _allItems.Where(i => i.ParentId.HasValue)
+                                        .GroupBy(i => i.ParentId!.Value)
+                                        .ToDictionary(g => g.Key, g => g.ToList());
         foreach (var it in _allItems)
-            it.HasChildren = childIdSet.Contains(it.Id);
+        {
+            if (childrenByParent.TryGetValue(it.Id, out var kids))
+            {
+                it.HasChildren = true;
+                it.ChildCount = kids.Count;
+                it.CompletedChildCount = kids.Count(k => k.IsCompleted);
+            }
+            else
+            {
+                it.HasChildren = false;
+                it.ChildCount = 0;
+                it.CompletedChildCount = 0;
+            }
+        }
 
         IEnumerable<TodoItem> query = _allItems;
 

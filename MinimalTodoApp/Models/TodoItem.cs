@@ -92,6 +92,22 @@ public partial class TodoItem : ObservableObject
     [property: JsonIgnore]
     private bool hasChildren;
 
+    /// <summary>直接子待办总数(由 ViewModel 维护,用于"子任务 (n/m)"摘要).不参与序列化.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    [NotifyPropertyChangedFor(nameof(SubtaskText))]
+    private int childCount;
+
+    /// <summary>已完成的直接子待办数(由 ViewModel 维护).不参与序列化.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    [NotifyPropertyChangedFor(nameof(SubtaskText))]
+    private int completedChildCount;
+
+    /// <summary>"子任务 (已完成/总数)"摘要文案,显示在父待办标题下方的折叠行.计算属性,不序列化.</summary>
+    [JsonIgnore]
+    public string SubtaskText => Loc.F("S.Task.SubtaskCount", CompletedChildCount, ChildCount);
+
     /// <summary>是否启用周期提醒(到点后每隔固定时间反复提醒，直到任务完成).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasReminder))]

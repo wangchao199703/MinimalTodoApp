@@ -188,12 +188,47 @@
                 <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="b" Background="{DynamicResource CardBg}"
                             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
-                            CornerRadius="10" Padding="12,10">
+                            CornerRadius="12" Padding="14,12">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="b" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ===================== 任务圆形勾选框（圆环按优先级着色，完成时填充 + 白色对勾） ===================== -->
+    <!-- 用法：BorderBrush 绑定到 PriorityToBrush，圆环/填充即随优先级着色（取代旧的左侧色条与方框） -->
+    <Style x:Key="TaskCheckBox" TargetType="CheckBox">
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Focusable" Value="False" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="CheckBox">
+                    <Grid Width="22" Height="22" Background="Transparent">
+                        <!-- 外圆环：颜色取自 BorderBrush（= 优先级色） -->
+                        <Ellipse x:Name="ring" Width="20" Height="20"
+                                 Stroke="{TemplateBinding BorderBrush}" StrokeThickness="2"
+                                 Fill="Transparent" />
+                        <!-- 完成时的白色对勾 -->
+                        <Path x:Name="check" Data="M 6 11 L 9.3 14.3 L 15.5 7"
+                              HorizontalAlignment="Center" VerticalAlignment="Center"
+                              Stroke="White" StrokeThickness="2.2"
+                              StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                              StrokeLineJoin="Round" Opacity="0" />
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ring" Property="Fill" Value="{DynamicResource CardHoverBg}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="ring" Property="Fill"
+                                    Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}" />
+                            <Setter TargetName="check" Property="Opacity" Value="1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

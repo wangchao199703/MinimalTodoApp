@@ -84,6 +84,8 @@
     <sys:String x:Key="S.Task.MoveToGroup">移动到分组</sys:String>
     <sys:String x:Key="S.Task.ToggleComplete">标记完成/未完成</sys:String>
     <sys:String x:Key="S.Task.Delete">删除任务</sys:String>
+    <!-- {0}=已完成子任务数, {1}=子任务总数 -->
+    <sys:String x:Key="S.Task.SubtaskCount">子任务 ({0}/{1})</sys:String>
 
     <!-- ============ 任务行 ToolTip ============ -->
     <sys:String x:Key="S.Tip.PriorityBar">优先级（右键编辑）</sys:String>

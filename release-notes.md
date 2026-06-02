@@ -1,23 +1,27 @@
-## MinimalTodoApp v1.1.2
+## MinimalTodoApp v1.1.3
 
 ### English
 
-This release focuses on drag/hierarchy refinements, a calendar time axis, task pinning, and a one-click always-on-top button.
+This release modernizes the task list into a clean, card-based layout (inspired by the TaskFlow design), on top of the adjustable fonts / size / line-spacing, "set-on-pick" due time & reminder, and week-view alignment fixes.
 
-- **Instant collapse arrow after drag** — dragging a task to change its level now immediately refreshes the parent/child relationship, so the collapse arrow appears at once. The arrow was restyled (rounded hover highlight, softer ▾/▸ glyphs). Adding a subtask now auto-expands its parent.
-- **0–24h time axis in the calendar** — the Day and Week views now show a 0–24 hour ruler on the left, with tasks positioned vertically by their due time (untimed tasks go into a top "all-day" band). The Month view now shows the `HH:mm` time on each task chip.
-- **Pin tasks to top** — right-click a task to pin it. A pinned top-level task keeps its whole family at the very top of the list, regardless of the current sort order.
-- **Always-on-top button** — a pin button was added to the left of the ☰ menu button to keep the window in front; the old right-click "always on top" menu was removed.
+- **Card-based task list** — every task is now a roomy rounded card with clear spacing, for a calmer, more modern look.
+- **Circular checkboxes** — the old square box is replaced by a ring that fills in with a white checkmark when completed. The ring is tinted by priority (high = red, medium = amber, low = green), so the separate left-edge priority bar was removed.
+- **No more drag handle** — the always-on grip was removed entirely (no leftover placeholder space). The whole row is still draggable for reordering.
+- **Subtask line** — a parent task now shows a "Subtasks (done/total)" line with a rounded chevron under its title; click it to collapse/expand.
 
-Download `MinimalTodoApp-v1.1.2-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
+Your data is fully compatible and every theme (light / dark / transparent / low-saturation) adapts automatically.
+
+Download `MinimalTodoApp-v1.1.3-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
 
 ### 简体中文
 
-本次为体验与功能优化版本：
+本次将待办列表现代化为简洁的卡片式布局（参考 TaskFlow 设计），叠加在可调字体 / 字号 / 行距、截止时间与周期提醒「选了即设定」、周视图对齐修复之上。
 
-- **拖动后折叠箭头立即刷新** —— 拖动任务改变层级后立刻刷新父子关系、马上显示折叠箭头；箭头重新美化（圆角悬停高亮 + 更柔和的 ▾/▸）。添加子待办后自动展开父待办。
-- **日历 0–24 小时时间轴** —— 天视图与周视图左侧新增 0–24 小时刻度轴，任务按截止时间纵向定位（未定时任务归入顶部"全天"带区）；月视图任务块显示 `HH:mm` 时间，方便看任务在哪个时间段。
-- **任务置顶** —— 右键任务即可置顶；顶层任务置顶后，其整族始终排在列表最上方，无论当前排序方式。
-- **窗口置顶按钮** —— 在 ☰ 菜单按钮左侧新增置顶图钉按钮，点击让窗口始终在最前；移除旧的右键"置于顶层"菜单。
+- **卡片式任务列表** —— 每条任务现在是留白充足的圆角卡片，间距清晰，观感更现代、更舒缓。
+- **圆形勾选框** —— 方框换成圆环，完成时填充并显示白色对勾；圆环按优先级着色（高=红、中=橙、低=绿），因此移除了最左侧那条独立的优先级色条。
+- **去掉拖动把手** —— 彻底移除一直占位的拖动把手（不再有多余占位空间）；整行依旧可拖动排序。
+- **子任务折叠行** —— 父待办在标题下方显示「子任务 (已完成/总数)」并带圆角箭头，点击即可折叠 / 展开。
 
-下载 `MinimalTodoApp-v1.1.2-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。
+数据完全兼容，所有主题（明亮 / 暗黑 / 透明 / 低饱和）自动适配。
+
+下载 `MinimalTodoApp-v1.1.3-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。

@@ -84,6 +84,8 @@
     <sys:String x:Key="S.Task.MoveToGroup">Move to group</sys:String>
     <sys:String x:Key="S.Task.ToggleComplete">Mark complete / incomplete</sys:String>
     <sys:String x:Key="S.Task.Delete">Delete task</sys:String>
+    <!-- {0}=completed subtasks, {1}=total subtasks -->
+    <sys:String x:Key="S.Task.SubtaskCount">Subtasks ({0}/{1})</sys:String>
 
     <!-- ============ Task row tooltips ============ -->
     <sys:String x:Key="S.Tip.PriorityBar">Priority (right-click to edit)</sys:String>

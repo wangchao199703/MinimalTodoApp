@@ -532,9 +532,6 @@
                                           Margin="{Binding IndentLevel, Converter={StaticResource IndentToMargin}}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="Auto" />
@@ -584,85 +581,79 @@
                                             </ContextMenu>
                                         </Grid.ContextMenu>
 
-                                        <!-- 优先级色条（左侧），无优先级则透明 -->
-                                        <Border Grid.Column="0" Width="4" Margin="0,1,8,1" CornerRadius="2"
-                                                Background="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
-                                                ToolTip="{DynamicResource S.Tip.PriorityBar}" />
-
-                                        <!-- 折叠箭头：仅父待办（HasChildren=true）显示；展开▾ / 折叠▸，圆角悬停高亮 -->
-                                        <Button Grid.Column="1" Width="20" Height="20" Margin="0,0,4,0"
-                                                Padding="0" Cursor="Hand"
-                                                Command="{Binding DataContext.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                CommandParameter="{Binding}"
-                                                ToolTip="{DynamicResource S.Tip.CollapseArrow}"
-                                                Visibility="{Binding HasChildren, Converter={StaticResource BoolToVis}}">
-                                            <Button.Template>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Border x:Name="bg" Background="Transparent" CornerRadius="5">
-                                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                                    </Border>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="bg" Property="Background" Value="{DynamicResource CardHoverBg}" />
-                                                        </Trigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Button.Template>
-                                            <Button.Style>
-                                                <Style TargetType="Button">
-                                                    <Setter Property="Content" Value="▾" />
-                                                    <Setter Property="FontSize" Value="12" />
-                                                    <Setter Property="Foreground" Value="{DynamicResource SecondaryText}" />
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
-                                                            <Setter Property="Content" Value="▸" />
-                                                            <Setter Property="Foreground" Value="{DynamicResource Accent}" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Button.Style>
-                                        </Button>
-
-                                        <!-- 拖拽手柄提示 -->
-                                        <TextBlock Grid.Column="2" Text="&#xE76F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                                   FontSize="13" Margin="0,0,8,0"
-                                                   VerticalAlignment="Center" Foreground="{DynamicResource MutedText}"
-                                                   ToolTip="{DynamicResource S.Tip.Drag}" />
-
-                                        <!-- 完成勾选 -->
-                                        <CheckBox Grid.Column="3" VerticalAlignment="Center" Margin="0,0,8,0"
+                                        <!-- 圆形勾选框（Col0）：圆环按优先级着色，完成时填充 + 白勾；与标题首行顶对齐 -->
+                                        <CheckBox Grid.Column="0" Style="{StaticResource TaskCheckBox}"
+                                                  VerticalAlignment="Top" Margin="0,1,12,0"
+                                                  BorderBrush="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
                                                   IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
 
-                                        <!-- 标题：默认显示文本（超长截断显示前部）；单击进入编辑 -->
-                                        <Grid Grid.Column="4">
-                                            <TextBlock x:Name="TitleText" Text="{Binding Title}"
-                                                       VerticalAlignment="Center" Padding="2,1"
-                                                       TextTrimming="CharacterEllipsis" FontSize="14"
-                                                       MouseLeftButtonUp="TaskTitle_Click"
-                                                       Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-                                                <TextBlock.Style>
-                                                    <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
-                                                                <Setter Property="TextDecorations" Value="Strikethrough" />
-                                                                <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                                        <!-- 内容区（Col1）：标题 + 子任务折叠行 -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <!-- 标题：默认显示文本（超长截断显示前部）；单击进入编辑 -->
+                                            <Grid>
+                                                <TextBlock x:Name="TitleText" Text="{Binding Title}"
+                                                           VerticalAlignment="Center" Padding="2,1"
+                                                           TextTrimming="CharacterEllipsis" FontSize="15"
+                                                           MouseLeftButtonUp="TaskTitle_Click"
+                                                           Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                                                                    <Setter Property="TextDecorations" Value="Strikethrough" />
+                                                                    <Setter Property="Foreground" Value="{DynamicResource MutedText}" />
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+
+                                                <TextBox x:Name="TitleEdit" Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         Style="{StaticResource TaskTitleTextBox}" VerticalAlignment="Center"
+                                                         FontSize="15"
+                                                         IsVisibleChanged="TitleEdit_IsVisibleChanged"
+                                                         LostKeyboardFocus="TitleEdit_LostFocus"
+                                                         KeyDown="TitleEdit_KeyDown"
+                                                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}" />
+                                            </Grid>
+
+                                            <!-- 子任务折叠行：仅父待办（HasChildren=true）显示——圆角小箭头 + “子任务 (n/m)”，点击折叠/展开 -->
+                                            <Button HorizontalAlignment="Left" Margin="0,4,0,0" Padding="3,2" Cursor="Hand"
+                                                    Command="{Binding DataContext.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}"
+                                                    ToolTip="{DynamicResource S.Tip.CollapseArrow}"
+                                                    Visibility="{Binding HasChildren, Converter={StaticResource BoolToVis}}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="bg" Background="Transparent" CornerRadius="6"
+                                                                Padding="{TemplateBinding Padding}">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock x:Name="chev" Text="&#x2304;" FontSize="13" FontWeight="Bold"
+                                                                           VerticalAlignment="Center" Margin="0,0,5,0"
+                                                                           Foreground="{DynamicResource SecondaryText}" />
+                                                                <TextBlock Text="{Binding SubtaskText}" FontSize="12.5"
+                                                                           VerticalAlignment="Center"
+                                                                           Foreground="{DynamicResource SecondaryText}" />
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="bg" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                                                            </Trigger>
+                                                            <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                                                <!-- 折叠态：右角标 › -->
+                                                                <Setter TargetName="chev" Property="Text" Value="&#x203A;" />
+                                                                <Setter TargetName="chev" Property="Foreground" Value="{DynamicResource Accent}" />
                                                             </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBlock.Style>
-                                            </TextBlock>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                        </StackPanel>
 
-                                            <TextBox x:Name="TitleEdit" Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     Style="{StaticResource TaskTitleTextBox}" VerticalAlignment="Center"
-                                                     IsVisibleChanged="TitleEdit_IsVisibleChanged"
-                                                     LostKeyboardFocus="TitleEdit_LostFocus"
-                                                     KeyDown="TitleEdit_KeyDown"
-                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}" />
-                                        </Grid>
-
-                                        <!-- 距离 DDL 的倒计时 -->
-                                        <Border Grid.Column="5" Margin="8,0,2,0" VerticalAlignment="Center"
+                                        <!-- 距离 DDL 的倒计时（Col2） -->
+                                        <Border Grid.Column="2" Margin="10,0,2,0" VerticalAlignment="Center"
                                                 Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}"
                                                 ToolTip="{Binding DueDetailText}">
                                             <TextBlock Text="{Binding DueCountdownText}" FontSize="12.5"
@@ -670,8 +661,8 @@
                                                        Foreground="{Binding DueState, Converter={StaticResource DueStateToBrush}}" />
                                         </Border>
 
-                                        <!-- 置顶图钉 + 周期提醒小铃铛 -->
-                                        <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <!-- 置顶图钉 + 周期提醒小铃铛（Col3） -->
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                                             <TextBlock Text="&#xE718;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                                        FontSize="12" Margin="6,0,0,0"
                                                        VerticalAlignment="Center" Foreground="{DynamicResource Accent}"
