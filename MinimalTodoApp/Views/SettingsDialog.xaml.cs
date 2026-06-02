@@ -73,5 +73,13 @@ public partial class SettingsDialog : Window
         }
     }
 
+    /// <summary>字号快捷档位:按按钮 Tag(12/14/16)设置字号，经 VM 触发 FontManager 应用并持久化.</summary>
+    private void FontPreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (_vm == null) return;
+        if (sender is FrameworkElement fe && fe.Tag is string tag && double.TryParse(tag, out var size))
+            _vm.FontSize = size;
+    }
+
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 }

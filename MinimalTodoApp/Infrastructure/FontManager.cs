@@ -61,8 +61,8 @@ public static class FontManager
             ["AppFontSize"] = size,
             // 文字行高:字号 × 行距 × 1.35(1.35 为单倍行距下舒适的行高系数)
             ["AppLineHeight"] = size * spacing * 1.35,
-            // 任务行间距:基准 4px 随行距放大(标准≈4，宽松更松，紧凑更密)
-            ["AppTaskItemMargin"] = new Thickness(0, Math.Round(4 * spacing), 0, Math.Round(4 * spacing)),
+            // 任务行间距:基准 3px 随行距放大(更紧凑，同屏可见更多待办)
+            ["AppTaskItemMargin"] = new Thickness(0, Math.Round(3 * spacing), 0, Math.Round(3 * spacing)),
         };
 
         var dicts = Application.Current.Resources.MergedDictionaries;

@@ -2,26 +2,28 @@
 
 ### English
 
-This release modernizes the task list into a clean, card-based layout (inspired by the TaskFlow design), on top of the adjustable fonts / size / line-spacing, "set-on-pick" due time & reminder, and week-view alignment fixes.
+This update polishes the new card-based task list: fixes icon rendering, the collapsed-sidebar dots, tighter rows, a bigger checkbox, and an adjustable task font (small/medium/large).
 
-- **Card-based task list** — every task is now a roomy rounded card with clear spacing, for a calmer, more modern look.
-- **Circular checkboxes** — the old square box is replaced by a ring that fills in with a white checkmark when completed. The ring is tinted by priority (high = red, medium = amber, low = green), so the separate left-edge priority bar was removed.
-- **No more drag handle** — the always-on grip was removed entirely (no leftover placeholder space). The whole row is still draggable for reordering.
-- **Subtask line** — a parent task now shows a "Subtasks (done/total)" line with a rounded chevron under its title; click it to collapse/expand.
+- **Icons fixed** — the always-on-top pin, menu, sort, schedule and microphone glyphs no longer show as empty boxes.
+- **Collapsed sidebar dots** — when the sidebar is collapsed each group now shows a clean, centered, correctly-colored round dot (no more squished square).
+- **More todos on screen** — task rows are more compact (smaller padding and gaps) so more fit at once.
+- **Bigger checkbox** — the circular checkbox ring is a bit larger and easier to hit.
+- **Adjustable task font** — task text now follows the font-size setting, with new Small / Medium / Large quick presets in Settings; the default is a touch smaller so you see more todos.
 
-Your data is fully compatible and every theme (light / dark / transparent / low-saturation) adapts automatically.
+Data stays fully compatible and every theme adapts automatically.
 
 Download `MinimalTodoApp-v1.1.3-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
 
 ### 简体中文
 
-本次将待办列表现代化为简洁的卡片式布局（参考 TaskFlow 设计），叠加在可调字体 / 字号 / 行距、截止时间与周期提醒「选了即设定」、周视图对齐修复之上。
+本次打磨新的卡片式待办列表：修复图标、收起侧边栏的分组色点，行更紧凑、勾选圆圈更大，并支持调节待办字号（小/中/大）。
 
-- **卡片式任务列表** —— 每条任务现在是留白充足的圆角卡片，间距清晰，观感更现代、更舒缓。
-- **圆形勾选框** —— 方框换成圆环，完成时填充并显示白色对勾；圆环按优先级着色（高=红、中=橙、低=绿），因此移除了最左侧那条独立的优先级色条。
-- **去掉拖动把手** —— 彻底移除一直占位的拖动把手（不再有多余占位空间）；整行依旧可拖动排序。
-- **子任务折叠行** —— 父待办在标题下方显示「子任务 (已完成/总数)」并带圆角箭头，点击即可折叠 / 展开。
+- **图标修复** —— 标题栏置顶图钉、菜单、排序、日程以及麦克风图标不再显示为空方框。
+- **收起侧边栏色点** —— 侧边栏收起后，每个分组显示为居中、颜色正确的正圆色点（不再被挤成方块）。
+- **同屏显示更多待办** —— 待办行更紧凑（更小的内边距与间距），一屏能放下更多。
+- **勾选圆圈更大** —— 圆环勾选框略微放大，更易点击。
+- **可调待办字号** —— 待办文字现在跟随字号设置，并在设置里新增「小 / 中 / 大」一键档位；默认略小，看到的待办更多。
 
-数据完全兼容，所有主题（明亮 / 暗黑 / 透明 / 低饱和）自动适配。
+数据完全兼容，所有主题自动适配。
 
 下载 `MinimalTodoApp-v1.1.3-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。

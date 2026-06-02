@@ -210,6 +210,10 @@
     <sys:String x:Key="S.Settings.FontFamily">Font</sys:String>
     <sys:String x:Key="S.Settings.FontSize">Size</sys:String>
     <sys:String x:Key="S.Settings.LineSpacing">Spacing</sys:String>
+    <!-- Font size quick presets -->
+    <sys:String x:Key="S.Size.Small">Small</sys:String>
+    <sys:String x:Key="S.Size.Medium">Medium</sys:String>
+    <sys:String x:Key="S.Size.Large">Large</sys:String>
 
     <!-- ============ Font names ============ -->
     <sys:String x:Key="S.Font.System">System default</sys:String>

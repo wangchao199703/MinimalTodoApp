@@ -120,6 +120,25 @@
                            Foreground="{DynamicResource MutedText}" />
             </Grid>
 
+            <!-- 字号快捷档位:小(12) / 中(14) / 大(16)，一键调整待办与正文字号 -->
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Size.Small}"
+                            Tag="12" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
+                            Margin="0,0,8,0" Background="{DynamicResource InputBg}" />
+                    <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Size.Medium}"
+                            Tag="14" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
+                            Margin="0,0,8,0" Background="{DynamicResource InputBg}" />
+                    <Button Style="{StaticResource GhostButton}" Content="{DynamicResource S.Size.Large}"
+                            Tag="16" Click="FontPreset_Click" MinWidth="52" Padding="0,5"
+                            Background="{DynamicResource InputBg}" />
+                </StackPanel>
+            </Grid>
+
             <!-- 行距 -->
             <Grid Margin="0,0,0,4">
                 <Grid.ColumnDefinitions>

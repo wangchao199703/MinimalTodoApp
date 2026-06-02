@@ -210,6 +210,10 @@
     <sys:String x:Key="S.Settings.FontFamily">字体</sys:String>
     <sys:String x:Key="S.Settings.FontSize">字号</sys:String>
     <sys:String x:Key="S.Settings.LineSpacing">行距</sys:String>
+    <!-- 字号快捷档位 -->
+    <sys:String x:Key="S.Size.Small">小</sys:String>
+    <sys:String x:Key="S.Size.Medium">中</sys:String>
+    <sys:String x:Key="S.Size.Large">大</sys:String>
 
     <!-- ============ 字体名称 ============ -->
     <sys:String x:Key="S.Font.System">跟随系统</sys:String>

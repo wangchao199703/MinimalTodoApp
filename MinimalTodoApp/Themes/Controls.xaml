@@ -173,6 +173,10 @@
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="b" Property="Background" Value="{DynamicResource SelectedItemBg}" />
                         </Trigger>
+                        <!-- 侧栏收起时收紧内边距，让窄条里有足够空间完整显示居中的圆形色点 -->
+                        <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                            <Setter TargetName="b" Property="Padding" Value="4,8" />
+                        </DataTrigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -188,7 +192,7 @@
                 <ControlTemplate TargetType="ListBoxItem">
                     <Border x:Name="b" Background="{DynamicResource CardBg}"
                             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
-                            CornerRadius="12" Padding="14,12">
+                            CornerRadius="12" Padding="12,8">
                         <ContentPresenter VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
@@ -209,15 +213,15 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
-                    <Grid Width="22" Height="22" Background="Transparent">
+                    <Grid Width="24" Height="24" Background="Transparent">
                         <!-- 外圆环：颜色取自 BorderBrush（= 优先级色） -->
-                        <Ellipse x:Name="ring" Width="20" Height="20"
+                        <Ellipse x:Name="ring" Width="22" Height="22"
                                  Stroke="{TemplateBinding BorderBrush}" StrokeThickness="2"
                                  Fill="Transparent" />
                         <!-- 完成时的白色对勾 -->
-                        <Path x:Name="check" Data="M 6 11 L 9.3 14.3 L 15.5 7"
+                        <Path x:Name="check" Data="M 7 12 L 10.3 15.3 L 16.5 8"
                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                              Stroke="White" StrokeThickness="2.2"
+                              Stroke="White" StrokeThickness="2.4"
                               StrokeStartLineCap="Round" StrokeEndLineCap="Round"
                               StrokeLineJoin="Round" Opacity="0" />
                     </Grid>

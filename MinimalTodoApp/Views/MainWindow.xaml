@@ -72,12 +72,15 @@
                                 shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <!-- 应用置顶图钉：勾选则窗口始终最前(替代旧的右键标题栏菜单) -->
                         <ToggleButton x:Name="AlwaysOnTopToggle" Style="{StaticResource CaptionToggleButton}"
-                                      Content="&#xE718;"
                                       IsChecked="{Binding AlwaysOnTop, Mode=TwoWay}"
-                                      ToolTip="{DynamicResource S.AlwaysOnTop}" />
+                                      ToolTip="{DynamicResource S.AlwaysOnTop}">
+                            <TextBlock Text="&#xE718;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                        </ToggleButton>
                     <Grid VerticalAlignment="Center">
                         <ToggleButton x:Name="SettingsToggle" Style="{StaticResource CaptionToggleButton}"
-                                      Content="&#xE700;" ToolTip="{DynamicResource S.Tip.Menu}" />
+                                      ToolTip="{DynamicResource S.Tip.Menu}">
+                            <TextBlock Text="&#xE700;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                        </ToggleButton>
                         <Popup IsOpen="{Binding IsChecked, ElementName=SettingsToggle}"
                                PlacementTarget="{Binding ElementName=SettingsToggle}"
                                Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
@@ -155,7 +158,7 @@
 
                     <!-- ===== 左侧单列侧边栏（自上而下：全部任务 / 分组 / 新建分组 / 主题 / 三横） ===== -->
                     <Border x:Name="SidebarPanel" Grid.Column="0" Background="{DynamicResource SidebarBg}">
-                        <Grid Margin="5,8">
+                        <Grid Margin="4,8">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <!-- 分组列表占据弹性空间(*)，使“新建分组/使用说明/导入导出/主题/收起”紧贴底部堆叠 -->
@@ -211,7 +214,8 @@
                                                 </ContextMenu>
                                             </Grid.ContextMenu>
 
-                                            <Ellipse x:Name="GroupDot" Grid.Column="0" Width="10" Height="10" Margin="0"
+                                            <Ellipse x:Name="GroupDot" Grid.Column="0" Width="12" Height="12" Margin="0"
+                                                     Stretch="Uniform"
                                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                                      Fill="{Binding Color, Converter={StaticResource StringToBrush}}" />
                                             <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"
@@ -276,10 +280,11 @@
                                 </Grid>
 
                                 <!-- 折叠态：加号图标 -->
-                                <Button Style="{StaticResource GhostButton}" Content="&#xE710;"
-                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Height="28" Padding="0"
+                                <Button Style="{StaticResource GhostButton}" Height="28" Padding="0"
                                         ToolTip="{DynamicResource S.NewGroup}" Command="{Binding BeginAddGroupCommand}"
-                                        Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                                        Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                                </Button>
                             </Grid>
 
                             <!-- 使用说明（展开=图标+文字左对齐，折叠=书本图标居中） -->
@@ -484,8 +489,9 @@
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                             <Grid VerticalAlignment="Center">
                                 <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
-                                              Content="&#xE8CB;"
-                                              ToolTip="{Binding SortTooltip}" />
+                                              ToolTip="{Binding SortTooltip}">
+                                    <TextBlock Text="&#xE8CB;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                                </ToggleButton>
                                 <Popup IsOpen="{Binding IsChecked, ElementName=SortToggle}"
                                        PlacementTarget="{Binding ElementName=SortToggle}"
                                        Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
@@ -510,9 +516,11 @@
                             </Grid>
                             <!-- 日程/日历:按截止时间在日历中查看待办(天/周/月) -->
                             <Button x:Name="ScheduleButton" Style="{StaticResource CaptionButton}"
-                                    Content="&#xE787;" Margin="2,0,0,0"
+                                    Margin="2,0,0,0"
                                     ToolTip="{DynamicResource S.Schedule.Tooltip}"
-                                    Click="Schedule_Click" />
+                                    Click="Schedule_Click">
+                                <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                            </Button>
                             </StackPanel>
                         </Grid>
 
@@ -593,7 +601,8 @@
                                             <Grid>
                                                 <TextBlock x:Name="TitleText" Text="{Binding Title}"
                                                            VerticalAlignment="Center" Padding="2,1"
-                                                           TextTrimming="CharacterEllipsis" FontSize="15"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           FontSize="{DynamicResource AppFontSize}"
                                                            MouseLeftButtonUp="TaskTitle_Click"
                                                            Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
                                                     <TextBlock.Style>
@@ -611,7 +620,6 @@
 
                                                 <TextBox x:Name="TitleEdit" Text="{Binding Title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                          Style="{StaticResource TaskTitleTextBox}" VerticalAlignment="Center"
-                                                         FontSize="15"
                                                          IsVisibleChanged="TitleEdit_IsVisibleChanged"
                                                          LostKeyboardFocus="TitleEdit_LostFocus"
                                                          KeyDown="TitleEdit_KeyDown"
@@ -1039,13 +1047,14 @@
                                 </Grid>
 
                                 <!-- 语音输入：调起 Windows 系统语音输入(Win+H)，识别文字直接进入输入框 -->
-                                <Button Grid.Column="1" Style="{StaticResource GhostButton}" Content="&#xE720;"
-                                        FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                        FontSize="15" Margin="8,0,0,0" Padding="10,0"
+                                <Button Grid.Column="1" Style="{StaticResource GhostButton}"
+                                        Margin="8,0,0,0" Padding="10,0"
                                         VerticalAlignment="Stretch"
                                         Background="{DynamicResource InputBg}"
                                         ToolTip="{DynamicResource S.Tip.Voice}"
-                                        Click="VoiceInput_Click" />
+                                        Click="VoiceInput_Click">
+                                    <TextBlock Text="&#xE720;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15" />
+                                </Button>
 
                                 <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="{DynamicResource S.Add}"
                                         Margin="8,0,0,0" VerticalAlignment="Stretch"
