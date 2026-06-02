@@ -916,6 +916,15 @@ public partial class MainWindow : Window
             Vm?.SetGroupColor(g, hex);
     }
 
+    // ===== 分组右键:更改图标(分类选择 + 自定义图片) =====
+
+    private void GroupChangeIcon_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm == null || sender is not MenuItem mi || mi.DataContext is not TodoGroup g) return;
+        var dlg = new IconPickerDialog(Vm, g) { Owner = this };
+        dlg.ShowDialog();
+    }
+
     // ===== 任务标题:单击进入编辑，回车/失焦退出 =====
 
     private void TaskTitle_Click(object sender, MouseButtonEventArgs e)

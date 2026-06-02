@@ -198,6 +198,33 @@ public class IndentFontSizeConverter : IMultiValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>图片文件路径 -> BitmapImage(用于分组自定义图片图标).加载失败返回 null.</summary>
+public class PathToImageConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not string path || string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))
+            return null;
+        try
+        {
+            var bmp = new System.Windows.Media.Imaging.BitmapImage();
+            bmp.BeginInit();
+            bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            bmp.UriSource = new Uri(path);
+            bmp.EndInit();
+            bmp.Freeze();
+            return bmp;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>判断值与参数是否相等 -> bool(用于当前主题高亮等).</summary>
 public class EqualityToBoolConverter : IValueConverter
 {

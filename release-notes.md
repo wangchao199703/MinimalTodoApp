@@ -2,13 +2,12 @@
 
 ### English
 
-More refinements to the card-based task list: a smaller/adjustable checkbox, a centered checkmark, parent/child font sizing, and tidier defaults.
+Groups now use icons instead of color dots — with a categorized icon picker and custom image import — on top of this version's many task-list refinements (card layout, circular checkbox, adjustable fonts/sizes, parent/child sizing, centered checkmark).
 
-- **Smaller, adjustable checkbox** — the circle is now about the size of the text by default, with a new "Checkbox" size slider in Settings.
-- **Centered checkmark + strikethrough** — completed tasks show a cleanly centered white checkmark in the priority-colored circle, with the title struck through and dimmed.
-- **Parent vs. child font size** — top-level todos use a larger font; indented subtasks are smaller, so hierarchy reads at a glance.
-- **Tidier defaults & spacing** — default size is now Medium (12) with tighter line spacing (0.9), quick Small/Medium/Large presets, and a smaller gap between the circle and the text.
-- **Icon fixes carried over** — the title-bar pin/menu/sort/calendar and the microphone icons all render correctly.
+- **Icon-based groups** — each group is shown with a clean monochrome icon (like the sidebar buttons) instead of a color dot, including when the sidebar is collapsed.
+- **Built-in icon sets by category** — right-click a group → Change icon to pick from categorized sets (Common / Work / Study / Life). Work/Study/Life groups get sensible default icons automatically.
+- **Custom image icons** — a Custom category lets you import your own image (PNG/JPG/ICO/…) to use as a group's icon.
+- Plus everything else in 1.1.3: TaskFlow-style cards, circular priority checkbox, fixed icon rendering, smaller/adjustable checkbox, centered checkmark + strikethrough, parent/child font sizing, Small/Medium/Large font presets, tighter spacing.
 
 Your data stays fully compatible and every theme adapts automatically.
 
@@ -16,13 +15,12 @@ Download `MinimalTodoApp-v1.1.3-win-x64.exe` and just double-click — no .NET r
 
 ### 简体中文
 
-对卡片式待办列表的进一步打磨：更小且可调的勾选框、居中的对勾、父子待办分级字号，以及更合理的默认值。
+分组改用图标取代颜色圆点 —— 提供分类图标选择器与自定义图片导入 —— 叠加在本版大量待办列表优化之上（卡片布局、圆形勾选框、可调字体/字号、父子分级、对勾居中）。
 
-- **勾选框更小、可调** —— 圆圈默认约与文字等高，并在设置里新增「勾选框」大小滑块。
-- **对勾居中 + 删除线** —— 已完成任务在优先级色圆圈里显示居中的白色对勾，标题加删除线并置灰。
-- **父子待办分级字号** —— 顶层待办字号更大、缩进子待办字号更小，层级一目了然。
-- **更合理的默认与间距** —— 默认字号改为「中(12)」、行距更紧凑(0.9)，提供小/中/大一键档位，圆圈与文字的间距也收紧了。
-- **延续图标修复** —— 标题栏置顶/菜单/排序/日历以及麦克风图标均正常显示。
+- **分组用图标** —— 每个分组用简洁的黑色单色图标表示（与侧栏按钮一致），不再是颜色圆点；侧边栏收起后同样显示图标。
+- **内置分类图标集** —— 右键分组 →「更改图标」，可按分类（常用 / 工作 / 学习 / 生活）选择；工作/学习/生活分组会自动套用合适的默认图标。
+- **自定义图片图标** —— 「自定义」分类可导入你自己的图片（PNG/JPG/ICO 等）作为分组图标。
+- 以及 1.1.3 的其它改进：TaskFlow 卡片、圆形优先级勾选框、图标显示修复、勾选框缩小可调、对勾居中 + 删除线、父子分级字号、小/中/大字号档位、更紧凑的间距。
 
 数据完全兼容，所有主题自动适配。
 

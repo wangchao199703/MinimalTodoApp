@@ -62,6 +62,16 @@
 
     <!-- ============ 分组右键菜单 ============ -->
     <sys:String x:Key="S.Group.ChangeColor">修改颜色</sys:String>
+    <sys:String x:Key="S.Group.ChangeIcon">更改图标</sys:String>
+    <!-- 图标选择器 -->
+    <sys:String x:Key="S.IconPicker.Title">选择分组图标</sys:String>
+    <sys:String x:Key="S.IconPicker.Import">导入图片…</sys:String>
+    <sys:String x:Key="S.IconPicker.ImageFilter">图片文件</sys:String>
+    <sys:String x:Key="S.IconCat.Common">常用</sys:String>
+    <sys:String x:Key="S.IconCat.Work">工作</sys:String>
+    <sys:String x:Key="S.IconCat.Study">学习</sys:String>
+    <sys:String x:Key="S.IconCat.Life">生活</sys:String>
+    <sys:String x:Key="S.IconCat.Custom">自定义</sys:String>
     <sys:String x:Key="S.Group.Clear">清空分组</sys:String>
     <sys:String x:Key="S.Group.Delete">删除分组</sys:String>
     <sys:String x:Key="S.GroupColor.Blue">蓝</sys:String>

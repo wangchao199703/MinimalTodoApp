@@ -113,6 +113,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _suppressSave = true;
         EnsureAllUncompletedGroup();
         EnsureCompletedGroup();
+        AssignDefaultGroupIcons();   // 旧数据(无图标)按类型/名称补默认图标
         MigrateCompletedItems();
         MigrateNonePriority();
         _suppressSave = false;
@@ -966,7 +967,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         {
             Name = name,
             OrderIndex = Groups.Count,
-            Color = Palette[Groups.Count % Palette.Length]
+            Color = Palette[Groups.Count % Palette.Length],
+            Icon = GroupIcons.IconForName(name)
         };
         Groups.Add(g);
         return g;
@@ -1023,6 +1025,35 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         if (group == null || string.IsNullOrWhiteSpace(hex)) return;
         group.Color = hex;
         SaveData();
+    }
+
+    /// <summary>修改分组图标为内置字形(同时清除自定义图片).</summary>
+    public void SetGroupIcon(TodoGroup? group, string glyph)
+    {
+        if (group == null || string.IsNullOrEmpty(glyph)) return;
+        group.Icon = glyph;
+        group.IconImage = "";   // 切回字形图标
+        SaveData();
+    }
+
+    /// <summary>修改分组图标为自定义导入的图片(路径已复制到 group-icons 目录).</summary>
+    public void SetGroupIconImage(TodoGroup? group, string path)
+    {
+        if (group == null || string.IsNullOrEmpty(path)) return;
+        group.IconImage = path;
+        SaveData();
+    }
+
+    /// <summary>为缺图标的分组分配默认图标:聚合=列表、已完成=完成、其余按名称关键词(工作/学习/生活…)。</summary>
+    private void AssignDefaultGroupIcons()
+    {
+        foreach (var g in Groups)
+        {
+            if (!string.IsNullOrEmpty(g.Icon)) continue;   // 保留用户已选图标
+            g.Icon = g.IsAllUncompletedGroup ? GroupIcons.AllTodos
+                   : g.IsCompletedGroup ? GroupIcons.Completed
+                   : GroupIcons.IconForName(g.Name);
+        }
     }
 
     #endregion
@@ -1141,6 +1172,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Name = "所有待办",
             OrderIndex = 0,
             Color = "#6366F1",
+            Icon = GroupIcons.AllTodos,
             IsAllUncompletedGroup = true
         });
 
@@ -1151,7 +1183,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             {
                 Name = defaults[i],
                 OrderIndex = i + 1,
-                Color = Palette[i % Palette.Length]
+                Color = Palette[i % Palette.Length],
+                Icon = GroupIcons.IconForName(defaults[i])
             });
         }
 
@@ -1160,6 +1193,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Name = "已完成",
             OrderIndex = defaults.Length + 1,
             Color = "#16A34A",
+            Icon = GroupIcons.Completed,
             IsCompletedGroup = true
         });
     }
@@ -1174,6 +1208,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Name = "所有待办",
             OrderIndex = -1,        // 置顶
             Color = "#6366F1",
+            Icon = GroupIcons.AllTodos,
             IsAllUncompletedGroup = true
         };
         Groups.Insert(0, g);
@@ -1191,6 +1226,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Name = "已完成",
             OrderIndex = Groups.Count,
             Color = "#16A34A",
+            Icon = GroupIcons.Completed,
             IsCompletedGroup = true
         };
         Groups.Add(g);

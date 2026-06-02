@@ -34,9 +34,22 @@ public partial class TodoGroup : ObservableObject
     [ObservableProperty]
     private int orderIndex;
 
-    /// <summary>分组的颜色圆点(十六进制字符串)，默认蓝色.</summary>
+    /// <summary>分组的颜色圆点(十六进制字符串).已不再用于侧栏显示(改为图标)，保留以兼容旧数据.</summary>
     [ObservableProperty]
     private string color = "#3B82F6";
+
+    /// <summary>自定义图片图标的文件路径(导入的图片).非空时侧栏显示该图片而非字形图标.持久化.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasIconImage))]
+    private string iconImage = "";
+
+    /// <summary>是否使用了自定义图片图标.计算属性,不序列化.</summary>
+    [JsonIgnore]
+    public bool HasIconImage => !string.IsNullOrEmpty(IconImage);
+
+    /// <summary>分组图标(Segoe Fluent Icons 字形码)，取代旧的颜色圆点;默认文件夹.持久化.</summary>
+    [ObservableProperty]
+    private string icon = "";
 
     /// <summary>是否为内置“已完成”分组:完成的任务会自动归入，且不可删除/不计入新建目标.</summary>
     [ObservableProperty]

@@ -62,6 +62,16 @@
 
     <!-- ============ Group context menu ============ -->
     <sys:String x:Key="S.Group.ChangeColor">Change color</sys:String>
+    <sys:String x:Key="S.Group.ChangeIcon">Change icon</sys:String>
+    <!-- Icon picker -->
+    <sys:String x:Key="S.IconPicker.Title">Choose group icon</sys:String>
+    <sys:String x:Key="S.IconPicker.Import">Import image…</sys:String>
+    <sys:String x:Key="S.IconPicker.ImageFilter">Image files</sys:String>
+    <sys:String x:Key="S.IconCat.Common">Common</sys:String>
+    <sys:String x:Key="S.IconCat.Work">Work</sys:String>
+    <sys:String x:Key="S.IconCat.Study">Study</sys:String>
+    <sys:String x:Key="S.IconCat.Life">Life</sys:String>
+    <sys:String x:Key="S.IconCat.Custom">Custom</sys:String>
     <sys:String x:Key="S.Group.Clear">Clear group</sys:String>
     <sys:String x:Key="S.Group.Delete">Delete group</sys:String>
     <sys:String x:Key="S.GroupColor.Blue">Blue</sys:String>

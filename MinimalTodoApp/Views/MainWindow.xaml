@@ -194,16 +194,7 @@
                                             <!-- 右键菜单：改色（子菜单）/ 清空 / 删除 -->
                                             <Grid.ContextMenu>
                                                 <ContextMenu>
-                                                    <MenuItem Header="{DynamicResource S.Group.ChangeColor}">
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Blue}" Click="GroupColor_Click" Tag="#3B82F6" />
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Green}" Click="GroupColor_Click" Tag="#10B981" />
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Orange}" Click="GroupColor_Click" Tag="#F59E0B" />
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Red}" Click="GroupColor_Click" Tag="#EF4444" />
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Purple}" Click="GroupColor_Click" Tag="#8B5CF6" />
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Pink}" Click="GroupColor_Click" Tag="#EC4899" />
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Teal}" Click="GroupColor_Click" Tag="#14B8A6" />
-                                                        <MenuItem Header="{DynamicResource S.GroupColor.Gray}" Click="GroupColor_Click" Tag="#6B7280" />
-                                                    </MenuItem>
+                                                    <MenuItem Header="{DynamicResource S.Group.ChangeIcon}" Click="GroupChangeIcon_Click" />
                                                     <MenuItem Header="{DynamicResource S.Group.Clear}"
                                                               Command="{Binding PlacementTarget.Tag.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                               CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
@@ -214,10 +205,19 @@
                                                 </ContextMenu>
                                             </Grid.ContextMenu>
 
-                                            <Ellipse x:Name="GroupDot" Grid.Column="0" Width="12" Height="12" Margin="0"
-                                                     Stretch="Uniform"
-                                                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                     Fill="{Binding Color, Converter={StaticResource StringToBrush}}" />
+                                            <Grid x:Name="GroupIcon" Grid.Column="0"
+                                                  HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <!-- 字形图标(无自定义图片时显示) -->
+                                                <TextBlock Text="{Binding Icon}"
+                                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource PrimaryText}"
+                                                           Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                <!-- 自定义图片图标 -->
+                                                <Image Source="{Binding IconImage, Converter={StaticResource PathToImage}}"
+                                                       Width="16" Height="16" Stretch="UniformToFill"
+                                                       Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}}" />
+                                            </Grid>
                                             <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"
                                                        Margin="6,0,0,0" FontSize="12" TextTrimming="CharacterEllipsis"
                                                        Foreground="{DynamicResource PrimaryText}"
@@ -233,9 +233,9 @@
                                                  20px 列比可用内容区还宽，居中的色点会被挤到右侧并被裁掉一半。 -->
                                             <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                                 <Setter TargetName="GroupDotCol" Property="Width" Value="*" />
-                                                <Setter TargetName="GroupDot" Property="Grid.ColumnSpan" Value="3" />
-                                                <Setter TargetName="GroupDot" Property="HorizontalAlignment" Value="Center" />
-                                                <Setter TargetName="GroupDot" Property="Margin" Value="0" />
+                                                <Setter TargetName="GroupIcon" Property="Grid.ColumnSpan" Value="3" />
+                                                <Setter TargetName="GroupIcon" Property="HorizontalAlignment" Value="Center" />
+                                                <Setter TargetName="GroupIcon" Property="Margin" Value="0" />
                                             </DataTrigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>

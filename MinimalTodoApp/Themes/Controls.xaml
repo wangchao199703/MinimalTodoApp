@@ -15,6 +15,7 @@
     <conv:EqualityToBoolConverter x:Key="EqualityToBool" />
     <conv:IndentToMarginConverter x:Key="IndentToMargin" />
     <conv:IndentFontSizeConverter x:Key="IndentFontSize" />
+    <conv:PathToImageConverter x:Key="PathToImage" />
 
     <!-- ===================== 基础文字（字体/字号/行距随设置实时变化） ===================== -->
     <Style TargetType="TextBlock">
