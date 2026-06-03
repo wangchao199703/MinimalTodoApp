@@ -35,3 +35,6 @@ packages/
 *.tmp
 *.cache
 Thumbs.db
+
+# Claude Code local state
+.claude/
