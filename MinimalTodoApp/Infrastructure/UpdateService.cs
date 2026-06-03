@@ -187,13 +187,16 @@ public static class UpdateService
         var sb = new StringBuilder();
         sb.AppendLine("@echo off");
         sb.AppendLine(":waitloop");
-        // 旧版进程仍在 → 等 1 秒重试；退出后跳出循环
+        // 旧版进程仍在 → 等约 1 秒重试；退出后跳出循环。
+        // 用 ping 当 sleep:本脚本以无控制台方式运行(CreateNoWindow)，`timeout` 需要控制台输入会立即报错。
         sb.AppendLine($"tasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul");
         sb.AppendLine("if not errorlevel 1 (");
-        sb.AppendLine("  timeout /t 1 /nobreak >nul");
+        sb.AppendLine("  ping -n 2 127.0.0.1 >nul");
         sb.AppendLine("  goto waitloop");
         sb.AppendLine(")");
-        sb.AppendLine($"start \"\" \"{newExePath}\" {UpdatedFromArg} \"{oldExePath}\"");
+        // 直接调用新版 exe(GUI 子系统程序，cmd 不等待、立即返回，新进程脱离 cmd 独立运行)。
+        // 关键:不能用 `start` —— 无控制台时 `start` 会失败(errorlevel 1)，导致新版根本起不来(本轮修复的 bug)。
+        sb.AppendLine($"\"{newExePath}\" {UpdatedFromArg} \"{oldExePath}\"");
         sb.AppendLine("del \"%~f0\"");
 
         // .cmd 用 ANSI/系统编码即可(纯英文+路径)，避免 BOM 影响首行 @echo off
