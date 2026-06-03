@@ -175,37 +175,42 @@ public static class UpdateService
     }
 
     /// <summary>
-    /// 生成并隐藏启动一个临时脚本:等待当前进程退出 → 以 <see cref="UpdatedFromArg"/> 参数启动新版 exe → 自删.
-    /// 调用后应紧接着让当前应用干净退出(ForceExit)，脚本随即拉起新版.
+    /// 生成并隐藏启动一个临时 PowerShell 脚本:轮询等待当前进程退出 → 以 <see cref="UpdatedFromArg"/>
+    /// 参数启动新版 exe(脱离独立运行) → 自删.调用后应紧接着让当前应用干净退出(ForceExit)，脚本随即拉起新版.
     /// </summary>
+    /// <remarks>
+    /// 用隐藏 PowerShell + <c>Start-Process</c> 而非 cmd 的 <c>start</c>:
+    /// 后者在无控制台(CreateNoWindow)下会失败(errorlevel 1)导致新版起不来；而 cmd 直接调用自包含单文件 exe
+    /// 又会阻塞等待、脚本不自删.<c>Start-Process</c> 不带 -Wait 会立即返回并让新进程独立运行，稳定可靠.
+    /// </remarks>
     public static void LaunchUpdaterAndExit(string newExePath, string oldExePath)
     {
         int pid = Environment.ProcessId;
-        var batPath = Path.Combine(Path.GetTempPath(),
-            "MinimalTodoApp_update_" + Guid.NewGuid().ToString("N") + ".cmd");
+        var ps1Path = Path.Combine(Path.GetTempPath(),
+            "MinimalTodoApp_update_" + Guid.NewGuid().ToString("N") + ".ps1");
+
+        // PowerShell 单引号字符串里转义单引号(成对)，安全嵌入任意路径
+        string newQ = newExePath.Replace("'", "''");
+        // 旧版路径作为 --updated-from 的实参:外面再包一层字面双引号，保证含空格的路径作为单个参数传入新版
+        string oldArg = ("\"" + oldExePath + "\"").Replace("'", "''");
 
         var sb = new StringBuilder();
-        sb.AppendLine("@echo off");
-        sb.AppendLine(":waitloop");
-        // 旧版进程仍在 → 等约 1 秒重试；退出后跳出循环。
-        // 用 ping 当 sleep:本脚本以无控制台方式运行(CreateNoWindow)，`timeout` 需要控制台输入会立即报错。
-        sb.AppendLine($"tasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul");
-        sb.AppendLine("if not errorlevel 1 (");
-        sb.AppendLine("  ping -n 2 127.0.0.1 >nul");
-        sb.AppendLine("  goto waitloop");
-        sb.AppendLine(")");
-        // 直接调用新版 exe(GUI 子系统程序，cmd 不等待、立即返回，新进程脱离 cmd 独立运行)。
-        // 关键:不能用 `start` —— 无控制台时 `start` 会失败(errorlevel 1)，导致新版根本起不来(本轮修复的 bug)。
-        sb.AppendLine($"\"{newExePath}\" {UpdatedFromArg} \"{oldExePath}\"");
-        sb.AppendLine("del \"%~f0\"");
+        sb.AppendLine("$ErrorActionPreference='SilentlyContinue'");
+        // 轮询等待旧版退出(最多 ~60 秒兜底，避免极端情况下卡死)
+        sb.AppendLine("$n=0");
+        sb.AppendLine($"while ((Get-Process -Id {pid} -ErrorAction SilentlyContinue) -and ($n -lt 120)) {{ Start-Sleep -Milliseconds 500; $n++ }}");
+        sb.AppendLine("Start-Sleep -Milliseconds 300");
+        // 启动新版(脱离运行，不等待)；--updated-from 让新版回收旧 exe
+        sb.AppendLine($"Start-Process -FilePath '{newQ}' -ArgumentList @('{UpdatedFromArg}','{oldArg}')");
+        // 自删本脚本
+        sb.AppendLine("Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue");
 
-        // .cmd 用 ANSI/系统编码即可(纯英文+路径)，避免 BOM 影响首行 @echo off
-        File.WriteAllText(batPath, sb.ToString(), new UTF8Encoding(false));
+        File.WriteAllText(ps1Path, sb.ToString(), new UTF8Encoding(false));
 
         var psi = new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = $"/c \"{batPath}\"",
+            FileName = "powershell.exe",
+            Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{ps1Path}\"",
             UseShellExecute = false,
             CreateNoWindow = true,
             WindowStyle = ProcessWindowStyle.Hidden,
