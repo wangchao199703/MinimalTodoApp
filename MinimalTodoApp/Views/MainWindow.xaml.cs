@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -21,6 +22,11 @@ public partial class MainWindow : Window
 {
     private bool _allowClose;
     private MainViewModel? Vm => DataContext as MainViewModel;
+
+    /// <summary>每小时自动检查更新的定时器.</summary>
+    private DispatcherTimer? _updateTimer;
+    /// <summary>防止多个检查同时进行(启动检查与定时检查重叠).</summary>
+    private bool _updateChecking;
 
     private readonly Random _fxRng = new();
 
@@ -88,6 +94,82 @@ public partial class MainWindow : Window
         // 禁用 Windows Aero Snap 手势，避免拖到边缘触发系统的自动最大化/分屏
         var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
         NativeMethods.DisableAeroSnap(hwnd);
+
+        // 自动更新:更新后清理旧版 exe + 按设置做启动检查与每小时定时检查
+        InitAutoUpdate();
+    }
+
+    // ===== 自动更新 =====
+
+    /// <summary>
+    /// 初始化自动更新:① 若本次由更新脚本拉起(带 --updated-from)则回收旧版 exe；
+    /// ② 每小时定时检查；③ 启动后延迟几秒做一次检查(不打断启动).均尊重“自动检查更新”开关.
+    /// </summary>
+    private void InitAutoUpdate()
+    {
+        // ① 被更新脚本拉起:把被替换的旧版 exe 移入回收站(后台线程，带重试)
+        var args = Environment.GetCommandLineArgs();
+        int idx = Array.FindIndex(args, a =>
+            string.Equals(a, UpdateService.UpdatedFromArg, StringComparison.OrdinalIgnoreCase));
+        if (idx >= 0 && idx + 1 < args.Length)
+        {
+            var oldExe = args[idx + 1];
+            Task.Run(() => UpdateService.CleanupAfterUpdate(oldExe));
+        }
+
+        // ② 每小时定时检查(仅在开启时真正发起)
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
+        _updateTimer.Tick += (_, _) => { if (Vm?.AutoUpdateEnabled == true) RunUpdateCheck(); };
+        _updateTimer.Start();
+
+        // ③ 启动检查:延迟几秒，让主界面先显示出来
+        if (Vm?.AutoUpdateEnabled == true)
+        {
+            var startupCheck = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            startupCheck.Tick += (s, _) =>
+            {
+                (s as DispatcherTimer)?.Stop();
+                if (Vm?.AutoUpdateEnabled == true) RunUpdateCheck();
+            };
+            startupCheck.Start();
+        }
+    }
+
+    /// <summary>以“即发即弃”方式触发一次后台更新检查(异常已在内部吞掉).</summary>
+    private void RunUpdateCheck() => _ = CheckForUpdateSilentlyAsync();
+
+    /// <summary>
+    /// 后台静默检查更新:有新版且未被“此版本不再提示”跳过时弹出更新对话框.网络/解析失败静默忽略.
+    /// </summary>
+    private async Task CheckForUpdateSilentlyAsync()
+    {
+        if (_updateChecking) return;
+        _updateChecking = true;
+        try
+        {
+            var info = await UpdateService.CheckAsync();
+            if (info == null || Vm == null || !Vm.AutoUpdateEnabled) return;
+
+            // 用户已对该版本选择“不再提示” → 跳过
+            if (string.Equals(Vm.IgnoredUpdateVersion, info.Version.ToString(3), StringComparison.OrdinalIgnoreCase))
+                return;
+
+            // 已经弹着更新窗就不重复弹
+            if (OwnedWindows.OfType<UpdateDialog>().Any()) return;
+
+            var dlg = new UpdateDialog(info) { Owner = this };
+            dlg.ShowDialog();
+            if (dlg.Choice == UpdateChoice.Skipped)
+                Vm.IgnoredUpdateVersion = info.Version.ToString(3);
+        }
+        catch
+        {
+            // 静默:自动检查失败不打扰用户
+        }
+        finally
+        {
+            _updateChecking = false;
+        }
     }
 
     /// <summary>启动时若上次处于贴边状态，恢复为对应边缘的隐藏态.</summary>

@@ -27,6 +27,7 @@ public partial class SettingsDialog : Window
             EffectsCheck.IsChecked = _vm.EffectsEnabled;
             SoundCheck.IsChecked = _vm.SoundEnabled;
             ReminderSoundCheck.IsChecked = _vm.ReminderSoundEnabled;
+            AutoUpdateCheck.IsChecked = _vm.AutoUpdateEnabled;
         }
         _initializing = false;
 
@@ -82,6 +83,43 @@ public partial class SettingsDialog : Window
     {
         if (_initializing || _vm == null) return;
         _vm.ReminderSoundEnabled = ReminderSoundCheck.IsChecked == true;   // 触发持久化
+    }
+
+    private void AutoUpdate_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _vm == null) return;
+        _vm.AutoUpdateEnabled = AutoUpdateCheck.IsChecked == true;   // 触发持久化
+    }
+
+    /// <summary>手动检查更新:无视“此版本不再提示”，有新版即弹更新对话框，否则提示已是最新.</summary>
+    private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        CheckUpdateButton.IsEnabled = false;
+        StatusText.Text = Loc.T("S.Update.Checking");
+        try
+        {
+            var info = await UpdateService.CheckAsync();
+            if (info == null)
+            {
+                StatusText.Text = Loc.T("S.Update.UpToDate");
+                return;
+            }
+
+            StatusText.Text = "";
+            var dlg = new UpdateDialog(info) { Owner = Owner ?? this };
+            dlg.ShowDialog();
+            // 手动检查时也尊重“此版本不再提示”
+            if (dlg.Choice == UpdateChoice.Skipped && _vm != null)
+                _vm.IgnoredUpdateVersion = info.Version.ToString(3);
+        }
+        catch
+        {
+            StatusText.Text = Loc.T("S.Update.CheckFailed");
+        }
+        finally
+        {
+            CheckUpdateButton.IsEnabled = true;
+        }
     }
 
     private void AutoStart_Changed(object sender, RoutedEventArgs e)

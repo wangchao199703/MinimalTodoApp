@@ -78,4 +78,10 @@ public class AppData
     /// 首启时默认开启开机自启动并把此标志置为 true，之后尊重用户在设置里的手动选择，不再强制覆盖.
     /// </summary>
     public bool StartupInitialized { get; set; }
+
+    /// <summary>是否启用自动检查更新(默认开启).关闭后启动与每小时定时都不再自动检查.</summary>
+    public bool AutoUpdateEnabled { get; set; } = true;
+
+    /// <summary>用户选择“此版本不再提示”的版本号(如 1.1.4).自动检查命中该版本时静默跳过；手动检查仍会提示.</summary>
+    public string IgnoredUpdateVersion { get; set; } = "";
 }

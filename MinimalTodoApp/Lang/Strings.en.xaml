@@ -232,6 +232,24 @@
     <sys:String x:Key="S.Size.Medium">Medium</sys:String>
     <sys:String x:Key="S.Size.Large">Large</sys:String>
     <sys:String x:Key="S.Settings.CheckboxSize">Checkbox</sys:String>
+    <!-- Auto-update settings -->
+    <sys:String x:Key="S.Settings.AutoUpdate">Check for updates automatically</sys:String>
+    <sys:String x:Key="S.Settings.AutoUpdateDesc">Check GitHub for a new version at startup and hourly (turn off to stop auto-checking)</sys:String>
+    <sys:String x:Key="S.Settings.CheckUpdate">Check for updates</sys:String>
+    <sys:String x:Key="S.Settings.CheckUpdateDesc">Check now whether a newer version is available</sys:String>
+
+    <!-- ============ Auto-update dialog ============ -->
+    <sys:String x:Key="S.Update.Title">Update available</sys:String>
+    <sys:String x:Key="S.Update.NewVersion">New version {0} available (current {1})</sys:String>
+    <sys:String x:Key="S.Update.WhatsNew">What's new</sys:String>
+    <sys:String x:Key="S.Update.Now">Update now</sys:String>
+    <sys:String x:Key="S.Update.Ignore">Ignore</sys:String>
+    <sys:String x:Key="S.Update.SkipThis">Skip this version</sys:String>
+    <sys:String x:Key="S.Update.Downloading">Downloading update…</sys:String>
+    <sys:String x:Key="S.Update.Checking">Checking for updates…</sys:String>
+    <sys:String x:Key="S.Update.UpToDate">You are on the latest version.</sys:String>
+    <sys:String x:Key="S.Update.CheckFailed">Update check failed, please try again later.</sys:String>
+    <sys:String x:Key="S.Update.DownloadFailed">Download failed, please try again later.</sys:String>
 
     <!-- ============ Font names ============ -->
     <sys:String x:Key="S.Font.System">System default</sys:String>

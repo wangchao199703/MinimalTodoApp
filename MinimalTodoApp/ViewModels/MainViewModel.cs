@@ -120,6 +120,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         effectsEnabled = _data.EffectsEnabled;
         soundEnabled = _data.SoundEnabled;
         reminderSoundEnabled = _data.ReminderSoundEnabled;
+        autoUpdateEnabled = _data.AutoUpdateEnabled;
         dockEdge = _data.DockEdge;
 
         Groups = new ObservableCollection<TodoGroup>(_data.Groups.OrderBy(g => g.OrderIndex));
@@ -315,6 +316,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>周期提醒是否播放提示音(默认开启，持久化).</summary>
     [ObservableProperty]
     private bool reminderSoundEnabled = true;
+
+    /// <summary>是否启用自动检查更新(默认开启，持久化).关闭后启动与每小时定时都不再自动检查.</summary>
+    [ObservableProperty]
+    private bool autoUpdateEnabled = true;
 
     /// <summary>新任务输入框文本.</summary>
     [ObservableProperty]
@@ -608,7 +613,20 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     partial void OnEffectsEnabledChanged(bool value) => SaveData();
     partial void OnSoundEnabledChanged(bool value) => SaveData();
     partial void OnReminderSoundEnabledChanged(bool value) => SaveData();
+    partial void OnAutoUpdateEnabledChanged(bool value) => SaveData();
     partial void OnDockEdgeChanged(int value) => SaveData();
+
+    /// <summary>用户选择“此版本不再提示”的版本号(持久化).自动检查命中该版本时静默跳过.</summary>
+    public string IgnoredUpdateVersion
+    {
+        get => _data.IgnoredUpdateVersion;
+        set
+        {
+            if (_data.IgnoredUpdateVersion == value) return;
+            _data.IgnoredUpdateVersion = value ?? "";
+            SaveData();
+        }
+    }
 
     #endregion
 

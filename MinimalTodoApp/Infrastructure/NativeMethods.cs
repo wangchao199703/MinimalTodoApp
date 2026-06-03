@@ -154,4 +154,51 @@ public static class NativeMethods
         keybd_event(VK_H, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
         keybd_event(VK_LWIN, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
     }
+
+    // ===== 把文件移入回收站(自动更新替换旧版 exe 时使用) =====
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct SHFILEOPSTRUCT
+    {
+        public IntPtr hwnd;
+        public uint wFunc;
+        public string pFrom;
+        public string? pTo;
+        public ushort fFlags;
+        public bool fAnyOperationsAborted;
+        public IntPtr hNameMappings;
+        public string? lpszProgressTitle;
+    }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    private static extern int SHFileOperation(ref SHFILEOPSTRUCT lpFileOp);
+
+    private const uint FO_DELETE = 0x0003;
+    private const ushort FOF_ALLOWUNDO = 0x0040;      // 删除时送回收站(而非永久删除)
+    private const ushort FOF_NOCONFIRMATION = 0x0010; // 不弹确认框
+    private const ushort FOF_SILENT = 0x0004;         // 不显示进度 UI
+    private const ushort FOF_NOERRORUI = 0x0400;      // 出错也不弹 UI
+
+    /// <summary>
+    /// 把指定文件移入回收站(而非永久删除)，供自动更新替换旧版 exe 后清理使用.
+    /// pFrom 需以双 '\0' 结尾(列表终止符)。失败返回 false，不抛异常.
+    /// </summary>
+    public static bool MoveToRecycleBin(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path)) return false;
+        try
+        {
+            var op = new SHFILEOPSTRUCT
+            {
+                wFunc = FO_DELETE,
+                pFrom = path + '\0' + '\0',
+                fFlags = (ushort)(FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI),
+            };
+            return SHFileOperation(ref op) == 0 && !op.fAnyOperationsAborted;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

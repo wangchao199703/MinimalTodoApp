@@ -232,6 +232,24 @@
     <sys:String x:Key="S.Size.Medium">中</sys:String>
     <sys:String x:Key="S.Size.Large">大</sys:String>
     <sys:String x:Key="S.Settings.CheckboxSize">勾选框</sys:String>
+    <!-- 自动更新设置 -->
+    <sys:String x:Key="S.Settings.AutoUpdate">自动检查更新</sys:String>
+    <sys:String x:Key="S.Settings.AutoUpdateDesc">启动时及每小时自动检查 GitHub 上是否有新版本（关闭后不再自动检查）</sys:String>
+    <sys:String x:Key="S.Settings.CheckUpdate">检查更新</sys:String>
+    <sys:String x:Key="S.Settings.CheckUpdateDesc">立即手动检查是否有新版本可用</sys:String>
+
+    <!-- ============ 自动更新对话框 ============ -->
+    <sys:String x:Key="S.Update.Title">发现新版本</sys:String>
+    <sys:String x:Key="S.Update.NewVersion">发现新版本 {0}（当前 {1}）</sys:String>
+    <sys:String x:Key="S.Update.WhatsNew">更新内容</sys:String>
+    <sys:String x:Key="S.Update.Now">立即更新</sys:String>
+    <sys:String x:Key="S.Update.Ignore">忽略</sys:String>
+    <sys:String x:Key="S.Update.SkipThis">此版本不再提示</sys:String>
+    <sys:String x:Key="S.Update.Downloading">正在下载更新…</sys:String>
+    <sys:String x:Key="S.Update.Checking">正在检查更新…</sys:String>
+    <sys:String x:Key="S.Update.UpToDate">已是最新版本.</sys:String>
+    <sys:String x:Key="S.Update.CheckFailed">检查更新失败，请稍后再试.</sys:String>
+    <sys:String x:Key="S.Update.DownloadFailed">下载更新失败，请稍后再试.</sys:String>
 
     <!-- ============ 字体名称 ============ -->
     <sys:String x:Key="S.Font.System">跟随系统</sys:String>

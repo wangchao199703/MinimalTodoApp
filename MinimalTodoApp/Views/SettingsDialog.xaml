@@ -148,6 +148,42 @@
 
                         <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
 
+                        <!-- 自动检查更新 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.AutoUpdate}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.AutoUpdateDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <CheckBox x:Name="AutoUpdateCheck" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                      Checked="AutoUpdate_Changed" Unchecked="AutoUpdate_Changed" />
+                        </Grid>
+
+                        <!-- 手动检查更新 -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.CheckUpdate}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.CheckUpdateDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <Button x:Name="CheckUpdateButton" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                    Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                    Padding="12,6" Content="{DynamicResource S.Settings.CheckUpdate}"
+                                    Click="CheckUpdate_Click" />
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
+
                         <!-- 恢复默认设置 -->
                         <Grid>
                             <Grid.ColumnDefinitions>
