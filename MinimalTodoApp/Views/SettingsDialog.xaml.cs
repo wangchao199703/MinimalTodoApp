@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using MinimalTodoApp.Infrastructure;
 using MinimalTodoApp.ViewModels;
@@ -33,6 +34,36 @@ public partial class SettingsDialog : Window
         {
             if (e.Key == Key.Escape) Close();
         };
+    }
+
+    /// <summary>无边框窗口:在非交互区域按下左键即可拖动整个设置窗口.</summary>
+    private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+    }
+
+    /// <summary>左侧导航:切到“常规”分组.</summary>
+    private void GeneralNav_Checked(object sender, RoutedEventArgs e)
+    {
+        if (GeneralPanel == null || FontPanel == null) return;
+        GeneralPanel.Visibility = Visibility.Visible;
+        FontPanel.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>左侧导航:切到“字体”分组.</summary>
+    private void FontNav_Checked(object sender, RoutedEventArgs e)
+    {
+        if (GeneralPanel == null || FontPanel == null) return;
+        GeneralPanel.Visibility = Visibility.Collapsed;
+        FontPanel.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>恢复默认设置:字体微软雅黑、字号 12、行距 1.3、勾选框 16(经 VM 实时应用并持久化).</summary>
+    private void RestoreDefaults_Click(object sender, RoutedEventArgs e)
+    {
+        if (_vm == null) return;
+        _vm.ResetDefaultSettings();
+        StatusText.Text = Loc.T("S.Settings.RestoreDone");
     }
 
     private void Effects_Changed(object sender, RoutedEventArgs e)

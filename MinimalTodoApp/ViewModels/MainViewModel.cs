@@ -68,6 +68,16 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"
     };
 
+    // ===== 产品默认外观(首次运行 / 点击“恢复默认设置”时套用) =====
+    /// <summary>默认字体:微软雅黑.</summary>
+    public const string DefaultFontFamily = "Microsoft YaHei";
+    /// <summary>默认字号:12.</summary>
+    public const double DefaultFontSize = 12;
+    /// <summary>默认行距倍率:1.3.</summary>
+    public const double DefaultLineSpacing = 1.3;
+    /// <summary>默认勾选框直径:16.</summary>
+    public const double DefaultCheckboxSize = 16;
+
     public MainViewModel()
     {
         _data = _dataService.Load();
@@ -80,12 +90,23 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         Themes = new ObservableCollection<ThemeInfo>(ThemeManager.AllThemes());
         selectedTheme = Themes.FirstOrDefault(t => t.Key == currentTheme) ?? Themes[0];
 
-        // 字体设置(字体/字号/行距):从持久化恢复，App 启动时会显式 FontManager.Apply 一次
-        fontFamily = string.IsNullOrWhiteSpace(_data.FontFamily) ? FontManager.SystemDefault : _data.FontFamily;
-        fontSize = _data.FontSize > 0 ? _data.FontSize : 12;
-        lineSpacing = _data.LineSpacing > 0 ? _data.LineSpacing : 0.9;
-        // 勾选框直径:未设置时默认≈字号+2(与文字等高)，之后可在设置里单独调整
-        checkboxSize = _data.CheckboxSize > 0 ? _data.CheckboxSize : Math.Round(fontSize + 2);
+        // 字体设置(字体/字号/行距):从持久化恢复，App 启动时会显式 FontManager.Apply 一次。
+        // 首次运行(尚未做过开机自启动初始化)统一套用产品默认:微软雅黑 / 字号 12 / 行距 1.3 / 勾选框 16。
+        if (!_data.StartupInitialized)
+        {
+            fontFamily = DefaultFontFamily;
+            fontSize = DefaultFontSize;
+            lineSpacing = DefaultLineSpacing;
+            checkboxSize = DefaultCheckboxSize;
+        }
+        else
+        {
+            fontFamily = string.IsNullOrWhiteSpace(_data.FontFamily) ? FontManager.SystemDefault : _data.FontFamily;
+            fontSize = _data.FontSize > 0 ? _data.FontSize : 12;
+            lineSpacing = _data.LineSpacing > 0 ? _data.LineSpacing : 0.9;
+            // 勾选框直径:未设置时默认≈字号+2(与文字等高)，之后可在设置里单独调整
+            checkboxSize = _data.CheckboxSize > 0 ? _data.CheckboxSize : Math.Round(fontSize + 2);
+        }
         Fonts = new ObservableCollection<FontInfo>(FontManager.AllFonts());
         selectedFont = Fonts.FirstOrDefault(f => f.Key == fontFamily) ?? Fonts[0];
 
@@ -512,6 +533,21 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     {
         FontManager.Apply(FontFamily, FontSize, LineSpacing, CheckboxSize);
         SaveData();
+    }
+
+    /// <summary>
+    /// 恢复默认外观设置:字体微软雅黑、字号 12、行距 1.3、勾选框 16。
+    /// 经属性赋值触发 FontManager.Apply + 持久化，设置面板即时预览；同步刷新字体下拉选中项。
+    /// </summary>
+    public void ResetDefaultSettings()
+    {
+        // 先切字体:更新下拉选中项(级联回写 FontFamily 并应用)
+        var font = Fonts.FirstOrDefault(f => f.Key == DefaultFontFamily) ?? Fonts[0];
+        SelectedFont = font;
+        FontFamily = font.Key;       // 兜底:即便选中项未变也确保字体被应用
+        FontSize = DefaultFontSize;
+        LineSpacing = DefaultLineSpacing;
+        CheckboxSize = DefaultCheckboxSize;
     }
 
     partial void OnSelectedLanguageChanged(LanguageInfo value)

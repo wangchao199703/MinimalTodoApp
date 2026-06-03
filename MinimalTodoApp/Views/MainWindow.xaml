@@ -7,7 +7,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         Title="Todo" Height="640" Width="680"
         Icon="/Assets/app.ico"
-        MinHeight="420" MinWidth="380"
+        MinHeight="420" MinWidth="320"
         ShowInTaskbar="False"
         WindowStyle="None" ResizeMode="CanResize"
         AllowsTransparency="True" Background="Transparent"
@@ -1048,8 +1048,8 @@
                                             <KeyBinding Key="Enter" Command="{Binding AddTaskCommand}" />
                                         </TextBox.InputBindings>
                                     </TextBox>
-                                    <TextBlock Text="{DynamicResource S.Input.Placeholder}" Margin="8,4,0,0"
-                                               VerticalAlignment="Top" IsHitTestVisible="False"
+                                    <TextBlock Text="{DynamicResource S.Input.Placeholder}" Margin="8,0,0,0"
+                                               VerticalAlignment="Center" IsHitTestVisible="False"
                                                TextAlignment="Left" HorizontalAlignment="Left">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
