@@ -51,52 +51,49 @@ public static class UpdateService
         ?? string.Empty;
 
     /// <summary>
-    /// 查询 GitHub 最新发布.若存在比当前版本更新的可下载资产，返回 <see cref="UpdateInfo"/>；
-    /// 否则(已是最新 / 无合适资产 / 网络异常)返回 null —— 静默失败，绝不抛出，便于后台静默检查.
+    /// 查询 GitHub 最新发布.
+    /// 返回 <see cref="UpdateInfo"/>：存在比当前版本更新的可下载资产；
+    /// 返回 <c>null</c>：**确实已是最新**（或最新版无合适资产 / tag 无法解析）。
+    /// **抛出异常**：网络错误、HTTP 非 2xx（如 GitHub 匿名接口 403 限流）、解析失败等"检查未成功"的情况——
+    /// 由调用方决定如何处理（后台检查吞掉静默；手动检查提示"检查失败，请稍后重试"，
+    /// 避免把"没查成功"误报成"已是最新"）.
     /// </summary>
     public static async Task<UpdateInfo?> CheckAsync(CancellationToken ct = default)
     {
-        try
+        using var resp = await Http.GetAsync(LatestReleaseApi, ct);
+        resp.EnsureSuccessStatusCode();   // 非 2xx(含 403 限流)抛 HttpRequestException → 视为"检查失败"而非"已最新"
+
+        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        var root = doc.RootElement;
+
+        string tag = root.TryGetProperty("tag_name", out var t) ? (t.GetString() ?? "") : "";
+        var latest = ParseVersion(tag);
+        if (latest == null) return null;
+
+        // 仅按 主.次.修订 三段比较，忽略 build 段差异
+        if (Normalize(latest) <= Normalize(CurrentVersion)) return null;   // 已是最新
+
+        string notes = root.TryGetProperty("body", out var b) ? (b.GetString() ?? "") : "";
+
+        // 选 win-x64.exe 资产
+        string url = "", assetName = "";
+        if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
         {
-            using var resp = await Http.GetAsync(LatestReleaseApi, ct);
-            if (!resp.IsSuccessStatusCode) return null;
-
-            await using var stream = await resp.Content.ReadAsStreamAsync(ct);
-            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
-            var root = doc.RootElement;
-
-            string tag = root.TryGetProperty("tag_name", out var t) ? (t.GetString() ?? "") : "";
-            var latest = ParseVersion(tag);
-            if (latest == null) return null;
-
-            // 仅按 主.次.修订 三段比较，忽略 build 段差异
-            if (Normalize(latest) <= Normalize(CurrentVersion)) return null;
-
-            string notes = root.TryGetProperty("body", out var b) ? (b.GetString() ?? "") : "";
-
-            // 选 win-x64.exe 资产
-            string url = "", assetName = "";
-            if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+            foreach (var a in assets.EnumerateArray())
             {
-                foreach (var a in assets.EnumerateArray())
+                var name = a.TryGetProperty("name", out var n) ? (n.GetString() ?? "") : "";
+                if (name.EndsWith("win-x64.exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    var name = a.TryGetProperty("name", out var n) ? (n.GetString() ?? "") : "";
-                    if (name.EndsWith("win-x64.exe", StringComparison.OrdinalIgnoreCase))
-                    {
-                        url = a.TryGetProperty("browser_download_url", out var u) ? (u.GetString() ?? "") : "";
-                        assetName = name;
-                        break;
-                    }
+                    url = a.TryGetProperty("browser_download_url", out var u) ? (u.GetString() ?? "") : "";
+                    assetName = name;
+                    break;
                 }
             }
-            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(assetName)) return null;
+        }
+        if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(assetName)) return null;
 
-            return new UpdateInfo(latest, tag, notes, url, assetName);
-        }
-        catch
-        {
-            return null;
-        }
+        return new UpdateInfo(latest, tag, notes, url, assetName);
     }
 
     /// <summary>把 "v1.2.3" / "1.2.3" 解析为 Version；失败返回 null.</summary>

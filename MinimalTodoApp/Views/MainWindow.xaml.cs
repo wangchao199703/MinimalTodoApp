@@ -103,7 +103,7 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// 初始化自动更新:① 若本次由更新脚本拉起(带 --updated-from)则回收旧版 exe；
-    /// ② 每小时定时检查；③ 启动后延迟几秒做一次检查(不打断启动).均尊重“自动检查更新”开关.
+    /// ② 每 12 小时定时检查；③ 启动后延迟几秒做一次检查(不打断启动).均尊重“自动检查更新”开关.
     /// </summary>
     private void InitAutoUpdate()
     {
@@ -117,8 +117,8 @@ public partial class MainWindow : Window
             Task.Run(() => UpdateService.CleanupAfterUpdate(oldExe));
         }
 
-        // ② 每小时定时检查(仅在开启时真正发起)
-        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(1) };
+        // ② 每 12 小时定时检查(仅在开启时真正发起；降低 GitHub 匿名接口 60次/小时限流的撞限风险)
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromHours(12) };
         _updateTimer.Tick += (_, _) => { if (Vm?.AutoUpdateEnabled == true) RunUpdateCheck(); };
         _updateTimer.Start();
 
