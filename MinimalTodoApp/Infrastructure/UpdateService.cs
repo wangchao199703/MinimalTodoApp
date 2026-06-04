@@ -188,6 +188,7 @@ public static class UpdateService
 
         // PowerShell 单引号字符串里转义单引号(成对)，安全嵌入任意路径
         string newQ = newExePath.Replace("'", "''");
+        string newDir = (Path.GetDirectoryName(newExePath) ?? "").Replace("'", "''");
         // 旧版路径作为 --updated-from 的实参:外面再包一层字面双引号，保证含空格的路径作为单个参数传入新版
         string oldArg = ("\"" + oldExePath + "\"").Replace("'", "''");
 
@@ -197,8 +198,13 @@ public static class UpdateService
         sb.AppendLine("$n=0");
         sb.AppendLine($"while ((Get-Process -Id {pid} -ErrorAction SilentlyContinue) -and ($n -lt 120)) {{ Start-Sleep -Milliseconds 500; $n++ }}");
         sb.AppendLine("Start-Sleep -Milliseconds 300");
-        // 启动新版(脱离运行，不等待)；--updated-from 让新版回收旧 exe
-        sb.AppendLine($"Start-Process -FilePath '{newQ}' -ArgumentList @('{UpdatedFromArg}','{oldArg}')");
+        // 启动新版(脱离运行，不等待)；--updated-from 让新版回收旧 exe.
+        // 带重试:新 exe 刚落地可能被杀软/同步盘短暂占用,失败则退避后重试,确保新版务必拉起.
+        sb.AppendLine("$ok=$false");
+        sb.AppendLine("for ($i=0; $i -lt 8 -and -not $ok; $i++) {");
+        sb.AppendLine($"  try {{ Start-Process -FilePath '{newQ}' -ArgumentList @('{UpdatedFromArg}','{oldArg}') -WorkingDirectory '{newDir}' -ErrorAction Stop; $ok=$true }}");
+        sb.AppendLine("  catch { Start-Sleep -Milliseconds 800 }");
+        sb.AppendLine("}");
         // 自删本脚本
         sb.AppendLine("Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue");
 

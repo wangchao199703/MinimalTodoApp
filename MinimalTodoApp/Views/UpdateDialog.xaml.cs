@@ -1,4 +1,6 @@
 using System;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows;
 using System.Windows.Input;
@@ -35,9 +37,11 @@ public partial class UpdateDialog : Window
 
         VersionText.Text = Loc.F("S.Update.NewVersion",
             info.Version.ToString(3), UpdateService.CurrentVersion.ToString(3));
-        NotesText.Text = string.IsNullOrWhiteSpace(info.Notes)
-            ? info.Tag
-            : info.Notes.Trim();
+
+        // 发布说明:按当前界面语言只取对应语种分节，并把 Markdown 渲染为可读文本(去掉 # / ** / 列表记号等)
+        bool chinese = LanguageManager.Current != LanguageManager.English;
+        string readable = ExtractNotes(info.Notes, chinese);
+        NotesText.Text = string.IsNullOrWhiteSpace(readable) ? info.Tag : readable;
 
         PreviewKeyDown += (_, e) =>
         {
@@ -47,6 +51,65 @@ public partial class UpdateDialog : Window
                 Close();
             }
         };
+    }
+
+    /// <summary>
+    /// 从 Release 说明里取当前语言对应的分节并转为可读文本.
+    /// 本项目 release-notes.md 用「### English」「### 简体中文」分隔双语；非此格式则原样返回(再做 Markdown 渲染).
+    /// </summary>
+    private static string ExtractNotes(string? notes, bool chinese)
+    {
+        if (string.IsNullOrWhiteSpace(notes)) return "";
+
+        int enIdx = notes.IndexOf("English", StringComparison.OrdinalIgnoreCase);
+        int zhIdx = notes.IndexOf("简体中文", StringComparison.Ordinal);
+
+        string section = notes;
+        if (enIdx >= 0 && zhIdx >= 0)
+        {
+            int start, end;
+            if (chinese) { start = zhIdx; end = zhIdx > enIdx ? notes.Length : enIdx; }
+            else { start = enIdx; end = enIdx > zhIdx ? notes.Length : zhIdx; }
+
+            // 跳过语言标题所在行本身(连同其上的 ### 记号)
+            int nl = notes.IndexOf('\n', start);
+            if (nl >= 0 && nl < end) start = nl + 1;
+            if (end > start) section = notes.Substring(start, end - start);
+        }
+
+        return MarkdownToReadable(section);
+    }
+
+    /// <summary>把 Markdown 粗略转为可读纯文本:去掉标题 #、粗斜体 **/*、行内代码 `、列表记号→•、链接→文字、分隔线.</summary>
+    private static string MarkdownToReadable(string md)
+    {
+        if (string.IsNullOrWhiteSpace(md)) return "";
+
+        var sb = new StringBuilder();
+        foreach (var raw in md.Replace("\r\n", "\n").Replace("\r", "\n").Split('\n'))
+        {
+            var line = raw.TrimEnd();
+
+            // 分隔线 --- / *** 整行去掉
+            if (Regex.IsMatch(line, @"^\s*([-*_])\1{2,}\s*$")) continue;
+
+            // 标题:去掉前导 #
+            var h = Regex.Match(line, @"^\s{0,3}#{1,6}\s*(.*)$");
+            if (h.Success) line = h.Groups[1].Value;
+
+            // 列表记号 -, *, + → •
+            line = Regex.Replace(line, @"^(\s*)[-*+]\s+", "$1• ");
+            // 链接 [text](url) → text (url)
+            line = Regex.Replace(line, @"\[([^\]]+)\]\(([^)]+)\)", "$1 ($2)");
+            // 粗体/斜体记号、行内代码
+            line = line.Replace("**", "").Replace("__", "");
+            line = Regex.Replace(line, @"`([^`]*)`", "$1");
+
+            sb.AppendLine(line);
+        }
+
+        // 折叠 3+ 连续空行为 1 个空行
+        return Regex.Replace(sb.ToString(), @"\n{3,}", "\n\n").Trim();
     }
 
     /// <summary>无边框窗口:非交互区域按下左键即可拖动整个窗口.</summary>

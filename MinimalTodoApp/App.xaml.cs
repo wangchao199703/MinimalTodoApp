@@ -42,8 +42,12 @@ public partial class App : Application
         // 1.1 先应用语言:保证单实例确认框用上用户选定的语言
         LanguageManager.Apply(ViewModel.CurrentLanguage);
 
-        // 1.2 单实例检测:若旧版本在运行,询问是否退出旧版本并以当前版本接管
-        if (!EnsureSingleInstance())
+        // 1.2 单实例检测:若旧版本在运行,询问是否退出旧版本并以当前版本接管.
+        //     若本次是被更新脚本拉起(带 --updated-from),则静默接管、不弹框,确保新版一定起来.
+        var startupArgs = Environment.GetCommandLineArgs();
+        bool fromUpdate = Array.Exists(startupArgs,
+            a => string.Equals(a, UpdateService.UpdatedFromArg, StringComparison.OrdinalIgnoreCase));
+        if (!EnsureSingleInstance(fromUpdate))
         {
             Shutdown();
             return;
@@ -67,23 +71,29 @@ public partial class App : Application
     /// 确保单实例运行.若已有实例:弹窗征询用户是否退出旧实例并以当前版本接管.
     /// 用户同意则按「优雅信号 → 兜底强杀」结束其它实例并接管互斥体;否则返回 false(当前实例退出).
     /// </summary>
-    private bool EnsureSingleInstance()
+    /// <param name="fromUpdate">是否由更新脚本拉起(带 --updated-from).为 true 时:不弹框、静默接管，
+    /// 且即便互斥体接管超时也继续运行——避免更新重启时新旧实例短暂重叠导致新版被挡下/不启动.</param>
+    private bool EnsureSingleInstance(bool fromUpdate = false)
     {
         _instanceMutex = new Mutex(initiallyOwned: true, name: MutexName, createdNew: out bool createdNew);
 
         if (createdNew) return true;
 
-        var result = MessageBox.Show(
-            Loc.T("S.SingleInstance.Message"),
-            Loc.T("S.SingleInstance.Title"),
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
+        // 非更新场景才征询用户;更新重启直接静默接管(旧版可能尚未完全退出)
+        if (!fromUpdate)
+        {
+            var result = MessageBox.Show(
+                Loc.T("S.SingleInstance.Message"),
+                Loc.T("S.SingleInstance.Title"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
 
-        if (result != MessageBoxResult.Yes) return false;
+            if (result != MessageBoxResult.Yes) return false;
+        }
 
         // ① 优雅信号:采用新机制(本版本及以后)的旧实例会监听该事件并自行保存数据后退出。
         SignalOtherInstancesToExit();
-        if (TryTakeOverMutex(TimeSpan.FromSeconds(5))) return true;
+        if (TryTakeOverMutex(TimeSpan.FromSeconds(fromUpdate ? 8 : 5))) return true;
 
         // ② 兜底强杀:对不监听信号的旧版本,按 PID 文件 + 进程名前缀结束。
         //    进程名前缀匹配可覆盖 “MinimalTodoApp-v1.1.2-win-x64” 这类把版本号写进文件名的已发布旧版本,
@@ -91,7 +101,8 @@ public partial class App : Application
         KillOtherInstances();
         if (TryTakeOverMutex(TimeSpan.FromSeconds(3))) return true;
 
-        return false;
+        // 更新重启场景:即便没拿到互斥体也继续运行,确保新版一定起来(旧版此时应已被强杀清掉)
+        return fromUpdate;
     }
 
     /// <summary>等待并接管互斥体;旧实例被结束后互斥体变 abandoned,捕获该异常即视为接管成功.</summary>
