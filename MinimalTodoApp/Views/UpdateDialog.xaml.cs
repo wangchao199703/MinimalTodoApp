@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using MinimalTodoApp.Infrastructure;
@@ -26,6 +27,9 @@ public enum UpdateChoice
 public partial class UpdateDialog : Window
 {
     private readonly UpdateInfo _info;
+
+    /// <summary>已下载落地的新版 exe 路径(供兜底面板的「打开文件夹/立即运行」使用).</summary>
+    private string? _newExePath;
 
     /// <summary>用户最终选择，供调用方决定是否写入“忽略此版本”.</summary>
     public UpdateChoice Choice { get; private set; } = UpdateChoice.Ignored;
@@ -144,23 +148,76 @@ public partial class UpdateDialog : Window
         try
         {
             string newExe = await UpdateService.DownloadAsync(_info, progress, CancellationToken.None);
+            _newExePath = newExe;
             string oldExe = UpdateService.CurrentExePath;
 
-            // 生成更新脚本(等本进程退出 → 启动新版)，随即干净退出当前版本
-            UpdateService.LaunchUpdaterAndExit(newExe, oldExe);
+            // 直接拉起新版并在后台等待其「启动确认」(不阻塞 UI 线程)
+            ProgressText.Text = Loc.T("S.Update.Downloading");
+            bool started = await Task.Run(() => UpdateService.TryStartNewVersion(newExe, oldExe));
 
-            if (Application.Current.MainWindow is MainWindow mw)
-                mw.ForceExit();
+            if (started)
+            {
+                // 已确认新版起来 → 干净退出当前版本,由新版接管
+                if (Application.Current.MainWindow is MainWindow mw)
+                    mw.ForceExit();
+                else
+                    Application.Current.Shutdown();
+            }
             else
-                Application.Current.Shutdown();
+            {
+                // 兜底:新版未能自动启动 → 当前版本保持存活,提示用户去具体路径手动运行
+                ShowFallback(newExe);
+            }
         }
         catch
         {
-            // 下载/启动失败:回到按钮态并提示，可重试
+            // 下载失败:回到按钮态并提示，可重试
             ProgressPanel.Visibility = Visibility.Collapsed;
             ButtonsPanel.Visibility = Visibility.Visible;
             VersionText.Text = Loc.T("S.Update.DownloadFailed");
             Choice = UpdateChoice.Ignored;
         }
+    }
+
+    /// <summary>切到兜底态:展示新版完整路径与「打开文件夹 / 立即运行 / 关闭」.</summary>
+    private void ShowFallback(string newExePath)
+    {
+        Choice = UpdateChoice.Ignored;   // 未成功更新:调用方不要写"忽略此版本"
+        ProgressPanel.Visibility = Visibility.Collapsed;
+        ButtonsPanel.Visibility = Visibility.Collapsed;
+        FallbackPanel.Visibility = Visibility.Visible;
+        VersionText.Text = Loc.T("S.Update.LaunchFailed.Title");
+        NewExePathText.Text = newExePath;
+    }
+
+    /// <summary>打开新版所在文件夹并选中该 exe.</summary>
+    private void OpenFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_newExePath)) return;
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = "/select,\"" + _newExePath + "\"",
+                UseShellExecute = true,
+            });
+        }
+        catch { /* 资源管理器拉起失败:忽略,用户仍可照路径手动定位 */ }
+    }
+
+    /// <summary>再次尝试运行新版;成功则干净退出当前版本.</summary>
+    private void RunNow_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_newExePath)) return;
+        string oldExe = UpdateService.CurrentExePath;
+        if (UpdateService.TryStartNewVersion(_newExePath, oldExe))
+        {
+            if (Application.Current.MainWindow is MainWindow mw)
+                mw.ForceExit();
+            else
+                Application.Current.Shutdown();
+        }
+        // 仍未起来:留在兜底态,用户可改用「打开文件夹」手动运行
     }
 }

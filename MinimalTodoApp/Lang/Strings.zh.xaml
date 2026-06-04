@@ -265,6 +265,11 @@
     <sys:String x:Key="S.Update.UpToDate">已是最新版本.</sys:String>
     <sys:String x:Key="S.Update.CheckFailed">检查更新失败，请稍后再试.</sys:String>
     <sys:String x:Key="S.Update.DownloadFailed">下载更新失败，请稍后再试.</sys:String>
+    <sys:String x:Key="S.Update.LaunchFailed.Title">新版本未能自动启动</sys:String>
+    <sys:String x:Key="S.Update.LaunchFailed.Message">新版本已下载，但未能自动启动。请到下面的位置手动运行：</sys:String>
+    <sys:String x:Key="S.Update.OpenFolder">打开所在文件夹</sys:String>
+    <sys:String x:Key="S.Update.RunNow">立即运行</sys:String>
+    <sys:String x:Key="S.Update.Close">关闭</sys:String>
 
     <!-- ============ 字体名称 ============ -->
     <sys:String x:Key="S.Font.System">跟随系统</sys:String>

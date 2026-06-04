@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,8 +23,16 @@ public static class UpdateService
     private const string LatestReleaseApi =
         "https://api.github.com/repos/" + RepoSlug + "/releases/latest";
 
-    /// <summary>新版被脚本拉起时携带的参数:其后紧跟被替换的旧版 exe 路径(供回收).</summary>
+    /// <summary>新版被拉起时携带的参数:其后紧跟被替换的旧版 exe 路径(供回收).</summary>
     public const string UpdatedFromArg = "--updated-from";
+
+    /// <summary>
+    /// 「新版已启动」确认事件名(固定 GUID，与版本无关).旧版拉起新版后等待该事件被 Set;
+    /// 新版启动时(见 <see cref="SignalUpdatedStarted"/>)Set 它，旧版据此确认新版真的起来了才退出，
+    /// 否则保持存活并提示用户手动运行 —— 彻底规避「旧版已退出、新版没起来、用户看不到任何提示」.
+    /// </summary>
+    private const string StartedEventName =
+        "MinimalTodoApp_UpdateStarted_{6E1F0A53-2C8B-4D74-9A1E-7B5C3D2F9E04}";
 
     private static readonly HttpClient Http = CreateClient();
 
@@ -172,53 +179,117 @@ public static class UpdateService
     }
 
     /// <summary>
-    /// 生成并隐藏启动一个临时 PowerShell 脚本:轮询等待当前进程退出 → 以 <see cref="UpdatedFromArg"/>
-    /// 参数启动新版 exe(脱离独立运行) → 自删.调用后应紧接着让当前应用干净退出(ForceExit)，脚本随即拉起新版.
+    /// 直接拉起新版 exe 并确认其确实启动 —— 不依赖 PowerShell/cmd 脚本.
+    /// 用 <see cref="ProcessStartInfo.UseShellExecute"/>=true(底层 ShellExecuteEx):新进程完全脱离父进程、
+    /// 不继承句柄、父进程退出后仍存活、无控制台窗口.随后等待 <see cref="StartedEventName"/> 被新版 Set 以确认其起来了.
     /// </summary>
+    /// <returns>
+    /// <c>true</c> = 已确认新版启动(调用方应随即干净退出,新版会接管)；
+    /// <c>false</c> = 多次尝试仍未确认(调用方应**保持存活**并提示用户手动运行新版).
+    /// </returns>
     /// <remarks>
-    /// 用隐藏 PowerShell + <c>Start-Process</c> 而非 cmd 的 <c>start</c>:
-    /// 后者在无控制台(CreateNoWindow)下会失败(errorlevel 1)导致新版起不来；而 cmd 直接调用自包含单文件 exe
-    /// 又会阻塞等待、脚本不自删.<c>Start-Process</c> 不带 -Wait 会立即返回并让新进程独立运行，稳定可靠.
+    /// 弃用旧的「隐藏 PowerShell 临时脚本」方案:在受控/企业机器上(组策略把 ExecutionPolicy 设在 MachinePolicy
+    /// 作用域使 -Bypass 失效、AppLocker/杀软拦截 %TEMP% 脚本、Constrained Language Mode)脚本会静默失败,
+    /// 导致旧版已退出而新版没起来、用户毫无察觉.直接 Process.Start + 事件握手确认从根本上规避.
+    /// 新版自身已具备「带 --updated-from 时静默接管旧实例」能力(见 App.EnsureSingleInstance),无需外部脚本等旧版退出.
     /// </remarks>
-    public static void LaunchUpdaterAndExit(string newExePath, string oldExePath)
+    public static bool TryStartNewVersion(string newExePath, string oldExePath)
     {
-        int pid = Environment.ProcessId;
-        var ps1Path = Path.Combine(Path.GetTempPath(),
-            "MinimalTodoApp_update_" + Guid.NewGuid().ToString("N") + ".ps1");
-
-        // PowerShell 单引号字符串里转义单引号(成对)，安全嵌入任意路径
-        string newQ = newExePath.Replace("'", "''");
-        string newDir = (Path.GetDirectoryName(newExePath) ?? "").Replace("'", "''");
-        // 旧版路径作为 --updated-from 的实参:外面再包一层字面双引号，保证含空格的路径作为单个参数传入新版
-        string oldArg = ("\"" + oldExePath + "\"").Replace("'", "''");
-
-        var sb = new StringBuilder();
-        sb.AppendLine("$ErrorActionPreference='SilentlyContinue'");
-        // 轮询等待旧版退出(最多 ~60 秒兜底，避免极端情况下卡死)
-        sb.AppendLine("$n=0");
-        sb.AppendLine($"while ((Get-Process -Id {pid} -ErrorAction SilentlyContinue) -and ($n -lt 120)) {{ Start-Sleep -Milliseconds 500; $n++ }}");
-        sb.AppendLine("Start-Sleep -Milliseconds 300");
-        // 启动新版(脱离运行，不等待)；--updated-from 让新版回收旧 exe.
-        // 带重试:新 exe 刚落地可能被杀软/同步盘短暂占用,失败则退避后重试,确保新版务必拉起.
-        sb.AppendLine("$ok=$false");
-        sb.AppendLine("for ($i=0; $i -lt 8 -and -not $ok; $i++) {");
-        sb.AppendLine($"  try {{ Start-Process -FilePath '{newQ}' -ArgumentList @('{UpdatedFromArg}','{oldArg}') -WorkingDirectory '{newDir}' -ErrorAction Stop; $ok=$true }}");
-        sb.AppendLine("  catch { Start-Sleep -Milliseconds 800 }");
-        sb.AppendLine("}");
-        // 自删本脚本
-        sb.AppendLine("Remove-Item -LiteralPath $MyInvocation.MyCommand.Path -Force -ErrorAction SilentlyContinue");
-
-        File.WriteAllText(ps1Path, sb.ToString(), new UTF8Encoding(false));
-
-        var psi = new ProcessStartInfo
+        // 旧版先建好「新版已启动」确认事件并复位,供新版起来后打开并 Set.
+        EventWaitHandle? started = null;
+        try
         {
-            FileName = "powershell.exe",
-            Arguments = $"-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File \"{ps1Path}\"",
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WindowStyle = ProcessWindowStyle.Hidden,
-        };
-        Process.Start(psi);
+            started = new EventWaitHandle(initialState: false, mode: EventResetMode.ManualReset,
+                name: StartedEventName, createdNew: out _);
+            started.Reset();
+        }
+        catch
+        {
+            started = null;   // 极受限系统无法创建命名事件:退化为「轮询新进程」二次确认(见下).
+        }
+
+        using (started)
+        {
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                bool launched = false;
+                try
+                {
+                    var psi = new ProcessStartInfo
+                    {
+                        FileName = newExePath,
+                        UseShellExecute = true,                                  // ShellExecuteEx:完全脱离、父退出后仍存活
+                        WorkingDirectory = Path.GetDirectoryName(newExePath) ?? "",
+                    };
+                    psi.ArgumentList.Add(UpdatedFromArg);
+                    psi.ArgumentList.Add(oldExePath);                            // 自动正确转义含空格路径
+                    Process.Start(psi);
+                    launched = true;
+                }
+                catch
+                {
+                    // 新 exe 刚落地可能被杀软/同步盘短暂占用:本次启动失败,退避后重试.
+                    Thread.Sleep(800);
+                }
+
+                if (!launched) continue;
+
+                if (started != null)
+                {
+                    // 首次给足时间(单文件首启需解包),后续重试缩短.
+                    if (started.WaitOne(TimeSpan.FromSeconds(attempt == 0 ? 12 : 6)))
+                        return true;
+                }
+                else
+                {
+                    // 无命名事件可用:退化为轮询是否出现了「除自己外的 MinimalTodoApp* 进程」.
+                    if (WaitForNewInstance(TimeSpan.FromSeconds(attempt == 0 ? 12 : 6)))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>退化确认:在超时内轮询是否出现了「除当前进程外」的同程序前缀进程(命名事件不可用时的兜底判据).</summary>
+    private static bool WaitForNewInstance(TimeSpan timeout)
+    {
+        int selfId;
+        try { selfId = Environment.ProcessId; }
+        catch { return false; }
+
+        var deadline = DateTime.UtcNow + timeout;
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                foreach (var p in Process.GetProcessesByName("MinimalTodoApp"))
+                {
+                    using (p)
+                        if (p.Id != selfId) return true;
+                }
+            }
+            catch { /* 枚举受限:继续轮询 */ }
+            Thread.Sleep(400);
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 新版启动时(命令行带 <see cref="UpdatedFromArg"/>)尽早调用:Set「新版已启动」事件,
+    /// 通知仍在等待确认的旧版「我已经起来了」.旧版不在新机制上(旧版本)时事件不存在,静默忽略即可.
+    /// </summary>
+    public static void SignalUpdatedStarted()
+    {
+        try
+        {
+            if (EventWaitHandle.TryOpenExisting(StartedEventName, out var handle))
+                using (handle) handle.Set();
+        }
+        catch
+        {
+            // 旧版未建该事件 / 打开失败:忽略.旧版会经其自身的等待超时走兜底提示,不影响新版运行.
+        }
     }
 
     /// <summary>

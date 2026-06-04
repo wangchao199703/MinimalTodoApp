@@ -265,6 +265,11 @@
     <sys:String x:Key="S.Update.UpToDate">You are on the latest version.</sys:String>
     <sys:String x:Key="S.Update.CheckFailed">Update check failed, please try again later.</sys:String>
     <sys:String x:Key="S.Update.DownloadFailed">Download failed, please try again later.</sys:String>
+    <sys:String x:Key="S.Update.LaunchFailed.Title">Couldn't start the new version</sys:String>
+    <sys:String x:Key="S.Update.LaunchFailed.Message">The new version was downloaded but couldn't start automatically. Please run it manually from the location below:</sys:String>
+    <sys:String x:Key="S.Update.OpenFolder">Open folder</sys:String>
+    <sys:String x:Key="S.Update.RunNow">Run now</sys:String>
+    <sys:String x:Key="S.Update.Close">Close</sys:String>
 
     <!-- ============ Font names ============ -->
     <sys:String x:Key="S.Font.System">System default</sys:String>

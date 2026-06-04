@@ -47,6 +47,11 @@ public partial class App : Application
         var startupArgs = Environment.GetCommandLineArgs();
         bool fromUpdate = Array.Exists(startupArgs,
             a => string.Equals(a, UpdateService.UpdatedFromArg, StringComparison.OrdinalIgnoreCase));
+
+        // 1.15 若本次由自动更新拉起:第一时间通知仍在等待的旧版「新版已启动」,
+        //      让旧版确认成功后优雅退出(自存数据),而非被随后的单实例接管强杀.
+        if (fromUpdate) UpdateService.SignalUpdatedStarted();
+
         if (!EnsureSingleInstance(fromUpdate))
         {
             Shutdown();
