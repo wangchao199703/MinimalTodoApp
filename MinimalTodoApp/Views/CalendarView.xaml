@@ -79,8 +79,9 @@
             </StackPanel>
         </Grid>
 
-        <!-- 日历主体(代码动态填充) -->
-        <Border Margin="12,0,12,12" CornerRadius="8" Background="{DynamicResource ContentBg}"
+        <!-- 日历主体(代码动态填充)。用 CardBg(始终足够不透明)而非 ContentBg(透明系主题下为全透明)，
+             避免透明/毛玻璃主题在纯黑桌面下任务预览文字看不清 -->
+        <Border Margin="12,0,12,12" CornerRadius="8" Background="{DynamicResource CardBg}"
                 BorderBrush="{DynamicResource Divider}" BorderThickness="1">
             <Grid x:Name="CalendarHost" />
         </Border>

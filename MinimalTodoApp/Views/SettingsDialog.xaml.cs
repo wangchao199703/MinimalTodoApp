@@ -31,6 +31,10 @@ public partial class SettingsDialog : Window
         }
         _initializing = false;
 
+        // 关于：显示当前版本号(取程序集版本，三段式 v主.次.修)
+        var v = UpdateService.CurrentVersion;
+        VersionText.Text = $"v{v.Major}.{v.Minor}.{v.Build}";
+
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape) Close();
@@ -44,19 +48,35 @@ public partial class SettingsDialog : Window
     }
 
     /// <summary>左侧导航:切到“常规”分组.</summary>
-    private void GeneralNav_Checked(object sender, RoutedEventArgs e)
-    {
-        if (GeneralPanel == null || FontPanel == null) return;
-        GeneralPanel.Visibility = Visibility.Visible;
-        FontPanel.Visibility = Visibility.Collapsed;
-    }
+    private void GeneralNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(GeneralPanel);
 
     /// <summary>左侧导航:切到“字体”分组.</summary>
-    private void FontNav_Checked(object sender, RoutedEventArgs e)
+    private void FontNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(FontPanel);
+
+    /// <summary>左侧导航:切到“关于”分组.</summary>
+    private void AboutNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(AboutPanel);
+
+    /// <summary>仅显示指定面板，其余隐藏(控件可能尚未初始化完成,需判空).</summary>
+    private void ShowPanel(UIElement? target)
     {
-        if (GeneralPanel == null || FontPanel == null) return;
-        GeneralPanel.Visibility = Visibility.Collapsed;
-        FontPanel.Visibility = Visibility.Visible;
+        if (GeneralPanel == null || FontPanel == null || AboutPanel == null) return;
+        GeneralPanel.Visibility = ReferenceEquals(target, GeneralPanel) ? Visibility.Visible : Visibility.Collapsed;
+        FontPanel.Visibility = ReferenceEquals(target, FontPanel) ? Visibility.Visible : Visibility.Collapsed;
+        AboutPanel.Visibility = ReferenceEquals(target, AboutPanel) ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>打开 GitHub 项目主页(默认浏览器).</summary>
+    private void RepoLink_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://github.com/wangchao199703/MinimalTodoApp",
+                UseShellExecute = true
+            });
+        }
+        catch { StatusText.Text = Loc.T("S.Settings.OpFailed"); }
     }
 
     /// <summary>恢复默认设置:字体微软雅黑、字号 12、行距 1.3、勾选框 16(经 VM 实时应用并持久化).</summary>

@@ -1161,6 +1161,17 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     {
         bool taskMove = dropInfo.Data is TodoItem && dropInfo.TargetItem is TodoItem;
         bool groupMove = dropInfo.Data is TodoGroup && dropInfo.TargetItem is TodoGroup;
+
+        // 把任务拖到左侧某个分组上 -> 移动归属(目标须为可归属的普通分组)
+        if (dropInfo.Data is TodoItem && dropInfo.TargetItem is TodoGroup g
+            && !g.IsCompletedGroup && !g.IsAllUncompletedGroup)
+        {
+            IsDragging = true;
+            dropInfo.DropTargetAdorner = DropTargetAdorners.Highlight;   // 高亮目标分组
+            dropInfo.Effects = DragDropEffects.Move;
+            return;
+        }
+
         if (taskMove || groupMove)
         {
             // DragOver 在拖拽过程中持续触发,作为兜底标记拖拽态(防止刷新重建 Items 残留鬼影)
@@ -1172,6 +1183,13 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     public void Drop(IDropInfo dropInfo)
     {
+        // 任务拖到左侧分组 -> 移动归属(复用右键“移动到分组”的逻辑,已处理刷新/保存/取消完成)
+        if (dropInfo.Data is TodoItem dragged && dropInfo.TargetItem is TodoGroup targetGroup)
+        {
+            IsDragging = false;
+            MoveTaskToGroup(dragged, targetGroup);
+            return;
+        }
         if (dropInfo.Data is TodoItem item) { DropTask(item, dropInfo); return; }
         if (dropInfo.Data is TodoGroup group) { DropGroup(group, dropInfo); return; }
     }
@@ -1427,9 +1445,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         if (SelectedGroup != null)
         {
-            // “所有待办”是聚合视图:显示所有未完成任务(无论原归属分组)
+            // “所有待办”是聚合视图:显示“根未完成”的所有家族(含其下已完成子待办)，
+            // 与普通分组表现一致——根完成的家族整族已迁入“已完成”分组,自然不出现在此.
             if (SelectedGroup.IsAllUncompletedGroup)
-                query = query.Where(i => !i.IsCompleted);
+                query = query.Where(i => !RootOf(i).IsCompleted);
             else
                 query = query.Where(i => i.GroupId == SelectedGroup.Id);
         }
@@ -1592,6 +1611,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
                 if (isLiveChild)
                 {
                     RefreshGroupCounts();
+                    RefreshItems();   // 立即重算父待办“n/m”计数并刷新视图(否则 0/2 不会即时变 1/2)
                     SaveData();
                     OnPropertyChanged(nameof(ParentCandidates));
                     CheckParentCompletion(item);

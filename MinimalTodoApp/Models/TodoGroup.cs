@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text.Json.Serialization;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MinimalTodoApp.Infrastructure;
 
@@ -53,11 +54,21 @@ public partial class TodoGroup : ObservableObject
 
     /// <summary>是否为内置“已完成”分组:完成的任务会自动归入，且不可删除/不计入新建目标.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IndentMargin))]
     private bool isCompletedGroup;
 
     /// <summary>是否为内置“所有待办”分组:聚合所有未完成任务的视图分组，不可删除/不存任务/不可作为新任务的目标.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IndentMargin))]
     private bool isAllUncompletedGroup;
+
+    /// <summary>
+    /// 侧栏层级缩进:普通分组(工作/学习/生活 及自建分组)作为“所有待办”的子级右移一级；
+    /// 内置视图分组“所有待办/已完成”为顶层不缩进.不参与序列化.
+    /// </summary>
+    [JsonIgnore]
+    public Thickness IndentMargin =>
+        (IsAllUncompletedGroup || IsCompletedGroup) ? new Thickness(0) : new Thickness(16, 0, 0, 0);
 
     /// <summary>该分组下的任务数量.运行时计算，不参与序列化.</summary>
     [ObservableProperty]

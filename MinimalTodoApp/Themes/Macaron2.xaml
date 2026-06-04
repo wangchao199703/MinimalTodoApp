@@ -1,0 +1,24 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- 马卡龙·樱花（清甜樱花粉，浅色） -->
+    <SolidColorBrush x:Key="WindowBg"       Color="#FCEEF2" />
+    <SolidColorBrush x:Key="TitleBarBg"     Color="#F9E1E9" />
+    <SolidColorBrush x:Key="SidebarBg"      Color="#FAE6EC" />
+    <SolidColorBrush x:Key="ContentBg"      Color="#FEF4F7" />
+    <SolidColorBrush x:Key="CardBg"         Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardHoverBg"    Color="#FAE0E8" />
+    <SolidColorBrush x:Key="InputBg"        Color="#FAE6EC" />
+    <SolidColorBrush x:Key="PrimaryText"    Color="#4A2A33" />
+    <SolidColorBrush x:Key="SecondaryText"  Color="#7A5560" />
+    <SolidColorBrush x:Key="MutedText"      Color="#B58E99" />
+    <SolidColorBrush x:Key="Accent"         Color="#F06595" />
+    <SolidColorBrush x:Key="AccentText"     Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Divider"        Color="#F3D5DF" />
+    <SolidColorBrush x:Key="SelectedItemBg" Color="#FBDDE7" />
+    <SolidColorBrush x:Key="OverdueText"    Color="#E5484D" />
+    <SolidColorBrush x:Key="WarningText"    Color="#D9820B" />
+    <SolidColorBrush x:Key="SuccessText"    Color="#16A34A" />
+
+    <SolidColorBrush x:Key="PopupBg"        Color="#FFFFFF" />
+</ResourceDictionary>

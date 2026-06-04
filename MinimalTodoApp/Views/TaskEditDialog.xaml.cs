@@ -111,4 +111,11 @@ public partial class TaskEditDialog : Window
         DialogResult = false;
         Close();
     }
+
+    /// <summary>点击空白区域(非输入控件)拖动整窗.输入框会自行处理鼠标事件,不会触发拖动.</summary>
+    private void Root_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState != MouseButtonState.Pressed) return;
+        try { DragMove(); } catch { /* 非拖拽场景(如双击)调用 DragMove 会抛异常,忽略 */ }
+    }
 }

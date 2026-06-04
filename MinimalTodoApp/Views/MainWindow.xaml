@@ -182,8 +182,10 @@
                                      dd:DragDrop.UseDefaultDragAdorner="True">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
-                                              ToolTip="{Binding DisplayName}">
+                                        <Grid x:Name="GroupRow"
+                                              Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              ToolTip="{Binding DisplayName}"
+                                              Margin="{Binding IndentMargin}">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition x:Name="GroupDotCol" Width="20" />
                                                 <ColumnDefinition Width="*" />
@@ -235,6 +237,8 @@
                                                 <Setter TargetName="GroupIcon" Property="Grid.ColumnSpan" Value="3" />
                                                 <Setter TargetName="GroupIcon" Property="HorizontalAlignment" Value="Center" />
                                                 <Setter TargetName="GroupIcon" Property="Margin" Value="0" />
+                                                <!-- 折叠侧栏(窄条)时取消层级缩进，避免图标被挤偏/裁切 -->
+                                                <Setter TargetName="GroupRow" Property="Margin" Value="0" />
                                             </DataTrigger>
                                         </DataTemplate.Triggers>
                                     </DataTemplate>
@@ -558,16 +562,12 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- 右键菜单：编辑(优先级+DDL) / 清除DDL / 缩进 / 周期提醒 / 完成 / 删除 -->
+                                        <!-- 右键菜单：编辑(优先级+DDL) / 置顶 / 缩进 / 移动到分组 / 删除 -->
                                         <Grid.ContextMenu>
                                             <ContextMenu>
                                                 <MenuItem Header="{DynamicResource S.Task.Edit}" Click="EditTask_Click" />
                                                 <MenuItem Header="{DynamicResource S.Task.TogglePin}"
                                                           Command="{Binding PlacementTarget.Tag.TogglePinCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <Separator />
-                                                <MenuItem Header="{DynamicResource S.Task.ClearDue}"
-                                                          Command="{Binding PlacementTarget.Tag.ClearDueDateCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 <Separator />
                                                 <MenuItem Header="{DynamicResource S.Task.Indent}"
@@ -576,26 +576,17 @@
                                                 <MenuItem Header="{DynamicResource S.Task.Outdent}"
                                                           Command="{Binding PlacementTarget.Tag.OutdentTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="{DynamicResource S.Task.ToggleCollapse}"
-                                                          Command="{Binding PlacementTarget.Tag.ToggleCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                <MenuItem Header="{DynamicResource S.Task.ToggleReminder}"
-                                                          Command="{Binding PlacementTarget.Tag.ToggleReminderCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 <!-- 移动到分组：子项动态绑定到普通分组（排除“已完成”） -->
                                                 <MenuItem Header="{DynamicResource S.Task.MoveToGroup}"
                                                           ItemsSource="{Binding PlacementTarget.Tag.MoveTargetGroups, RelativeSource={RelativeSource AncestorType=ContextMenu}}">
                                                     <MenuItem.ItemContainerStyle>
-                                                        <Style TargetType="MenuItem">
+                                                        <Style TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
                                                             <Setter Property="Header" Value="{Binding Name}" />
                                                             <EventSetter Event="Click" Handler="MoveToGroup_Click" />
                                                         </Style>
                                                     </MenuItem.ItemContainerStyle>
                                                 </MenuItem>
                                                 <Separator />
-                                                <MenuItem Header="{DynamicResource S.Task.ToggleComplete}"
-                                                          Command="{Binding PlacementTarget.Tag.ToggleCompleteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 <MenuItem Header="{DynamicResource S.Task.Delete}"
                                                           Command="{Binding PlacementTarget.Tag.DeleteTaskCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                           CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
@@ -1081,7 +1072,7 @@
                                 </Button>
 
                                 <Button Grid.Column="2" Style="{StaticResource AccentButton}" Content="{DynamicResource S.Add}"
-                                        Margin="8,0,0,0" VerticalAlignment="Stretch"
+                                        Margin="8,0,0,0" VerticalAlignment="Stretch" Padding="10,0" MinWidth="56"
                                         Command="{Binding AddTaskCommand}" />
                             </Grid>
                         </Border>

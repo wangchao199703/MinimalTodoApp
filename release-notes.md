@@ -1,29 +1,31 @@
-## MinimalTodoApp v1.1.3
+## MinimalTodoApp v1.1.4
 
 ### English
 
-This re-release adds **automatic updates**.
+A round of UX consistency / readability fixes, plus 12 new color themes.
 
-- **Auto update check** — on launch and every hour, the app checks GitHub for a newer version. If one is found, it shows the new version and that release's notes (what's new).
-- **One-click update** — click **Update now** to download the new version; the app then exits the current version, moves the old exe to the Recycle Bin, and automatically launches the new one. Run-at-startup is repointed to the new version automatically.
-- **Ignore / Skip** — you can **Ignore** an update (you'll be reminded next time) or **Skip this version** (it won't be offered again automatically; a manual check still shows it).
-- **Manual check in Settings** — Settings → General has a **Check for updates** button to check on demand.
-- **Toggle off** — Settings → General has a **Check for updates automatically** switch; turn it off and the app stops auto-checking.
+- **Sub-task count refreshes instantly** — checking a sub-task now updates the parent's "n/m" immediately; the **All** list now shows completed sub-tasks just like a normal group.
+- **Drag a task onto a left-side group** to move it into that group.
+- **Cleaner right-click menu** — removed the stray white gutter on the left; trimmed the task menu (removed clear-due-date / collapse / toggle reminder / mark complete).
+- **Group hierarchy** — normal groups are now indented under **All**, with **All** / **Completed** as top level.
+- **Draggable edit dialog**, smaller **Add** button, rounded corners across all popups (tooltips / dropdowns included).
+- **Sharper on 1080p** — Per-Monitor V2 DPI awareness + pixel-snapped text rendering fix blurry text at non-integer scaling.
+- **About page** — Settings now has an **About** section showing the current version, update controls, and a GitHub link.
+- **12 new themes** — Morandi ×3, Macaron ×3, Dunhuang ×3, Mondrian ×3, all contrast-checked so text stays readable (including dark/black themes).
 
-All older releases (v1.0.0–v1.1.2) have been rebuilt with this feature, so any future download from any release page can auto-update. Data stays fully compatible. Version remains 1.1.3.
-
-Download `MinimalTodoApp-v1.1.3-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
+Download `MinimalTodoApp-v1.1.4-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
 
 ### 简体中文
 
-本次重新发布新增了**自动更新**功能。
+本次为一批界面一致性 / 可读性修复，并新增 12 套配色主题。
 
-- **自动检查更新** —— 应用启动时以及每隔一小时，会去 GitHub 检查是否有新版本；若有，会显示新版本号与该版本的更新说明（更新了什么）。
-- **一键更新** —— 点击「立即更新」即可下载新版本；随后应用退出当前版本、把旧的 exe 移入回收站，并自动启动新版本；开机自启动也会自动指向新版本。
-- **忽略 / 此版本不再提示** —— 可以「忽略」本次更新（下次仍会提示），或选择「此版本不再提示」（自动检查不再提示该版本，手动检查仍会提示）。
-- **设置里手动检查** —— 设置 →「常规」新增「检查更新」按钮，可随时手动检查。
-- **可关闭自动更新** —— 设置 →「常规」的「自动检查更新」开关，关闭后不再自动检查。
+- **子待办计数即时刷新** —— 勾选子待办后，父任务的"n/m"立即更新；"所有待办"现在也会像普通分组一样显示已完成的子待办。
+- **拖动任务到左侧分组** 即可把任务移动到对应分组。
+- **右键菜单更干净** —— 移除左侧多余的白色矩形；精简任务菜单（移除 清除截止日期 / 折叠展开 / 切换周期提醒 / 标记完成）。
+- **分组层级** —— 普通分组缩进显示为"所有待办"的子级，"所有待办 / 已完成"为顶层。
+- **编辑弹窗可拖动**、**添加按钮变小**、所有弹窗（含工具提示 / 下拉）统一圆角。
+- **1080p 更清晰** —— Per-Monitor V2 DPI 感知 + 像素对齐文本渲染，修复非整数缩放下文字发虚。
+- **关于页** —— 设置新增"关于"分组，显示当前版本号、更新选项与 GitHub 链接。
+- **12 套新主题** —— 莫兰迪×3、马卡龙×3、敦煌×3、蒙德里安×3，均经对比度校验，深色/纯黑主题下文字依旧清晰可读。
 
-所有旧版本（v1.0.0–v1.1.2）的发布资产也已用含该功能的构建重新发布，今后从任意 Release 页面下载的程序都能自动更新。数据完全兼容，版本号维持 1.1.3。
-
-下载 `MinimalTodoApp-v1.1.3-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。
+下载 `MinimalTodoApp-v1.1.4-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。

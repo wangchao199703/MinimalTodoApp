@@ -66,6 +66,9 @@
                     <RadioButton x:Name="FontNav" Style="{StaticResource SettingsNavItem}" Tag="A"
                                  Content="{DynamicResource S.Settings.Nav.Font}"
                                  Checked="FontNav_Checked" />
+                    <RadioButton x:Name="AboutNav" Style="{StaticResource SettingsNavItem}" Tag="ⓘ"
+                                 Content="{DynamicResource S.Settings.Nav.About}"
+                                 Checked="AboutNav_Checked" />
                 </StackPanel>
             </Border>
 
@@ -144,42 +147,6 @@
                             </StackPanel>
                             <CheckBox x:Name="ReminderSoundCheck" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
                                       Checked="ReminderSound_Changed" Unchecked="ReminderSound_Changed" />
-                        </Grid>
-
-                        <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
-
-                        <!-- 自动检查更新 -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="{DynamicResource S.Settings.AutoUpdate}" FontSize="14"
-                                           Foreground="{DynamicResource PrimaryText}" />
-                                <TextBlock Text="{DynamicResource S.Settings.AutoUpdateDesc}" FontSize="11"
-                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
-                            </StackPanel>
-                            <CheckBox x:Name="AutoUpdateCheck" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
-                                      Checked="AutoUpdate_Changed" Unchecked="AutoUpdate_Changed" />
-                        </Grid>
-
-                        <!-- 手动检查更新 -->
-                        <Grid Margin="0,14,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="{DynamicResource S.Settings.CheckUpdate}" FontSize="14"
-                                           Foreground="{DynamicResource PrimaryText}" />
-                                <TextBlock Text="{DynamicResource S.Settings.CheckUpdateDesc}" FontSize="11"
-                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
-                            </StackPanel>
-                            <Button x:Name="CheckUpdateButton" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
-                                    Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
-                                    Padding="12,6" Content="{DynamicResource S.Settings.CheckUpdate}"
-                                    Click="CheckUpdate_Click" />
                         </Grid>
 
                         <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
@@ -289,6 +256,85 @@
                             <TextBlock Grid.Column="2" Text="{Binding CheckboxSize, StringFormat={}{0:0}}" FontSize="12"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
                                        Foreground="{DynamicResource MutedText}" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 关于组：版本号 + 检查更新 + GitHub 链接 -->
+                <ScrollViewer x:Name="AboutPanel" Grid.Row="0" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource S.Settings.Nav.About}" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,14" />
+
+                        <!-- 应用名 + 当前版本 -->
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="{DynamicResource S.AppName}" FontSize="15" FontWeight="Bold"
+                                       Foreground="{DynamicResource PrimaryText}" VerticalAlignment="Center" />
+                            <Border Background="{DynamicResource InputBg}" CornerRadius="6" Padding="8,2" Margin="10,0,0,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock x:Name="VersionText" FontSize="12"
+                                           Foreground="{DynamicResource SecondaryText}" />
+                            </Border>
+                        </StackPanel>
+
+                        <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
+
+                        <!-- 自动检查更新 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.AutoUpdate}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.AutoUpdateDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <CheckBox x:Name="AutoUpdateCheck" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                      Checked="AutoUpdate_Changed" Unchecked="AutoUpdate_Changed" />
+                        </Grid>
+
+                        <!-- 手动检查更新 -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.CheckUpdate}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.CheckUpdateDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <Button x:Name="CheckUpdateButton" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                    Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                    Padding="12,6" Content="{DynamicResource S.Settings.CheckUpdate}"
+                                    Click="CheckUpdate_Click" />
+                        </Grid>
+
+                        <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
+
+                        <!-- GitHub 项目链接 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.About.Repo}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap">
+                                    <Hyperlink x:Name="RepoLink" Click="RepoLink_Click"
+                                               Foreground="{DynamicResource Accent}">
+                                        <Run Text="https://github.com/wangchao199703/MinimalTodoApp" />
+                                    </Hyperlink>
+                                </TextBlock>
+                            </StackPanel>
+                            <Button Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                    Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                    Padding="12,6" Content="{DynamicResource S.About.OpenRepo}"
+                                    Click="RepoLink_Click" />
                         </Grid>
                     </StackPanel>
                 </ScrollViewer>

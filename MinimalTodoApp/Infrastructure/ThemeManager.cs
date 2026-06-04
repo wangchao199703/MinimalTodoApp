@@ -48,6 +48,22 @@ public static class ThemeManager
         new ThemeInfo("Clay",     "S.Theme.Clay",     "#F3EEEA", "#3B332E"),
         new ThemeInfo("Fog",      "S.Theme.Fog",      "#F1F3F4", "#313539"),
         new ThemeInfo("Slate",    "S.Theme.Slate",    "#282D33", "#DDE3EA"),
+        // 莫兰迪配色（低饱和灰调）
+        new ThemeInfo("Morandi1", "S.Theme.Morandi1", "#E9ECEF", "#2E353B"),
+        new ThemeInfo("Morandi2", "S.Theme.Morandi2", "#EAEDE7", "#313630"),
+        new ThemeInfo("Morandi3", "S.Theme.Morandi3", "#EEE9EA", "#382F32"),
+        // 马卡龙配色（清甜粉彩）
+        new ThemeInfo("Macaron1", "S.Theme.Macaron1", "#E8F6F1", "#1E3B34"),
+        new ThemeInfo("Macaron2", "S.Theme.Macaron2", "#FCEEF2", "#4A2A33"),
+        new ThemeInfo("Macaron3", "S.Theme.Macaron3", "#FBF6E3", "#423D24"),
+        // 敦煌配色（壁画土色 + 石青/土红/描金）
+        new ThemeInfo("Dunhuang1", "S.Theme.Dunhuang1", "#F3EBDA", "#3A2E20"),
+        new ThemeInfo("Dunhuang2", "S.Theme.Dunhuang2", "#F4E9DD", "#3D2A22"),
+        new ThemeInfo("Dunhuang3", "S.Theme.Dunhuang3", "#211A14", "#EDE2CE"),
+        // 蒙德里安配色（三原色撞色）
+        new ThemeInfo("Mondrian1", "S.Theme.Mondrian1", "#FAFAF7", "#1A1A1A"),
+        new ThemeInfo("Mondrian2", "S.Theme.Mondrian2", "#F8FAFC", "#15202B"),
+        new ThemeInfo("Mondrian3", "S.Theme.Mondrian3", "#161616", "#F2F2F2"),
         new ThemeInfo("Transparent", "S.Theme.Transparent", "#80FFFFFF", "#1F2329"),
         new ThemeInfo("Glass", "S.Theme.Glass", "#80222831", "#F5F7FA"),
     };

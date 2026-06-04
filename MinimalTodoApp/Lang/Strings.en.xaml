@@ -50,6 +50,18 @@
     <sys:String x:Key="S.Theme.Clay">Clay</sys:String>
     <sys:String x:Key="S.Theme.Fog">Fog</sys:String>
     <sys:String x:Key="S.Theme.Slate">Slate</sys:String>
+    <sys:String x:Key="S.Theme.Morandi1">Morandi Slate</sys:String>
+    <sys:String x:Key="S.Theme.Morandi2">Morandi Sage</sys:String>
+    <sys:String x:Key="S.Theme.Morandi3">Morandi Mauve</sys:String>
+    <sys:String x:Key="S.Theme.Macaron1">Macaron Mint</sys:String>
+    <sys:String x:Key="S.Theme.Macaron2">Macaron Sakura</sys:String>
+    <sys:String x:Key="S.Theme.Macaron3">Macaron Lemon</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang1">Dunhuang Azure</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang2">Dunhuang Terracotta</sys:String>
+    <sys:String x:Key="S.Theme.Dunhuang3">Dunhuang Ink-Gold</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian1">Mondrian Classic</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian2">Mondrian Blue</sys:String>
+    <sys:String x:Key="S.Theme.Mondrian3">Mondrian Night</sys:String>
     <sys:String x:Key="S.Theme.Transparent">Transparent</sys:String>
     <sys:String x:Key="S.Theme.Glass">Glass</sys:String>
     <!-- Single-instance prompt -->
@@ -208,6 +220,9 @@
     <sys:String x:Key="S.Settings.Title">Settings</sys:String>
     <sys:String x:Key="S.Settings.Nav.General">General</sys:String>
     <sys:String x:Key="S.Settings.Nav.Font">Font</sys:String>
+    <sys:String x:Key="S.Settings.Nav.About">About</sys:String>
+    <sys:String x:Key="S.About.Repo">GitHub Project</sys:String>
+    <sys:String x:Key="S.About.OpenRepo">Open</sys:String>
     <sys:String x:Key="S.Settings.RestoreDefaults">Restore defaults</sys:String>
     <sys:String x:Key="S.Settings.RestoreDefaultsDesc">Microsoft YaHei, size 12, spacing 1.3, checkbox 16</sys:String>
     <sys:String x:Key="S.Settings.RestoreDone">Default appearance restored.</sys:String>
