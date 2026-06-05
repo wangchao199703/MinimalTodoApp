@@ -142,6 +142,24 @@ public partial class SettingsDialog : Window
         }
     }
 
+    /// <summary>
+    /// 手动下载更新:在默认浏览器打开 GitHub 最新发布页面(releases/latest)，
+    /// 并提示用户手动下载最新的 exe 安装.适合自动更新被网络/限流/权限阻断时的兜底手段.
+    /// </summary>
+    private void ManualDownload_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://github.com/wangchao199703/MinimalTodoApp/releases/latest",
+                UseShellExecute = true
+            });
+            StatusText.Text = Loc.T("S.Settings.ManualDownloadHint");
+        }
+        catch { StatusText.Text = Loc.T("S.Settings.OpFailed"); }
+    }
+
     private void AutoStart_Changed(object sender, RoutedEventArgs e)
     {
         if (_initializing) return;

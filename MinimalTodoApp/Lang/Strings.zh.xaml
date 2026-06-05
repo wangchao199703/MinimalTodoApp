@@ -252,6 +252,10 @@
     <sys:String x:Key="S.Settings.AutoUpdateDesc">启动时及每小时自动检查 GitHub 上是否有新版本（关闭后不再自动检查）</sys:String>
     <sys:String x:Key="S.Settings.CheckUpdate">检查更新</sys:String>
     <sys:String x:Key="S.Settings.CheckUpdateDesc">立即手动检查是否有新版本可用</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownload">手动下载更新</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadDesc">在浏览器中打开最新发布页面，手动下载最新的 exe 安装</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadBtn">前往下载</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadHint">已在浏览器打开最新发布页面，请下载最新的 exe 并运行安装.</sys:String>
 
     <!-- ============ 自动更新对话框 ============ -->
     <sys:String x:Key="S.Update.Title">发现新版本</sys:String>

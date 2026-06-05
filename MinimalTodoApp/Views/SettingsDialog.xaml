@@ -313,6 +313,24 @@
                                     Click="CheckUpdate_Click" />
                         </Grid>
 
+                        <!-- 手动下载更新:打开浏览器到最新发布页面，提示用户手动下载 exe 安装 -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.ManualDownload}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.ManualDownloadDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                    Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                    Padding="12,6" Content="{DynamicResource S.Settings.ManualDownloadBtn}"
+                                    Click="ManualDownload_Click" />
+                        </Grid>
+
                         <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
 
                         <!-- GitHub 项目链接 -->

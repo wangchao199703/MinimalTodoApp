@@ -252,6 +252,10 @@
     <sys:String x:Key="S.Settings.AutoUpdateDesc">Check GitHub for a new version at startup and hourly (turn off to stop auto-checking)</sys:String>
     <sys:String x:Key="S.Settings.CheckUpdate">Check for updates</sys:String>
     <sys:String x:Key="S.Settings.CheckUpdateDesc">Check now whether a newer version is available</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownload">Download update manually</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadDesc">Open the latest release page in your browser to manually download and install the latest exe</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadBtn">Open download</sys:String>
+    <sys:String x:Key="S.Settings.ManualDownloadHint">The latest release page is now open in your browser. Please download and run the latest exe.</sys:String>
 
     <!-- ============ Auto-update dialog ============ -->
     <sys:String x:Key="S.Update.Title">Update available</sys:String>
