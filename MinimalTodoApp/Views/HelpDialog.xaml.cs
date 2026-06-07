@@ -24,7 +24,7 @@ public partial class HelpDialog : Window
         }),
         ("S.Help.Schedule.Title", new[]
         {
-            "S.Help.Schedule.L1", "S.Help.Schedule.L2", "S.Help.Schedule.L3",
+            "S.Help.Schedule.L1", "S.Help.Schedule.L2", "S.Help.Schedule.L3", "S.Help.Schedule.L4",
         }),
         ("S.Help.Voice.Title", new[]
         {
@@ -49,10 +49,15 @@ public partial class HelpDialog : Window
         ("S.Help.Theme.Title", new[]
         {
             "S.Help.Theme.L1", "S.Help.Theme.L2", "S.Help.Theme.L3", "S.Help.Theme.L4",
+            "S.Help.Theme.L5", "S.Help.Theme.L6", "S.Help.Theme.L7",
         }),
         ("S.Help.Window.Title", new[]
         {
-            "S.Help.Window.L1", "S.Help.Window.L2", "S.Help.Window.L3",
+            "S.Help.Window.L1", "S.Help.Window.L2", "S.Help.Window.L3", "S.Help.Window.L4",
+        }),
+        ("S.Help.Update.Title", new[]
+        {
+            "S.Help.Update.L1", "S.Help.Update.L2", "S.Help.Update.L3",
         }),
         ("S.Help.Contact.Title", new[]
         {

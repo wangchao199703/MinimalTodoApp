@@ -154,6 +154,11 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                <!-- 收藏分组为空时的提示(右键任意主题即可收藏) -->
+                                <TextBlock Text="{DynamicResource S.ThemeFav.Empty}"
+                                           Visibility="{Binding EmptyHintVisibility}"
+                                           Margin="3,4,3,2" FontSize="11" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource MutedText}" />
                             </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>

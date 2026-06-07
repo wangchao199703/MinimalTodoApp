@@ -396,7 +396,8 @@
     <sys:String x:Key="S.Help.Schedule.Title">日程 / 日历</sys:String>
     <sys:String x:Key="S.Help.Schedule.L1">点内容区右上角的日历按钮，可在右侧展开 / 收起内嵌的日程面板.</sys:String>
     <sys:String x:Key="S.Help.Schedule.L2">可切换天 / 周 / 月视图；天与周视图左侧带 0–24 小时刻度轴，按截止时间纵向定位任务，且一屏即可看完 24 小时.</sys:String>
-    <sys:String x:Key="S.Help.Schedule.L3">点日历中的任务块可查看并编辑；拖动分隔条可调整面板宽度.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L3">点日历中的任务块可查看并编辑；拖动中间分隔条可调整待办与日历的宽度.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L4">打开日历后，拖动窗口外边缘只会缩放日历，待办列表宽度保持不变；待办宽度只通过中间分隔条调整.</sys:String>
 
     <sys:String x:Key="S.Help.Voice.Title">语音输入</sys:String>
     <sys:String x:Key="S.Help.Voice.L1">新任务输入框右侧的麦克风按钮会触发 Windows 自带语音听写(等价于 Win+H).</sys:String>
@@ -428,11 +429,20 @@
     <sys:String x:Key="S.Help.Theme.L2">右上角菜单 →「设置」可开启 / 关闭开机自启动、完成特效、完成音效、周期提醒声音.</sys:String>
     <sys:String x:Key="S.Help.Theme.L3">点标题右侧的排序按钮即可选择排序方式.</sys:String>
     <sys:String x:Key="S.Help.Theme.L4">「设置」里可调整任务与正文文字的字体、字号与行距，改动即时生效并自动保存.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L5">主题选择是一个独立、可拖动、可调整大小的窗口，停靠在主程序旁；约 90 套配色按风格分组(经典/莫兰迪/马卡龙/敦煌/蒙德里安/孟菲斯/洛可可/马蒂斯/透明)，顶部分组栏可一键跳转.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L6">右键任意主题可「加入 / 取消收藏」；收藏分组置于最前，可拖动排序；收藏为空时会提示右键收藏.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L7">新建 / 编辑自定义主题用内置 HSV 取色器选色，编辑时整个界面(含日历)实时预览，不保存退出会自动还原为原主题；自定义主题右键可编辑 / 删除.</sys:String>
 
     <sys:String x:Key="S.Help.Window.Title">窗口</sys:String>
     <sys:String x:Key="S.Help.Window.L1">右上角红 / 黄 / 绿:关闭到托盘 / 最小化 / 最大化还原.</sys:String>
     <sys:String x:Key="S.Help.Window.L2">关闭仅隐藏到系统托盘，程序后台常驻；双击托盘图标恢复，右键托盘可退出.</sys:String>
     <sys:String x:Key="S.Help.Window.L3">标题栏菜单按钮左侧的图钉按钮可让窗口始终置于最前(应用置顶).</sys:String>
+    <sys:String x:Key="S.Help.Window.L4">右键托盘「显示主界面」时，若窗口正贴边隐藏，会自动取消贴边并居中显示.</sys:String>
+
+    <sys:String x:Key="S.Help.Update.Title">自动更新 / 关于</sys:String>
+    <sys:String x:Key="S.Help.Update.L1">启动时及之后每隔一段时间会自动检查新版本，有更新时弹窗提示，可一键下载并自动重启到新版(自包含单文件，无需安装运行时).</sys:String>
+    <sys:String x:Key="S.Help.Update.L2">更新提示中可选「此版本不再提示」跳过该版本；也可在「设置」里关闭自动检查更新.</sys:String>
+    <sys:String x:Key="S.Help.Update.L3">右上角菜单 →「关于」可查看当前版本号，并手动检查 / 下载最新版.</sys:String>
 
     <sys:String x:Key="S.Help.Contact.Title">联系开发者</sys:String>
     <sys:String x:Key="S.Help.Contact.L1">本项目的 GitHub 地址是 https://github.com/wangchao199703/MinimalTodoApp</sys:String>
@@ -443,6 +453,7 @@
     <sys:String x:Key="S.ThemeEditor.PickColor">点击选择颜色</sys:String>
     <sys:String x:Key="S.ThemeCtx.Favorite">加入收藏</sys:String>
     <sys:String x:Key="S.ThemeCtx.Unfavorite">取消收藏</sys:String>
+    <sys:String x:Key="S.ThemeFav.Empty">当前收藏为空，右键任意主题即可加入收藏。</sys:String>
     <sys:String x:Key="S.ThemeCtx.Edit">编辑主题</sys:String>
     <sys:String x:Key="S.ThemeCtx.Delete">删除主题</sys:String>
     <sys:String x:Key="S.ThemeEditor.Name">主题名称</sys:String>

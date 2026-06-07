@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
 using MinimalTodoApp.Infrastructure;
 
 namespace MinimalTodoApp.ViewModels;
@@ -31,6 +32,10 @@ public class ThemeGroupVm
 
     /// <summary>是否为"收藏"分组:仅该分组启用拖拽重排。</summary>
     public bool IsFavorites { get; }
+
+    /// <summary>空收藏提示文字的可见性:仅"收藏"分组且无任何收藏时显示"右键收藏"提示。</summary>
+    public Visibility EmptyHintVisibility =>
+        IsFavorites && Items.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
     public ThemeGroupVm(string header, IEnumerable<ThemeSwatchVm> items, bool isFavorites = false)
     {

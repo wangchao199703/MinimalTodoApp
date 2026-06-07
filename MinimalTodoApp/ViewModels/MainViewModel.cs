@@ -552,16 +552,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         foreach (var k in _data.ThemeUsageOrder) { if (commonKeys.Count >= 10) break; AddCommon(k); }
         foreach (var k in DefaultCommon) { if (commonKeys.Count >= 10) break; AddCommon(k); }
 
-        // —— 收藏:置于最前(在"常用"之前)。为空时默认把当前主题加入收藏，保证该分组始终有内容 ——
-        if (_data.FavoriteThemeKeys.Count == 0 && byKey.ContainsKey(CurrentTheme))
-            _data.FavoriteThemeKeys.Add(CurrentTheme);
-
+        // —— 收藏:置于最前(在"常用"之前)。始终显示;为空时由 UI 展示"右键收藏"提示文字。 ——
         var favItems = _data.FavoriteThemeKeys
             .Where(k => byKey.ContainsKey(k))
             .Select(k => new ThemeSwatchVm(byKey[k], IsCurrentTheme(k)))
             .ToList();
-        if (favItems.Count > 0)
-            ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.FavoritesGroup), favItems, isFavorites: true));
+        ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.FavoritesGroup), favItems, isFavorites: true));
 
         // —— 常用:当前主题置顶 + 最近使用(去重) ——
         if (commonKeys.Count > 0)

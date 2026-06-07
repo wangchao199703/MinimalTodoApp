@@ -396,7 +396,8 @@
     <sys:String x:Key="S.Help.Schedule.Title">Schedule / calendar</sys:String>
     <sys:String x:Key="S.Help.Schedule.L1">Click the calendar button at the top-right of the content header to open or close the embedded schedule panel on the right.</sys:String>
     <sys:String x:Key="S.Help.Schedule.L2">Switch Day / Week / Month. Day and Week show a 0–24 hour axis on the left and place tasks by their due time — all 24 hours fit in one screen.</sys:String>
-    <sys:String x:Key="S.Help.Schedule.L3">Click a task block in the calendar to view and edit it; drag the divider to resize the panel.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L3">Click a task block in the calendar to view and edit it; drag the middle divider to resize the to-do list and the calendar.</sys:String>
+    <sys:String x:Key="S.Help.Schedule.L4">With the calendar open, dragging the window edge resizes only the calendar — the to-do list keeps its width, and is resized only via the middle divider.</sys:String>
 
     <sys:String x:Key="S.Help.Voice.Title">Voice input</sys:String>
     <sys:String x:Key="S.Help.Voice.L1">The microphone button next to the new-task box triggers Windows dictation (same as Win+H).</sys:String>
@@ -428,11 +429,20 @@
     <sys:String x:Key="S.Help.Theme.L2">The top-right menu → "Settings" toggles run-at-startup, completion effect, completion sound and reminder sound.</sys:String>
     <sys:String x:Key="S.Help.Theme.L3">Click the sort button to the right of the title to choose a sort order.</sys:String>
     <sys:String x:Key="S.Help.Theme.L4">"Settings" lets you adjust the font, size and line spacing of task &amp; body text; changes apply instantly and are saved automatically.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L5">The theme picker is a separate, draggable, resizable window beside the app; ~90 palettes are grouped by style (Classic / Morandi / Macaron / Dunhuang / Mondrian / Memphis / Rococo / Matisse / Transparent), with a group bar to jump to any group.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L6">Right-click any theme to add or remove it from Favorites; the Favorites group sits first and can be drag-reordered; when empty it shows a right-click hint.</sys:String>
+    <sys:String x:Key="S.Help.Theme.L7">Create / edit custom themes with the built-in HSV color picker; the whole UI (including the calendar) previews live while editing, and reverts to your previous theme if you close without saving. Right-click a custom theme to edit or delete it.</sys:String>
 
     <sys:String x:Key="S.Help.Window.Title">Window</sys:String>
     <sys:String x:Key="S.Help.Window.L1">Top-right red / yellow / green: close to tray / minimize / maximize-restore.</sys:String>
     <sys:String x:Key="S.Help.Window.L2">Closing only hides to the system tray; double-click the tray icon to restore, right-click to quit.</sys:String>
     <sys:String x:Key="S.Help.Window.L3">The pin button to the left of the menu button keeps the window always on top.</sys:String>
+    <sys:String x:Key="S.Help.Window.L4">When you choose "Show" from the tray while the window is hidden against a screen edge, it un-docks and re-centers automatically.</sys:String>
+
+    <sys:String x:Key="S.Help.Update.Title">Auto-update / About</sys:String>
+    <sys:String x:Key="S.Help.Update.L1">On startup and periodically afterward, the app checks GitHub for a newer version and prompts you; one click downloads it and restarts into the new version (self-contained single file, no runtime install needed).</sys:String>
+    <sys:String x:Key="S.Help.Update.L2">You can choose "Skip this version" in the prompt, or turn off automatic update checks in Settings.</sys:String>
+    <sys:String x:Key="S.Help.Update.L3">Top-right menu → "About" shows the current version and lets you manually check / download the latest build.</sys:String>
 
     <sys:String x:Key="S.Help.Contact.Title">Contact the developer</sys:String>
     <sys:String x:Key="S.Help.Contact.L1">This project on GitHub: https://github.com/wangchao199703/MinimalTodoApp</sys:String>
@@ -443,6 +453,7 @@
     <sys:String x:Key="S.ThemeEditor.PickColor">Click to pick a color</sys:String>
     <sys:String x:Key="S.ThemeCtx.Favorite">Add to favorites</sys:String>
     <sys:String x:Key="S.ThemeCtx.Unfavorite">Remove from favorites</sys:String>
+    <sys:String x:Key="S.ThemeFav.Empty">No favorites yet — right-click any theme to add it here.</sys:String>
     <sys:String x:Key="S.ThemeCtx.Edit">Edit theme</sys:String>
     <sys:String x:Key="S.ThemeCtx.Delete">Delete theme</sys:String>
     <sys:String x:Key="S.ThemeEditor.Name">Theme name</sys:String>

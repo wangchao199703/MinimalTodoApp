@@ -38,3 +38,6 @@ Thumbs.db
 
 # Claude Code local state
 .claude/
+
+# 发布脚本临时复制到根目录的带版本名资产(上传后通常自动删除)
+MinimalTodoApp-v*-win-x64.exe
