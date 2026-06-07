@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -7,12 +7,13 @@ using MinimalTodoApp.Models;
 
 namespace MinimalTodoApp.Infrastructure;
 
-/// <summary>一套可选主题的描述.Preview/PreviewText 为色板预览用的颜色字符串.IsCustom 标识用户自定义.</summary>
-public record ThemeInfo(string Key, string Display, string Preview, string PreviewText, bool IsCustom = false);
+/// <summary>一套可选主题的描述.Preview/PreviewText 为色板预览用的颜色字符串.IsCustom 标识用户自定义.Group 为风格分组键.</summary>
+public record ThemeInfo(string Key, string Display, string Preview, string PreviewText, bool IsCustom = false, string Group = "");
 
 /// <summary>
 /// 通过替换 App.Resources.MergedDictionaries 中的主题字典实现动态主题切换.
-/// 内置主题来自 Themes/*.xaml；自定义主题在运行时由颜色字典直接构建 ResourceDictionary.
+/// 内置主题有两种来源:Themes/*.xaml(经典/透明等) 与 <see cref="BuiltinThemes"/> 代码调色板(各风格分组);
+/// 自定义主题与代码调色板都在运行时由颜色字典直接构建 ResourceDictionary.
 /// 主题字典统一放在 index 0，Controls.xaml 中所有颜色均使用 DynamicResource 引用.
 /// </summary>
 public static class ThemeManager
@@ -22,6 +23,11 @@ public static class ThemeManager
     public const string Glass = "Glass";
     public const string Transparent = "Transparent";
 
+    /// <summary>动态"常用"分组键(非某主题固有，由 VM 按最近使用拼装).</summary>
+    public const string CommonGroup = "Common";
+    /// <summary>自定义主题归入的分组键.</summary>
+    public const string CustomGroup = "Custom";
+
     /// <summary>主题需包含的全部颜色键(自定义主题须覆盖这些键).</summary>
     public static readonly string[] ColorKeys =
     {
@@ -30,43 +36,62 @@ public static class ThemeManager
         "Divider", "SelectedItemBg", "OverdueText", "WarningText", "SuccessText"
     };
 
-    /// <summary>内置主题(文件名 Key 必须与 Themes 目录下 xaml 同名).
-    /// 第二字段存的是翻译键(S.Theme.*)，在 <see cref="AllThemes"/> 中按当前语言解析为 Display.</summary>
+    /// <summary>颜色键 + 弹窗背景(PopupBg 不在 ColorKeys 内，但同样需随主题构建).</summary>
+    private static readonly string[] AllColorKeys = ColorKeys.Append("PopupBg").ToArray();
+
+    /// <summary>分组展示顺序(常用为动态分组，由 VM 置于最前)。</summary>
+    public static readonly string[] GroupOrder =
+    {
+        BuiltinThemes.Classic, BuiltinThemes.Morandi, BuiltinThemes.Macaron,
+        BuiltinThemes.Dunhuang, BuiltinThemes.Mondrian, BuiltinThemes.Memphis,
+        BuiltinThemes.Rococo, BuiltinThemes.Matisse, BuiltinThemes.Transparent, CustomGroup
+    };
+
+    /// <summary>分组本地化显示名(S.ThemeGroup.*)。</summary>
+    public static string GroupDisplay(string group) => Loc.T("S.ThemeGroup." + group);
+
+    /// <summary>内置 xaml 主题(文件名 Key 必须与 Themes 目录下 xaml 同名).
+    /// 第二字段存翻译键(S.Theme.*)，在 <see cref="AllThemes"/> 中按当前语言解析为 Display.</summary>
     private static readonly List<ThemeInfo> Builtin = new()
     {
-        new ThemeInfo("Light", "S.Theme.Light", "#FFFFFF", "#1F2329"),
-        new ThemeInfo("Dark",  "S.Theme.Dark",  "#26282C", "#E6E8EB"),
-        new ThemeInfo("Nord",  "S.Theme.Nord",  "#3B4252", "#ECEFF4"),
-        new ThemeInfo("Ocean", "S.Theme.Ocean", "#173540", "#E0F2F1"),
-        new ThemeInfo("Forest","S.Theme.Forest","#EAEFE0", "#26331F"),
-        new ThemeInfo("Rose",  "S.Theme.Rose",  "#FDEBF0", "#3D1F2A"),
-        // 低饱和主题
-        new ThemeInfo("Oat",      "S.Theme.Oat",      "#F5F2EC", "#3A352D"),
-        new ThemeInfo("Haze",     "S.Theme.Haze",     "#F0F2F5", "#2F3640"),
-        new ThemeInfo("Sage",     "S.Theme.Sage",     "#EEF1EC", "#313A30"),
-        new ThemeInfo("Graphite", "S.Theme.Graphite", "#2A2C2E", "#E4E6E8"),
-        new ThemeInfo("Clay",     "S.Theme.Clay",     "#F3EEEA", "#3B332E"),
-        new ThemeInfo("Fog",      "S.Theme.Fog",      "#F1F3F4", "#313539"),
-        new ThemeInfo("Slate",    "S.Theme.Slate",    "#282D33", "#DDE3EA"),
-        // 莫兰迪配色（低饱和灰调）
-        new ThemeInfo("Morandi1", "S.Theme.Morandi1", "#E9ECEF", "#2E353B"),
-        new ThemeInfo("Morandi2", "S.Theme.Morandi2", "#EAEDE7", "#313630"),
-        new ThemeInfo("Morandi3", "S.Theme.Morandi3", "#EEE9EA", "#382F32"),
-        // 马卡龙配色（清甜粉彩）
-        new ThemeInfo("Macaron1", "S.Theme.Macaron1", "#E8F6F1", "#1E3B34"),
-        new ThemeInfo("Macaron2", "S.Theme.Macaron2", "#FCEEF2", "#4A2A33"),
-        new ThemeInfo("Macaron3", "S.Theme.Macaron3", "#FBF6E3", "#423D24"),
-        // 敦煌配色（壁画土色 + 石青/土红/描金）
-        new ThemeInfo("Dunhuang1", "S.Theme.Dunhuang1", "#F3EBDA", "#3A2E20"),
-        new ThemeInfo("Dunhuang2", "S.Theme.Dunhuang2", "#F4E9DD", "#3D2A22"),
-        new ThemeInfo("Dunhuang3", "S.Theme.Dunhuang3", "#211A14", "#EDE2CE"),
-        // 蒙德里安配色（三原色撞色）
-        new ThemeInfo("Mondrian1", "S.Theme.Mondrian1", "#FAFAF7", "#1A1A1A"),
-        new ThemeInfo("Mondrian2", "S.Theme.Mondrian2", "#F8FAFC", "#15202B"),
-        new ThemeInfo("Mondrian3", "S.Theme.Mondrian3", "#161616", "#F2F2F2"),
-        new ThemeInfo("Transparent", "S.Theme.Transparent", "#80FFFFFF", "#1F2329"),
-        new ThemeInfo("Glass", "S.Theme.Glass", "#80222831", "#F5F7FA"),
+        // 经典:明亮 → 板岩
+        new ThemeInfo("Light", "S.Theme.Light", "#FFFFFF", "#1F2329", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Dark",  "S.Theme.Dark",  "#26282C", "#E6E8EB", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Nord",  "S.Theme.Nord",  "#3B4252", "#ECEFF4", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Ocean", "S.Theme.Ocean", "#173540", "#E0F2F1", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Forest","S.Theme.Forest","#EAEFE0", "#26331F", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Rose",  "S.Theme.Rose",  "#FDEBF0", "#3D1F2A", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Oat",      "S.Theme.Oat",      "#F5F2EC", "#3A352D", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Haze",     "S.Theme.Haze",     "#F0F2F5", "#2F3640", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Sage",     "S.Theme.Sage",     "#EEF1EC", "#313A30", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Graphite", "S.Theme.Graphite", "#2A2C2E", "#E4E6E8", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Clay",     "S.Theme.Clay",     "#F3EEEA", "#3B332E", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Fog",      "S.Theme.Fog",      "#F1F3F4", "#313539", Group: BuiltinThemes.Classic),
+        new ThemeInfo("Slate",    "S.Theme.Slate",    "#282D33", "#DDE3EA", Group: BuiltinThemes.Classic),
+        // 莫兰迪 1-3(其余 4-12 在 BuiltinThemes 代码调色板)
+        new ThemeInfo("Morandi1", "S.Theme.Morandi1", "#E9ECEF", "#2E353B", Group: BuiltinThemes.Morandi),
+        new ThemeInfo("Morandi2", "S.Theme.Morandi2", "#EAEDE7", "#313630", Group: BuiltinThemes.Morandi),
+        new ThemeInfo("Morandi3", "S.Theme.Morandi3", "#EEE9EA", "#382F32", Group: BuiltinThemes.Morandi),
+        // 马卡龙 1-3
+        new ThemeInfo("Macaron1", "S.Theme.Macaron1", "#E8F6F1", "#1E3B34", Group: BuiltinThemes.Macaron),
+        new ThemeInfo("Macaron2", "S.Theme.Macaron2", "#FCEEF2", "#4A2A33", Group: BuiltinThemes.Macaron),
+        new ThemeInfo("Macaron3", "S.Theme.Macaron3", "#FBF6E3", "#423D24", Group: BuiltinThemes.Macaron),
+        // 敦煌 1-3
+        new ThemeInfo("Dunhuang1", "S.Theme.Dunhuang1", "#F3EBDA", "#3A2E20", Group: BuiltinThemes.Dunhuang),
+        new ThemeInfo("Dunhuang2", "S.Theme.Dunhuang2", "#F4E9DD", "#3D2A22", Group: BuiltinThemes.Dunhuang),
+        new ThemeInfo("Dunhuang3", "S.Theme.Dunhuang3", "#211A14", "#EDE2CE", Group: BuiltinThemes.Dunhuang),
+        // 蒙德里安 1-3
+        new ThemeInfo("Mondrian1", "S.Theme.Mondrian1", "#FAFAF7", "#1A1A1A", Group: BuiltinThemes.Mondrian),
+        new ThemeInfo("Mondrian2", "S.Theme.Mondrian2", "#F8FAFC", "#15202B", Group: BuiltinThemes.Mondrian),
+        new ThemeInfo("Mondrian3", "S.Theme.Mondrian3", "#161616", "#F2F2F2", Group: BuiltinThemes.Mondrian),
+        // 透明:透明 + 毛玻璃(其余磨砂在代码调色板)
+        new ThemeInfo("Transparent", "S.Theme.Transparent", "#80FFFFFF", "#1F2329", Group: BuiltinThemes.Transparent),
+        new ThemeInfo("Glass", "S.Theme.Glass", "#80222831", "#F5F7FA", Group: BuiltinThemes.Transparent),
     };
+
+    /// <summary>代码调色板:Key → 定义.合并到内置主题中.</summary>
+    private static readonly Dictionary<string, BuiltinThemes.PaletteDef> Palettes =
+        BuiltinThemes.All.ToDictionary(p => p.Key, StringComparer.OrdinalIgnoreCase);
 
     private static readonly Dictionary<string, CustomTheme> Custom =
         new(StringComparer.OrdinalIgnoreCase);
@@ -79,14 +104,15 @@ public static class ThemeManager
 
     public static string Current { get; private set; } = Light;
 
-    /// <summary>内置 + 自定义的完整主题列表(供 UI 绑定).内置项的 Display 按当前语言解析.</summary>
+    /// <summary>内置(xaml + 代码调色板) + 自定义的完整主题列表(供 UI 绑定).Display 按当前语言解析.</summary>
     public static List<ThemeInfo> AllThemes() =>
         Builtin.Select(t => t with { Display = Loc.T(t.Display) })
+               .Concat(Palettes.Values.Select(p => new ThemeInfo(p.Key, Loc.T(p.DisplayKey), p.Preview, p.PreviewText, false, p.Group)))
                .Concat(Custom.Values.Select(ToInfo))
                .ToList();
 
     private static ThemeInfo ToInfo(CustomTheme c) =>
-        new(c.Key, c.Display, c.Preview, c.PreviewText, IsCustom: true);
+        new(c.Key, c.Display, c.Preview, c.PreviewText, IsCustom: true, Group: CustomGroup);
 
     /// <summary>启动时载入持久化的自定义主题.</summary>
     public static void LoadCustomThemes(IEnumerable<CustomTheme>? themes)
@@ -118,13 +144,19 @@ public static class ThemeManager
             return result;
         }
 
+        if (Palettes.TryGetValue(key, out var pd))
+        {
+            foreach (var kv in pd.Colors) result[kv.Key] = kv.Value;
+            return result;
+        }
+
         try
         {
             var dict = new ResourceDictionary
             {
                 Source = new Uri($"pack://application:,,,/MinimalTodoApp;component/Themes/{key}.xaml", UriKind.Absolute)
             };
-            foreach (var k in ColorKeys)
+            foreach (var k in AllColorKeys)
                 if (dict[k] is SolidColorBrush b)
                     result[k] = b.Color.ToString();
         }
@@ -144,6 +176,10 @@ public static class ThemeManager
         {
             newDict = BuildFromColors(ct.Colors);
         }
+        else if (Palettes.TryGetValue(theme, out var pd))
+        {
+            newDict = BuildFromColors(pd.Colors);
+        }
         else
         {
             if (!BuiltinKeys.Contains(theme))
@@ -158,11 +194,11 @@ public static class ThemeManager
 
         var dicts = Application.Current.Resources.MergedDictionaries;
 
-        // 移除上一个主题字典(自定义无 Source，靠引用移除)
+        // 移除上一个主题字典(自定义/调色板无 Source，靠引用移除)
         if (_currentThemeDict != null)
             dicts.Remove(_currentThemeDict);
 
-        // 兜底:移除任何内置主题字典(保留 Controls.xaml)
+        // 兜底:移除任何内置 xaml 主题字典(保留 Controls.xaml)
         for (int i = dicts.Count - 1; i >= 0; i--)
         {
             var src = dicts[i].Source?.OriginalString ?? string.Empty;
@@ -175,12 +211,12 @@ public static class ThemeManager
         _currentThemeDict = newDict;
     }
 
-    /// <summary>由颜色字典构建 ResourceDictionary(缺失键用明亮主题兜底).</summary>
+    /// <summary>由颜色字典构建 ResourceDictionary(含 PopupBg；缺失键用明亮主题兜底).</summary>
     private static ResourceDictionary BuildFromColors(IDictionary<string, string> colors)
     {
         var fallback = ReadColors(Light);
         var rd = new ResourceDictionary();
-        foreach (var key in ColorKeys)
+        foreach (var key in AllColorKeys)
         {
             string hex = colors.TryGetValue(key, out var v) && !string.IsNullOrWhiteSpace(v)
                 ? v

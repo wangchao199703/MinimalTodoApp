@@ -89,6 +89,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         currentTheme = string.IsNullOrWhiteSpace(_data.Theme) ? ThemeManager.Light : _data.Theme;
         Themes = new ObservableCollection<ThemeInfo>(ThemeManager.AllThemes());
         selectedTheme = Themes.FirstOrDefault(t => t.Key == currentTheme) ?? Themes[0];
+        RebuildThemeGroups();
 
         // 字体设置(字体/字号/行距):从持久化恢复，App 启动时会显式 FontManager.Apply 一次。
         // 首次运行(尚未做过开机自启动初始化)统一套用产品默认:微软雅黑 / 字号 12 / 行距 1.3 / 勾选框 16。
@@ -230,6 +231,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     /// <summary>可选主题列表(内置 + 自定义，可运行时增减).</summary>
     public ObservableCollection<ThemeInfo> Themes { get; }
+
+    /// <summary>主题选择窗口用的分组数据源(常用置顶 + 各风格分组).随语言/选择/新增刷新.</summary>
+    public ObservableCollection<ThemeGroupVm> ThemeGroups { get; } = new();
 
     /// <summary>可选字体列表(供设置面板下拉，Display 随语言刷新).</summary>
     public ObservableCollection<FontInfo> Fonts { get; }
@@ -507,8 +511,62 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         if (value == null) return;
         CurrentTheme = value.Key;
         ThemeManager.Apply(value.Key);
+        TrackThemeUsage(value.Key);
+        RebuildThemeGroups();   // 常用分组随当前主题/最近使用实时更新
         SaveData();
     }
+
+    /// <summary>记录主题最近使用:置于队首并去重，限长 30.</summary>
+    private void TrackThemeUsage(string key)
+    {
+        _data.ThemeUsageOrder.RemoveAll(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        _data.ThemeUsageOrder.Insert(0, key);
+        if (_data.ThemeUsageOrder.Count > 30)
+            _data.ThemeUsageOrder.RemoveRange(30, _data.ThemeUsageOrder.Count - 30);
+    }
+
+    /// <summary>常用分组无历史时的默认热门主题(跨风格各取一)。</summary>
+    private static readonly string[] DefaultCommon =
+        { "Light", "Dark", "Nord", "Slate", "Morandi1", "Macaron1", "Dunhuang1", "Mondrian1", "Memphis1" };
+
+    /// <summary>重建主题分组数据源:常用置顶(当前主题 + 最近使用最多 9 个) + 各风格分组.</summary>
+    public void RebuildThemeGroups()
+    {
+        var all = ThemeManager.AllThemes();
+        var byKey = new Dictionary<string, ThemeInfo>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in all) byKey[t.Key] = t;
+
+        ThemeGroups.Clear();
+
+        // —— 常用:当前主题置顶 + 最近使用(去重) + 默认热门兜底，共 10 个 ——
+        var commonKeys = new List<string>();
+        void AddCommon(string k)
+        {
+            if (string.IsNullOrEmpty(k) || !byKey.ContainsKey(k)) return;
+            if (commonKeys.Any(x => string.Equals(x, k, StringComparison.OrdinalIgnoreCase))) return;
+            commonKeys.Add(k);
+        }
+        AddCommon(CurrentTheme);
+        foreach (var k in _data.ThemeUsageOrder) { if (commonKeys.Count >= 10) break; AddCommon(k); }
+        foreach (var k in DefaultCommon) { if (commonKeys.Count >= 10) break; AddCommon(k); }
+
+        if (commonKeys.Count > 0)
+        {
+            var items = commonKeys.Select(k => new ThemeSwatchVm(byKey[k], IsCurrentTheme(k)));
+            ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.CommonGroup), items));
+        }
+
+        // —— 各风格分组按既定顺序 ——
+        foreach (var g in ThemeManager.GroupOrder)
+        {
+            var inGroup = all.Where(t => string.Equals(t.Group, g, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (inGroup.Count == 0) continue;
+            var items = inGroup.Select(t => new ThemeSwatchVm(t, IsCurrentTheme(t.Key)));
+            ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(g), items));
+        }
+    }
+
+    private bool IsCurrentTheme(string key) => string.Equals(key, CurrentTheme, StringComparison.OrdinalIgnoreCase);
 
     partial void OnSelectedFontChanged(FontInfo value)
     {
@@ -585,6 +643,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Themes.Add(t);
         var reselected = Themes.FirstOrDefault(t => t.Key == selectedKey);
         if (reselected != null) SelectedTheme = reselected;
+        RebuildThemeGroups();   // 分组标题/主题名随语言刷新
 
         // 字体显示名随语言切换:重建列表并按 Key 复位选中项(FontInfo 为不可变 record)
         var selectedFontKey = SelectedFont?.Key;

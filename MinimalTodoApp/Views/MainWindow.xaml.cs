@@ -771,26 +771,24 @@ public partial class MainWindow : Window
         Application.Current.Shutdown();
     }
 
-    // ===== 主题弹出选择 =====
+    // ===== 主题选择独立窗口 =====
 
-    private void ThemeOption_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is FrameworkElement fe && fe.Tag is ThemeInfo info && Vm != null)
-        {
-            Vm.SelectedTheme = info;   // 触发主题应用 + 持久化
-            ThemeToggle.IsChecked = false;  // 收起弹层
-        }
-    }
+    private ThemePickerWindow? _themePicker;
 
-    /// <summary>新建自定义主题:打开编辑器，保存后注册并应用.</summary>
-    private void AddCustomTheme_Click(object sender, RoutedEventArgs e)
+    /// <summary>打开主题选择窗口(单例):已开则激活，未开则在主窗口侧边弹出.</summary>
+    private void OpenThemePicker_Click(object sender, RoutedEventArgs e)
     {
-        ThemeToggle.IsChecked = false;
         if (Vm == null) return;
 
-        var dlg = new ThemeEditorDialog { Owner = this };
-        if (dlg.ShowDialog() == true && dlg.ResultTheme != null)
-            Vm.AddCustomTheme(dlg.ResultTheme);
+        if (_themePicker != null)
+        {
+            _themePicker.Activate();
+            return;
+        }
+
+        _themePicker = new ThemePickerWindow(Vm, this);
+        _themePicker.Closed += (_, __) => _themePicker = null;
+        _themePicker.Show();
     }
 
     // ===== 设置 =====

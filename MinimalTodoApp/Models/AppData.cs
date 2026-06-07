@@ -58,6 +58,9 @@ public class AppData
     /// <summary>用户自定义主题列表.</summary>
     public List<CustomTheme> CustomThemes { get; set; } = new();
 
+    /// <summary>主题最近使用顺序(队首=最近)，用于"常用"分组排序.向后兼容默认空.</summary>
+    public List<string> ThemeUsageOrder { get; set; } = new();
+
     /// <summary>窗口是否始终置于顶层.</summary>
     public bool AlwaysOnTop { get; set; }
 

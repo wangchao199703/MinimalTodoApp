@@ -43,6 +43,9 @@ public partial class ThemeEditorDialog : Window
 
     private readonly ObservableCollection<ColorField> _fields = new();
 
+    /// <summary>非模态保存回调(设置后走非模态:保存时回调并直接 Close，不使用 DialogResult)。</summary>
+    private readonly Action<CustomTheme>? _onSave;
+
     public CustomTheme? ResultTheme { get; private set; }
 
     public ThemeEditorDialog()
@@ -58,8 +61,21 @@ public partial class ThemeEditorDialog : Window
 
         PreviewKeyDown += (_, e) =>
         {
-            if (e.Key == Key.Escape) { DialogResult = false; Close(); }
+            if (e.Key == Key.Escape) CloseCancelled();
         };
+    }
+
+    /// <summary>非模态用法:传入保存回调，调用 Show() 即可与主题窗口并存。</summary>
+    public ThemeEditorDialog(Action<CustomTheme> onSave) : this()
+    {
+        _onSave = onSave;
+    }
+
+    /// <summary>取消关闭:模态用 DialogResult，非模态直接 Close(设 DialogResult 会抛异常)。</summary>
+    private void CloseCancelled()
+    {
+        if (_onSave == null) DialogResult = false;
+        Close();
     }
 
     private void BaseBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -77,7 +93,7 @@ public partial class ThemeEditorDialog : Window
 
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
-        if (BaseBox.SelectedItem is not ThemeInfo baseInfo) { DialogResult = false; Close(); return; }
+        if (BaseBox.SelectedItem is not ThemeInfo baseInfo) { CloseCancelled(); return; }
 
         // 先复制基础主题全部颜色，再用编辑值覆盖
         var colors = ThemeManager.ReadColors(baseInfo.Key);
@@ -98,13 +114,17 @@ public partial class ThemeEditorDialog : Window
             Colors = new Dictionary<string, string>(colors)
         };
 
-        DialogResult = true;
-        Close();
+        if (_onSave != null)
+        {
+            _onSave(ResultTheme);   // 非模态:回调注册并应用
+            Close();
+        }
+        else
+        {
+            DialogResult = true;
+            Close();
+        }
     }
 
-    private void Cancel_Click(object sender, RoutedEventArgs e)
-    {
-        DialogResult = false;
-        Close();
-    }
+    private void Cancel_Click(object sender, RoutedEventArgs e) => CloseCancelled();
 }
