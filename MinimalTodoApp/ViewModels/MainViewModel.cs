@@ -552,19 +552,23 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         foreach (var k in _data.ThemeUsageOrder) { if (commonKeys.Count >= 10) break; AddCommon(k); }
         foreach (var k in DefaultCommon) { if (commonKeys.Count >= 10) break; AddCommon(k); }
 
-        if (commonKeys.Count > 0)
-        {
-            var items = commonKeys.Select(k => new ThemeSwatchVm(byKey[k], IsCurrentTheme(k)));
-            ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.CommonGroup), items));
-        }
+        // —— 收藏:置于最前(在"常用"之前)。为空时默认把当前主题加入收藏，保证该分组始终有内容 ——
+        if (_data.FavoriteThemeKeys.Count == 0 && byKey.ContainsKey(CurrentTheme))
+            _data.FavoriteThemeKeys.Add(CurrentTheme);
 
-        // —— 收藏:按收藏顺序(跳过已不存在的 key)，仅非空时显示;该分组支持拖动排序 ——
         var favItems = _data.FavoriteThemeKeys
             .Where(k => byKey.ContainsKey(k))
             .Select(k => new ThemeSwatchVm(byKey[k], IsCurrentTheme(k)))
             .ToList();
         if (favItems.Count > 0)
             ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.FavoritesGroup), favItems, isFavorites: true));
+
+        // —— 常用:当前主题置顶 + 最近使用(去重) ——
+        if (commonKeys.Count > 0)
+        {
+            var items = commonKeys.Select(k => new ThemeSwatchVm(byKey[k], IsCurrentTheme(k)));
+            ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.CommonGroup), items));
+        }
 
         // —— 各风格分组按既定顺序 ——
         foreach (var g in ThemeManager.GroupOrder)
