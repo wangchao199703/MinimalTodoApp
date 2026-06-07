@@ -747,6 +747,17 @@ public partial class MainWindow : Window
     {
         Show();
         WindowState = WindowState.Normal;
+
+        // 若当前处于贴边隐藏/停靠态，先解除贴边，再把窗口居中到光标所在屏的工作区，
+        // 避免“显示主界面”后窗口仍缩在屏幕边缘只露一条触发条。
+        if (_dockEdge != 0)
+        {
+            Undock();
+            var wa = NativeMethods.GetCursorScreenWorkAreaDip(this);
+            Left = wa.Left + (wa.Width - Width) / 2;
+            Top = wa.Top + (wa.Height - Height) / 2;
+        }
+
         Activate();
         Topmost = true;   // 强制置顶以确保窗口跳到最前
         // 还原为用户实际选择的“置于顶层”状态(而非写死 false，否则会破坏置顶功能)
@@ -963,14 +974,28 @@ public partial class MainWindow : Window
         ScheduleView.Init(Vm);
 
         double w = Vm.ScheduleWidth > 0 ? Vm.ScheduleWidth : 300;
-        ScheduleColumn.MinWidth = 220;
-        ScheduleColumn.Width = new GridLength(w);
+
+        // 开日历后“弹性列”由 待办区 换成 日历列：
+        //  · 拖窗口外边缘缩放 → 日历(星列)吸收变化，待办宽度保持不变；
+        //  · 待办宽度只由中间的 ScheduleSplitter 调整。
+        double taskW = TaskColumn.ActualWidth;
+
         SchedulePanel.Visibility = Visibility.Visible;
         ScheduleSplitter.Visibility = Visibility.Visible;
+        ScheduleColumn.MinWidth = 220;
 
-        // 正常态下向右扩展出面板宽度(侧边栏与中间任务区尺寸不变;红绿灯/☰ 随标题栏自动右移)
         if (WindowState == WindowState.Normal)
-            Width += w + ScheduleSplitterWidth;
+        {
+            TaskColumn.Width = new GridLength(taskW);                  // 待办固定为当前宽度
+            ScheduleColumn.Width = new GridLength(1, GridUnitType.Star); // 日历为弹性列
+            Width += w + ScheduleSplitterWidth;                        // 向右扩出日历，待办不变
+        }
+        else
+        {
+            // 最大化无法扩窗：从待办区匀出日历宽度
+            TaskColumn.Width = new GridLength(Math.Max(150, taskW - w - ScheduleSplitterWidth));
+            ScheduleColumn.Width = new GridLength(1, GridUnitType.Star);
+        }
 
         _scheduleShown = true;
         Vm.ScheduleOpen = true;
@@ -988,6 +1013,7 @@ public partial class MainWindow : Window
         ScheduleSplitter.Visibility = Visibility.Collapsed;
         ScheduleColumn.MinWidth = 0;
         ScheduleColumn.Width = new GridLength(0);
+        TaskColumn.Width = new GridLength(1, GridUnitType.Star);   // 待办恢复为弹性列
 
         // 收回面板占用的宽度，侧边栏 + 中间任务区精确还原为展开前的尺寸
         if (WindowState == WindowState.Normal)

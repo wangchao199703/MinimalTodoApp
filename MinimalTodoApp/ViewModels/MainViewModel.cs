@@ -80,6 +80,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     public MainViewModel()
     {
+        FavDropHandler = new FavoritesDropHandler(this);
+
         _data = _dataService.Load();
         SeedDefaultsIfEmpty();
 
@@ -555,6 +557,14 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             var items = commonKeys.Select(k => new ThemeSwatchVm(byKey[k], IsCurrentTheme(k)));
             ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.CommonGroup), items));
         }
+
+        // —— 收藏:按收藏顺序(跳过已不存在的 key)，仅非空时显示;该分组支持拖动排序 ——
+        var favItems = _data.FavoriteThemeKeys
+            .Where(k => byKey.ContainsKey(k))
+            .Select(k => new ThemeSwatchVm(byKey[k], IsCurrentTheme(k)))
+            .ToList();
+        if (favItems.Count > 0)
+            ThemeGroups.Add(new ThemeGroupVm(ThemeManager.GroupDisplay(ThemeManager.FavoritesGroup), favItems, isFavorites: true));
 
         // —— 各风格分组按既定顺序 ——
         foreach (var g in ThemeManager.GroupOrder)
@@ -1474,6 +1484,43 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     public CustomTheme? GetCustomTheme(string key) =>
         _data.CustomThemes.FirstOrDefault(t => string.Equals(t.Key, key, StringComparison.OrdinalIgnoreCase));
 
+    // ===== 主题收藏(收藏分组 + 拖动排序) =====
+
+    /// <summary>"收藏"分组拖拽重排处理器(供 XAML 绑定，仅收藏分组启用)。</summary>
+    public FavoritesDropHandler FavDropHandler { get; }
+
+    /// <summary>该主题是否已收藏。</summary>
+    public bool IsFavorite(string key) =>
+        _data.FavoriteThemeKeys.Any(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>切换收藏:已收藏则移出，否则追加到末尾。刷新分组并持久化。</summary>
+    public void ToggleFavorite(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+        int idx = _data.FavoriteThemeKeys.FindIndex(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (idx >= 0) _data.FavoriteThemeKeys.RemoveAt(idx);
+        else _data.FavoriteThemeKeys.Add(key);
+        RebuildThemeGroups();
+        SaveData();
+    }
+
+    /// <summary>把收藏项移动到收藏列表的 insertIndex 处(gong 拖拽落点语义)。</summary>
+    public void MoveFavorite(string key, int insertIndex)
+    {
+        int oldIndex = _data.FavoriteThemeKeys.FindIndex(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
+        if (oldIndex < 0) return;
+        if (insertIndex > oldIndex) insertIndex--;     // 移除原项后目标索引前移
+        if (insertIndex < 0) insertIndex = 0;
+        if (insertIndex >= _data.FavoriteThemeKeys.Count) insertIndex = _data.FavoriteThemeKeys.Count - 1;
+        if (insertIndex == oldIndex) return;
+
+        var k = _data.FavoriteThemeKeys[oldIndex];
+        _data.FavoriteThemeKeys.RemoveAt(oldIndex);
+        _data.FavoriteThemeKeys.Insert(insertIndex, k);
+        RebuildThemeGroups();
+        SaveData();
+    }
+
     /// <summary>删除一个自定义主题:注销、移除持久化、刷新列表;若删的是当前主题则回退到明亮。</summary>
     public void DeleteCustomTheme(string key)
     {
@@ -1481,6 +1528,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         ThemeManager.RemoveCustom(key);
         _data.CustomThemes.RemoveAll(t => string.Equals(t.Key, key, StringComparison.OrdinalIgnoreCase));
+        _data.FavoriteThemeKeys.RemoveAll(k => string.Equals(k, key, StringComparison.OrdinalIgnoreCase));
 
         bool deletingCurrent = string.Equals(CurrentTheme, key, StringComparison.OrdinalIgnoreCase);
 

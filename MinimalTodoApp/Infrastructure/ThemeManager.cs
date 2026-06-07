@@ -25,6 +25,8 @@ public static class ThemeManager
 
     /// <summary>动态"常用"分组键(非某主题固有，由 VM 按最近使用拼装).</summary>
     public const string CommonGroup = "Common";
+    /// <summary>用户收藏主题归入的分组键(动态，由 VM 按收藏顺序拼装，置于"常用"之后).</summary>
+    public const string FavoritesGroup = "Favorites";
     /// <summary>自定义主题归入的分组键.</summary>
     public const string CustomGroup = "Custom";
 
@@ -195,9 +197,27 @@ public static class ThemeManager
 
         Current = theme;
 
+        SwapThemeDict(newDict);
+        ThemeChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// 实时预览一组颜色:仅替换资源树最前的主题字典并触发 <see cref="ThemeChanged"/>，
+    /// 不写入自定义注册表、不改 <see cref="Current"/>、不持久化。
+    /// 供主题编辑器编辑时即时换肤;取消时调用 <see cref="Apply"/>(原主题) 还原即可。
+    /// </summary>
+    public static void Preview(IDictionary<string, string> colors)
+    {
+        SwapThemeDict(BuildFromColors(colors));
+        ThemeChanged?.Invoke();
+    }
+
+    /// <summary>把新主题字典换入资源树 index 0(移除上一个主题字典与任何内置 xaml 主题字典)。</summary>
+    private static void SwapThemeDict(ResourceDictionary newDict)
+    {
         var dicts = Application.Current.Resources.MergedDictionaries;
 
-        // 移除上一个主题字典(自定义/调色板无 Source，靠引用移除)
+        // 移除上一个主题字典(自定义/调色板/预览无 Source，靠引用移除)
         if (_currentThemeDict != null)
             dicts.Remove(_currentThemeDict);
 
@@ -212,8 +232,17 @@ public static class ThemeManager
         // 主题字典必须在最前，确保 Controls.xaml 能解析到其颜色键
         dicts.Insert(0, newDict);
         _currentThemeDict = newDict;
+    }
 
-        ThemeChanged?.Invoke();
+    /// <summary>按比例 t(0..1) 把颜色 a 向 b 混合，返回 #AARRGGBB。供自定义主题派生辅助色。</summary>
+    public static string Mix(string a, string b, double t)
+    {
+        Color Parse(string s) { try { return (Color)ColorConverter.ConvertFromString(s); } catch { return Colors.Gray; } }
+        var ca = Parse(a);
+        var cb = Parse(b);
+        t = Math.Clamp(t, 0, 1);
+        byte L(byte x, byte y) => (byte)Math.Round(x + (y - x) * t);
+        return Color.FromArgb(L(ca.A, cb.A), L(ca.R, cb.R), L(ca.G, cb.G), L(ca.B, cb.B)).ToString();
     }
 
     /// <summary>由颜色字典构建 ResourceDictionary(含 PopupBg；缺失键用明亮主题兜底).</summary>

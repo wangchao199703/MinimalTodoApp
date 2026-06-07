@@ -37,7 +37,8 @@
     <sys:String x:Key="S.ChooseTheme">Choose theme</sys:String>
     <sys:String x:Key="S.AddCustomTheme">＋ Custom theme</sys:String>
     <!-- Theme group names -->
-    <sys:String x:Key="S.ThemeGroup.Common">Favorites</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Common">Recent</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Favorites">Favorites</sys:String>
     <sys:String x:Key="S.ThemeGroup.Classic">Classic</sys:String>
     <sys:String x:Key="S.ThemeGroup.Morandi">Morandi</sys:String>
     <sys:String x:Key="S.ThemeGroup.Macaron">Macaron</sys:String>
@@ -440,6 +441,8 @@
     <sys:String x:Key="S.ThemeEditor.Title">Custom theme</sys:String>
     <sys:String x:Key="S.ThemeEditor.EditTitle">Edit theme</sys:String>
     <sys:String x:Key="S.ThemeEditor.PickColor">Click to pick a color</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Favorite">Add to favorites</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Unfavorite">Remove from favorites</sys:String>
     <sys:String x:Key="S.ThemeCtx.Edit">Edit theme</sys:String>
     <sys:String x:Key="S.ThemeCtx.Delete">Delete theme</sys:String>
     <sys:String x:Key="S.ThemeEditor.Name">Theme name</sys:String>

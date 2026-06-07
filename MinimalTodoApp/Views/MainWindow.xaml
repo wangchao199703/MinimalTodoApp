@@ -149,7 +149,7 @@
                         <!-- 左侧单列侧边栏：宽度由代码维护（折叠=窄条，展开=持久化宽度，分隔条可拖动） -->
                         <ColumnDefinition x:Name="SidebarColumn" Width="150" MinWidth="0" />
                         <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="*" MinWidth="150" />
+                        <ColumnDefinition x:Name="TaskColumn" Width="*" MinWidth="150" />
                         <!-- 右侧日程分隔条 + 日程面板(默认收起,宽度=0) -->
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition x:Name="ScheduleColumn" Width="0" />

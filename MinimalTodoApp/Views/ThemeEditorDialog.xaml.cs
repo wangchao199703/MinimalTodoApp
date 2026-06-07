@@ -52,6 +52,15 @@ public partial class ThemeEditorDialog : Window
     /// <summary>当前正在取色的字段(色块弹出取色器时设置)。</summary>
     private ColorField? _activeField;
 
+    /// <summary>打开编辑器时主程序正应用的主题:取消(未保存关闭)时还原到它。</summary>
+    private readonly string _originalTheme = ThemeManager.Current;
+
+    /// <summary>构造完成后才允许实时预览,避免初始化填充字段时就抢先换肤。</summary>
+    private bool _ready;
+
+    /// <summary>是否已保存:已保存则关闭时不再还原旧主题。</summary>
+    private bool _saved;
+
     public CustomTheme? ResultTheme { get; private set; }
 
     public ThemeEditorDialog()
@@ -65,7 +74,7 @@ public partial class ThemeEditorDialog : Window
         BaseBox.ItemsSource = baseThemes;
         BaseBox.SelectedIndex = 0;   // 触发 SelectionChanged -> 填充字段
 
-        // 取色器选色实时写回当前字段(色块/小字预览随之刷新)
+        // 取色器选色实时写回当前字段(色块/小字预览随之刷新 → 触发整体实时预览)
         Picker.ColorChanged += hex =>
         {
             if (_activeField != null) _activeField.Value = hex;
@@ -75,6 +84,11 @@ public partial class ThemeEditorDialog : Window
         {
             if (e.Key == Key.Escape) CloseCancelled();
         };
+
+        // 关闭(任何途径:Esc/取消/点 X)且未保存 → 还原旧主题
+        Closed += (_, __) => { if (!_saved) ThemeManager.Apply(_originalTheme); };
+
+        _ready = true;
     }
 
     /// <summary>非模态新建用法:传入保存回调，调用 Show() 即可与主题窗口并存。</summary>
@@ -98,8 +112,60 @@ public partial class ThemeEditorDialog : Window
         foreach (var (key, labelKey) in Editable)
         {
             editing.Colors.TryGetValue(key, out var hex);
-            _fields.Add(new ColorField { Key = key, Label = Loc.T(labelKey), Value = hex ?? "#FFFFFF" });
+            AddField(new ColorField { Key = key, Label = Loc.T(labelKey), Value = hex ?? "#FFFFFF" });
         }
+    }
+
+    /// <summary>加入字段并订阅其颜色变化以驱动实时预览。</summary>
+    private void AddField(ColorField f)
+    {
+        f.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ColorField.Value)) ApplyPreview();
+        };
+        _fields.Add(f);
+    }
+
+    /// <summary>按当前字段值组装完整 17 色 + PopupBg，并对未直接编辑、但日历/弹窗依赖的辅助色
+    /// 由已编辑色派生(而非沿用基础主题)，保证整体(含日历)风格协调。</summary>
+    private Dictionary<string, string> BuildColors()
+    {
+        Dictionary<string, string> colors;
+        if (_editing != null)
+            colors = new Dictionary<string, string>(_editing.Colors);
+        else if (BaseBox.SelectedItem is ThemeInfo baseInfo)
+            colors = ThemeManager.ReadColors(baseInfo.Key);
+        else
+            colors = new Dictionary<string, string>();
+
+        foreach (var f in _fields)
+            colors[f.Key] = string.IsNullOrWhiteSpace(f.Value) ? "#FFFFFF" : f.Value.Trim();
+
+        string Get(string k, string fb) => colors.TryGetValue(k, out var v) && !string.IsNullOrWhiteSpace(v) ? v : fb;
+        string windowBg = Get("WindowBg", "#FFFFFFFF");
+        string cardBg = Get("CardBg", windowBg);
+        string primary = Get("PrimaryText", "#FF000000");
+        string secondary = Get("SecondaryText", primary);
+        string accent = Get("Accent", "#FF808080");
+
+        // 派生辅助色:内容区跟随窗口底;悬停=卡片向文字微混;选中=卡片掺入强调色;次要弱化文字;弹窗=卡片底
+        colors["ContentBg"] = windowBg;
+        colors["CardHoverBg"] = ThemeManager.Mix(cardBg, primary, 0.08);
+        colors["SelectedItemBg"] = ThemeManager.Mix(cardBg, accent, 0.18);
+        colors["MutedText"] = ThemeManager.Mix(secondary, windowBg, 0.35);
+        colors["PopupBg"] = cardBg;
+
+        foreach (var k in ThemeManager.ColorKeys)
+            if (!colors.ContainsKey(k)) colors[k] = "#FF808080";
+
+        return colors;
+    }
+
+    /// <summary>实时预览当前配色(不持久化、不改 Current);构造期间不触发。</summary>
+    private void ApplyPreview()
+    {
+        if (!_ready) return;
+        ThemeManager.Preview(BuildColors());
     }
 
     /// <summary>点击色块:把取色器定位到该色块并预置其当前颜色。</summary>
@@ -128,43 +194,29 @@ public partial class ThemeEditorDialog : Window
         foreach (var (key, labelKey) in Editable)
         {
             colors.TryGetValue(key, out var hex);
-            _fields.Add(new ColorField { Key = key, Label = Loc.T(labelKey), Value = hex ?? "#FFFFFF" });
+            AddField(new ColorField { Key = key, Label = Loc.T(labelKey), Value = hex ?? "#FFFFFF" });
         }
+
+        ApplyPreview();   // 切换基础主题即时预览
     }
 
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
-        // 未编辑键的底色来源:编辑模式用该主题自身颜色(保留未编辑键)，新建模式用所选基础主题
-        Dictionary<string, string> colors;
-        string key;
-        if (_editing != null)
-        {
-            colors = new Dictionary<string, string>(_editing.Colors);
-            key = _editing.Key;
-        }
-        else
-        {
-            if (BaseBox.SelectedItem is not ThemeInfo baseInfo) { CloseCancelled(); return; }
-            colors = ThemeManager.ReadColors(baseInfo.Key);
-            key = "Custom_" + Guid.NewGuid().ToString("N").Substring(0, 8);
-        }
+        // 新建模式校验基础主题存在;颜色统一由 BuildColors 组装(含派生辅助色 + 补齐 17 键)
+        if (_editing == null && BaseBox.SelectedItem is not ThemeInfo) { CloseCancelled(); return; }
 
-        foreach (var f in _fields)
-            colors[f.Key] = string.IsNullOrWhiteSpace(f.Value) ? "#FFFFFF" : f.Value.Trim();
-
-        // 确保 17 个键齐全
-        foreach (var k in ThemeManager.ColorKeys)
-            if (!colors.ContainsKey(k))
-                colors[k] = "#FF808080";
-
+        string key = _editing?.Key ?? ("Custom_" + Guid.NewGuid().ToString("N").Substring(0, 8));
+        var colors = BuildColors();
         var name = string.IsNullOrWhiteSpace(NameBox.Text) ? Loc.T("S.ThemeEditor.DefaultName") : NameBox.Text.Trim();
 
         ResultTheme = new CustomTheme
         {
             Key = key,
             Display = name,
-            Colors = new Dictionary<string, string>(colors)
+            Colors = colors
         };
+
+        _saved = true;   // 关闭时不再还原旧主题
 
         if (_onSave != null)
         {

@@ -38,6 +38,7 @@
     <sys:String x:Key="S.AddCustomTheme">＋ 自定义主题</sys:String>
     <!-- 主题分组名 -->
     <sys:String x:Key="S.ThemeGroup.Common">常用</sys:String>
+    <sys:String x:Key="S.ThemeGroup.Favorites">收藏</sys:String>
     <sys:String x:Key="S.ThemeGroup.Classic">经典</sys:String>
     <sys:String x:Key="S.ThemeGroup.Morandi">莫兰迪</sys:String>
     <sys:String x:Key="S.ThemeGroup.Macaron">马卡龙</sys:String>
@@ -440,6 +441,8 @@
     <sys:String x:Key="S.ThemeEditor.Title">自定义主题</sys:String>
     <sys:String x:Key="S.ThemeEditor.EditTitle">编辑主题</sys:String>
     <sys:String x:Key="S.ThemeEditor.PickColor">点击选择颜色</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Favorite">加入收藏</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Unfavorite">取消收藏</sys:String>
     <sys:String x:Key="S.ThemeCtx.Edit">编辑主题</sys:String>
     <sys:String x:Key="S.ThemeCtx.Delete">删除主题</sys:String>
     <sys:String x:Key="S.ThemeEditor.Name">主题名称</sys:String>

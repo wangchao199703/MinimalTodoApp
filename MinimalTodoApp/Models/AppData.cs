@@ -61,6 +61,9 @@ public class AppData
     /// <summary>主题最近使用顺序(队首=最近)，用于"常用"分组排序.向后兼容默认空.</summary>
     public List<string> ThemeUsageOrder { get; set; } = new();
 
+    /// <summary>用户收藏的主题 Key(有序，可拖动排序)，构成主题窗口的"收藏"分组.向后兼容默认空.</summary>
+    public List<string> FavoriteThemeKeys { get; set; } = new();
+
     /// <summary>窗口是否始终置于顶层.</summary>
     public bool AlwaysOnTop { get; set; }
 

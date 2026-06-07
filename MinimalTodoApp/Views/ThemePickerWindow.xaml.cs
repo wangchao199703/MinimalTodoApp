@@ -73,19 +73,32 @@ public partial class ThemePickerWindow : Window
         }
     }
 
-    /// <summary>右键自定义主题色板:弹出"编辑/删除"菜单(内置主题不响应)。</summary>
+    /// <summary>右键主题色板:任意主题可"收藏/取消收藏";自定义主题额外有"编辑/删除"。</summary>
     private void ThemeSwatch_RightClick(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not FrameworkElement fe || fe.Tag is not ThemeSwatchVm swatch || !swatch.IsCustom)
+        if (sender is not FrameworkElement fe || fe.Tag is not ThemeSwatchVm swatch)
             return;
 
         var menu = new ContextMenu { PlacementTarget = fe };
-        var edit = new MenuItem { Header = Loc.T("S.ThemeCtx.Edit") };
-        edit.Click += (_, __) => EditCustom(swatch.Key);
-        var del = new MenuItem { Header = Loc.T("S.ThemeCtx.Delete") };
-        del.Click += (_, __) => _vm.DeleteCustomTheme(swatch.Key);
-        menu.Items.Add(edit);
-        menu.Items.Add(del);
+
+        var fav = new MenuItem
+        {
+            Header = Loc.T(_vm.IsFavorite(swatch.Key) ? "S.ThemeCtx.Unfavorite" : "S.ThemeCtx.Favorite")
+        };
+        fav.Click += (_, __) => _vm.ToggleFavorite(swatch.Key);
+        menu.Items.Add(fav);
+
+        if (swatch.IsCustom)
+        {
+            menu.Items.Add(new Separator());
+            var edit = new MenuItem { Header = Loc.T("S.ThemeCtx.Edit") };
+            edit.Click += (_, __) => EditCustom(swatch.Key);
+            var del = new MenuItem { Header = Loc.T("S.ThemeCtx.Delete") };
+            del.Click += (_, __) => _vm.DeleteCustomTheme(swatch.Key);
+            menu.Items.Add(edit);
+            menu.Items.Add(del);
+        }
+
         menu.IsOpen = true;
         e.Handled = true;
     }
