@@ -112,7 +112,9 @@ if (-not $NotesFile) {
     if (Test-Path $default) { $NotesFile = $default }
 }
 if ($NotesFile -and (Test-Path $NotesFile)) {
-    $Body = Get-Content $NotesFile -Raw -Encoding UTF8
+    # 用 ReadAllText 而非 Get-Content -Raw：后者会给字符串附加 PSPath 等 NoteProperty，
+    # 经 ConvertTo-Json 时把 body 序列化成对象 → GitHub 创建 Release 返回 422。
+    $Body = [IO.File]::ReadAllText($NotesFile)
     Step "发布说明：$NotesFile"
 } else {
     $Body = "MinimalTodoApp $Tag`n`n下载 ``$Asset`` 双击即可运行，无需安装 .NET 运行时（自包含单文件，约 $SizeMB MB）。"
