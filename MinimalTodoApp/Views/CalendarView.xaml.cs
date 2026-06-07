@@ -33,6 +33,16 @@ public partial class CalendarView : UserControl
     public CalendarView()
     {
         InitializeComponent();
+
+        // 日历以"代码快照画刷"渲染(非 DynamicResource)，切主题不会自动更新颜色，
+        // 故订阅主题变更事件、可见时重渲染，避免沿用上一个主题的文字画刷导致暗对暗看不清。
+        ThemeManager.ThemeChanged += OnThemeChanged;
+        Unloaded += (_, __) => ThemeManager.ThemeChanged -= OnThemeChanged;
+    }
+
+    private void OnThemeChanged()
+    {
+        if (IsVisible) Render();
     }
 
     /// <summary>绑定 ViewModel 并订阅主列表变化(新增/完成/删除时自动刷新).</summary>
@@ -166,7 +176,7 @@ public partial class CalendarView : UserControl
                 {
                     Children =
                     {
-                        new TextBlock { Text = heads[c], FontSize = 11, Foreground = Brush("MutedText"),
+                        new TextBlock { Text = heads[c], FontSize = 11, Foreground = Brush("SecondaryText"),
                                         HorizontalAlignment = HorizontalAlignment.Center },
                         new TextBlock { Text = day.Day.ToString(), FontSize = 15, FontWeight = FontWeights.SemiBold,
                                         Foreground = Brush("PrimaryText"), HorizontalAlignment = HorizontalAlignment.Center }
@@ -362,7 +372,7 @@ public partial class CalendarView : UserControl
                 Child = new TextBlock
                 {
                     Text = heads[c], FontSize = 12, HorizontalAlignment = HorizontalAlignment.Center,
-                    Foreground = Brush("MutedText")
+                    Foreground = Brush("SecondaryText")
                 }
             };
             Grid.SetRow(head, 0);

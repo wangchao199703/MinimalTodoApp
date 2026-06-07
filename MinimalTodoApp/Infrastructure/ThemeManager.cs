@@ -104,6 +104,9 @@ public static class ThemeManager
 
     public static string Current { get; private set; } = Light;
 
+    /// <summary>主题应用完成后触发.供以代码快照画刷渲染、不走 DynamicResource 的视图(如日历)重渲染.</summary>
+    public static event Action? ThemeChanged;
+
     /// <summary>内置(xaml + 代码调色板) + 自定义的完整主题列表(供 UI 绑定).Display 按当前语言解析.</summary>
     public static List<ThemeInfo> AllThemes() =>
         Builtin.Select(t => t with { Display = Loc.T(t.Display) })
@@ -209,6 +212,8 @@ public static class ThemeManager
         // 主题字典必须在最前，确保 Controls.xaml 能解析到其颜色键
         dicts.Insert(0, newDict);
         _currentThemeDict = newDict;
+
+        ThemeChanged?.Invoke();
     }
 
     /// <summary>由颜色字典构建 ResourceDictionary(含 PopupBg；缺失键用明亮主题兜底).</summary>

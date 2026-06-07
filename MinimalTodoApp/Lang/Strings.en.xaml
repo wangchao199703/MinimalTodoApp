@@ -438,6 +438,10 @@
 
     <!-- ============ Custom theme editor ============ -->
     <sys:String x:Key="S.ThemeEditor.Title">Custom theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.EditTitle">Edit theme</sys:String>
+    <sys:String x:Key="S.ThemeEditor.PickColor">Click to pick a color</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Edit">Edit theme</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Delete">Delete theme</sys:String>
     <sys:String x:Key="S.ThemeEditor.Name">Theme name</sys:String>
     <sys:String x:Key="S.ThemeEditor.DefaultName">My theme</sys:String>
     <sys:String x:Key="S.ThemeEditor.BaseOn">Based on an existing theme (auto-fills the rest)</sys:String>

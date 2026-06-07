@@ -502,8 +502,9 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Divider}" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
-        <!-- 关闭系统方角投影(SystemDropShadowChrome)，仅用下方 Border 的圆角投影，避免四角露直角 -->
-        <Setter Property="HasDropShadow" Value="False" />
+        <!-- HasDropShadow 必须保持 True:否则承载弹窗 AllowsTransparency=False，圆角 Border 之外会被
+             不透明弹窗填成方角。自定义模板本就不含系统方角阴影(SystemDropShadowChrome)。 -->
+        <Setter Property="HasDropShadow" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
@@ -584,8 +585,8 @@
         <Setter Property="BorderBrush" Value="{DynamicResource Divider}" />
         <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
         <Setter Property="FontSize" Value="12" />
-        <!-- 同 ContextMenu:关掉系统方角投影，避免圆角 Border 外露直角阴影 -->
-        <Setter Property="HasDropShadow" Value="False" />
+        <!-- HasDropShadow 保持 True 以让承载弹窗透明，圆角 Border 才不会被方角弹窗填充 -->
+        <Setter Property="HasDropShadow" Value="True" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToolTip">

@@ -1,14 +1,17 @@
 using System;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using MinimalTodoApp.Infrastructure;
 using MinimalTodoApp.ViewModels;
 
 namespace MinimalTodoApp.Views;
 
 /// <summary>
-/// 主题选择独立窗口:非模态、可拖动、定位在主窗口侧边(不遮挡主程序)。
+/// 主题选择独立窗口:非模态、可拖动、可调整大小、定位在主窗口侧边(不遮挡主程序)。
 /// 单击任一色板即 <see cref="MainViewModel.SelectedTheme"/> 赋值 → 实时换肤并持久化，窗口保持打开可继续切换。
+/// 自定义主题色板右键可编辑/删除;顶部分组快选栏点击直接滚动到分组。
 /// </summary>
 public partial class ThemePickerWindow : Window
 {
@@ -45,6 +48,13 @@ public partial class ThemePickerWindow : Window
         Top = top;
     }
 
+    /// <summary>窗口尺寸变化时同步圆角裁剪矩形(否则缩放后裁剪框仍是初始尺寸)。</summary>
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (RootClip != null && RootBorder != null)
+            RootClip.Rect = new Rect(0, 0, RootBorder.ActualWidth, RootBorder.ActualHeight);
+    }
+
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ButtonState == MouseButtonState.Pressed)
@@ -61,6 +71,44 @@ public partial class ThemePickerWindow : Window
             var info = _vm.Themes.FirstOrDefault(t => t.Key == swatch.Key) ?? swatch.Info;
             _vm.SelectedTheme = info;
         }
+    }
+
+    /// <summary>右键自定义主题色板:弹出"编辑/删除"菜单(内置主题不响应)。</summary>
+    private void ThemeSwatch_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not FrameworkElement fe || fe.Tag is not ThemeSwatchVm swatch || !swatch.IsCustom)
+            return;
+
+        var menu = new ContextMenu { PlacementTarget = fe };
+        var edit = new MenuItem { Header = Loc.T("S.ThemeCtx.Edit") };
+        edit.Click += (_, __) => EditCustom(swatch.Key);
+        var del = new MenuItem { Header = Loc.T("S.ThemeCtx.Delete") };
+        del.Click += (_, __) => _vm.DeleteCustomTheme(swatch.Key);
+        menu.Items.Add(edit);
+        menu.Items.Add(del);
+        menu.IsOpen = true;
+        e.Handled = true;
+    }
+
+    /// <summary>打开编辑器(非模态、编辑模式),保存即更新并应用。</summary>
+    private void EditCustom(string key)
+    {
+        var existing = _vm.GetCustomTheme(key);
+        if (existing == null) return;
+        var editor = new ThemeEditorDialog(existing, t => _vm.AddCustomTheme(t)) { Owner = this };
+        editor.Show();
+        editor.Activate();
+    }
+
+    /// <summary>分组快选栏:点击滚动到对应分组区块。</summary>
+    private void GroupChip_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement fe || fe.Tag is not ThemeGroupVm group) return;
+        int index = _vm.ThemeGroups.IndexOf(group);
+        if (index < 0) return;
+
+        if (GroupsItems.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement container)
+            container.BringIntoView();
     }
 
     /// <summary>新建自定义主题:非模态打开编辑器，保存后回调注册并应用。</summary>

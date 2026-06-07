@@ -1470,6 +1470,32 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         SaveData();
     }
 
+    /// <summary>取某自定义主题(供编辑器预填)。</summary>
+    public CustomTheme? GetCustomTheme(string key) =>
+        _data.CustomThemes.FirstOrDefault(t => string.Equals(t.Key, key, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>删除一个自定义主题:注销、移除持久化、刷新列表;若删的是当前主题则回退到明亮。</summary>
+    public void DeleteCustomTheme(string key)
+    {
+        if (string.IsNullOrWhiteSpace(key)) return;
+
+        ThemeManager.RemoveCustom(key);
+        _data.CustomThemes.RemoveAll(t => string.Equals(t.Key, key, StringComparison.OrdinalIgnoreCase));
+
+        bool deletingCurrent = string.Equals(CurrentTheme, key, StringComparison.OrdinalIgnoreCase);
+
+        Themes.Clear();
+        foreach (var t in ThemeManager.AllThemes())
+            Themes.Add(t);
+
+        if (deletingCurrent)
+            SelectedTheme = Themes.FirstOrDefault(t => t.Key == ThemeManager.Light) ?? Themes[0];
+        else
+            RebuildThemeGroups();   // 非当前主题:仅刷新分组(改当前主题会自动重建)
+
+        SaveData();
+    }
+
     private void RefreshItems()
     {
         // 拖拽进行中切勿重建 Items(Clear/Add 会让拖拽 Adorner 失去宿主容器，

@@ -438,6 +438,10 @@
 
     <!-- ============ 自定义主题编辑器 ============ -->
     <sys:String x:Key="S.ThemeEditor.Title">自定义主题</sys:String>
+    <sys:String x:Key="S.ThemeEditor.EditTitle">编辑主题</sys:String>
+    <sys:String x:Key="S.ThemeEditor.PickColor">点击选择颜色</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Edit">编辑主题</sys:String>
+    <sys:String x:Key="S.ThemeCtx.Delete">删除主题</sys:String>
     <sys:String x:Key="S.ThemeEditor.Name">主题名称</sys:String>
     <sys:String x:Key="S.ThemeEditor.DefaultName">我的主题</sys:String>
     <sys:String x:Key="S.ThemeEditor.BaseOn">基于现有主题（自动填充其余颜色）</sys:String>
