@@ -695,8 +695,10 @@
     <!-- ===================== 主题化 DatePicker / Calendar（系统默认为直角白底，深色主题下不可读） =====================
          DatePicker 会在运行时把 Calendar 注入弹窗 Child，故圆角与配色须落在 Calendar 自身的模板上. -->
 
-    <!-- 日期按钮（每一天） -->
-    <Style TargetType="CalendarDayButton">
+    <!-- 日期按钮（每一天）。必须 keyed 并经 Calendar.CalendarDayButtonStyle 指派：
+         WPF 的 Calendar 会把每个日按钮的 Style 绑定到 Owner.CalendarDayButtonStyle，
+         该本地绑定会压制隐式样式，导致隐式样式不生效(日号沿用系统深色、深色皮肤下看不清)。 -->
+    <Style x:Key="ThemedCalendarDayButton" TargetType="CalendarDayButton">
         <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
         <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
         <Setter Property="FontSize" Value="12" />
@@ -732,8 +734,8 @@
         </Setter>
     </Style>
 
-    <!-- 月/年切换按钮 -->
-    <Style TargetType="CalendarButton">
+    <!-- 月/年切换按钮（同理经 Calendar.CalendarButtonStyle 指派） -->
+    <Style x:Key="ThemedCalendarButton" TargetType="CalendarButton">
         <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
         <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}" />
         <Setter Property="FontSize" Value="12" />
@@ -887,6 +889,9 @@
         <Setter Property="Background" Value="{DynamicResource PopupBg}" />
         <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
         <Setter Property="BorderBrush" Value="{DynamicResource Divider}" />
+        <!-- 显式指派主题化日/月按钮样式：否则 Calendar 的 Style 绑定会让隐式样式失效 -->
+        <Setter Property="CalendarDayButtonStyle" Value="{StaticResource ThemedCalendarDayButton}" />
+        <Setter Property="CalendarButtonStyle" Value="{StaticResource ThemedCalendarButton}" />
     </Style>
 
     <!-- DatePicker 输入框文本 -->

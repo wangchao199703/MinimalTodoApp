@@ -227,7 +227,7 @@ public partial class CalendarView : UserControl
                 BorderThickness = new Thickness(1, 0, 0, 1),
                 Padding = new Thickness(4, 6, 4, 6),
                 Background = IsToday(day) ? Brush("SelectedItemBg")
-                             : (holiday != null ? HolidayBg : Brushes.Transparent),
+                             : (IsRestDay(day) ? HolidayBg : Brushes.Transparent),
                 Child = headStack
             };
             Grid.SetColumn(hb, c + 1);
@@ -270,7 +270,8 @@ public partial class CalendarView : UserControl
             {
                 BorderBrush = Brush("Divider"),
                 BorderThickness = new Thickness(1, 0, 0, 0),
-                Background = IsToday(day) ? Brush("SelectedItemBg") : Brushes.Transparent,
+                Background = IsToday(day) ? Brush("SelectedItemBg")
+                             : (IsRestDay(day) ? HolidayBg : Brushes.Transparent),
                 Child = BuildDayCanvas(day, bigChips: false)
             };
             Grid.SetColumn(wrap, c + 1);
@@ -519,9 +520,9 @@ public partial class CalendarView : UserControl
             });
         panel.Children.Add(wrap);
 
-        // 底色:今天优先,其次放假日柔和高亮
+        // 底色:今天优先,其次休息日(周末/节假日)柔和高亮
         Brush bg = IsToday(day) ? Brush("SelectedItemBg")
-                   : (holiday != null && inMonth ? HolidayBg : Brushes.Transparent);
+                   : (inMonth && IsRestDay(day) ? HolidayBg : Brushes.Transparent);
 
         var cell = new Border
         {
@@ -640,6 +641,13 @@ public partial class CalendarView : UserControl
     }
 
     private static bool IsToday(DateTime d) => d.Date == DateTime.Today;
+
+    /// <summary>周六/周日.</summary>
+    private static bool IsWeekend(DateTime d) =>
+        d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday;
+
+    /// <summary>休息日:周末或法定放假日(与节假日一样高亮).</summary>
+    private bool IsRestDay(DateTime d) => IsWeekend(d) || HolidayName(d) != null;
 
     private static string[] WeekdayHeaders()
     {

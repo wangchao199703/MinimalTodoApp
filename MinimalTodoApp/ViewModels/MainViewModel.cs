@@ -128,9 +128,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         showHolidays = _data.ShowHolidays;
         dockEdge = _data.DockEdge;
 
-        // 从缓存恢复节假日(当年)，避免启动即联网;跨年/无缓存由 EnsureHolidaysAsync 异步刷新
-        if (_data.HolidayCacheYear == DateTime.Today.Year && !string.IsNullOrEmpty(_data.HolidayCacheJson))
-            _holidays = HolidayService.ParseOffDays(_data.HolidayCacheJson);
+        // 从缓存恢复节假日(近十年)，避免启动即联网;每天最多一次的联网刷新由 EnsureHolidaysAsync 异步完成
+        RebuildHolidays();
 
         Groups = new ObservableCollection<TodoGroup>(_data.Groups.OrderBy(g => g.OrderIndex));
         // 分组增删时，刷新右键「移动到分组」子菜单的候选项
@@ -705,29 +704,51 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         HolidaysVisibilityChanged?.Invoke();     // 通知日历重渲染
     }
 
-    // ===== 节假日(联网获取 + 本地缓存) =====
+    // ===== 节假日(联网获取 + 本地缓存近十年，每天最多刷新一次) =====
     private Dictionary<DateTime, string> _holidays = new();
 
-    /// <summary>当年法定放假日 → 节日名称(仅含 isOffDay=true 的放假日，不含调休补班).</summary>
+    /// <summary>缓存覆盖的年数:当年起向后十年.</summary>
+    private const int HolidayYearSpan = 10;
+
+    /// <summary>法定放假日 → 节日名称(近十年合并，仅含 isOffDay=true 的放假日，不含调休补班).</summary>
     public IReadOnlyDictionary<DateTime, string> Holidays => _holidays;
 
+    /// <summary>把缓存中各年 JSON 合并解析为放假日字典(供日历查询).</summary>
+    private void RebuildHolidays()
+    {
+        var merged = new Dictionary<DateTime, string>();
+        foreach (var kv in _data.HolidayCacheByYear)
+            foreach (var d in HolidayService.ParseOffDays(kv.Value))
+                merged[d.Key] = d.Value;
+        _holidays = merged;
+    }
+
     /// <summary>
-    /// 确保节假日数据为最新:缓存命中当年则直接用;否则联网拉取当年数据、更新缓存并持久化，
-    /// 完成后触发日历重渲染.联网失败时静默保留已有缓存，不影响使用.
+    /// 联网刷新节假日:**每天最多一次**(按 HolidayLastRefreshDate 判定).刷新时拉取当年起十年的数据，
+    /// 逐年更新缓存(成功才覆盖)、丢弃过期年份，并持久化 + 触发日历重渲染.
+    /// 联网失败静默保留已有缓存，不影响使用;全部失败则不更新刷新日期，下次启动再试.
     /// </summary>
     public async Task EnsureHolidaysAsync()
     {
-        int year = DateTime.Today.Year;
-        if (_data.HolidayCacheYear == year && !string.IsNullOrEmpty(_data.HolidayCacheJson))
-            return;   // 缓存已是当年，无需联网
+        string today = DateTime.Today.ToString("yyyy-MM-dd");
+        if (_data.HolidayLastRefreshDate == today) return;   // 今天已刷新过
 
-        var raw = await HolidayService.FetchRawAsync(year);
-        if (string.IsNullOrEmpty(raw)) return;   // 联网失败:保留旧缓存
+        int startYear = DateTime.Today.Year;
+        bool any = false;
+        for (int y = startYear; y < startYear + HolidayYearSpan; y++)
+        {
+            var raw = await HolidayService.FetchRawAsync(y);
+            if (!string.IsNullOrEmpty(raw)) { _data.HolidayCacheByYear[y] = raw; any = true; }
+        }
+        if (!any) return;   // 全部联网失败:保留旧缓存、不记刷新日期(下次再试)
 
-        _data.HolidayCacheJson = raw;
-        _data.HolidayCacheYear = year;
+        // 丢弃当年之前的过期年份，控制缓存体积
+        foreach (var oldYear in _data.HolidayCacheByYear.Keys.Where(k => k < startYear).ToList())
+            _data.HolidayCacheByYear.Remove(oldYear);
+
+        _data.HolidayLastRefreshDate = today;
+        RebuildHolidays();
         SaveData();
-        _holidays = HolidayService.ParseOffDays(raw);
         HolidaysVisibilityChanged?.Invoke();
     }
 
