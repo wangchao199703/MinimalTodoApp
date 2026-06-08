@@ -9,6 +9,7 @@ using System.Windows.Media;
 using MinimalTodoApp.Infrastructure;
 using MinimalTodoApp.Models;
 using MinimalTodoApp.ViewModels;
+using GongDD = GongSolutions.Wpf.DragDrop.DragDrop;   // gong 拖放附加属性(区别于 System.Windows.DragDrop)
 
 namespace MinimalTodoApp.Views;
 
@@ -30,6 +31,10 @@ public partial class CalendarView : UserControl
     private static readonly Brush MidBrush = Frozen("#F59E0B");
     private static readonly Brush HighBrush = Frozen("#EF4444");
 
+    // 节假日(放假日)柔和高亮底色,与"今天"(SelectedItemBg)区分;暖橙色低透明,深浅主题均可读
+    private static readonly Brush HolidayBg = Frozen("#22F59E0B");
+    private static readonly Brush HolidayText = Frozen("#D9820B");
+
     public CalendarView()
     {
         InitializeComponent();
@@ -45,13 +50,23 @@ public partial class CalendarView : UserControl
         if (IsVisible) Render();
     }
 
-    /// <summary>绑定 ViewModel 并订阅主列表变化(新增/完成/删除时自动刷新).</summary>
+    /// <summary>绑定 ViewModel 并订阅主列表变化(新增/完成/删除时自动刷新)与节假日数据就绪.</summary>
     public void Init(MainViewModel vm)
     {
         if (_vm != null)
+        {
             _vm.Items.CollectionChanged -= OnItemsChanged;
+            _vm.HolidaysVisibilityChanged -= OnHolidaysChanged;
+        }
         _vm = vm;
         _vm.Items.CollectionChanged += OnItemsChanged;
+        _vm.HolidaysVisibilityChanged += OnHolidaysChanged;
+    }
+
+    private void OnHolidaysChanged()
+    {
+        // 节假日数据联网就绪 / 开关切换:回到 UI 线程重渲染
+        if (IsVisible) Dispatcher.BeginInvoke(new Action(Render));
     }
 
     private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -59,8 +74,28 @@ public partial class CalendarView : UserControl
         if (IsVisible) Render();
     }
 
-    /// <summary>对外刷新入口(面板展开时调用).</summary>
-    public void Refresh() => Render();
+    /// <summary>对外刷新入口(面板展开时调用).首次展开时弹一次"拖拽设截止时间"功能提示.</summary>
+    public void Refresh()
+    {
+        Render();
+        ShowDragHintOnce();
+    }
+
+    /// <summary>首次打开日历时,提示用户可把任务拖到日历设置截止时间(仅提示一次).</summary>
+    private void ShowDragHintOnce()
+    {
+        if (_vm == null || _vm.CalendarDragHintShown) return;
+        _vm.CalendarDragHintShown = true;   // 置位并持久化,之后不再提示
+        // 延后到面板布局完成后再弹,避免打断展开动画
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            MessageBox.Show(
+                Loc.T("S.Schedule.DragHint.Body"),
+                Loc.T("S.Schedule.DragHint.Title"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }), System.Windows.Threading.DispatcherPriority.Background);
+    }
 
     // ===== 视图切换 / 导航 =====
     private void ViewTab_Checked(object sender, RoutedEventArgs e)
@@ -109,8 +144,9 @@ public partial class CalendarView : UserControl
     // ===== 天视图(左侧 0–24 小时刻度轴 + 任务按时间纵向定位；高度自适应,一屏展示 24 小时) =====
     private void BuildDay()
     {
-        // 天视图标题:友好格式，不出现区间分隔符与 ISO 短横
-        PeriodTitle.Text = DayTitle(_anchor);
+        // 天视图标题:友好格式，不出现区间分隔符与 ISO 短横;放假日附节日名称
+        string? dayHoliday = HolidayName(_anchor);
+        PeriodTitle.Text = dayHoliday != null ? DayTitle(_anchor) + "  ·  " + dayHoliday : DayTitle(_anchor);
 
         var tasks = TasksOn(_anchor);
         if (tasks.Count == 0)
@@ -166,22 +202,33 @@ public partial class CalendarView : UserControl
         for (int c = 0; c < 7; c++)
         {
             var day = start.AddDays(c);
+            string? holiday = HolidayName(day);
+            var headStack = new StackPanel();
+            headStack.Children.Add(new TextBlock
+            {
+                Text = heads[c], FontSize = 11, Foreground = Brush("SecondaryText"),
+                HorizontalAlignment = HorizontalAlignment.Center
+            });
+            headStack.Children.Add(new TextBlock
+            {
+                Text = day.Day.ToString(), FontSize = 15, FontWeight = FontWeights.SemiBold,
+                Foreground = Brush("PrimaryText"), HorizontalAlignment = HorizontalAlignment.Center
+            });
+            if (holiday != null)
+                headStack.Children.Add(new TextBlock
+                {
+                    Text = holiday, FontSize = 9, Foreground = HolidayText,
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 60
+                });
             var hb = new Border
             {
                 BorderBrush = Brush("Divider"),
                 BorderThickness = new Thickness(1, 0, 0, 1),
                 Padding = new Thickness(4, 6, 4, 6),
-                Background = IsToday(day) ? Brush("SelectedItemBg") : Brushes.Transparent,
-                Child = new StackPanel
-                {
-                    Children =
-                    {
-                        new TextBlock { Text = heads[c], FontSize = 11, Foreground = Brush("SecondaryText"),
-                                        HorizontalAlignment = HorizontalAlignment.Center },
-                        new TextBlock { Text = day.Day.ToString(), FontSize = 15, FontWeight = FontWeights.SemiBold,
-                                        Foreground = Brush("PrimaryText"), HorizontalAlignment = HorizontalAlignment.Center }
-                    }
-                }
+                Background = IsToday(day) ? Brush("SelectedItemBg")
+                             : (holiday != null ? HolidayBg : Brushes.Transparent),
+                Child = headStack
             };
             Grid.SetColumn(hb, c + 1);
             header.Children.Add(hb);
@@ -291,12 +338,12 @@ public partial class CalendarView : UserControl
         {
             double frac = (t.DueDate!.Value.Hour + t.DueDate.Value.Minute / 60.0) / 24.0;
             var chip = MakeChip(t, showTime: true, big: bigChips);
-            Canvas.SetLeft(chip, 4);
             canvas.Children.Add(chip);
             chips.Add((chip, frac));
         }
 
-        // 宽/高自适应:分隔线铺满列宽并按小时均分高度,任务块按时间比例定位
+        // 宽/高自适应:分隔线铺满列宽并按小时均分高度;同时段多任务并排分列,避免重叠
+        double rowH = bigChips ? 28 : 22;   // 任务块估算行高(含上下内边距),作碰撞阈值
         canvas.SizeChanged += (_, _) =>
         {
             double w = canvas.ActualWidth, h = canvas.ActualHeight;
@@ -305,14 +352,51 @@ public partial class CalendarView : UserControl
                 lines[i].Width = Math.Max(0, w);
                 Canvas.SetTop(lines[i], i * h / 24.0);
             }
-            foreach (var (chip, frac) in chips)
-            {
-                chip.Width = Math.Max(0, w - 8);
-                Canvas.SetTop(chip, frac * h + 1);
-            }
+            LayoutColumns(chips, w, h, rowH);
         };
 
+        // 拖拽落点:把任务拖到该列即按落点小时设置截止时间(取整点)
+        if (_vm != null)
+        {
+            GongDD.SetIsDropTarget(canvas, true);
+            GongDD.SetDropHandler(canvas, CalendarDropHandler.ForTimed(_vm, day, Render));
+        }
+
         return canvas;
+    }
+
+    /// <summary>
+    /// 同列内的"同时段任务并排"布局:按纵向像素位置将相互重叠(行高阈值内)的任务归为一簇，
+    /// 簇内平分列宽并排显示,互不遮挡;不重叠的任务各自占满整列宽度.
+    /// </summary>
+    private static void LayoutColumns(List<(FrameworkElement chip, double frac)> chips, double w, double h, double rowH)
+    {
+        if (chips.Count == 0) return;
+        double avail = Math.Max(0, w - 8);
+        var ordered = chips.OrderBy(c => c.frac).ToList();
+        var tops = ordered.Select(c => c.frac * h + 1).ToList();
+
+        int i = 0;
+        while (i < ordered.Count)
+        {
+            int j = i + 1;
+            double clusterMaxTop = tops[i];
+            while (j < ordered.Count && tops[j] - clusterMaxTop < rowH)   // 与簇内最低块仍重叠 → 并入同簇
+            {
+                clusterMaxTop = Math.Max(clusterMaxTop, tops[j]);
+                j++;
+            }
+            int n = j - i;                       // 该簇任务数 = 列数
+            double colW = avail / n;
+            for (int k = i; k < j; k++)
+            {
+                var (chip, _) = ordered[k];
+                chip.Width = Math.Max(0, colW - 2);
+                Canvas.SetLeft(chip, 4 + (k - i) * colW);
+                Canvas.SetTop(chip, tops[k]);
+            }
+            i = j;
+        }
     }
 
     /// <summary>全天/未定时任务带区(显示在小时轴上方).</summary>
@@ -394,40 +478,103 @@ public partial class CalendarView : UserControl
     private UIElement MakeMonthCell(DateTime day, int row, int col)
     {
         bool inMonth = day.Month == _anchor.Month;
+        string? holiday = HolidayName(day);
 
         var panel = new StackPanel();
-        panel.Children.Add(new TextBlock
+
+        // 日期行:日号 + (有则)节日名称
+        var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(2, 0, 0, 2) };
+        header.Children.Add(new TextBlock
         {
             Text = day.Day.ToString(),
             FontSize = 12,
             FontWeight = IsToday(day) ? FontWeights.Bold : FontWeights.Normal,
             Foreground = IsToday(day) ? Brush("Accent")
                          : (inMonth ? Brush("PrimaryText") : Brush("MutedText")),
-            Margin = new Thickness(2, 0, 0, 2)
         });
+        if (holiday != null && inMonth)
+            header.Children.Add(new TextBlock
+            {
+                Text = holiday,
+                FontSize = 10,
+                Foreground = HolidayText,
+                Margin = new Thickness(4, 1, 0, 0),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                VerticalAlignment = VerticalAlignment.Center
+            });
+        panel.Children.Add(header);
 
+        // 任务:横向并排紧凑方块,自动换行(避免此前纵向堆叠后相互"重叠"的观感)
         var tasks = TasksOn(day);
-        const int maxShown = 3;
+        const int maxShown = 6;
+        var wrap = new WrapPanel { Margin = new Thickness(1, 0, 0, 0) };
         foreach (var t in tasks.Take(maxShown))
-            panel.Children.Add(MakeChip(t, showTime: true, big: false));
+            wrap.Children.Add(MakeMiniChip(t));
         if (tasks.Count > maxShown)
-            panel.Children.Add(new TextBlock
+            wrap.Children.Add(new TextBlock
             {
                 Text = Loc.F("S.Fmt.MoreCount", tasks.Count - maxShown),
-                FontSize = 10, Foreground = Brush("MutedText"), Margin = new Thickness(4, 1, 0, 0)
+                FontSize = 10, Foreground = Brush("MutedText"),
+                Margin = new Thickness(2, 1, 0, 0), VerticalAlignment = VerticalAlignment.Center
             });
+        panel.Children.Add(wrap);
+
+        // 底色:今天优先,其次放假日柔和高亮
+        Brush bg = IsToday(day) ? Brush("SelectedItemBg")
+                   : (holiday != null && inMonth ? HolidayBg : Brushes.Transparent);
 
         var cell = new Border
         {
             BorderBrush = Brush("Divider"),
             BorderThickness = new Thickness(col == 0 ? 0 : 1, 0, 0, 1),
             Padding = new Thickness(3),
-            Background = IsToday(day) ? Brush("SelectedItemBg") : Brushes.Transparent,
+            Background = bg,
             Child = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Hidden, Content = panel }
         };
+        // 拖拽落点:月视图固定落到当天 18:00
+        if (_vm != null)
+        {
+            GongDD.SetIsDropTarget(cell, true);
+            GongDD.SetDropHandler(cell, CalendarDropHandler.ForFixedHour(_vm, day, 18, Render));
+        }
         Grid.SetRow(cell, row);
         Grid.SetColumn(cell, col);
         return cell;
+    }
+
+    /// <summary>月视图紧凑任务块:小号色块 + 截断标题,WrapPanel 中横向并排、自动换行.</summary>
+    private FrameworkElement MakeMiniChip(TodoItem item)
+    {
+        var label = new TextBlock
+        {
+            Text = item.Title,
+            FontSize = 10,
+            MaxWidth = 64,
+            Foreground = Brushes.White,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            TextDecorations = item.IsCompleted ? TextDecorations.Strikethrough : null
+        };
+        var chip = new Border
+        {
+            CornerRadius = new CornerRadius(3),
+            Background = PriorityBrush(item.Priority),
+            Padding = new Thickness(4, 1, 4, 1),
+            Margin = new Thickness(0, 0, 2, 2),
+            Cursor = Cursors.Hand,
+            Opacity = item.IsCompleted ? 0.5 : 1.0,
+            ToolTip = item.Title,
+            Tag = item,
+            Child = label
+        };
+        chip.MouseLeftButtonUp += Chip_Click;
+        return chip;
+    }
+
+    /// <summary>当 ShowHolidays 开启且该日为法定放假日时,返回节日名称;否则 null.</summary>
+    private string? HolidayName(DateTime d)
+    {
+        if (_vm == null || !_vm.ShowHolidays) return null;
+        return _vm.Holidays.TryGetValue(d.Date, out var name) ? name : null;
     }
 
     // ===== 待办"优先级矩形色块" =====

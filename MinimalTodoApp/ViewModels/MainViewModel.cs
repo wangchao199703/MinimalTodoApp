@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -71,12 +72,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     // ===== 产品默认外观(首次运行 / 点击“恢复默认设置”时套用) =====
     /// <summary>默认字体:微软雅黑.</summary>
     public const string DefaultFontFamily = "Microsoft YaHei";
-    /// <summary>默认字号:12.</summary>
-    public const double DefaultFontSize = 12;
-    /// <summary>默认行距倍率:1.3.</summary>
-    public const double DefaultLineSpacing = 1.3;
-    /// <summary>默认勾选框直径:16.</summary>
-    public const double DefaultCheckboxSize = 16;
+    /// <summary>默认字号:13(较此前 12 略增，长文更易读).</summary>
+    public const double DefaultFontSize = 13;
+    /// <summary>默认行距倍率:1.0(较此前 1.3 更紧凑舒适).</summary>
+    public const double DefaultLineSpacing = 1.0;
+    /// <summary>默认勾选框直径:18(较此前 16 略增，更易点选).</summary>
+    public const double DefaultCheckboxSize = 18;
 
     public MainViewModel()
     {
@@ -94,7 +95,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         RebuildThemeGroups();
 
         // 字体设置(字体/字号/行距):从持久化恢复，App 启动时会显式 FontManager.Apply 一次。
-        // 首次运行(尚未做过开机自启动初始化)统一套用产品默认:微软雅黑 / 字号 12 / 行距 1.3 / 勾选框 16。
+        // 首次运行(尚未做过开机自启动初始化)统一套用产品默认:微软雅黑 / 字号 13 / 行距 1.0 / 勾选框 18。
         if (!_data.StartupInitialized)
         {
             fontFamily = DefaultFontFamily;
@@ -105,8 +106,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         else
         {
             fontFamily = string.IsNullOrWhiteSpace(_data.FontFamily) ? FontManager.SystemDefault : _data.FontFamily;
-            fontSize = _data.FontSize > 0 ? _data.FontSize : 12;
-            lineSpacing = _data.LineSpacing > 0 ? _data.LineSpacing : 0.9;
+            fontSize = _data.FontSize > 0 ? _data.FontSize : DefaultFontSize;
+            lineSpacing = _data.LineSpacing > 0 ? _data.LineSpacing : DefaultLineSpacing;
             // 勾选框直径:未设置时默认≈字号+2(与文字等高)，之后可在设置里单独调整
             checkboxSize = _data.CheckboxSize > 0 ? _data.CheckboxSize : Math.Round(fontSize + 2);
         }
@@ -124,7 +125,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         soundEnabled = _data.SoundEnabled;
         reminderSoundEnabled = _data.ReminderSoundEnabled;
         autoUpdateEnabled = _data.AutoUpdateEnabled;
+        showHolidays = _data.ShowHolidays;
         dockEdge = _data.DockEdge;
+
+        // 从缓存恢复节假日(当年)，避免启动即联网;跨年/无缓存由 EnsureHolidaysAsync 异步刷新
+        if (_data.HolidayCacheYear == DateTime.Today.Year && !string.IsNullOrEmpty(_data.HolidayCacheJson))
+            _holidays = HolidayService.ParseOffDays(_data.HolidayCacheJson);
 
         Groups = new ObservableCollection<TodoGroup>(_data.Groups.OrderBy(g => g.OrderIndex));
         // 分组增删时，刷新右键「移动到分组」子菜单的候选项
@@ -326,6 +332,13 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>是否启用自动检查更新(默认开启，持久化).关闭后启动与每小时定时都不再自动检查.</summary>
     [ObservableProperty]
     private bool autoUpdateEnabled = true;
+
+    /// <summary>日历是否显示国内法定节假日(默认开启，持久化).联网获取并本地缓存.</summary>
+    [ObservableProperty]
+    private bool showHolidays = true;
+
+    /// <summary>显示节假日开关变化时:持久化 + 通知日历重渲染.</summary>
+    public event Action? HolidaysVisibilityChanged;
 
     /// <summary>新任务输入框文本.</summary>
     [ObservableProperty]
@@ -609,7 +622,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 恢复默认外观设置:字体微软雅黑、字号 12、行距 1.3、勾选框 16。
+    /// 恢复默认外观设置:字体微软雅黑、字号 13、行距 1.0、勾选框 18。
     /// 经属性赋值触发 FontManager.Apply + 持久化，设置面板即时预览；同步刷新字体下拉选中项。
     /// </summary>
     public void ResetDefaultSettings()
@@ -684,6 +697,46 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     partial void OnReminderSoundEnabledChanged(bool value) => SaveData();
     partial void OnAutoUpdateEnabledChanged(bool value) => SaveData();
     partial void OnDockEdgeChanged(int value) => SaveData();
+
+    partial void OnShowHolidaysChanged(bool value)
+    {
+        SaveData();
+        if (value) _ = EnsureHolidaysAsync();   // 开启时确保数据已联网就绪
+        HolidaysVisibilityChanged?.Invoke();     // 通知日历重渲染
+    }
+
+    // ===== 节假日(联网获取 + 本地缓存) =====
+    private Dictionary<DateTime, string> _holidays = new();
+
+    /// <summary>当年法定放假日 → 节日名称(仅含 isOffDay=true 的放假日，不含调休补班).</summary>
+    public IReadOnlyDictionary<DateTime, string> Holidays => _holidays;
+
+    /// <summary>
+    /// 确保节假日数据为最新:缓存命中当年则直接用;否则联网拉取当年数据、更新缓存并持久化，
+    /// 完成后触发日历重渲染.联网失败时静默保留已有缓存，不影响使用.
+    /// </summary>
+    public async Task EnsureHolidaysAsync()
+    {
+        int year = DateTime.Today.Year;
+        if (_data.HolidayCacheYear == year && !string.IsNullOrEmpty(_data.HolidayCacheJson))
+            return;   // 缓存已是当年，无需联网
+
+        var raw = await HolidayService.FetchRawAsync(year);
+        if (string.IsNullOrEmpty(raw)) return;   // 联网失败:保留旧缓存
+
+        _data.HolidayCacheJson = raw;
+        _data.HolidayCacheYear = year;
+        SaveData();
+        _holidays = HolidayService.ParseOffDays(raw);
+        HolidaysVisibilityChanged?.Invoke();
+    }
+
+    /// <summary>"拖拽到日历设置截止时间"一次性功能提示是否已展示过(读写即持久化).</summary>
+    public bool CalendarDragHintShown
+    {
+        get => _data.CalendarDragHintShown;
+        set { _data.CalendarDragHintShown = value; SaveData(); }
+    }
 
     /// <summary>用户选择“此版本不再提示”的版本号(持久化).自动检查命中该版本时静默跳过.</summary>
     public string IgnoredUpdateVersion
@@ -1915,6 +1968,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.EffectsEnabled = EffectsEnabled;
         _data.SoundEnabled = SoundEnabled;
         _data.ReminderSoundEnabled = ReminderSoundEnabled;
+        _data.ShowHolidays = ShowHolidays;
         _data.DockEdge = DockEdge;
         // CustomThemes 已在 AddCustomTheme 中维护到 _data，无需在此覆盖
 

@@ -310,10 +310,13 @@
     <sys:String x:Key="S.Settings.Nav.General">General</sys:String>
     <sys:String x:Key="S.Settings.Nav.Font">Font</sys:String>
     <sys:String x:Key="S.Settings.Nav.About">About</sys:String>
-    <sys:String x:Key="S.About.Repo">GitHub Project</sys:String>
-    <sys:String x:Key="S.About.OpenRepo">Open</sys:String>
+    <sys:String x:Key="S.About.Support">Support the developer</sys:String>
+    <sys:String x:Key="S.About.SupportDesc">This is a free little tool I build in my spare time. If it helps you, please give the project a ⭐ Star on GitHub — it's the best encouragement for the author and helps more people discover it.</sys:String>
+    <sys:String x:Key="S.About.StarButton">Star on GitHub</sys:String>
+    <sys:String x:Key="S.Settings.Holidays">Show holidays</sys:String>
+    <sys:String x:Key="S.Settings.HolidaysDesc">Mark Chinese public holidays on the calendar and highlight days off (fetched online; first run needs a connection)</sys:String>
     <sys:String x:Key="S.Settings.RestoreDefaults">Restore defaults</sys:String>
-    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">Microsoft YaHei, size 12, spacing 1.3, checkbox 16</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">Microsoft YaHei, size 13, spacing 1.0, checkbox 18</sys:String>
     <sys:String x:Key="S.Settings.RestoreDone">Default appearance restored.</sys:String>
     <sys:String x:Key="S.Settings.AutoStart">Run at startup</sys:String>
     <sys:String x:Key="S.Settings.AutoStartDesc">Launch automatically when you sign in to Windows (current user)</sys:String>
@@ -491,6 +494,8 @@
     <sys:String x:Key="S.Schedule.WeekdayHeaders">Mon,Tue,Wed,Thu,Fri,Sat,Sun</sys:String>
     <sys:String x:Key="S.Schedule.AllDay">All-day / no time</sys:String>
     <sys:String x:Key="S.Schedule.Done">Done</sys:String>
+    <sys:String x:Key="S.Schedule.DragHint.Title">Tip: drag to set a due time</sys:String>
+    <sys:String x:Key="S.Schedule.DragHint.Body">You can drag a to-do from the left onto the calendar to set its due time:&#x0a;· Day / Week view: drop on an hour to set that exact hour&#x0a;· Month view: drop on a day to set it to 18:00&#x0a;&#x0a;(This tip is shown only once)</sys:String>
     <sys:String x:Key="S.Fmt.YearMonth">{1}/{0}</sys:String>
     <sys:String x:Key="S.Fmt.DayTitle">{0}-{1}-{2} ({3})</sys:String>
     <sys:String x:Key="S.Fmt.MoreCount">+{0}</sys:String>

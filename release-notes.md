@@ -1,3 +1,37 @@
+## MinimalTodoApp v1.1.6
+
+### English
+
+This update focuses on the calendar, readability and holidays — eight feedback fixes.
+
+- **Calendar no longer overlaps** — in Day/Week views, tasks at the same time now sit side by side instead of stacking on top of each other; Month cells show tasks as compact chips placed side by side (wrapping as needed).
+- **Date picker readable on every theme** — the editor's calendar pop-up now themes its day numbers, today/selected markers and out-of-month days, so they stay clear on dark and colored skins.
+- **Drag a task onto the calendar** — drop a to-do on the calendar to set its due time: Day/Week views snap to the hour you drop on, Month view sets it to 18:00. A one-time tip explains this the first time you open the calendar.
+- **Gentler backgrounds** — the most vivid light themes (Macaron mint/sakura/lemon, Dunhuang azure/terracotta) are desaturated so they're easier on the eyes over long sessions.
+- **Tighter line spacing** — the minimum line spacing now goes down to 0.4 (was 0.8).
+- **Better defaults** — default font size 13, line spacing 1.0, checkbox 18 for a more comfortable out-of-the-box look (new installs / restore-defaults only).
+- **Chinese public holidays** — the calendar can show national holidays (with names, days off highlighted), fetched online and cached. Toggle it in Settings; on by default.
+- **Support the developer** — the About page now invites you to star the project on GitHub; the button opens the repo.
+
+Download `MinimalTodoApp-v1.1.6-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
+
+### 简体中文
+
+本次聚焦日历、可读性与节假日，修复 8 项使用反馈。
+
+- **日历不再重叠** —— 天/周视图中同一时段的任务改为并排显示，不再相互堆叠遮挡；月视图把任务排成紧凑的小色块并排展示（自动换行）。
+- **日期选择器全皮肤可读** —— 编辑任务时弹出的日历，日号、今天/选中标记、非本月日期都已适配主题，深色/彩色皮肤下都清晰。
+- **拖任务到日历设截止时间** —— 把待办拖到日历即可设置截止时间：天/周视图落到对应的整点，月视图设为当天 18:00。首次打开日历会弹一次提示说明（仅一次）。
+- **背景更柔和** —— 把最鲜艳的浅色主题（马卡龙薄荷/樱花/柠檬、敦煌石青/土红）整体降饱和，长时间看更不易疲劳。
+- **行距下限放宽** —— 行距最小值从 0.8 降到 0.4，可以更紧凑。
+- **默认更舒适** —— 默认字号 13、行距 1.0、勾选框 18（仅影响新安装与「恢复默认」）。
+- **国内节假日** —— 日历可显示国内法定节假日（标注节日名、放假日高亮），联网获取并缓存。可在设置中开关，默认开启。
+- **支持开发者** —— 「关于」页改为邀请你到 GitHub 给项目点个 Star，点击按钮打开仓库。
+
+下载 `MinimalTodoApp-v1.1.6-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。
+
+---
+
 ## MinimalTodoApp v1.1.5
 
 ### English

@@ -1,21 +1,21 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- 马卡龙·柠檬（清甜柠檬黄，浅色） -->
-    <SolidColorBrush x:Key="WindowBg"       Color="#FBF6E3" />
-    <SolidColorBrush x:Key="TitleBarBg"     Color="#F6EFD0" />
-    <SolidColorBrush x:Key="SidebarBg"      Color="#F8F2D9" />
-    <SolidColorBrush x:Key="ContentBg"      Color="#FDFAEE" />
+    <!-- 马卡龙·柠檬（清甜柠檬黄，浅色;已调柔:降低底色与亮黄饱和、更耐看） -->
+    <SolidColorBrush x:Key="WindowBg"       Color="#FAF7EE" />
+    <SolidColorBrush x:Key="TitleBarBg"     Color="#F3EEDE" />
+    <SolidColorBrush x:Key="SidebarBg"      Color="#F6F1E3" />
+    <SolidColorBrush x:Key="ContentBg"      Color="#FCFAF3" />
     <SolidColorBrush x:Key="CardBg"         Color="#FFFFFF" />
-    <SolidColorBrush x:Key="CardHoverBg"    Color="#F6EECC" />
-    <SolidColorBrush x:Key="InputBg"        Color="#F8F2D9" />
-    <SolidColorBrush x:Key="PrimaryText"    Color="#423D24" />
-    <SolidColorBrush x:Key="SecondaryText"  Color="#6E6740" />
-    <SolidColorBrush x:Key="MutedText"      Color="#A89E6E" />
-    <SolidColorBrush x:Key="Accent"         Color="#EBB422" />
-    <SolidColorBrush x:Key="AccentText"     Color="#4A3700" />
-    <SolidColorBrush x:Key="Divider"        Color="#EDE3BE" />
-    <SolidColorBrush x:Key="SelectedItemBg" Color="#F7EDC4" />
+    <SolidColorBrush x:Key="CardHoverBg"    Color="#F1EBDA" />
+    <SolidColorBrush x:Key="InputBg"        Color="#F6F1E3" />
+    <SolidColorBrush x:Key="PrimaryText"    Color="#403B26" />
+    <SolidColorBrush x:Key="SecondaryText"  Color="#6E6743" />
+    <SolidColorBrush x:Key="MutedText"      Color="#A69D72" />
+    <SolidColorBrush x:Key="Accent"         Color="#D2A53E" />
+    <SolidColorBrush x:Key="AccentText"     Color="#3D2F00" />
+    <SolidColorBrush x:Key="Divider"        Color="#E7DEC6" />
+    <SolidColorBrush x:Key="SelectedItemBg" Color="#F2EAD2" />
     <SolidColorBrush x:Key="OverdueText"    Color="#E5484D" />
     <SolidColorBrush x:Key="WarningText"    Color="#C9820B" />
     <SolidColorBrush x:Key="SuccessText"    Color="#16A34A" />

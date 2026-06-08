@@ -22,11 +22,11 @@ public class AppData
     /// <summary>正文/任务文字字体(可在设置里调整，持久化).空串表示跟随系统默认字体.</summary>
     public string FontFamily { get; set; } = "Microsoft YaHei UI, Segoe UI";
 
-    /// <summary>正文/任务文字基准字号(可在设置里调整，持久化).默认中=12.</summary>
-    public double FontSize { get; set; } = 12;
+    /// <summary>正文/任务文字基准字号(可在设置里调整，持久化).默认中=13.</summary>
+    public double FontSize { get; set; } = 13;
 
-    /// <summary>行距倍率(默认 0.9，更紧凑)，同时影响文字行高与任务行间距，持久化.</summary>
-    public double LineSpacing { get; set; } = 0.9;
+    /// <summary>行距倍率(默认 1.0，紧凑舒适)，同时影响文字行高与任务行间距，持久化.</summary>
+    public double LineSpacing { get; set; } = 1.0;
 
     /// <summary>勾选框圆环直径(可在设置里调整，持久化).0=未设置(首次按字号+2，约与文字等高).</summary>
     public double CheckboxSize { get; set; }
@@ -90,4 +90,16 @@ public class AppData
 
     /// <summary>用户选择“此版本不再提示”的版本号(如 1.1.4).自动检查命中该版本时静默跳过；手动检查仍会提示.</summary>
     public string IgnoredUpdateVersion { get; set; } = "";
+
+    /// <summary>日历是否显示国内法定节假日(默认开启).联网获取并本地缓存.</summary>
+    public bool ShowHolidays { get; set; } = true;
+
+    /// <summary>节假日数据缓存(原始 JSON，来自 holiday-cn 数据集)，按年缓存避免每次启动联网.</summary>
+    public string HolidayCacheJson { get; set; } = "";
+
+    /// <summary>节假日缓存所属年份(0=无缓存).跨年时自动联网刷新.</summary>
+    public int HolidayCacheYear { get; set; }
+
+    /// <summary>是否已展示过"拖拽任务到日历设置截止时间"的一次性功能提示(仅提示一次).</summary>
+    public bool CalendarDragHintShown { get; set; }
 }

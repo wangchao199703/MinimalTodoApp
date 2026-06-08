@@ -149,6 +149,22 @@
                                       Checked="ReminderSound_Changed" Unchecked="ReminderSound_Changed" />
                         </Grid>
 
+                        <!-- 显示节假日 -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.Holidays}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.HolidaysDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <CheckBox x:Name="HolidaysCheck" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                      Checked="Holidays_Changed" Unchecked="Holidays_Changed" />
+                        </Grid>
+
                         <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
 
                         <!-- 恢复默认设置 -->
@@ -235,7 +251,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.LineSpacing}" FontSize="13"
                                        VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
-                            <Slider Grid.Column="1" Minimum="0.8" Maximum="1.8" Value="{Binding LineSpacing, Mode=TwoWay}"
+                            <Slider Grid.Column="1" Minimum="0.4" Maximum="1.8" Value="{Binding LineSpacing, Mode=TwoWay}"
                                     TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                             <TextBlock Grid.Column="2" Text="{Binding LineSpacing, StringFormat={}{0:0.0}}" FontSize="12"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -333,25 +349,21 @@
 
                         <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
 
-                        <!-- GitHub 项目链接 -->
+                        <!-- 支持开发者:邀请点 Star 支持项目，点击打开 GitHub 仓库 -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
-                                <TextBlock Text="{DynamicResource S.About.Repo}" FontSize="14"
+                                <TextBlock Text="{DynamicResource S.About.Support}" FontSize="14"
                                            Foreground="{DynamicResource PrimaryText}" />
-                                <TextBlock FontSize="11" Margin="0,2,0,0" TextWrapping="Wrap">
-                                    <Hyperlink x:Name="RepoLink" Click="RepoLink_Click"
-                                               Foreground="{DynamicResource Accent}">
-                                        <Run Text="https://github.com/wangchao199703/MinimalTodoApp" />
-                                    </Hyperlink>
-                                </TextBlock>
+                                <TextBlock Text="{DynamicResource S.About.SupportDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
                             </StackPanel>
                             <Button Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
                                     Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
-                                    Padding="12,6" Content="{DynamicResource S.About.OpenRepo}"
+                                    Padding="12,6" Content="{DynamicResource S.About.StarButton}"
                                     Click="RepoLink_Click" />
                         </Grid>
                     </StackPanel>

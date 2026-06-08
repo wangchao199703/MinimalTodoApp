@@ -28,6 +28,7 @@ public partial class SettingsDialog : Window
             SoundCheck.IsChecked = _vm.SoundEnabled;
             ReminderSoundCheck.IsChecked = _vm.ReminderSoundEnabled;
             AutoUpdateCheck.IsChecked = _vm.AutoUpdateEnabled;
+            HolidaysCheck.IsChecked = _vm.ShowHolidays;
         }
         _initializing = false;
 
@@ -109,6 +110,12 @@ public partial class SettingsDialog : Window
     {
         if (_initializing || _vm == null) return;
         _vm.AutoUpdateEnabled = AutoUpdateCheck.IsChecked == true;   // 触发持久化
+    }
+
+    private void Holidays_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _vm == null) return;
+        _vm.ShowHolidays = HolidaysCheck.IsChecked == true;   // 触发持久化 + 日历重渲染
     }
 
     /// <summary>手动检查更新:无视“此版本不再提示”，有新版即弹更新对话框，否则提示已是最新.</summary>

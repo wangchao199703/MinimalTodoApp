@@ -310,10 +310,13 @@
     <sys:String x:Key="S.Settings.Nav.General">常规</sys:String>
     <sys:String x:Key="S.Settings.Nav.Font">字体</sys:String>
     <sys:String x:Key="S.Settings.Nav.About">关于</sys:String>
-    <sys:String x:Key="S.About.Repo">GitHub 项目</sys:String>
-    <sys:String x:Key="S.About.OpenRepo">打开</sys:String>
+    <sys:String x:Key="S.About.Support">支持开发者</sys:String>
+    <sys:String x:Key="S.About.SupportDesc">这是我利用业余时间打磨的免费小工具。如果它帮到了你，欢迎到 GitHub 给项目点一个 ⭐ Star —— 这是对作者最大的鼓励，也能让更多人发现它。</sys:String>
+    <sys:String x:Key="S.About.StarButton">去点 Star</sys:String>
+    <sys:String x:Key="S.Settings.Holidays">显示节假日</sys:String>
+    <sys:String x:Key="S.Settings.HolidaysDesc">在日历中标注国内法定节假日并高亮放假日（联网获取，首次需联网）</sys:String>
     <sys:String x:Key="S.Settings.RestoreDefaults">恢复默认设置</sys:String>
-    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">字体微软雅黑、字号 12、行距 1.3、勾选框 16</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">字体微软雅黑、字号 13、行距 1.0、勾选框 18</sys:String>
     <sys:String x:Key="S.Settings.RestoreDone">已恢复默认外观设置.</sys:String>
     <sys:String x:Key="S.Settings.AutoStart">开机自启动</sys:String>
     <sys:String x:Key="S.Settings.AutoStartDesc">登录 Windows 时自动运行（当前用户）</sys:String>
@@ -491,6 +494,8 @@
     <sys:String x:Key="S.Schedule.WeekdayHeaders">一,二,三,四,五,六,日</sys:String>
     <sys:String x:Key="S.Schedule.AllDay">全天 / 未定时</sys:String>
     <sys:String x:Key="S.Schedule.Done">已完成</sys:String>
+    <sys:String x:Key="S.Schedule.DragHint.Title">小技巧：拖拽设置截止时间</sys:String>
+    <sys:String x:Key="S.Schedule.DragHint.Body">你可以直接把左侧的待办拖到日历上来设置截止时间：&#x0a;· 天 / 周视图：拖到对应的小时，时间取该整点&#x0a;· 月视图：拖到某一天，时间设为当天 18:00&#x0a;&#x0a;（此提示只显示这一次）</sys:String>
     <sys:String x:Key="S.Fmt.YearMonth">{0}年{1}月</sys:String>
     <sys:String x:Key="S.Fmt.DayTitle">{0}年{1}月{2}日 周{3}</sys:String>
     <sys:String x:Key="S.Fmt.MoreCount">+{0}</sys:String>

@@ -70,6 +70,10 @@ public partial class App : Application
         var window = new MainWindow { DataContext = ViewModel };
         MainWindow = window;
         window.Show();
+
+        // 4. 后台刷新国内节假日数据(联网失败静默回退缓存)，不阻塞 UI 启动
+        if (ViewModel.ShowHolidays)
+            _ = ViewModel.EnsureHolidaysAsync();
     }
 
     /// <summary>
