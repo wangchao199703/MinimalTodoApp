@@ -20,5 +20,6 @@
     <SolidColorBrush x:Key="WarningText"    Color="#FFC04D" />
     <SolidColorBrush x:Key="SuccessText"    Color="#6EE7A0" />
 
-    <SolidColorBrush x:Key="PopupBg"        Color="#F22B313B" />
+    <!-- 弹窗(下拉/日历/菜单)必须不透明:毛玻璃半透明只用于主窗口，浮层透明会导致内容看不清 -->
+    <SolidColorBrush x:Key="PopupBg"        Color="#FF222831" />
 </ResourceDictionary>
