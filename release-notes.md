@@ -10,7 +10,7 @@ This update focuses on the calendar, readability and holidays — eight feedback
 - **Gentler backgrounds** — the most vivid light themes (Macaron mint/sakura/lemon, Dunhuang azure/terracotta) are desaturated so they're easier on the eyes over long sessions.
 - **Tighter line spacing** — the minimum line spacing now goes down to 0.4 (was 0.8).
 - **Better defaults** — default font size 13, line spacing 1.0, checkbox 18 for a more comfortable out-of-the-box look (new installs / restore-defaults only).
-- **Chinese public holidays & weekends** — the calendar shows national holidays (with names) and highlights weekends/days-off the same way. Holiday data is fetched online and cached for ~10 years, refreshed at most once a day. Toggle it in Settings; on by default.
+- **Chinese public holidays & weekends** — the calendar shows national holidays (with names) and highlights weekends/days-off the same way. Holiday data is fetched online and cached for the current and next year, refreshed at most once a day. Toggle it in Settings; on by default.
 - **Support the developer** — the About page now invites you to star the project on GitHub; the button opens the repo.
 
 Download `MinimalTodoApp-v1.1.6-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
@@ -25,7 +25,7 @@ Download `MinimalTodoApp-v1.1.6-win-x64.exe` and just double-click — no .NET r
 - **背景更柔和** —— 把最鲜艳的浅色主题（马卡龙薄荷/樱花/柠檬、敦煌石青/土红）整体降饱和，长时间看更不易疲劳。
 - **行距下限放宽** —— 行距最小值从 0.8 降到 0.4，可以更紧凑。
 - **默认更舒适** —— 默认字号 13、行距 1.0、勾选框 18（仅影响新安装与「恢复默认」）。
-- **国内节假日与周末** —— 日历显示国内法定节假日（标注节日名），并把周末/放假日一起高亮。节假日数据联网获取、缓存近十年、每天最多刷新一次。可在设置中开关，默认开启。
+- **国内节假日与周末** —— 日历显示国内法定节假日（标注节日名），并把周末/放假日一起高亮。节假日数据联网获取、缓存当年与次年、每天最多刷新一次。可在设置中开关，默认开启。
 - **支持开发者** —— 「关于」页改为邀请你到 GitHub 给项目点个 Star，点击按钮打开仓库。
 
 下载 `MinimalTodoApp-v1.1.6-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。

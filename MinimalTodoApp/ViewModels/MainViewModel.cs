@@ -707,10 +707,11 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     // ===== 节假日(联网获取 + 本地缓存近十年，每天最多刷新一次) =====
     private Dictionary<DateTime, string> _holidays = new();
 
-    /// <summary>缓存覆盖的年数:当年起向后十年.</summary>
-    private const int HolidayYearSpan = 10;
+    /// <summary>缓存覆盖的年数:当年 + 次年(共两年).更远年份官方尚未公布、数据集为空,拉了也没用;
+    /// 次年数据(年底前通常为空)由"每天刷新一次"在官方公布后自动补上.</summary>
+    private const int HolidayYearSpan = 2;
 
-    /// <summary>法定放假日 → 节日名称(近十年合并，仅含 isOffDay=true 的放假日，不含调休补班).</summary>
+    /// <summary>法定放假日 → 节日名称(当年+次年合并，仅含 isOffDay=true 的放假日，不含调休补班).</summary>
     public IReadOnlyDictionary<DateTime, string> Holidays => _holidays;
 
     /// <summary>把缓存中各年 JSON 合并解析为放假日字典(供日历查询).</summary>
@@ -748,9 +749,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             }
             if (!any) return;   // 全部联网失败:保留旧缓存、不记刷新日期(下次再试)
 
-            // 丢弃当年之前的过期年份，控制缓存体积
-            foreach (var oldYear in _data.HolidayCacheByYear.Keys.Where(k => k < startYear).ToList())
-                _data.HolidayCacheByYear.Remove(oldYear);
+            // 丢弃范围外年份(过期的、或超出覆盖跨度的)，控制缓存体积
+            foreach (var y in _data.HolidayCacheByYear.Keys
+                         .Where(k => k < startYear || k >= startYear + HolidayYearSpan).ToList())
+                _data.HolidayCacheByYear.Remove(y);
 
             _data.HolidayLastRefreshDate = today;
             RebuildHolidays();

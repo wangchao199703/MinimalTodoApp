@@ -94,7 +94,7 @@ public class AppData
     /// <summary>日历是否显示国内法定节假日(默认开启).联网获取并本地缓存.</summary>
     public bool ShowHolidays { get; set; } = true;
 
-    /// <summary>节假日数据缓存:年份 → 该年原始 JSON(holiday-cn 数据集).缓存近十年，避免每次启动联网.</summary>
+    /// <summary>节假日数据缓存:年份 → 该年原始 JSON(holiday-cn 数据集).缓存当年+次年，避免每次启动联网.</summary>
     public Dictionary<int, string> HolidayCacheByYear { get; set; } = new();
 
     /// <summary>节假日上次成功联网刷新的日期(yyyy-MM-dd，空=从未).每天最多刷新一次.</summary>
