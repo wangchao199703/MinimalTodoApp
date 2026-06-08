@@ -491,6 +491,7 @@
     <sys:String x:Key="S.Schedule.Prev">上一页</sys:String>
     <sys:String x:Key="S.Schedule.Next">下一页</sys:String>
     <sys:String x:Key="S.Schedule.NoTasks">本时段没有带截止时间的待办</sys:String>
+    <sys:String x:Key="S.Schedule.DragToSetTime">把左侧待办拖到对应时间，即可设置截止时间</sys:String>
     <sys:String x:Key="S.Schedule.WeekdayHeaders">一,二,三,四,五,六,日</sys:String>
     <sys:String x:Key="S.Schedule.AllDay">全天 / 未定时</sys:String>
     <sys:String x:Key="S.Schedule.Done">已完成</sys:String>

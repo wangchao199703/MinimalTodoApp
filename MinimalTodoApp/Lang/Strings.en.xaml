@@ -491,6 +491,7 @@
     <sys:String x:Key="S.Schedule.Prev">Previous</sys:String>
     <sys:String x:Key="S.Schedule.Next">Next</sys:String>
     <sys:String x:Key="S.Schedule.NoTasks">No due-dated todos in this period</sys:String>
+    <sys:String x:Key="S.Schedule.DragToSetTime">Drag a to-do from the left onto a time to set its due time</sys:String>
     <sys:String x:Key="S.Schedule.WeekdayHeaders">Mon,Tue,Wed,Thu,Fri,Sat,Sun</sys:String>
     <sys:String x:Key="S.Schedule.AllDay">All-day / no time</sys:String>
     <sys:String x:Key="S.Schedule.Done">Done</sys:String>

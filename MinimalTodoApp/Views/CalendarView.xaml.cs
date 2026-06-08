@@ -149,11 +149,8 @@ public partial class CalendarView : UserControl
         PeriodTitle.Text = dayHoliday != null ? DayTitle(_anchor) + "  ·  " + dayHoliday : DayTitle(_anchor);
 
         var tasks = TasksOn(_anchor);
-        if (tasks.Count == 0)
-        {
-            CalendarHost.Children.Add(new StackPanel { Margin = new Thickness(14), Children = { EmptyHint() } });
-            return;
-        }
+        // 注意:即使当天没有待办,也始终显示 0–24 小时时间轴 + 可拖放画布,
+        // 以便从左侧把待办拖到对应时间设置截止时间(空状态此前直接返回、无法拖放).
 
         var root = new Grid();
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });   // 全天/未定时
@@ -178,6 +175,26 @@ public partial class CalendarView : UserControl
         Grid.SetColumn(dayCanvas, 1);
         inner.Children.Add(gutter);
         inner.Children.Add(dayCanvas);
+
+        // 空状态:在时间轴上叠一行淡提示(不挡拖放,IsHitTestVisible=false)
+        if (tasks.Count == 0)
+        {
+            var hint = new TextBlock
+            {
+                Text = Loc.T("S.Schedule.DragToSetTime"),
+                Foreground = Brush("MutedText"),
+                FontSize = 12,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(8, 10, 8, 0),
+                TextWrapping = TextWrapping.Wrap,
+                TextAlignment = TextAlignment.Center,
+                IsHitTestVisible = false
+            };
+            Grid.SetColumn(hint, 1);
+            inner.Children.Add(hint);
+        }
+
         Grid.SetRow(inner, 1);
         root.Children.Add(inner);
 
@@ -676,13 +693,6 @@ public partial class CalendarView : UserControl
         return Loc.F("S.Fmt.DayTitle", d.Year, d.Month, d.Day, WeekdayName(d));
     }
 
-    private TextBlock EmptyHint() => new()
-    {
-        Text = Loc.T("S.Schedule.NoTasks"),
-        Foreground = Brush("MutedText"),
-        FontSize = 13,
-        Margin = new Thickness(4, 8, 0, 0)
-    };
 
     private static Brush PriorityBrush(Priority p) => p switch
     {
