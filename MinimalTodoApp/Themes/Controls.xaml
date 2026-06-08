@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:conv="clr-namespace:MinimalTodoApp.Converters">
+                    xmlns:conv="clr-namespace:MinimalTodoApp.Converters"
+                    xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework">
 
     <!-- ===================== 转换器 ===================== -->
     <conv:NullToBoolConverter x:Key="NullToBool" />
@@ -782,6 +783,16 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CalendarItem">
+                    <!-- 星期表头（日 一 二…）：WPF 默认用硬编码深灰前景，在深色/毛玻璃皮肤下看不清，
+                         此处提供主题化 DayTitle 模板，前景随主题(SecondaryText)。 -->
+                    <ControlTemplate.Resources>
+                        <DataTemplate x:Key="{x:Static primitives:CalendarItem.DayTitleTemplateResourceKey}">
+                            <TextBlock Text="{Binding}" Foreground="{DynamicResource SecondaryText}"
+                                       FontSize="11" FontWeight="SemiBold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="0,2,0,4" />
+                        </DataTemplate>
+                    </ControlTemplate.Resources>
                     <Border Background="{DynamicResource PopupBg}" BorderBrush="{DynamicResource Divider}"
                             BorderThickness="1" CornerRadius="10" Padding="8" SnapsToDevicePixels="True">
                         <Border.Effect>
