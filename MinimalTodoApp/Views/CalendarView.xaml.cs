@@ -440,11 +440,19 @@ public partial class CalendarView : UserControl
     {
         PeriodTitle.Text = Loc.F("S.Fmt.YearMonth", _anchor.Year, _anchor.Month);
 
+        // 只显示覆盖当月所需的周数(4~6 周)：首周可含上月尾、末周可含下月头，但不再固定 6 周、
+        // 不出现"整周都是下月"的多余行。
+        var first = new DateTime(_anchor.Year, _anchor.Month, 1);
+        var gridStart = StartOfWeek(first);
+        int offset = (first - gridStart).Days;                       // 当月 1 号距本周起点(周一)的天数
+        int daysInMonth = DateTime.DaysInMonth(_anchor.Year, _anchor.Month);
+        int weeks = (int)Math.Ceiling((offset + daysInMonth) / 7.0); // 覆盖当月所需周数
+
         for (int c = 0; c < 7; c++)
             CalendarHost.ColumnDefinitions.Add(new ColumnDefinition());
         CalendarHost.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });   // 星期表头
-        for (int r = 0; r < 6; r++)
-            CalendarHost.RowDefinitions.Add(new RowDefinition());                          // 6 周
+        for (int r = 0; r < weeks; r++)
+            CalendarHost.RowDefinitions.Add(new RowDefinition());
 
         var heads = WeekdayHeaders();
         for (int c = 0; c < 7; c++)
@@ -465,9 +473,7 @@ public partial class CalendarView : UserControl
             CalendarHost.Children.Add(head);
         }
 
-        var first = new DateTime(_anchor.Year, _anchor.Month, 1);
-        var gridStart = StartOfWeek(first);
-        for (int i = 0; i < 42; i++)
+        for (int i = 0; i < weeks * 7; i++)
         {
             var day = gridStart.AddDays(i);
             int row = i / 7 + 1;
@@ -493,7 +499,7 @@ public partial class CalendarView : UserControl
             Foreground = IsToday(day) ? Brush("Accent")
                          : (inMonth ? Brush("PrimaryText") : Brush("MutedText")),
         });
-        if (holiday != null && inMonth)
+        if (holiday != null)
             header.Children.Add(new TextBlock
             {
                 Text = holiday,
