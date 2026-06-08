@@ -71,9 +71,18 @@ public partial class App : Application
         MainWindow = window;
         window.Show();
 
-        // 4. 后台刷新国内节假日数据(联网失败静默回退缓存)，不阻塞 UI 启动
+        // 4. 国内节假日数据:**等窗口首帧渲染完成后**再异步联网刷新，绝不影响启动/首屏.
+        //    联网部分本身是异步(await HttpClient)、不阻塞 UI;失败静默回退缓存.
         if (ViewModel.ShowHolidays)
-            _ = ViewModel.EnsureHolidaysAsync();
+        {
+            EventHandler? onRendered = null;
+            onRendered = (_, _) =>
+            {
+                window.ContentRendered -= onRendered;   // 一次性
+                _ = ViewModel!.EnsureHolidaysAsync();
+            };
+            window.ContentRendered += onRendered;
+        }
     }
 
     /// <summary>
