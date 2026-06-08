@@ -36,6 +36,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // 全局异常兜底:记录到 crash.log，并尽量不让"偶发异常"直接闪退应用.
+        HookGlobalExceptionLogging();
+
         // 1. 创建并加载 ViewModel(内部完成 data.json 的读取)
         ViewModel = new MainViewModel();
 
@@ -83,6 +86,43 @@ public partial class App : Application
             };
             window.ContentRendered += onRendered;
         }
+    }
+
+    /// <summary>崩溃日志路径:%AppData%\MinimalTodoApp\crash.log.</summary>
+    private static string CrashLogPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "MinimalTodoApp", "crash.log");
+
+    /// <summary>
+    /// 挂接全局异常日志:
+    /// - UI 线程未处理异常(DispatcherUnhandledException):记录并标记已处理，避免"偶发异常直接闪退";
+    /// - 后台线程 / 未观察的 Task 异常:仅记录(无法阻止其后果，但能留下现场).
+    /// </summary>
+    private void HookGlobalExceptionLogging()
+    {
+        DispatcherUnhandledException += (_, args) =>
+        {
+            LogCrash("DispatcherUnhandledException", args.Exception);
+            args.Handled = true;   // 尽量让应用存活,而不是直接闪退
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+            LogCrash("AppDomain.UnhandledException", args.ExceptionObject as Exception);
+        System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            LogCrash("UnobservedTaskException", args.Exception);
+            args.SetObserved();
+        };
+    }
+
+    private static void LogCrash(string source, Exception? ex)
+    {
+        try
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(CrashLogPath)!);
+            File.AppendAllText(CrashLogPath,
+                $"==== {DateTime.Now:yyyy-MM-dd HH:mm:ss} [{source}] ====\n{ex}\n\n");
+        }
+        catch { /* 日志失败不影响运行 */ }
     }
 
     /// <summary>

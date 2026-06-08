@@ -728,28 +728,43 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// 逐年更新缓存(成功才覆盖)、丢弃过期年份，并持久化 + 触发日历重渲染.
     /// 联网失败静默保留已有缓存，不影响使用;全部失败则不更新刷新日期，下次启动再试.
     /// </summary>
+    private bool _holidayRefreshing;   // 防重入(启动触发 + 开关切换可能并发)
+
     public async Task EnsureHolidaysAsync()
     {
+        if (_holidayRefreshing) return;
         string today = DateTime.Today.ToString("yyyy-MM-dd");
         if (_data.HolidayLastRefreshDate == today) return;   // 今天已刷新过
 
-        int startYear = DateTime.Today.Year;
-        bool any = false;
-        for (int y = startYear; y < startYear + HolidayYearSpan; y++)
+        _holidayRefreshing = true;
+        try
         {
-            var raw = await HolidayService.FetchRawAsync(y);
-            if (!string.IsNullOrEmpty(raw)) { _data.HolidayCacheByYear[y] = raw; any = true; }
+            int startYear = DateTime.Today.Year;
+            bool any = false;
+            for (int y = startYear; y < startYear + HolidayYearSpan; y++)
+            {
+                var raw = await HolidayService.FetchRawAsync(y);
+                if (!string.IsNullOrEmpty(raw)) { _data.HolidayCacheByYear[y] = raw; any = true; }
+            }
+            if (!any) return;   // 全部联网失败:保留旧缓存、不记刷新日期(下次再试)
+
+            // 丢弃当年之前的过期年份，控制缓存体积
+            foreach (var oldYear in _data.HolidayCacheByYear.Keys.Where(k => k < startYear).ToList())
+                _data.HolidayCacheByYear.Remove(oldYear);
+
+            _data.HolidayLastRefreshDate = today;
+            RebuildHolidays();
+            SaveData();
+            HolidaysVisibilityChanged?.Invoke();
         }
-        if (!any) return;   // 全部联网失败:保留旧缓存、不记刷新日期(下次再试)
-
-        // 丢弃当年之前的过期年份，控制缓存体积
-        foreach (var oldYear in _data.HolidayCacheByYear.Keys.Where(k => k < startYear).ToList())
-            _data.HolidayCacheByYear.Remove(oldYear);
-
-        _data.HolidayLastRefreshDate = today;
-        RebuildHolidays();
-        SaveData();
-        HolidaysVisibilityChanged?.Invoke();
+        catch
+        {
+            // 联网/解析任何异常都不应影响应用:静默保留已有缓存
+        }
+        finally
+        {
+            _holidayRefreshing = false;
+        }
     }
 
     /// <summary>"拖拽到日历设置截止时间"一次性功能提示是否已展示过(读写即持久化).</summary>

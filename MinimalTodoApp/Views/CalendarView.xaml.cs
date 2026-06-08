@@ -65,8 +65,8 @@ public partial class CalendarView : UserControl
 
     private void OnHolidaysChanged()
     {
-        // 节假日数据联网就绪 / 开关切换:回到 UI 线程重渲染
-        if (IsVisible) Dispatcher.BeginInvoke(new Action(Render));
+        // 节假日数据联网就绪 / 开关切换:回到 UI 线程重渲染(异常不外抛,避免拖垮应用)
+        if (IsVisible) Dispatcher.BeginInvoke(new Action(() => { try { Render(); } catch { } }));
     }
 
     private void OnItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -520,9 +520,9 @@ public partial class CalendarView : UserControl
             });
         panel.Children.Add(wrap);
 
-        // 底色:今天优先,其次休息日(周末/节假日)柔和高亮
+        // 底色:今天优先,其次休息日(周末/节假日)柔和高亮(含非本月日期,保持周末列连续)
         Brush bg = IsToday(day) ? Brush("SelectedItemBg")
-                   : (inMonth && IsRestDay(day) ? HolidayBg : Brushes.Transparent);
+                   : (IsRestDay(day) ? HolidayBg : Brushes.Transparent);
 
         var cell = new Border
         {
