@@ -324,6 +324,11 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// </summary>
     public event Action<TodoItem>? ReminderTriggered;
 
+    /// <summary>
+    /// 新任务已添加并刷新到列表后触发.视图层据此对新任务卡片播放"淡入 + 上移"进场动画.
+    /// </summary>
+    public event Action<TodoItem>? TaskAdded;
+
     /// <summary>周期提醒是否播放提示音(默认开启，持久化).</summary>
     [ObservableProperty]
     private bool reminderSoundEnabled = true;
@@ -876,6 +881,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         RefreshGroupCounts();
         OnPropertyChanged(nameof(ParentCandidates));
         SaveData();
+        TaskAdded?.Invoke(item);
     }
 
     /// <summary>用快捷选项设置新任务截止时间(相对当前时间，精确到分钟).</summary>

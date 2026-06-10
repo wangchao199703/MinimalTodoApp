@@ -208,6 +208,24 @@ public partial class MainWindow : Window
         Vm.TaskCompleting += OnTaskCompleting;
         Vm.ReminderTriggered -= OnReminderTriggered;
         Vm.ReminderTriggered += OnReminderTriggered;
+        Vm.TaskAdded -= OnTaskAdded;
+        Vm.TaskAdded += OnTaskAdded;
+    }
+
+    /// <summary>
+    /// 新任务添加后:等容器生成完毕，对新卡片的模板根 Border 播放"淡入 + 上移"进场动画.
+    /// 动画挂在模板内部元素而非 ListBoxItem 本体，避免与完成滑出动画(覆写 ListBoxItem
+    /// 的 RenderTransform)互相干扰；容器未生成(虚拟化滚出屏)时静默跳过.
+    /// </summary>
+    private void OnTaskAdded(TodoItem item)
+    {
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            if (TaskList.ItemContainerGenerator.ContainerFromItem(item) is not ListBoxItem c) return;
+            if (VisualTreeHelper.GetChildrenCount(c) == 0) return;
+            if (VisualTreeHelper.GetChild(c, 0) is FrameworkElement root)
+                Anim.FadeSlideIn(root, dy: 10);
+        }), DispatcherPriority.Loaded);
     }
 
     /// <summary>周期提醒触发:左下角浮出 Toast 并按设置播放提示音.</summary>
@@ -745,6 +763,7 @@ public partial class MainWindow : Window
 
     private void ShowMainWindow()
     {
+        bool wasHidden = !IsVisible;
         Show();
         WindowState = WindowState.Normal;
 
@@ -757,6 +776,9 @@ public partial class MainWindow : Window
             Left = wa.Left + (wa.Width - Width) / 2;
             Top = wa.Top + (wa.Height - Height) / 2;
         }
+
+        // 从托盘隐藏态恢复时整窗淡入(结束后释放动画，不影响贴边的 Top/Left 动画)
+        if (wasHidden) Anim.WindowFadeIn(this);
 
         Activate();
         Topmost = true;   // 强制置顶以确保窗口跳到最前
@@ -1000,6 +1022,9 @@ public partial class MainWindow : Window
         _scheduleShown = true;
         Vm.ScheduleOpen = true;
         ScheduleView.Refresh();
+
+        // 日程面板内容从右侧弹性滑入(窗口宽度变化保持瞬时，避免与贴边/最大化/分隔条竞态)
+        Anim.FadeSlideIn(SchedulePanel, dx: 24);
     }
 
     private void CloseSchedule()

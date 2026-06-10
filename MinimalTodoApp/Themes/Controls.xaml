@@ -39,12 +39,79 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="b" Background="{TemplateBinding Background}"
-                            CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            CornerRadius="8" Padding="{TemplateBinding Padding}"
+                            RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="bScale" />
+                        </Border.RenderTransform>
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- hover 平滑变浅(代替瞬时 Opacity Setter) -->
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="Opacity" Value="0.88" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="b" Storyboard.TargetProperty="Opacity"
+                                                         To="0.88" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="b" Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <!-- 按压缩放反馈:按下轻缩 0.96,松开弹簧回弹(iOS 风格) -->
+                        <Trigger Property="IsPressed" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="0.96" Duration="0:0:0.08">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="0.96" Duration="0:0:0.08">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="1" Duration="0:0:0.18">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.18">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="b" Property="Opacity" Value="0.45" />
@@ -66,14 +133,82 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="b" Background="{TemplateBinding Background}"
-                            CornerRadius="8" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="Center" />
-                    </Border>
+                    <!-- hover 用叠加层做透明度渐变(不能对主题共享画刷做颜色动画);按压整体轻缩回弹 -->
+                    <Grid RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="bScale" />
+                        </Grid.RenderTransform>
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="8" />
+                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="0.96" Duration="0:0:0.08">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="0.96" Duration="0:0:0.08">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="1" Duration="0:0:0.18">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.18">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -92,13 +227,79 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="5">
+                    <Grid RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="bScale" />
+                        </Grid.RenderTransform>
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="5" />
+                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="5" Opacity="0" />
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource CardHoverBg}" />
                             <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="0.92" Duration="0:0:0.08">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="0.92" Duration="0:0:0.08">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleX"
+                                                         To="1" Duration="0:0:0.18">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="bScale" Storyboard.TargetProperty="ScaleY"
+                                                         To="1" Duration="0:0:0.18">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.3" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -112,7 +313,7 @@
         <Setter Property="Foreground" Value="{DynamicResource PrimaryText}" />
         <Setter Property="CaretBrush" Value="{DynamicResource PrimaryText}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="Padding" Value="11,8" />
         <Setter Property="FontSize" Value="{DynamicResource AppFontSize}" />
         <Setter Property="VerticalContentAlignment" Value="Center" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -167,15 +368,43 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Border x:Name="b" Background="Transparent" CornerRadius="8" Padding="10,8">
-                        <ContentPresenter VerticalAlignment="Center" />
-                    </Border>
+                    <!-- hover 用叠加层做透明度渐变(不能对主题共享画刷做颜色动画);选中态保持瞬时切换 -->
+                    <Grid>
+                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                        <Border x:Name="b" Background="Transparent" Padding="10,8">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
                         </Trigger>
                         <!-- 侧栏收起时收紧内边距，让窄条里有足够空间完整显示居中的圆形色点 -->
                         <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
@@ -194,15 +423,51 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
                     <!-- 卡片本身按缩进左移变窄;卡内"对勾到卡片左边框"的距离(Padding)与父任务一致;子任务上下间距减半 -->
+                    <!-- hover 用内部叠加层做透明度渐变并加轻阴影"浮起"(不能对主题共享画刷做颜色动画) -->
                     <Border x:Name="b" Background="{DynamicResource CardBg}"
                             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
-                            CornerRadius="12" Padding="12,8"
+                            CornerRadius="12"
                             Margin="{Binding IndentLevel, Converter={StaticResource IndentToCardMargin}}">
-                        <ContentPresenter VerticalAlignment="Center" />
+                        <Grid>
+                            <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="11" Opacity="0" />
+                            <Border Padding="14,9">
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </Border>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="b" Property="Background" Value="{DynamicResource CardHoverBg}" />
+                            <!-- 轻阴影瞬时挂上(同一时刻最多一张卡有 Effect,性能可控) -->
+                            <Setter TargetName="b" Property="Effect">
+                                <Setter.Value>
+                                    <DropShadowEffect BlurRadius="10" ShadowDepth="1" Direction="270"
+                                                      Opacity="0.16" Color="#000000" />
+                                </Setter.Value>
+                            </Setter>
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="1" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="hover" Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -225,7 +490,11 @@
                         <Ellipse x:Name="ring" Stroke="{TemplateBinding BorderBrush}" StrokeThickness="2"
                                  Fill="Transparent" />
                         <!-- 完成时的白色对勾：放在 24×24 设计稿内，顶点略低于中心(≈60%)以视觉居中，Viewbox 等比缩放到圆环大小 -->
-                        <Viewbox x:Name="checkbox" Stretch="Uniform" Opacity="0">
+                        <Viewbox x:Name="checkbox" Stretch="Uniform" Opacity="0"
+                                 RenderTransformOrigin="0.5,0.5">
+                            <Viewbox.RenderTransform>
+                                <ScaleTransform x:Name="checkScale" />
+                            </Viewbox.RenderTransform>
                             <Grid Width="24" Height="24">
                                 <Path Data="M 5.8 12.2 L 10 15 L 18.2 6.7"
                                       Stroke="White" StrokeThickness="3.4"
@@ -242,6 +511,43 @@
                             <Setter TargetName="ring" Property="Fill"
                                     Value="{Binding BorderBrush, RelativeSource={RelativeSource TemplatedParent}}" />
                             <Setter TargetName="checkbox" Property="Opacity" Value="1" />
+                            <!-- 对勾弹跳:0→1.18→1 的过冲回弹(iOS 勾选手感),伴随快速淡入 -->
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="checkbox" Storyboard.TargetProperty="Opacity"
+                                                         From="0" To="1" Duration="0:0:0.1">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="checkScale"
+                                                                       Storyboard.TargetProperty="ScaleX">
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.18" Value="1.18" KeySpline="0.2,0.8,0.3,1" />
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value="1" KeySpline="0.4,0,0.6,1" />
+                                        </DoubleAnimationUsingKeyFrames>
+                                        <DoubleAnimationUsingKeyFrames Storyboard.TargetName="checkScale"
+                                                                       Storyboard.TargetProperty="ScaleY">
+                                            <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0" />
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.18" Value="1.18" KeySpline="0.2,0.8,0.3,1" />
+                                            <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value="1" KeySpline="0.4,0,0.6,1" />
+                                        </DoubleAnimationUsingKeyFrames>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
+                            <Trigger.ExitActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="checkbox" Storyboard.TargetProperty="Opacity"
+                                                         To="0" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.ExitActions>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

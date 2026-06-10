@@ -3,6 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:dd="urn:gong-wpf-dragdrop"
+        xmlns:inf="clr-namespace:MinimalTodoApp.Infrastructure"
+        inf:Anim.Intro="True"
         Title="{DynamicResource S.ChooseTheme}"
         Width="376" Height="600" MinWidth="320" MinHeight="420"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"

@@ -1,6 +1,8 @@
 <Window x:Class="MinimalTodoApp.Views.HelpDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:inf="clr-namespace:MinimalTodoApp.Infrastructure"
+        inf:Anim.Intro="True"
         Title="{DynamicResource S.Help}"
         Width="460" SizeToContent="Height" MaxHeight="600"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"

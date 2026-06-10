@@ -1,6 +1,8 @@
 <Window x:Class="MinimalTodoApp.Views.SettingsDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:inf="clr-namespace:MinimalTodoApp.Infrastructure"
+        inf:Anim.Intro="True"
         Title="{DynamicResource S.Settings.Title}"
         Width="580" Height="468"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"

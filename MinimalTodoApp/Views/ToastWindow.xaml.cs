@@ -46,8 +46,9 @@ public partial class ToastWindow : Window
         { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
         BeginAnimation(OpacityProperty, fade);
 
+        // 上滑用弹簧缓动(轻微过冲回弹)，与全局动画规范一致、更灵动
         var slide = new DoubleAnimation(Top + 20, Top, TimeSpan.FromMilliseconds(260))
-        { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        { EasingFunction = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = 0.3 } };
         BeginAnimation(TopProperty, slide);
 
         _autoClose.Start();
