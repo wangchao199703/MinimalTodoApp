@@ -109,6 +109,10 @@ public static class ThemeManager
     /// <summary>主题应用完成后触发.供以代码快照画刷渲染、不走 DynamicResource 的视图(如日历)重渲染.</summary>
     public static event Action? ThemeChanged;
 
+    /// <summary>主题即将切换(仅 <see cref="Apply"/>，编辑器逐色预览不触发).
+    /// 供主窗口先截图旧主题做整窗交叉淡变.</summary>
+    public static event Action? ThemeChanging;
+
     /// <summary>内置(xaml + 代码调色板) + 自定义的完整主题列表(供 UI 绑定).Display 按当前语言解析.</summary>
     public static List<ThemeInfo> AllThemes() =>
         Builtin.Select(t => t with { Display = Loc.T(t.Display) })
@@ -174,6 +178,8 @@ public static class ThemeManager
     {
         if (string.IsNullOrWhiteSpace(theme))
             theme = Light;
+
+        ThemeChanging?.Invoke();
 
         ResourceDictionary newDict;
 

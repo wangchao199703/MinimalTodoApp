@@ -82,7 +82,7 @@
                         </ToggleButton>
                         <Popup IsOpen="{Binding IsChecked, ElementName=SettingsToggle}"
                                PlacementTarget="{Binding ElementName=SettingsToggle}"
-                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
                             <Border Background="{DynamicResource PopupBg}" CornerRadius="8"
                                     BorderBrush="{DynamicResource Divider}" BorderThickness="1"
                                     Padding="6" Margin="6" MinWidth="160">
@@ -179,7 +179,9 @@
                                      dd:DragDrop.IsDragSource="True"
                                      dd:DragDrop.IsDropTarget="True"
                                      dd:DragDrop.DropHandler="{Binding}"
-                                     dd:DragDrop.UseDefaultDragAdorner="True">
+                                     dd:DragDrop.UseDefaultDragAdorner="True"
+                                     dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                     dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid x:Name="GroupRow"
@@ -347,7 +349,7 @@
                                 </ToggleButton>
                                 <Popup IsOpen="{Binding IsChecked, ElementName=IoToggle}"
                                        PlacementTarget="{Binding ElementName=IoToggle}"
-                                       Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                                       Placement="Top" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
                                     <Border Background="{DynamicResource PopupBg}" CornerRadius="10"
                                             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
                                             Padding="6" Margin="6" MinWidth="170">
@@ -437,13 +439,13 @@
                         </Grid.RowDefinitions>
 
                         <!-- 头部：标题 + 排序（图标按钮，点击弹出选择） -->
-                        <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid Grid.Row="0" Margin="0,0,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding CurrentTitle}" FontSize="15"
-                                       FontWeight="SemiBold" VerticalAlignment="Center"
+                            <TextBlock Grid.Column="0" Text="{Binding CurrentTitle}" FontSize="17"
+                                       FontWeight="Bold" VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource PrimaryText}" />
 
@@ -455,7 +457,7 @@
                                 </ToggleButton>
                                 <Popup IsOpen="{Binding IsChecked, ElementName=SortToggle}"
                                        PlacementTarget="{Binding ElementName=SortToggle}"
-                                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True">
+                                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
                                     <Border Background="{DynamicResource PopupBg}" CornerRadius="8"
                                             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
                                             Padding="6" Margin="6" MinWidth="150">
@@ -493,7 +495,9 @@
                                  dd:DragDrop.IsDragSource="True"
                                  dd:DragDrop.IsDropTarget="True"
                                  dd:DragDrop.DropHandler="{Binding}"
-                                 dd:DragDrop.UseDefaultDragAdorner="True">
+                                 dd:DragDrop.UseDefaultDragAdorner="True"
+                                 dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                 dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <!-- Tag 绑定到主窗口 DataContext(=ViewModel)，供 ContextMenu 经 PlacementTarget.Tag 访问命令 -->
@@ -619,11 +623,13 @@
                                                 </Button.Template>
                                         </Button>
 
-                                        <!-- 距离 DDL 的倒计时（Col3） -->
+                                        <!-- 距离 DDL 的倒计时（Col3）:胶囊徽章,底色用 CardHoverBg 柔和衬托、文字保持紧迫度配色 -->
                                         <Border Grid.Column="3" Margin="8,0,2,0" VerticalAlignment="Center"
+                                                Background="{DynamicResource CardHoverBg}"
+                                                CornerRadius="9" Padding="8,2"
                                                 Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}"
                                                 ToolTip="{Binding DueDetailText}">
-                                            <TextBlock Text="{Binding DueCountdownText}" FontSize="12.5"
+                                            <TextBlock Text="{Binding DueCountdownText}" FontSize="12"
                                                        FontWeight="SemiBold"
                                                        Foreground="{Binding DueState, Converter={StaticResource DueStateToBrush}}" />
                                         </Border>
@@ -741,7 +747,7 @@
 
                                     <Popup IsOpen="{Binding IsChecked, ElementName=DueTimeToggle}"
                                            PlacementTarget="{Binding ElementName=DueTimeToggle}"
-                                           Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                                           Placement="Top" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
                                         <Border Background="{DynamicResource PopupBg}" CornerRadius="10"
                                                 BorderBrush="{DynamicResource Divider}" BorderThickness="1"
                                                 Padding="10" Margin="6" MinWidth="260">
@@ -849,7 +855,7 @@
 
                                     <Popup IsOpen="{Binding IsChecked, ElementName=ReminderToggle}"
                                            PlacementTarget="{Binding ElementName=ReminderToggle}"
-                                           Placement="Top" StaysOpen="False" AllowsTransparency="True">
+                                           Placement="Top" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
                                         <Border Background="{DynamicResource PopupBg}" CornerRadius="10"
                                                 BorderBrush="{DynamicResource Divider}" BorderThickness="1"
                                                 Padding="10" Margin="6" MinWidth="260">
@@ -1039,6 +1045,10 @@
 
             <!-- 完成庆祝：烟花粒子覆盖层（不拦截鼠标，浮于全部内容之上） -->
             <Canvas x:Name="FxOverlay" IsHitTestVisible="False" ClipToBounds="True" />
+
+            <!-- 换肤交叉淡变：切主题前的旧主题截图盖在最上层，换肤后淡出（不拦截鼠标） -->
+            <Image x:Name="ThemeFadeOverlay" IsHitTestVisible="False" Stretch="Fill"
+                   Visibility="Collapsed" />
         </Grid>
     </Border>
 </Window>

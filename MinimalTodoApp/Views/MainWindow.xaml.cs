@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Win32;
@@ -80,6 +81,12 @@ public partial class MainWindow : Window
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         HookViewModel();
+
+        // 换肤交叉淡变:切主题前截图旧主题,完成后淡出(仅主窗口,启动时首个 Apply 早于此处不受影响)
+        ThemeManager.ThemeChanging -= OnThemeChanging;
+        ThemeManager.ThemeChanging += OnThemeChanging;
+        ThemeManager.ThemeChanged -= OnThemeChangedFadeOut;
+        ThemeManager.ThemeChanged += OnThemeChangedFadeOut;
         ApplySidebarState();
         ApplyInputBarHeight();
         UpdateClip();
@@ -226,6 +233,58 @@ public partial class MainWindow : Window
             if (VisualTreeHelper.GetChild(c, 0) is FrameworkElement root)
                 Anim.FadeSlideIn(root, dy: 10);
         }), DispatcherPriority.Loaded);
+    }
+
+    // ===== 换肤交叉淡变 =====
+
+    /// <summary>
+    /// 主题即将切换:先把旧主题的整窗画面截图盖在最上层(ThemeFadeOverlay)，
+    /// 换肤完成后(<see cref="OnThemeChangedFadeOut"/>)再将其淡出——整窗丝滑过渡而非瞬间换色.
+    /// </summary>
+    private void OnThemeChanging()
+    {
+        if (!Anim.Enabled || !IsVisible || RootBorder.ActualWidth < 1) return;
+        try
+        {
+            // 连续快速切换时先撤掉上一张正在淡出的旧图,避免截到"图中图"
+            ThemeFadeOverlay.BeginAnimation(OpacityProperty, null);
+            ThemeFadeOverlay.Visibility = Visibility.Collapsed;
+            ThemeFadeOverlay.Source = null;
+            UpdateLayout();
+
+            var dpi = VisualTreeHelper.GetDpi(this);
+            var rtb = new RenderTargetBitmap(
+                (int)Math.Ceiling(RootBorder.ActualWidth * dpi.DpiScaleX),
+                (int)Math.Ceiling(RootBorder.ActualHeight * dpi.DpiScaleY),
+                dpi.PixelsPerInchX, dpi.PixelsPerInchY, PixelFormats.Pbgra32);
+            rtb.Render(RootBorder);
+            rtb.Freeze();
+
+            ThemeFadeOverlay.Source = rtb;
+            ThemeFadeOverlay.Opacity = 1;
+            ThemeFadeOverlay.Visibility = Visibility.Visible;
+        }
+        catch
+        {
+            // 截图失败(极端尺寸/显存)就退回瞬时换肤
+            ThemeFadeOverlay.Visibility = Visibility.Collapsed;
+            ThemeFadeOverlay.Source = null;
+        }
+    }
+
+    /// <summary>主题切换完成:把旧主题截图淡出并释放.</summary>
+    private void OnThemeChangedFadeOut()
+    {
+        if (ThemeFadeOverlay.Visibility != Visibility.Visible) return;
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260))
+        { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        fade.Completed += (_, _) =>
+        {
+            ThemeFadeOverlay.BeginAnimation(OpacityProperty, null);
+            ThemeFadeOverlay.Visibility = Visibility.Collapsed;
+            ThemeFadeOverlay.Source = null;
+        };
+        ThemeFadeOverlay.BeginAnimation(OpacityProperty, fade);
     }
 
     /// <summary>周期提醒触发:左下角浮出 Toast 并按设置播放提示音.</summary>

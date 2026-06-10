@@ -375,6 +375,15 @@
                         <Border x:Name="b" Background="Transparent" Padding="10,8">
                             <ContentPresenter VerticalAlignment="Center" />
                         </Border>
+                        <!-- 选中指示条:左侧强调色小圆条,选中时弹性展开(现代侧栏惯用) -->
+                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                Background="{DynamicResource Accent}"
+                                HorizontalAlignment="Left" VerticalAlignment="Center"
+                                Opacity="0" RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="indScale" ScaleY="0.4" />
+                            </Border.RenderTransform>
+                        </Border>
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -405,6 +414,25 @@
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                            <Trigger.EnterActions>
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="ind" Storyboard.TargetProperty="Opacity"
+                                                         From="0" To="1" Duration="0:0:0.12">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="indScale" Storyboard.TargetProperty="ScaleY"
+                                                         From="0.4" To="1" Duration="0:0:0.28">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.5" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </Trigger.EnterActions>
                         </Trigger>
                         <!-- 侧栏收起时收紧内边距，让窄条里有足够空间完整显示居中的圆形色点 -->
                         <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
@@ -737,7 +765,7 @@
     <!-- 默认（无 Key）样式：应用到所有 ScrollBar，含任务列表内的滚动条 -->
     <Style TargetType="ScrollBar">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Width" Value="10" />
+        <Setter Property="Width" Value="8" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ScrollBar">
@@ -768,7 +796,7 @@
         <Style.Triggers>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto" />
-                <Setter Property="Height" Value="10" />
+                <Setter Property="Height" Value="8" />
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -815,15 +843,46 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ContextMenu">
-                    <Border Background="{TemplateBinding Background}"
+                    <!-- 每次打开(Loaded)都播放与设置弹窗同款的"缩放 0.95→1 + 淡入"进场(自顶部展开) -->
+                    <Border x:Name="menuRoot" Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="8" Padding="0,4" Margin="0,0,6,6" SnapsToDevicePixels="True">
+                            CornerRadius="8" Padding="0,4" Margin="0,0,6,6" SnapsToDevicePixels="True"
+                            RenderTransformOrigin="0.5,0">
+                        <Border.RenderTransform>
+                            <ScaleTransform x:Name="menuScale" />
+                        </Border.RenderTransform>
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="14" ShadowDepth="0" Opacity="0.3" Color="#000000" />
                         </Border.Effect>
                         <ItemsPresenter />
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="menuRoot" Storyboard.TargetProperty="Opacity"
+                                                     From="0" To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <CubicEase EasingMode="EaseOut" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="menuScale" Storyboard.TargetProperty="ScaleX"
+                                                     From="0.95" To="1" Duration="0:0:0.28">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase EasingMode="EaseOut" Amplitude="0.35" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="menuScale" Storyboard.TargetProperty="ScaleY"
+                                                     From="0.95" To="1" Duration="0:0:0.28">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase EasingMode="EaseOut" Amplitude="0.35" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -897,13 +956,28 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToolTip">
-                    <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                    <Border x:Name="tipRoot" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="1" CornerRadius="6" Padding="9,6" SnapsToDevicePixels="True">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="12" ShadowDepth="0" Opacity="0.28" Color="#000000" />
                         </Border.Effect>
                         <ContentPresenter />
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <!-- 提示快速淡入(不缩放,提示不该抢戏) -->
+                        <EventTrigger RoutedEvent="Loaded">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="tipRoot" Storyboard.TargetProperty="Opacity"
+                                                     From="0" To="1" Duration="0:0:0.15">
+                                        <DoubleAnimation.EasingFunction>
+                                            <CubicEase EasingMode="EaseOut" />
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -979,14 +1053,45 @@
                                           ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                           Margin="10,0,26,0" VerticalAlignment="Center" HorizontalAlignment="Left" />
                         <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}"
-                               AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                               AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+                            <!-- 下拉每次打开(Loaded)播放与设置弹窗同款"缩放 0.95→1 + 淡入"(自顶部展开) -->
                             <Border Background="{DynamicResource PopupBg}" BorderBrush="{DynamicResource Divider}"
                                     BorderThickness="1" CornerRadius="8" Padding="0,4" Margin="0,4,0,8"
                                     MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
-                                    MaxHeight="{TemplateBinding MaxDropDownHeight}" SnapsToDevicePixels="True">
+                                    MaxHeight="{TemplateBinding MaxDropDownHeight}" SnapsToDevicePixels="True"
+                                    RenderTransformOrigin="0.5,0">
+                                <Border.RenderTransform>
+                                    <ScaleTransform />
+                                </Border.RenderTransform>
                                 <Border.Effect>
                                     <DropShadowEffect BlurRadius="14" ShadowDepth="0" Opacity="0.3" Color="#000000" />
                                 </Border.Effect>
+                                <Border.Triggers>
+                                    <EventTrigger RoutedEvent="Loaded">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                                 From="0" To="1" Duration="0:0:0.15">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <CubicEase EasingMode="EaseOut" />
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                 From="0.95" To="1" Duration="0:0:0.28">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <BackEase EasingMode="EaseOut" Amplitude="0.35" />
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                 From="0.95" To="1" Duration="0:0:0.28">
+                                                    <DoubleAnimation.EasingFunction>
+                                                        <BackEase EasingMode="EaseOut" Amplitude="0.35" />
+                                                    </DoubleAnimation.EasingFunction>
+                                                </DoubleAnimation>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Border.Triggers>
                                 <ScrollViewer>
                                     <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
                                 </ScrollViewer>
@@ -1102,10 +1207,41 @@
                         </DataTemplate>
                     </ControlTemplate.Resources>
                     <Border Background="{DynamicResource PopupBg}" BorderBrush="{DynamicResource Divider}"
-                            BorderThickness="1" CornerRadius="10" Padding="8" SnapsToDevicePixels="True">
+                            BorderThickness="1" CornerRadius="10" Padding="8" SnapsToDevicePixels="True"
+                            RenderTransformOrigin="0.5,0">
+                        <Border.RenderTransform>
+                            <ScaleTransform />
+                        </Border.RenderTransform>
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="14" ShadowDepth="0" Opacity="0.3" Color="#000000" />
                         </Border.Effect>
+                        <!-- 日历弹层每次打开播放与设置弹窗同款"缩放 0.95→1 + 淡入" -->
+                        <Border.Triggers>
+                            <EventTrigger RoutedEvent="Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                         From="0" To="1" Duration="0:0:0.15">
+                                            <DoubleAnimation.EasingFunction>
+                                                <CubicEase EasingMode="EaseOut" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                         From="0.95" To="1" Duration="0:0:0.28">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.35" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                         From="0.95" To="1" Duration="0:0:0.28">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase EasingMode="EaseOut" Amplitude="0.35" />
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Border.Triggers>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
