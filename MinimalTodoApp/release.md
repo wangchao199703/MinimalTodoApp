@@ -4,7 +4,7 @@
 
 ## v1.1.7（第三十六轮）—— 2026-06-10
 
-版本号升至 **1.1.7**（`<Version>1.1.7` / `<FileVersion>1.1.7.0` / `<AssemblyVersion>1.1.7.0`）。界面现代化 + iOS/macOS 风格灵动动画（**本轮仅构建无依赖 exe，暂不发布 Release 包**）：
+版本号升至 **1.1.7**（`<Version>1.1.7` / `<FileVersion>1.1.7.0` / `<AssemblyVersion>1.1.7.0`）。界面现代化 + iOS/macOS 风格灵动动画（共三批改动，2026-06-10 经 `release.ps1` **正式发布 Release**）：
 
 1. **统一动画规范**：新增 `Anim` 动画工具（Fast 120ms / Base 200ms / Emphasis 280ms 弹簧过冲 / Bounce 弹跳），全部动画跟随 Windows 系统"显示动画"无障碍开关。
 2. **按钮按压回弹**：主按钮/幽灵按钮/图标按钮按下轻缩、松开弹簧回弹；hover 由瞬时变色改为平滑渐变。

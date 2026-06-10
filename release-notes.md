@@ -1,3 +1,39 @@
+## MinimalTodoApp v1.1.7
+
+### English
+
+A look-and-feel release: modern visuals and fluid, iPhone/Mac-inspired animations throughout the app.
+
+- **Springy animations everywhere** — buttons squish and bounce back when pressed, the check mark pops when you complete a task, and new tasks fade in with a gentle lift. All motion follows one design system (fast, subtle, with a light spring overshoot).
+- **Every popup now glides in** — dialogs (Settings, Edit task, Themes…), right-click menus, dropdowns and the date picker open with the same scale-and-fade entrance instead of snapping into place.
+- **Silky theme switching** — picking a theme cross-fades the whole window from the old skin to the new one instead of flashing.
+- **Livelier calendar** — switching Day/Week/Month or jumping to Today animates the view in; paging back and forth slides the content in the direction you're going.
+- **Better drag & drop** — dragging a to-do shows a translucent card that follows your cursor, and the insertion line now uses your theme's accent color so it's easy to see.
+- **Modern UI polish** — accent indicator on the selected sidebar group, bolder list header, countdown badges as rounded pills, slimmer scrollbars, hover highlights that fade smoothly on every control, roomier card padding.
+- **Better default typography** — new defaults: Microsoft YaHei UI, size 14, line spacing 1.1 (new installs / restore-defaults only).
+- **Fixes** — sidebar accent indicator no longer stays lit on the previous group; line-spacing values below 0.8 are no longer clamped back.
+- Animations respect Windows' "Show animations" accessibility setting; nothing else changed — your data and settings carry over as-is.
+
+Download `MinimalTodoApp-v1.1.7-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
+
+### 简体中文
+
+本次是外观与动效专版：全面现代化的界面 + 参考 iPhone/Mac 的灵动动画。
+
+- **弹簧动效遍布全程** —— 按钮按下轻缩、松开回弹；完成任务时对勾弹跳打勾；新增待办淡入上浮。所有动效遵循统一规范（快速、克制、带轻微弹簧过冲）。
+- **所有弹层优雅进场** —— 设置/编辑任务/主题等弹窗、右键菜单、下拉框、日期选择器，都以同款「缩放 + 淡入」进场，不再瞬间弹出。
+- **丝滑换肤** —— 切换主题时整窗从旧皮肤交叉淡变到新皮肤，不再闪一下。
+- **日历更灵动** —— 切换天/周/月或回「今天」有缩放淡入；前后翻页时内容沿翻页方向弹性滑入。
+- **拖拽更好看** —— 拖动待办时有半透明卡片影像跟随光标，插入位置指示线改用主题强调色，一眼可见。
+- **界面现代化打磨** —— 侧栏选中分组的强调色指示条、更醒目的列表大标题、倒计时胶囊徽章、更纤细的滚动条、全部控件的悬停渐变高亮、更透气的卡片留白。
+- **默认排版优化** —— 新默认：微软雅黑 UI、字号 14、行距 1.1（仅影响新安装与「恢复默认」）。
+- **修复** —— 侧栏指示条切换分组后不再残留高亮；行距设到 0.8 以下不再被夹回。
+- 所有动画跟随 Windows「显示动画」无障碍设置；数据与设置完全兼容，升级即用。
+
+下载 `MinimalTodoApp-v1.1.7-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。
+
+---
+
 ## MinimalTodoApp v1.1.6
 
 ### English
