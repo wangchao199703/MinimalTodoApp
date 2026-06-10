@@ -21,6 +21,31 @@
                             UseAeroCaptionButtons="False" />
     </shell:WindowChrome.WindowChrome>
 
+    <Window.Resources>
+        <!-- 收集箱便签项模板(未分组列表与各分组列表共用):图标 + 标题;右键删除 -->
+        <DataTemplate x:Key="NoteItemTemplate">
+            <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                  ToolTip="{Binding DisplayTitle}">
+                <Grid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="{DynamicResource S.Note.Delete}" Click="InboxDeleteNote_Click" />
+                    </ContextMenu>
+                </Grid.ContextMenu>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="18" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="&#xE70B;"
+                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           Foreground="{DynamicResource MutedText}" />
+                <TextBlock Grid.Column="1" Text="{Binding DisplayTitle}" Margin="6,0,0,0"
+                           VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                           Foreground="{DynamicResource PrimaryText}" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+
     <!-- 圆角外壳：AllowsTransparency 下用 Border 自绘圆角 -->
     <Border x:Name="RootBorder" Background="{DynamicResource WindowBg}" CornerRadius="10"
             BorderBrush="{DynamicResource Divider}" BorderThickness="1"
@@ -176,7 +201,6 @@
                                  SelectedItem 用 OneWay + SelectionChanged:已完成不在本列表里,避免它被选中时列表回写 null。 -->
                             <ListBox x:Name="GroupList" Margin="0" Style="{StaticResource FlatListBox}"
                                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                     ItemContainerStyle="{StaticResource SidebarItemStyle}"
                                      ItemsSource="{Binding SidebarGroups}"
                                      SelectedItem="{Binding SelectedGroup, Mode=OneWay}"
                                      SelectionChanged="GroupList_SelectionChanged"
@@ -186,6 +210,20 @@
                                      dd:DragDrop.UseDefaultDragAdorner="True"
                                      dd:DragDrop.DefaultDragAdornerOpacity="0.85"
                                      dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}">
+                                <ListBox.ItemContainerStyle>
+                                    <!-- “所有待办”折叠时:隐藏其下普通分组容器(所有待办自身仍显示) -->
+                                    <Style TargetType="ListBoxItem" BasedOn="{StaticResource SidebarItemStyle}">
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsAllUncompletedGroup}" Value="False" />
+                                                    <Condition Binding="{Binding DataContext.AllUncompletedGroup.IsCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True" />
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Collapsed" />
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid x:Name="GroupRow"
@@ -198,15 +236,30 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
 
-                                            <!-- 右键菜单：改色（子菜单）/ 清空 / 删除 -->
+                                            <!-- 右键菜单：新建分组(任意分组都可) / 重命名 / 折叠展开(所有待办) / 更改图标 / 清空 / 删除 -->
                                             <Grid.ContextMenu>
                                                 <ContextMenu>
-                                                    <MenuItem Header="{DynamicResource S.Group.ChangeIcon}" Click="GroupChangeIcon_Click" />
+                                                    <MenuItem Header="{DynamicResource S.Group.New}"
+                                                              Command="{Binding PlacementTarget.Tag.AddGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                    <!-- 折叠/展开:仅“所有待办”显示(收起其下普通分组) -->
+                                                    <MenuItem Header="{DynamicResource S.Group.ToggleCollapse}"
+                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}}"
+                                                              Command="{Binding PlacementTarget.Tag.ToggleGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                    <!-- 以下仅普通分组(所有待办除外) -->
+                                                    <MenuItem Header="{DynamicResource S.Group.Rename}"
+                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                                                              Command="{Binding PlacementTarget.Tag.RenameGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                    <MenuItem Header="{DynamicResource S.Group.ChangeIcon}" Click="GroupChangeIcon_Click"
+                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                    <Separator Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
                                                     <MenuItem Header="{DynamicResource S.Group.Clear}"
+                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
                                                               Command="{Binding PlacementTarget.Tag.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                               CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                    <Separator />
                                                     <MenuItem Header="{DynamicResource S.Group.Delete}"
+                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
                                                               Command="{Binding PlacementTarget.Tag.DeleteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                               CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                                 </ContextMenu>
@@ -227,8 +280,28 @@
                                             </Grid>
                                             <TextBlock Grid.Column="1" Text="{Binding DisplayName}" VerticalAlignment="Center"
                                                        Margin="6,0,0,0" FontSize="12" TextTrimming="CharacterEllipsis"
-                                                       Foreground="{DynamicResource PrimaryText}"
-                                                       Visibility="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                       Foreground="{DynamicResource PrimaryText}">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                                <Setter Property="Visibility" Value="Collapsed" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <!-- 内联重命名输入框(右键“重命名”或新建分组时显示) -->
+                                            <TextBox Grid.Column="1" Margin="6,0,0,0" FontSize="12" Padding="2,1"
+                                                     Style="{StaticResource FlatTextBox}" VerticalAlignment="Center"
+                                                     Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                                                     IsVisibleChanged="GroupNameEdit_IsVisibleChanged"
+                                                     LostKeyboardFocus="GroupNameEdit_LostFocus"
+                                                     KeyDown="GroupNameEdit_KeyDown" />
                                             <TextBlock Grid.Column="2" Text="{Binding ItemCount}" Margin="4,0"
                                                        VerticalAlignment="Center" FontSize="11"
                                                        Foreground="{DynamicResource MutedText}"
@@ -251,69 +324,18 @@
                                 </ListBox.ItemTemplate>
                             </ListBox>
 
-                            <!-- 新建分组：放在普通分组之后(缩进对齐子分组)；展开=图标+文字内联输入；折叠=加号图标 -->
-                            <Grid Margin="16,2,0,0">
-                                <!-- 展开态（固定 28 高度，保证按钮态/输入态都与下方各项对齐） -->
-                                <Grid Height="28"
-                                      Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-                                    <Button Style="{StaticResource GhostButton}" Height="28" Padding="6,0"
-                                            HorizontalContentAlignment="Left"
-                                            Command="{Binding BeginAddGroupCommand}"
-                                            Visibility="{Binding IsAddingGroup, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
-                                                       TextAlignment="Center" VerticalAlignment="Center" />
-                                            <TextBlock Text="{DynamicResource S.NewGroup}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Button>
-
-                                    <Grid Visibility="{Binding IsAddingGroup, Converter={StaticResource BoolToVis}}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <!-- 图标选择:显示当前图标(字形或图片)，点击打开图标选择器 -->
-                                        <Button Grid.Column="0" Style="{StaticResource IconButton}" Margin="0,0,4,0"
-                                                Click="NewGroupIcon_Click" ToolTip="{DynamicResource S.IconPicker.Title}">
-                                            <Grid>
-                                                <TextBlock Text="{Binding NewGroupIconGlyph}"
-                                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
-                                                           Foreground="{DynamicResource PrimaryText}"
-                                                           Visibility="{Binding HasNewGroupIconImage, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
-                                                <Image Source="{Binding NewGroupIconImage, Converter={StaticResource PathToImage}}"
-                                                       Width="16" Height="16" Stretch="UniformToFill"
-                                                       Visibility="{Binding HasNewGroupIconImage, Converter={StaticResource BoolToVis}}" />
-                                            </Grid>
-                                        </Button>
-                                        <TextBox x:Name="NewGroupBox" Grid.Column="1" Style="{StaticResource FlatTextBox}"
-                                                 Height="26" VerticalAlignment="Center" Padding="8,0" FontSize="12"
-                                                 Text="{Binding NewGroupName, UpdateSourceTrigger=PropertyChanged}">
-                                            <TextBox.InputBindings>
-                                                <KeyBinding Key="Enter" Command="{Binding ConfirmAddGroupCommand}" />
-                                                <KeyBinding Key="Esc" Command="{Binding CancelAddGroupCommand}" />
-                                            </TextBox.InputBindings>
-                                        </TextBox>
-                                        <Button Grid.Column="2" Style="{StaticResource IconButton}" Content="✓"
-                                                Margin="4,0,0,0" ToolTip="{DynamicResource S.Confirm}" Command="{Binding ConfirmAddGroupCommand}" />
-                                        <Button Grid.Column="3" Style="{StaticResource IconButton}" Content="✕"
-                                                ToolTip="{DynamicResource S.Cancel}" Command="{Binding CancelAddGroupCommand}" />
-                                    </Grid>
-                                </Grid>
-
-                                <!-- 折叠态：加号图标 -->
-                                <Button Style="{StaticResource GhostButton}" Height="28" Padding="0"
-                                        ToolTip="{DynamicResource S.NewGroup}" Command="{Binding BeginAddGroupCommand}"
-                                        Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}">
-                                    <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
-                                </Button>
-                            </Grid>
+                            <!-- (新建分组已移到分组右键菜单:右键任意分组 → 新建分组,新分组进入内联重命名) -->
 
                             <!-- 已完成:顶层独立成行(与「所有待办」对称,不缩进);点击切到已完成视图,高亮跟随 IsCompletedSelected -->
                             <Button x:Name="CompletedRow" Margin="0,2,0,0" Height="32" Padding="6,0"
                                     HorizontalContentAlignment="Stretch" Click="Completed_Click"
                                     ToolTip="{Binding CompletedGroup.DisplayName}">
+                                <Button.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{DynamicResource S.Group.New}"
+                                                  Command="{Binding PlacementTarget.DataContext.AddGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                    </ContextMenu>
+                                </Button.ContextMenu>
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
                                         <Style.Triggers>
@@ -344,73 +366,177 @@
                                 </Grid>
                             </Button>
 
-                            <!-- ===== 收集箱(便签):展开侧栏时显示;折叠成窄条时隐藏(放不下文本标题) ===== -->
+                            <!-- ===== 收集箱(便签):可折叠便签树 ===== -->
+                            <!-- 折叠侧栏(窄条)时:仅显示收集箱图标按钮,点击展开侧栏(需求6) -->
+                            <Button Margin="0,12,0,0" Height="28" Padding="0"
+                                    Style="{StaticResource GhostButton}"
+                                    ToolTip="{DynamicResource S.Note.Inbox}"
+                                    Command="{Binding ToggleSidebarCommand}"
+                                    Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                           FontSize="14" />
+                            </Button>
+
+                            <!-- 展开侧栏时:完整收集箱树 -->
                             <StackPanel Margin="0,12,0,0"
                                         Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-                                <!-- 收集箱 头:文件夹图标 + 标题;右键「新建便签」 -->
-                                <Border Background="Transparent" Padding="6,2" Margin="0,0,0,2">
-                                    <Border.ContextMenu>
+                                <!-- 收集箱 头:点击折叠/展开;右键「新建便签 / 新建分组 / 折叠展开」 -->
+                                <Button Style="{StaticResource GhostButton}" Height="28" Padding="6,0"
+                                        HorizontalContentAlignment="Stretch"
+                                        Command="{Binding NotesVm.ToggleInboxCollapseCommand}">
+                                    <Button.ContextMenu>
                                         <ContextMenu>
                                             <MenuItem Header="{DynamicResource S.Note.New}"
-                                                      Command="{Binding NotesVm.NewNoteCommand}" />
+                                                      Command="{Binding PlacementTarget.DataContext.NotesVm.NewNoteCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            <MenuItem Header="{DynamicResource S.Note.NewGroup}"
+                                                      Command="{Binding PlacementTarget.DataContext.NotesVm.NewNoteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                            <Separator />
+                                            <MenuItem Header="{DynamicResource S.Note.ToggleCollapse}"
+                                                      Command="{Binding PlacementTarget.DataContext.NotesVm.ToggleInboxCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                         </ContextMenu>
-                                    </Border.ContextMenu>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                    </Button.ContextMenu>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <!-- 折叠指示箭头 -->
+                                        <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="10" Width="14" TextAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource SecondaryText}">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="&#xE70D;" />
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding NotesVm.InboxCollapsed}" Value="True">
+                                                            <Setter Property="Text" Value="&#xE76C;" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="1" Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                                    FontSize="14" Width="18" TextAlignment="Center" VerticalAlignment="Center"
                                                    Foreground="{DynamicResource SecondaryText}" />
-                                        <TextBlock Text="{DynamicResource S.Note.Inbox}" Margin="6,0,0,0" FontSize="12"
+                                        <TextBlock Grid.Column="2" Text="{DynamicResource S.Note.Inbox}" Margin="6,0,0,0" FontSize="12"
                                                    FontWeight="SemiBold" VerticalAlignment="Center"
                                                    Foreground="{DynamicResource SecondaryText}" />
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- + 写点什么(缩进对齐子项):新建便签 -->
-                                <Button Style="{StaticResource GhostButton}" Height="28" Padding="6,0" Margin="16,0,0,0"
-                                        HorizontalContentAlignment="Left" Command="{Binding NotesVm.NewNoteCommand}">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                                   FontSize="13" Width="18" TextAlignment="Center" VerticalAlignment="Center" />
-                                        <TextBlock Text="{DynamicResource S.Note.WriteSomething}" Margin="6,0,0,0"
-                                                   FontSize="12" VerticalAlignment="Center" />
-                                    </StackPanel>
+                                    </Grid>
                                 </Button>
 
-                                <!-- 便签列表:点击打开编辑器(SelectedItem 双向绑 NotesVm.SelectedNote);右键删除 -->
-                                <ListBox Margin="0,2,0,0" Style="{StaticResource FlatListBox}"
-                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                         ItemsSource="{Binding NotesVm.Notes}"
-                                         SelectedItem="{Binding NotesVm.SelectedNote, Mode=TwoWay}">
-                                    <ListBox.ItemContainerStyle>
-                                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource SidebarItemStyle}" />
-                                    </ListBox.ItemContainerStyle>
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="16,0,0,0"
-                                                  Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  ToolTip="{Binding DisplayTitle}">
-                                                <Grid.ContextMenu>
-                                                    <ContextMenu>
-                                                        <MenuItem Header="{DynamicResource S.Note.Delete}"
-                                                                  Click="InboxDeleteNote_Click" />
-                                                    </ContextMenu>
-                                                </Grid.ContextMenu>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="18" />
-                                                    <ColumnDefinition Width="*" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="&#xE70B;"
-                                                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
-                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                           Foreground="{DynamicResource MutedText}" />
-                                                <TextBlock Grid.Column="1" Text="{Binding DisplayTitle}" Margin="6,0,0,0"
-                                                           VerticalAlignment="Center" FontSize="12"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Foreground="{DynamicResource PrimaryText}" />
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
+                                <!-- 收集箱内容(根折叠时整体隐藏) -->
+                                <StackPanel Visibility="{Binding NotesVm.InboxCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+
+                                    <!-- 未分组便签(收集箱根下) -->
+                                    <ListBox Margin="0,2,0,0" Style="{StaticResource FlatListBox}"
+                                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                             ItemsSource="{Binding NotesVm.UngroupedNotes}"
+                                             SelectedItem="{Binding NotesVm.SelectedNote, Mode=OneWay}"
+                                             SelectionChanged="InboxNotes_SelectionChanged"
+                                             ItemContainerStyle="{StaticResource SidebarItemStyle}"
+                                             ItemTemplate="{StaticResource NoteItemTemplate}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding NotesVm.DropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                             dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}" />
+
+                                    <!-- 便签分组列表 -->
+                                    <ItemsControl ItemsSource="{Binding NotesVm.NoteGroups}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel>
+                                                    <!-- 分组头:点击折叠/展开;右键菜单 -->
+                                                    <Button Style="{StaticResource GhostButton}" Height="26" Padding="6,0" Margin="0,2,0,0"
+                                                            HorizontalContentAlignment="Stretch"
+                                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            Command="{Binding DataContext.NotesVm.ToggleNoteGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}">
+                                                        <Button.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="{DynamicResource S.Note.New}"
+                                                                          Command="{Binding PlacementTarget.Tag.NotesVm.NewNoteInGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{DynamicResource S.Note.RenameGroup}"
+                                                                          Command="{Binding PlacementTarget.Tag.NotesVm.RenameNoteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <MenuItem Header="{DynamicResource S.Note.ToggleCollapse}"
+                                                                          Command="{Binding PlacementTarget.Tag.NotesVm.ToggleNoteGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                                          CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                                                <Separator />
+                                                                <MenuItem Header="{DynamicResource S.Note.DeleteGroup}"
+                                                                          Click="NoteGroupDelete_Click" />
+                                                            </ContextMenu>
+                                                        </Button.ContextMenu>
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="Auto" />
+                                                                <ColumnDefinition Width="*" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="10" Width="14" TextAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource SecondaryText}">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Text" Value="&#xE70D;" />
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCollapsed}" Value="True">
+                                                                                <Setter Property="Text" Value="&#xE76C;" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                            <TextBlock Grid.Column="1" Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="13" Width="18" TextAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource MutedText}" />
+                                                            <!-- 分组名 / 内联重命名 -->
+                                                            <TextBlock Grid.Column="2" Text="{Binding DisplayName}" Margin="6,0,0,0"
+                                                                       VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                                       Foreground="{DynamicResource PrimaryText}"
+                                                                       Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                            <TextBox Grid.Column="2" Margin="6,0,0,0" FontSize="12" Padding="2,1"
+                                                                     Style="{StaticResource FlatTextBox}" VerticalAlignment="Center"
+                                                                     Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                     Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                                                                     IsVisibleChanged="NoteGroupNameEdit_IsVisibleChanged"
+                                                                     LostKeyboardFocus="NoteGroupNameEdit_LostFocus"
+                                                                     KeyDown="NoteGroupNameEdit_KeyDown" />
+                                                        </Grid>
+                                                    </Button>
+
+                                                    <!-- 分组下便签(分组折叠时隐藏) -->
+                                                    <ListBox Margin="14,0,0,0" Style="{StaticResource FlatListBox}"
+                                                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                             Visibility="{Binding IsCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                                                             ItemsSource="{Binding Notes}"
+                                                             SelectedItem="{Binding DataContext.NotesVm.SelectedNote, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
+                                                             SelectionChanged="InboxNotes_SelectionChanged"
+                                                             ItemContainerStyle="{StaticResource SidebarItemStyle}"
+                                                             ItemTemplate="{StaticResource NoteItemTemplate}"
+                                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                                             dd:DragDrop.DropHandler="{Binding DataContext.NotesVm.DropHandler, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85"
+                                                             dd:DragDrop.DropTargetAdornerBrush="{DynamicResource Accent}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                    <!-- + 写点什么:新建便签(置于收集箱最底部) -->
+                                    <Button Style="{StaticResource GhostButton}" Height="28" Padding="6,0" Margin="0,4,0,0"
+                                            HorizontalContentAlignment="Left" Command="{Binding NotesVm.NewNoteCommand}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="&#xE710;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="13" Width="18" TextAlignment="Center" VerticalAlignment="Center" />
+                                            <TextBlock Text="{DynamicResource S.Note.WriteSomething}" Margin="6,0,0,0"
+                                                       FontSize="12" VerticalAlignment="Center" />
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
                             </StackPanel>
 
                                 </StackPanel>

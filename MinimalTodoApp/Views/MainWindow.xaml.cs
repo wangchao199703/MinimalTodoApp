@@ -912,10 +912,8 @@ public partial class MainWindow : Window
                    ?? ((mi.Parent as ContextMenu)?.PlacementTarget as FrameworkElement)?.DataContext as Note;
         if (note == null) return;
 
-        var result = MessageBox.Show(
-            Loc.T("S.Note.DeleteConfirm"), Loc.T("S.Note.Delete"),
-            MessageBoxButton.YesNo, MessageBoxImage.Question);
-        if (result != MessageBoxResult.Yes) return;
+        var dlg = new ConfirmDialog(Loc.T("S.Note.Delete"), Loc.T("S.Note.DeleteConfirm")) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
 
         Vm.NotesVm.DeleteNote(note);
     }
@@ -1188,19 +1186,77 @@ public partial class MainWindow : Window
         dlg.ShowDialog();
     }
 
-    // ===== 新建分组:选择图标(仅选择模式) =====
+    // ===== 分组内联重命名:可见即聚焦全选，回车/失焦提交 =====
 
-    private void NewGroupIcon_Click(object sender, RoutedEventArgs e)
+    private void GroupNameEdit_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (Vm == null) return;
-        var dlg = new IconPickerDialog { Owner = this };
-        if (dlg.ShowDialog() == true)
+        if (sender is TextBox tb && tb.IsVisible)
         {
-            if (!string.IsNullOrEmpty(dlg.ResultImage)) Vm.NewGroupIconImage = dlg.ResultImage;
-            else if (!string.IsNullOrEmpty(dlg.ResultGlyph)) { Vm.NewGroupIcon = dlg.ResultGlyph; Vm.NewGroupIconImage = ""; }
+            tb.Focus();
+            tb.SelectAll();
         }
-        // 重新聚焦输入框，方便继续输入名称
-        NewGroupBox.Focus();
+    }
+
+    private void GroupNameEdit_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter || e.Key == Key.Escape)
+        {
+            if (sender is TextBox tb && tb.DataContext is TodoGroup g) Vm?.EndEditGroup(g);
+            e.Handled = true;
+        }
+    }
+
+    private void GroupNameEdit_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox tb && tb.DataContext is TodoGroup g) Vm?.EndEditGroup(g);
+    }
+
+    // ===== 收集箱:便签选择(多列表共享 SelectedNote,用 OneWay+SelectionChanged 避免互相清空) =====
+
+    private void InboxNotes_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        // 仅当本列表新增了选中项时才回写(被动清空时 AddedItems 为空,不动 SelectedNote)
+        if (Vm?.NotesVm != null && e.AddedItems.Count > 0 && e.AddedItems[0] is Note note)
+            Vm.NotesVm.SelectedNote = note;
+    }
+
+    // ===== 收集箱:便签分组内联重命名 =====
+
+    private void NoteGroupNameEdit_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is TextBox tb && tb.IsVisible)
+        {
+            tb.Focus();
+            tb.SelectAll();
+        }
+    }
+
+    private void NoteGroupNameEdit_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter || e.Key == Key.Escape)
+        {
+            if (sender is TextBox tb && tb.DataContext is NoteGroup g) Vm?.NotesVm?.EndEditNoteGroup(g);
+            e.Handled = true;
+        }
+    }
+
+    private void NoteGroupNameEdit_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox tb && tb.DataContext is NoteGroup g) Vm?.NotesVm?.EndEditNoteGroup(g);
+    }
+
+    /// <summary>删除便签分组(其下便签移回收集箱根):现代化弹窗二次确认。</summary>
+    private void NoteGroupDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm?.NotesVm == null || sender is not MenuItem mi) return;
+        var group = mi.DataContext as NoteGroup
+                    ?? ((mi.Parent as ContextMenu)?.PlacementTarget as FrameworkElement)?.DataContext as NoteGroup;
+        if (group == null) return;
+
+        var dlg = new ConfirmDialog(Loc.T("S.Note.DeleteGroup"), Loc.T("S.Note.GroupDeleteConfirm")) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+
+        Vm.NotesVm.DeleteNoteGroup(group);
     }
 
     // ===== 任务标题:单击进入编辑，回车/失焦退出 =====

@@ -54,15 +54,19 @@ public partial class SettingsDialog : Window
     /// <summary>左侧导航:切到“字体”分组.</summary>
     private void FontNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(FontPanel);
 
+    /// <summary>左侧导航:切到“收集箱”分组.</summary>
+    private void InboxNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(InboxPanel);
+
     /// <summary>左侧导航:切到“关于”分组.</summary>
     private void AboutNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(AboutPanel);
 
     /// <summary>仅显示指定面板，其余隐藏(控件可能尚未初始化完成,需判空).</summary>
     private void ShowPanel(UIElement? target)
     {
-        if (GeneralPanel == null || FontPanel == null || AboutPanel == null) return;
+        if (GeneralPanel == null || FontPanel == null || InboxPanel == null || AboutPanel == null) return;
         GeneralPanel.Visibility = ReferenceEquals(target, GeneralPanel) ? Visibility.Visible : Visibility.Collapsed;
         FontPanel.Visibility = ReferenceEquals(target, FontPanel) ? Visibility.Visible : Visibility.Collapsed;
+        InboxPanel.Visibility = ReferenceEquals(target, InboxPanel) ? Visibility.Visible : Visibility.Collapsed;
         AboutPanel.Visibility = ReferenceEquals(target, AboutPanel) ? Visibility.Visible : Visibility.Collapsed;
     }
 

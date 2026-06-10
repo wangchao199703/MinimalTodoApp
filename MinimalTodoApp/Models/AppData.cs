@@ -58,6 +58,21 @@ public class AppData
     /// <summary>全部便签(v1.2.0 新增便签模块).向后兼容默认空.</summary>
     public List<Note> Notes { get; set; } = new();
 
+    /// <summary>收集箱中的便签分组(分类).向后兼容默认空.</summary>
+    public List<NoteGroup> NoteGroups { get; set; } = new();
+
+    /// <summary>收集箱根是否折叠(持久化):折叠时侧栏隐藏便签分组与便签列表.</summary>
+    public bool InboxCollapsed { get; set; }
+
+    /// <summary>新建便签的默认字体(空=跟随便签默认).持久化.</summary>
+    public string NoteFontFamily { get; set; } = "";
+
+    /// <summary>新建便签的默认字号(便签正文基准字号).默认 15.持久化.</summary>
+    public double NoteFontSize { get; set; } = 15;
+
+    /// <summary>新建便签的默认行距倍率.默认 1.2.持久化.</summary>
+    public double NoteLineSpacing { get; set; } = 1.2;
+
     /// <summary>中央区域是否处于便签视图(持久化，下次启动恢复).</summary>
     public bool NotesViewOpen { get; set; }
 

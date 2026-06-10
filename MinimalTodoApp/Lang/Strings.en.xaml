@@ -519,5 +519,35 @@
     <sys:String x:Key="S.Note.Heading">Heading (cycles H1→H2→H3)</sys:String>
     <sys:String x:Key="S.Note.Bullet">Bullet list</sys:String>
     <sys:String x:Key="S.Note.TaskList">Task list (checkable)</sys:String>
+    <sys:String x:Key="S.Note.TextColor">Text color</sys:String>
+    <sys:String x:Key="S.Note.FontSize">Font size</sys:String>
+    <sys:String x:Key="S.Note.DefaultColor">Default color</sys:String>
+    <sys:String x:Key="S.Note.DefaultSize">Default size</sys:String>
+    <sys:String x:Key="S.Note.AddToTodo">Add to to-do</sys:String>
+    <sys:String x:Key="S.Note.NewGroup">New group</sys:String>
+    <sys:String x:Key="S.Note.NewGroupName">New group</sys:String>
+    <sys:String x:Key="S.Note.RenameGroup">Rename group</sys:String>
+    <sys:String x:Key="S.Note.DeleteGroup">Delete group</sys:String>
+    <sys:String x:Key="S.Note.GroupDeleteConfirm">Delete this group? Its notes will move back to the inbox root and won't be deleted.</sys:String>
+    <sys:String x:Key="S.Note.ToggleCollapse">Collapse / Expand</sys:String>
+    <sys:String x:Key="S.Note.UntitledGroup">Untitled group</sys:String>
+
+    <!-- ============ Group context menu (v1.2.0 patch 4) ============ -->
+    <sys:String x:Key="S.Group.New">New group</sys:String>
+    <sys:String x:Key="S.Group.NewName">New group</sys:String>
+    <sys:String x:Key="S.Group.Rename">Rename</sys:String>
+    <sys:String x:Key="S.Group.ToggleCollapse">Collapse / Expand</sys:String>
+
+    <!-- ============ Editor context menu ============ -->
+    <sys:String x:Key="S.Menu.Cut">Cut</sys:String>
+    <sys:String x:Key="S.Menu.Copy">Copy</sys:String>
+    <sys:String x:Key="S.Menu.Paste">Paste</sys:String>
+
+    <!-- ============ Inbox settings (v1.2.0 patch 4) ============ -->
+    <sys:String x:Key="S.Settings.Nav.Inbox">Inbox</sys:String>
+    <sys:String x:Key="S.Settings.Note.Desc">These settings apply to newly created notes (open notes take effect on next load).</sys:String>
+    <sys:String x:Key="S.Settings.Note.Font">Font</sys:String>
+    <sys:String x:Key="S.Settings.Note.Size">Size</sys:String>
+    <sys:String x:Key="S.Settings.Note.LineSpacing">Line spacing</sys:String>
 
 </ResourceDictionary>

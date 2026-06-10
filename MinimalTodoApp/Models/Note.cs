@@ -73,6 +73,14 @@ public partial class Note : ObservableObject
     /// <summary>旧版块格式正文(v1.2.0 早期).仅供反序列化与一次性迁移到 <see cref="Content"/>，新数据不写入.</summary>
     public List<NoteBlock> Blocks { get; set; } = new();
 
+    /// <summary>所属便签分组 Id;null=直接挂在收集箱根下(未分组).向后兼容默认 null.</summary>
+    [ObservableProperty]
+    private Guid? groupId;
+
+    /// <summary>便签在所属分组(或根)内的排序位置(可拖动调整).向后兼容默认 0.</summary>
+    [ObservableProperty]
+    private int orderIndex;
+
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public DateTime UpdatedAt { get; set; } = DateTime.Now;

@@ -68,6 +68,9 @@
                     <RadioButton x:Name="FontNav" Style="{StaticResource SettingsNavItem}" Tag="A"
                                  Content="{DynamicResource S.Settings.Nav.Font}"
                                  Checked="FontNav_Checked" />
+                    <RadioButton x:Name="InboxNav" Style="{StaticResource SettingsNavItem}" Tag="&#xE8B7;"
+                                 Content="{DynamicResource S.Settings.Nav.Inbox}"
+                                 Checked="InboxNav_Checked" />
                     <RadioButton x:Name="AboutNav" Style="{StaticResource SettingsNavItem}" Tag="ⓘ"
                                  Content="{DynamicResource S.Settings.Nav.About}"
                                  Checked="AboutNav_Checked" />
@@ -272,6 +275,62 @@
                             <Slider Grid.Column="1" Minimum="12" Maximum="24" Value="{Binding CheckboxSize, Mode=TwoWay}"
                                     TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                             <TextBlock Grid.Column="2" Text="{Binding CheckboxSize, StringFormat={}{0:0}}" FontSize="12"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource MutedText}" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!-- 收集箱设置组:新建便签的默认字体/字号/行距 -->
+                <ScrollViewer x:Name="InboxPanel" Grid.Row="0" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource S.Settings.Nav.Inbox}" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PrimaryText}" Margin="0,0,0,2" />
+                        <TextBlock Text="{DynamicResource S.Settings.Note.Desc}" FontSize="11" Margin="0,0,0,14"
+                                   TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+
+                        <!-- 默认字体 -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="76" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.Note.Font}" FontSize="13"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding Fonts}"
+                                      SelectedValuePath="Key" DisplayMemberPath="Display"
+                                      SelectedValue="{Binding NoteFontFamily, Mode=TwoWay}"
+                                      VerticalContentAlignment="Center" />
+                        </Grid>
+
+                        <!-- 默认字号 -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="76" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="36" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.Note.Size}" FontSize="13"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
+                            <Slider Grid.Column="1" Minimum="12" Maximum="24" Value="{Binding NoteFontSize, Mode=TwoWay}"
+                                    TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{Binding NoteFontSize, StringFormat={}{0:0}}" FontSize="12"
+                                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource MutedText}" />
+                        </Grid>
+
+                        <!-- 默认行距 -->
+                        <Grid Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="76" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="36" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{DynamicResource S.Settings.Note.LineSpacing}" FontSize="13"
+                                       VerticalAlignment="Center" Foreground="{DynamicResource SecondaryText}" />
+                            <Slider Grid.Column="1" Minimum="1.0" Maximum="2.2" Value="{Binding NoteLineSpacing, Mode=TwoWay}"
+                                    TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="2" Text="{Binding NoteLineSpacing, StringFormat={}{0:0.0}}" FontSize="12"
                                        HorizontalAlignment="Right" VerticalAlignment="Center"
                                        Foreground="{DynamicResource MutedText}" />
                         </Grid>

@@ -42,6 +42,42 @@
                         Content="•" Click="BulletButton_Click" ToolTip="{DynamicResource S.Note.Bullet}" />
                 <Button Style="{StaticResource NoteToolButton}"
                         Content="☐" Click="TaskButton_Click" ToolTip="{DynamicResource S.Note.TaskList}" />
+
+                <Border Width="1" Margin="8,4" Background="{DynamicResource Divider}" />
+
+                <!-- 字体颜色:点开预设色板(自定义色保存到便签) -->
+                <Button x:Name="ColorButton" Style="{StaticResource NoteToolButton}" FontWeight="Bold"
+                        Content="A" Foreground="#E11D48" Click="ColorButton_Click"
+                        ToolTip="{DynamicResource S.Note.TextColor}" />
+                <Popup x:Name="ColorPopup" PlacementTarget="{Binding ElementName=ColorButton}"
+                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                    <Border Background="{DynamicResource PopupBg}" CornerRadius="10" Margin="4"
+                            BorderBrush="{DynamicResource Divider}" BorderThickness="1" Padding="8">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                        </Border.Effect>
+                        <StackPanel Width="168">
+                            <WrapPanel x:Name="ColorSwatches" />
+                            <Button Content="{DynamicResource S.Note.DefaultColor}" Style="{StaticResource GhostButton}"
+                                    HorizontalContentAlignment="Center" Margin="0,6,0,0" Padding="0,4"
+                                    FontSize="12" Click="ClearColor_Click" />
+                        </StackPanel>
+                    </Border>
+                </Popup>
+
+                <!-- 字号:点开预设字号 -->
+                <Button x:Name="SizeButton" Style="{StaticResource NoteToolButton}"
+                        Content="A&#x207A;" Click="SizeButton_Click" ToolTip="{DynamicResource S.Note.FontSize}" />
+                <Popup x:Name="SizePopup" PlacementTarget="{Binding ElementName=SizeButton}"
+                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                    <Border Background="{DynamicResource PopupBg}" CornerRadius="10" Margin="4"
+                            BorderBrush="{DynamicResource Divider}" BorderThickness="1" Padding="6">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                        </Border.Effect>
+                        <StackPanel x:Name="SizeOptions" Width="120" />
+                    </Border>
+                </Popup>
             </StackPanel>
         </Grid>
 
@@ -57,6 +93,16 @@
                          AcceptsTab="True" SpellCheck.IsEnabled="False"
                          VerticalScrollBarVisibility="Auto"
                          TextChanged="Editor_TextChanged">
+                <RichTextBox.ContextMenu>
+                    <ContextMenu Opened="EditorMenu_Opened">
+                        <MenuItem x:Name="AddToTodoMenuItem" Header="{DynamicResource S.Note.AddToTodo}"
+                                  Click="AddSelectionToTodo_Click" />
+                        <Separator />
+                        <MenuItem Command="ApplicationCommands.Cut" Header="{DynamicResource S.Menu.Cut}" />
+                        <MenuItem Command="ApplicationCommands.Copy" Header="{DynamicResource S.Menu.Copy}" />
+                        <MenuItem Command="ApplicationCommands.Paste" Header="{DynamicResource S.Menu.Paste}" />
+                    </ContextMenu>
+                </RichTextBox.ContextMenu>
                 <RichTextBox.Resources>
                     <!-- 段落紧凑:一行一段,去掉默认段间距,读起来像逐行文本 -->
                     <Style TargetType="Paragraph">

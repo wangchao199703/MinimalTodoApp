@@ -11,7 +11,7 @@ namespace MinimalTodoApp.ViewModels;
 
 /// <summary>
 /// 便签模块的 ViewModel(由 MainViewModel 创建并持有).
-/// 职责:便签集合与当前便签、正文(Markdown)编辑的防抖保存、新建/删除便签.
+/// 职责:便签集合与分组、当前便签、正文(Markdown)编辑的防抖保存、新建/删除便签与分组、拖拽归组/排序.
 /// 正文由 NotesView 的 RichTextBox 编辑;本 VM 不再持有块结构(待办↔md 联动已移除).
 /// </summary>
 public partial class NotesViewModel : ObservableObject
@@ -41,6 +41,11 @@ public partial class NotesViewModel : ObservableObject
         Notes = new ObservableCollection<Note>(data.Notes);
         foreach (var n in Notes) RefreshTitle(n);
 
+        NoteGroups = new ObservableCollection<NoteGroup>(data.NoteGroups.OrderBy(g => g.OrderIndex));
+        inboxCollapsed = data.InboxCollapsed;
+        DropHandler = new NotesDropHandler(this);
+        RebuildGroupedView();
+
         _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
         _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); CommitSave(); };
 
@@ -49,8 +54,21 @@ public partial class NotesViewModel : ObservableObject
         selectedNote = restoreId.HasValue ? Notes.FirstOrDefault(n => n.Id == restoreId.Value) : null;
     }
 
-    /// <summary>全部便签(侧栏「收集箱」列表绑定它).</summary>
+    /// <summary>全部便签(扁平主集合，持久化的真相来源).</summary>
     public ObservableCollection<Note> Notes { get; }
+
+    /// <summary>收集箱中的便签分组(每个分组的 Notes 为运行时视图).</summary>
+    public ObservableCollection<NoteGroup> NoteGroups { get; }
+
+    /// <summary>未分组便签(直接挂在收集箱根下，GroupId==null).运行时视图.</summary>
+    public ObservableCollection<Note> UngroupedNotes { get; } = new();
+
+    /// <summary>便签/分组拖拽处理器(供侧栏各 ListBox 绑定 dd:DragDrop.DropHandler).</summary>
+    public NotesDropHandler DropHandler { get; }
+
+    /// <summary>收集箱根是否折叠(持久化).</summary>
+    [ObservableProperty]
+    private bool inboxCollapsed;
 
     [ObservableProperty]
     private Note? selectedNote;
@@ -61,15 +79,46 @@ public partial class NotesViewModel : ObservableObject
         _main.OnNoteSelected(newValue);  // 通知主 VM 切视图 + 持久化选中 id
     }
 
+    /// <summary>按 GroupId/OrderIndex 把扁平 Notes 重新分发到「未分组」与各分组的运行时视图集合.</summary>
+    private void RebuildGroupedView()
+    {
+        UngroupedNotes.Clear();
+        foreach (var n in Notes.Where(n => n.GroupId == null).OrderBy(n => n.OrderIndex))
+            UngroupedNotes.Add(n);
+
+        foreach (var g in NoteGroups)
+        {
+            g.Notes.Clear();
+            foreach (var n in Notes.Where(n => n.GroupId == g.Id).OrderBy(n => n.OrderIndex))
+                g.Notes.Add(n);
+        }
+    }
+
     // ===== 便签管理 =====
 
-    /// <summary>新建便签并选中(收集箱「+ 写点什么」/右键「新建便签」).</summary>
+    /// <summary>新建便签(收集箱根/未分组)并选中.</summary>
     [RelayCommand]
-    private void NewNote()
+    private void NewNote() => CreateNote(null);
+
+    /// <summary>在指定分组下新建便签并选中(分组右键/分组内「写点什么」).</summary>
+    [RelayCommand]
+    private void NewNoteInGroup(NoteGroup? group) => CreateNote(group?.Id);
+
+    private void CreateNote(Guid? groupId)
     {
         FlushPendingSave();
-        var note = new Note();
+        if (InboxCollapsed) InboxCollapsed = false;
+        if (groupId.HasValue && NoteGroups.FirstOrDefault(g => g.Id == groupId) is { IsCollapsed: true } g)
+            g.IsCollapsed = false;
+
+        var note = new Note
+        {
+            GroupId = groupId,
+            OrderIndex = Notes.Where(n => n.GroupId == groupId)
+                              .Select(n => n.OrderIndex).DefaultIfEmpty(-1).Max() + 1,
+        };
         Notes.Add(note);
+        RebuildGroupedView();
         SelectedNote = note;
         CommitSave();
     }
@@ -81,8 +130,110 @@ public partial class NotesViewModel : ObservableObject
         bool wasSelected = ReferenceEquals(note, SelectedNote);
         int idx = Notes.IndexOf(note);
         Notes.Remove(note);
+        RebuildGroupedView();
         if (wasSelected)
             SelectedNote = Notes.Count > 0 ? Notes[Math.Clamp(idx, 0, Notes.Count - 1)] : null;
+        CommitSave();
+    }
+
+    /// <summary>把便签移动到目标分组(null=收集箱根)并在目标内插到指定位置;拖拽落点调用.</summary>
+    public void MoveNote(Note? note, Guid? targetGroupId, int insertIndex)
+    {
+        if (note == null) return;
+        if (targetGroupId.HasValue && NoteGroups.All(g => g.Id != targetGroupId)) return;
+
+        // 同组内移动需校正 gong 的 InsertIndex(移除原项后目标索引前移)
+        var current = Notes.Where(n => n.GroupId == targetGroupId).OrderBy(n => n.OrderIndex).ToList();
+        int oldIndex = current.IndexOf(note);
+        if (oldIndex >= 0 && insertIndex > oldIndex) insertIndex--;
+
+        var siblings = current.Where(n => n != note).ToList();
+        if (insertIndex < 0) insertIndex = 0;
+        if (insertIndex > siblings.Count) insertIndex = siblings.Count;
+
+        note.GroupId = targetGroupId;
+        siblings.Insert(insertIndex, note);
+        for (int i = 0; i < siblings.Count; i++) siblings[i].OrderIndex = i;
+
+        RebuildGroupedView();
+        CommitSave();
+    }
+
+    // ===== 分组管理 =====
+
+    /// <summary>新建便签分组并进入内联重命名.</summary>
+    [RelayCommand]
+    private void NewNoteGroup()
+    {
+        if (InboxCollapsed) InboxCollapsed = false;
+        var g = new NoteGroup
+        {
+            Name = Loc.T("S.Note.NewGroupName"),
+            OrderIndex = NoteGroups.Count,
+            IsEditing = true,
+        };
+        NoteGroups.Add(g);
+        CommitSave();
+    }
+
+    /// <summary>开始重命名便签分组(右键菜单).</summary>
+    [RelayCommand]
+    private void RenameNoteGroup(NoteGroup? group)
+    {
+        if (group != null) group.IsEditing = true;
+    }
+
+    /// <summary>结束分组内联编辑(回车/失焦):空名兜底为默认名并保存.</summary>
+    public void EndEditNoteGroup(NoteGroup? group)
+    {
+        if (group == null) return;
+        group.IsEditing = false;
+        group.Name = string.IsNullOrWhiteSpace(group.Name) ? Loc.T("S.Note.NewGroupName") : group.Name.Trim();
+        CommitSave();
+    }
+
+    /// <summary>删除便签分组:其下便签移回收集箱根(未分组)，不删便签.视图层先弹确认.</summary>
+    public void DeleteNoteGroup(NoteGroup? group)
+    {
+        if (group == null) return;
+        foreach (var n in Notes.Where(n => n.GroupId == group.Id).ToList())
+            n.GroupId = null;
+        NoteGroups.Remove(group);
+        // 重排剩余分组 OrderIndex
+        for (int i = 0; i < NoteGroups.Count; i++) NoteGroups[i].OrderIndex = i;
+        RebuildGroupedView();
+        CommitSave();
+    }
+
+    /// <summary>折叠/展开便签分组(右键菜单).</summary>
+    [RelayCommand]
+    private void ToggleNoteGroupCollapse(NoteGroup? group)
+    {
+        if (group == null) return;
+        group.IsCollapsed = !group.IsCollapsed;
+        CommitSave();
+    }
+
+    /// <summary>折叠/展开收集箱根(右键菜单).</summary>
+    [RelayCommand]
+    private void ToggleInboxCollapse()
+    {
+        InboxCollapsed = !InboxCollapsed;
+        CommitSave();
+    }
+
+    /// <summary>拖动重排分组顺序(NotesDropHandler 调用).</summary>
+    public void MoveNoteGroup(NoteGroup? group, int insertIndex)
+    {
+        if (group == null) return;
+        int oldIndex = NoteGroups.IndexOf(group);
+        if (oldIndex < 0) return;
+        if (insertIndex > oldIndex) insertIndex--;
+        if (insertIndex < 0) insertIndex = 0;
+        if (insertIndex >= NoteGroups.Count) insertIndex = NoteGroups.Count - 1;
+        if (insertIndex == oldIndex) return;
+        NoteGroups.Move(oldIndex, insertIndex);
+        for (int i = 0; i < NoteGroups.Count; i++) NoteGroups[i].OrderIndex = i;
         CommitSave();
     }
 
@@ -90,7 +241,7 @@ public partial class NotesViewModel : ObservableObject
     public void EnsureNoteSelected()
     {
         if (SelectedNote != null) return;
-        if (Notes.Count == 0) Notes.Add(new Note());
+        if (Notes.Count == 0) { Notes.Add(new Note()); RebuildGroupedView(); }
         SelectedNote = Notes[0];
     }
 
@@ -131,6 +282,8 @@ public partial class NotesViewModel : ObservableObject
     public void WriteTo(AppData data)
     {
         data.Notes = Notes.ToList();
+        data.NoteGroups = NoteGroups.ToList();
+        data.InboxCollapsed = InboxCollapsed;
         data.SelectedNoteId = SelectedNote?.Id;
     }
 }

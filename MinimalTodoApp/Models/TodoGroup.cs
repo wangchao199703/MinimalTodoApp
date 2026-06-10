@@ -74,4 +74,16 @@ public partial class TodoGroup : ObservableObject
     [ObservableProperty]
     [property: JsonIgnore]
     private int itemCount;
+
+    /// <summary>
+    /// 是否折叠.持久化.仅“所有待办”分组使用:折叠时在侧栏隐藏其下的普通分组列表
+    /// (与收集箱根折叠对称)，普通分组本身不展开子项，故此标志对普通分组无视觉作用.
+    /// </summary>
+    [ObservableProperty]
+    private bool isCollapsed;
+
+    /// <summary>是否处于内联重命名编辑态(运行时状态，不持久化).</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool isEditing;
 }

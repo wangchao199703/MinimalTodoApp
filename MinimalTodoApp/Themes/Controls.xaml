@@ -471,21 +471,25 @@
                 <ControlTemplate TargetType="ListBoxItem">
                     <!-- 卡片本身按缩进左移变窄;卡内"对勾到卡片左边框"的距离(Padding)与父任务一致;子任务上下间距减半 -->
                     <!-- hover 用内部叠加层做透明度渐变并加轻阴影"浮起"(不能对主题共享画刷做颜色动画) -->
-                    <Border x:Name="b" Background="{DynamicResource CardBg}"
-                            BorderBrush="{DynamicResource Divider}" BorderThickness="1"
-                            CornerRadius="12"
-                            Margin="{Binding IndentLevel, Converter={StaticResource IndentToCardMargin}}">
-                        <Grid>
-                            <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="11" Opacity="0" />
-                            <Border Padding="14,9">
-                                <ContentPresenter VerticalAlignment="Center" />
-                            </Border>
-                        </Grid>
-                    </Border>
+                    <!-- 阴影挂在独立背景层 shadowHost(不含文字)上:DropShadowEffect 会把所在元素整棵子树位图化导致文字发虚,
+                         故文字所在的 b 不带 Effect,阴影只作用于其后方等大同圆角的纯背景层,文字始终清晰. -->
+                    <Grid Margin="{Binding IndentLevel, Converter={StaticResource IndentToCardMargin}}">
+                        <Border x:Name="shadowHost" Background="{DynamicResource CardBg}" CornerRadius="12" />
+                        <Border x:Name="b" Background="{DynamicResource CardBg}"
+                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                CornerRadius="12">
+                            <Grid>
+                                <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="11" Opacity="0" />
+                                <Border Padding="14,9">
+                                    <ContentPresenter VerticalAlignment="Center" />
+                                </Border>
+                            </Grid>
+                        </Border>
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <!-- 轻阴影瞬时挂上(同一时刻最多一张卡有 Effect,性能可控) -->
-                            <Setter TargetName="b" Property="Effect">
+                            <!-- 轻阴影瞬时挂上(只作用于纯背景层,不影响文字清晰度) -->
+                            <Setter TargetName="shadowHost" Property="Effect">
                                 <Setter.Value>
                                     <DropShadowEffect BlurRadius="10" ShadowDepth="1" Direction="270"
                                                       Opacity="0.16" Color="#000000" />

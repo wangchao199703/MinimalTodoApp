@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -151,6 +153,37 @@ public static class MarkdownFlowDocument
         if (Starts(text, pos, "**")) return ("**", "**", () => new Bold());
         if (Starts(text, pos, "<u>")) return ("<u>", "</u>", () => new Underline());
         if (Starts(text, pos, "~~")) return ("~~", "~~", () => new Span { TextDecorations = TextDecorations.Strikethrough });
+
+        // <color=#RRGGBB>…</color>:为选区着色(自定义内联标记，持久化到 markdown)
+        if (Starts(text, pos, "<color=#"))
+        {
+            int gt = text.IndexOf('>', pos);
+            if (gt > pos)
+            {
+                string open = text.Substring(pos, gt - pos + 1);
+                string hex = open[7..^1];   // 去掉 "<color=" 与 ">"，得 "#RRGGBB"
+                try
+                {
+                    var color = (Color)ColorConverter.ConvertFromString(hex)!;
+                    return (open, "</color>", () => new Span { Foreground = new SolidColorBrush(color) });
+                }
+                catch { /* 非法颜色按字面处理 */ }
+            }
+        }
+
+        // <size=NN>…</size>:为选区设置字号
+        if (Starts(text, pos, "<size="))
+        {
+            int gt = text.IndexOf('>', pos);
+            if (gt > pos)
+            {
+                string open = text.Substring(pos, gt - pos + 1);
+                string num = open[6..^1];   // 去掉 "<size=" 与 ">"
+                if (double.TryParse(num, NumberStyles.Float, CultureInfo.InvariantCulture, out double sz) && sz > 0)
+                    return (open, "</size>", () => new Span { FontSize = sz });
+            }
+        }
+
         if (Starts(text, pos, "*")) return ("*", "*", () => new Italic());
         return (null, null, null);
     }
@@ -192,6 +225,8 @@ public static class MarkdownFlowDocument
     private struct Fmt
     {
         public bool Bold, Italic, Underline, Strike;
+        public string? Color;   // "#RRGGBB"，null=未着色
+        public double? Size;    // 本地字号，null=默认
     }
 
     private static void SerializeInlines(InlineCollection inlines, Fmt ctx, StringBuilder sb)
@@ -237,8 +272,16 @@ public static class MarkdownFlowDocument
             if (td.Any(d => d.Location == TextDecorationLocation.Underline)) ctx.Underline = true;
             if (td.Any(d => d.Location == TextDecorationLocation.Strikethrough)) ctx.Strike = true;
         }
+
+        // 本地着色/字号(仅认本地设置值，避免继承的基准字号/前景被误当作行内格式)
+        if (inline.ReadLocalValue(TextElement.ForegroundProperty) is SolidColorBrush scb)
+            ctx.Color = HexOf(scb.Color);
+        if (inline.ReadLocalValue(TextElement.FontSizeProperty) is double sz && sz > 0)
+            ctx.Size = sz;
         return ctx;
     }
+
+    private static string HexOf(Color c) => $"#{c.R:X2}{c.G:X2}{c.B:X2}";
 
     private static void EmitText(string? text, Fmt f, StringBuilder sb)
     {
@@ -248,6 +291,8 @@ public static class MarkdownFlowDocument
         if (f.Underline) s = "<u>" + s + "</u>";
         if (f.Italic) s = "*" + s + "*";
         if (f.Bold) s = "**" + s + "**";       // 加粗在最外层,与 ParseInlines 的 ** 优先匹配一致
+        if (f.Color != null) s = $"<color={f.Color}>" + s + "</color>";
+        if (f.Size.HasValue) s = $"<size={f.Size.Value.ToString("0.##", CultureInfo.InvariantCulture)}>" + s + "</size>";
         sb.Append(s);
     }
 
@@ -299,7 +344,9 @@ public static class MarkdownFlowDocument
 
     private static string StripInline(string line)
     {
-        // 先去更长的标记，避免 ** 被当成两个 *
+        // 先去带参数的着色/字号标记，再去固定标记(** 在 * 之前，避免被当成两个 *)
+        line = Regex.Replace(line, "</?color(=#[0-9A-Fa-f]{6})?>", string.Empty);
+        line = Regex.Replace(line, "</?size(=[0-9.]+)?>", string.Empty);
         foreach (var token in new[] { "**", "<u>", "</u>", "~~", "*" })
             line = line.Replace(token, string.Empty);
         return line;

@@ -459,33 +459,6 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>可作为父待办的候选任务列表(排除已完成的任务).</summary>
     public IEnumerable<TodoItem> ParentCandidates => _allItems.Where(i => !i.IsCompleted);
 
-    /// <summary>新建分组输入框是否展开(平时隐藏，点击“+ 新建分组”才弹出).</summary>
-    [ObservableProperty]
-    private bool isAddingGroup;
-
-    /// <summary>新建分组输入框文本.</summary>
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(ConfirmAddGroupCommand))]
-    [NotifyPropertyChangedFor(nameof(NewGroupIconGlyph))]
-    private string newGroupName = string.Empty;
-
-    /// <summary>新建分组时用户选的字形图标(空=按名称自动)。</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(NewGroupIconGlyph))]
-    private string newGroupIcon = string.Empty;
-
-    /// <summary>新建分组时用户导入的图片图标路径(非空时优先于字形)。</summary>
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasNewGroupIconImage))]
-    private string newGroupIconImage = string.Empty;
-
-    /// <summary>新建分组输入行图标按钮当前显示的字形(未手选时按名称预制)。</summary>
-    public string NewGroupIconGlyph =>
-        !string.IsNullOrEmpty(NewGroupIcon) ? NewGroupIcon : GroupIcons.IconForName(NewGroupName);
-
-    /// <summary>新建分组是否选了图片图标。</summary>
-    public bool HasNewGroupIconImage => !string.IsNullOrEmpty(NewGroupIconImage);
-
     /// <summary>当前是否选中“全部任务”.</summary>
     public bool IsAllSelected => SelectedGroup == null;
 
@@ -679,6 +652,94 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         CheckboxSize = DefaultCheckboxSize;
     }
 
+    // ===== 收集箱(便签)默认外观:作用于新建便签(已打开的便签下次加载时生效) =====
+
+    /// <summary>新建便签的默认字体(空=跟随便签默认字体).持久化.</summary>
+    public string NoteFontFamily
+    {
+        get => _data.NoteFontFamily ?? "";
+        set
+        {
+            var v = value ?? "";
+            if (_data.NoteFontFamily == v) return;
+            _data.NoteFontFamily = v;
+            OnPropertyChanged();
+            SaveData();
+        }
+    }
+
+    /// <summary>新建便签的默认字号(便签正文基准字号).持久化.</summary>
+    public double NoteFontSize
+    {
+        get => _data.NoteFontSize > 0 ? _data.NoteFontSize : 15;
+        set
+        {
+            if (Math.Abs(_data.NoteFontSize - value) < 0.001) return;
+            _data.NoteFontSize = value;
+            OnPropertyChanged();
+            SaveData();
+        }
+    }
+
+    /// <summary>新建便签的默认行距倍率.持久化.</summary>
+    public double NoteLineSpacing
+    {
+        get => _data.NoteLineSpacing > 0 ? _data.NoteLineSpacing : 1.2;
+        set
+        {
+            if (Math.Abs(_data.NoteLineSpacing - value) < 0.001) return;
+            _data.NoteLineSpacing = value;
+            OnPropertyChanged();
+            SaveData();
+        }
+    }
+
+    /// <summary>
+    /// 把便签里选中的文本加入为待办(便签右键「加入到待办」)。多行文本逐行各建一条;
+    /// 目标分组取当前选中分组(特殊/空→未分组,归属“所有待办”),与正常新建路径一致刷新保存。
+    /// </summary>
+    public void AddTaskFromText(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return;
+
+        var target = SelectedGroup;
+        if (target != null && target.IsCompletedGroup) target = null;
+        target ??= AllUncompletedGroup ?? FirstNormalGroup ?? CreateGroupInternal("收件箱");
+
+        var lines = text.Replace("\r\n", "\n").Replace('\r', '\n')
+                        .Split('\n')
+                        .Select(l => l.Trim())
+                        .Where(l => l.Length > 0)
+                        .ToList();
+        if (lines.Count == 0) return;
+
+        int order = _allItems.Where(i => i.GroupId == target.Id)
+                             .Select(i => i.OrderIndex).DefaultIfEmpty(-1).Max() + 1;
+
+        TodoItem? last = null;
+        foreach (var line in lines)
+        {
+            var item = new TodoItem
+            {
+                Title = line.Length > 200 ? line[..200] : line,
+                GroupId = target.Id,
+                Priority = Priority.Medium,
+                OrderIndex = order++,
+                CreatedAt = DateTime.Now,
+            };
+            _allItems.Add(item);
+            item.PropertyChanged += OnItemPropertyChanged;
+            last = item;
+        }
+
+        RecomputeParents();
+        RefreshItems();
+        RefreshGroupCounts();
+        OnPropertyChanged(nameof(ParentCandidates));
+        SaveData();
+        if (last != null) TaskAdded?.Invoke(last);
+    }
+
     partial void OnSelectedLanguageChanged(LanguageInfo value)
     {
         if (value == null) return;
@@ -841,12 +902,17 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     [RelayCommand(CanExecute = nameof(CanAddTask))]
     private void AddTask()
     {
-        // 选中全部任务/已完成/所有待办时，归入第一个普通分组(不直接建到已完成或聚合视图里)
+        // 目标分组判定:
+        //  - 普通分组 → 建到该分组;
+        //  - “所有待办”聚合视图 / 全部任务(null) → 建为“未分组”待办(归属“所有待办”组本身，只在该视图出现，不进任何普通分组);
+        //  - “已完成”不能作为新建目标 → 同样落为未分组待办。
         var target = SelectedGroup;
-        if (target == null || target.IsCompletedGroup || target.IsAllUncompletedGroup)
-            target = FirstNormalGroup;
+        if (target != null && target.IsCompletedGroup)
+            target = null;
         if (target == null)
-            target = CreateGroupInternal("收件箱");
+            target = AllUncompletedGroup;
+        if (target == null)
+            target = FirstNormalGroup ?? CreateGroupInternal("收件箱");
 
         // 如果选择了父待办，自动设置缩进层级为父待办的层级+1，并定位到父所在分组
         int indentLevel = 0;
@@ -1044,8 +1110,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     public void MoveTaskToGroup(TodoItem? item, TodoGroup? target)
     {
         if (item == null || target == null) return;
-        // “已完成”与“所有待办”都是视图分组，不能作为真实归属
-        if (target.IsCompletedGroup || target.IsAllUncompletedGroup) return;
+        // “已完成”是视图分组，不能作为真实归属;
+        // “所有待办”允许作为目标 —— 表示把任务移出普通分组、设为“未分组”(归属所有待办组本身)。
+        if (target.IsCompletedGroup) return;
         if (item.GroupId == target.Id && !item.IsCompleted) return;
 
         _suppressSave = true;
@@ -1211,39 +1278,50 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     [RelayCommand]
     private void ToggleSidebar() => SidebarCollapsed = !SidebarCollapsed;
 
-    /// <summary>开始新建分组:若侧边栏处于折叠态先展开，再弹出输入框.</summary>
+    /// <summary>
+    /// 新建分组(右键任意分组触发):建一个默认名分组并进入内联重命名态。
+    /// 若侧边栏折叠先展开;若“所有待办”处于折叠态(普通分组被隐藏)先展开，确保新分组可见。
+    /// </summary>
     [RelayCommand]
-    private void BeginAddGroup()
+    private void AddGroup()
     {
         if (SidebarCollapsed) SidebarCollapsed = false;
-        IsAddingGroup = true;
-    }
+        if (AllUncompletedGroup is { IsCollapsed: true } all) all.IsCollapsed = false;
 
-    /// <summary>取消新建分组:收起输入框.</summary>
-    [RelayCommand]
-    private void CancelAddGroup()
-    {
-        IsAddingGroup = false;
-        NewGroupName = string.Empty;
-        NewGroupIcon = string.Empty;
-        NewGroupIconImage = string.Empty;
-    }
-
-    private bool CanConfirmAddGroup() => !string.IsNullOrWhiteSpace(NewGroupName);
-
-    [RelayCommand(CanExecute = nameof(CanConfirmAddGroup))]
-    private void ConfirmAddGroup()
-    {
-        var g = CreateGroupInternal(NewGroupName.Trim());
-        // 用户在新建行选了图标/图片则覆盖按名称的默认图标
-        if (!string.IsNullOrEmpty(NewGroupIconImage)) g.IconImage = NewGroupIconImage;
-        else if (!string.IsNullOrEmpty(NewGroupIcon)) { g.Icon = NewGroupIcon; g.IconImage = ""; }
-
-        NewGroupName = string.Empty;
-        NewGroupIcon = string.Empty;
-        NewGroupIconImage = string.Empty;
-        IsAddingGroup = false;
+        var g = CreateGroupInternal(Loc.T("S.Group.NewName"));
         SelectedGroup = g;        // 自动切到新分组
+        g.IsEditing = true;       // 立即进入内联重命名
+        RefreshGroupCounts();
+        SaveData();
+    }
+
+    /// <summary>开始重命名分组(右键菜单):置内联编辑态。内置“所有待办/已完成”不可重命名。</summary>
+    [RelayCommand]
+    private void RenameGroup(TodoGroup? group)
+    {
+        if (group == null || group.IsCompletedGroup || group.IsAllUncompletedGroup) return;
+        group.IsEditing = true;
+    }
+
+    /// <summary>结束分组内联编辑(回车/失焦):空名兜底为默认名，刷新并保存。</summary>
+    public void EndEditGroup(TodoGroup? group)
+    {
+        if (group == null) return;
+        group.IsEditing = false;
+        if (string.IsNullOrWhiteSpace(group.Name))
+            group.Name = Loc.T("S.Group.NewName");
+        else
+            group.Name = group.Name.Trim();
+        group.RefreshDisplayName();
+        SaveData();
+    }
+
+    /// <summary>折叠/展开分组(右键菜单):用于“所有待办”收起其下普通分组列表。</summary>
+    [RelayCommand]
+    private void ToggleGroupCollapse(TodoGroup? group)
+    {
+        if (group == null) return;
+        group.IsCollapsed = !group.IsCollapsed;
         SaveData();
     }
 
@@ -1367,9 +1445,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         bool taskMove = dropInfo.Data is TodoItem && dropInfo.TargetItem is TodoItem;
         bool groupMove = dropInfo.Data is TodoGroup && dropInfo.TargetItem is TodoGroup;
 
-        // 把任务拖到左侧某个分组上 -> 移动归属(目标须为可归属的普通分组)
+        // 把任务拖到左侧某个分组上 -> 移动归属(普通分组=归入;“所有待办”=移出分组设为未分组;“已完成”不可)
         if (dropInfo.Data is TodoItem && dropInfo.TargetItem is TodoGroup g
-            && !g.IsCompletedGroup && !g.IsAllUncompletedGroup)
+            && !g.IsCompletedGroup)
         {
             IsDragging = true;
             dropInfo.DropTargetAdorner = DropTargetAdorners.Highlight;   // 高亮目标分组

@@ -519,5 +519,35 @@
     <sys:String x:Key="S.Note.Heading">标题（循环 H1→H2→H3）</sys:String>
     <sys:String x:Key="S.Note.Bullet">无序列表</sys:String>
     <sys:String x:Key="S.Note.TaskList">任务列表（可勾选）</sys:String>
+    <sys:String x:Key="S.Note.TextColor">字体颜色</sys:String>
+    <sys:String x:Key="S.Note.FontSize">字号</sys:String>
+    <sys:String x:Key="S.Note.DefaultColor">默认颜色</sys:String>
+    <sys:String x:Key="S.Note.DefaultSize">默认字号</sys:String>
+    <sys:String x:Key="S.Note.AddToTodo">加入到待办</sys:String>
+    <sys:String x:Key="S.Note.NewGroup">新建分组</sys:String>
+    <sys:String x:Key="S.Note.NewGroupName">新分组</sys:String>
+    <sys:String x:Key="S.Note.RenameGroup">重命名分组</sys:String>
+    <sys:String x:Key="S.Note.DeleteGroup">删除分组</sys:String>
+    <sys:String x:Key="S.Note.GroupDeleteConfirm">确定删除该分组？组内便签将移回收集箱根，不会被删除。</sys:String>
+    <sys:String x:Key="S.Note.ToggleCollapse">折叠 / 展开</sys:String>
+    <sys:String x:Key="S.Note.UntitledGroup">未命名分组</sys:String>
+
+    <!-- ============ 分组右键(v1.2.0 补4) ============ -->
+    <sys:String x:Key="S.Group.New">新建分组</sys:String>
+    <sys:String x:Key="S.Group.NewName">新分组</sys:String>
+    <sys:String x:Key="S.Group.Rename">重命名</sys:String>
+    <sys:String x:Key="S.Group.ToggleCollapse">折叠 / 展开</sys:String>
+
+    <!-- ============ 编辑器右键 ============ -->
+    <sys:String x:Key="S.Menu.Cut">剪切</sys:String>
+    <sys:String x:Key="S.Menu.Copy">复制</sys:String>
+    <sys:String x:Key="S.Menu.Paste">粘贴</sys:String>
+
+    <!-- ============ 收集箱设置(v1.2.0 补4) ============ -->
+    <sys:String x:Key="S.Settings.Nav.Inbox">收集箱</sys:String>
+    <sys:String x:Key="S.Settings.Note.Desc">以下设置作用于新建的便签（已打开的便签下次加载时生效）。</sys:String>
+    <sys:String x:Key="S.Settings.Note.Font">字体</sys:String>
+    <sys:String x:Key="S.Settings.Note.Size">字号</sys:String>
+    <sys:String x:Key="S.Settings.Note.LineSpacing">行距</sys:String>
 
 </ResourceDictionary>

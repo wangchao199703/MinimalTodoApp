@@ -53,16 +53,29 @@ public partial class NotesView : UserControl
     /// <summary>把当前选中便签的 Markdown 正文解析进编辑器(无选中则清空).</summary>
     private void LoadDocument()
     {
-        if (_vm != null && _vm.FontSize > 0) _baseFontSize = _vm.FontSize;
+        // 便签使用「收集箱设置」里的默认字号/字体/行距作为基准(标题按基准放大)
+        if (_vm != null && _vm.NoteFontSize > 0) _baseFontSize = _vm.NoteFontSize;
 
         _suppress = true;
         try
         {
             var note = Vm?.SelectedNote;
             Editor.IsReadOnly = note == null;
+            Editor.FontSize = _baseFontSize;
+            if (_vm != null && !string.IsNullOrWhiteSpace(_vm.NoteFontFamily))
+            {
+                try { Editor.FontFamily = new System.Windows.Media.FontFamily(_vm.NoteFontFamily); }
+                catch { Editor.ClearValue(FontFamilyProperty); }
+            }
+            else Editor.ClearValue(FontFamilyProperty);
+
             Editor.Document = note == null
                 ? new FlowDocument()
                 : MarkdownFlowDocument.ToFlowDocument(note.Content, _baseFontSize, OnCheckToggled);
+
+            // 行距(整篇默认):基准字号 × 行距倍率
+            double spacing = _vm?.NoteLineSpacing ?? 1.2;
+            if (spacing > 0) Editor.Document.LineHeight = _baseFontSize * spacing;
         }
         finally
         {
@@ -168,5 +181,152 @@ public partial class NotesView : UserControl
 
         Editor.Focus();
         SaveCurrent();
+    }
+
+    // ===================== 字体颜色 / 字号 =====================
+
+    private static readonly string[] SwatchColors =
+    {
+        "#E11D48", "#EA580C", "#F59E0B", "#16A34A", "#0891B2",
+        "#2563EB", "#7C3AED", "#DB2777", "#111827", "#6B7280",
+    };
+    private static readonly double[] SizePresets = { 12, 14, 16, 18, 20, 24, 28 };
+
+    private bool _palettesBuilt;
+
+    private void BuildPalettes()
+    {
+        if (_palettesBuilt) return;
+        _palettesBuilt = true;
+
+        foreach (var hex in SwatchColors)
+        {
+            var btn = new Button
+            {
+                Width = 24,
+                Height = 24,
+                Margin = new Thickness(3),
+                Cursor = Cursors.Hand,
+                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)!),
+                BorderThickness = new Thickness(0),
+                Tag = hex,
+            };
+            btn.Template = BuildSwatchTemplate();
+            btn.Click += (_, _) => { ColorPopup.IsOpen = false; ApplyColor(hex); };
+            ColorSwatches.Children.Add(btn);
+        }
+
+        foreach (var sz in SizePresets)
+        {
+            var btn = new Button
+            {
+                Content = sz.ToString("0") + "px",
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(8, 5, 8, 5),
+                FontSize = 12,
+                Style = (Style)FindResource("GhostButton"),
+            };
+            double s = sz;
+            btn.Click += (_, _) => { SizePopup.IsOpen = false; ApplySize(s); };
+            SizeOptions.Children.Add(btn);
+        }
+
+        // 「默认字号」清除选区本地字号
+        var def = new Button
+        {
+            Content = (string)TryFindResource("S.Note.DefaultSize") ?? "默认字号",
+            HorizontalContentAlignment = HorizontalAlignment.Left,
+            Padding = new Thickness(8, 5, 8, 5),
+            FontSize = 12,
+            Style = (Style)FindResource("GhostButton"),
+        };
+        def.Click += (_, _) => { SizePopup.IsOpen = false; ClearSelectionProperty(TextElement.FontSizeProperty); };
+        SizeOptions.Children.Add(def);
+    }
+
+    private ControlTemplate BuildSwatchTemplate()
+    {
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(5));
+        border.SetBinding(Border.BackgroundProperty,
+            new System.Windows.Data.Binding("Background") { RelativeSource = System.Windows.Data.RelativeSource.TemplatedParent });
+        border.SetValue(Border.BorderBrushProperty, (Brush)FindResource("Divider"));
+        border.SetValue(Border.BorderThicknessProperty, new Thickness(1));
+        var tpl = new ControlTemplate(typeof(Button)) { VisualTree = border };
+        return tpl;
+    }
+
+    private void ColorButton_Click(object sender, RoutedEventArgs e)
+    {
+        BuildPalettes();
+        ColorPopup.IsOpen = true;
+    }
+
+    private void SizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        BuildPalettes();
+        SizePopup.IsOpen = true;
+    }
+
+    private void ApplyColor(string hex)
+    {
+        var sel = Editor.Selection;
+        if (sel.IsEmpty) { Editor.Focus(); return; }
+        try
+        {
+            var color = (Color)ColorConverter.ConvertFromString(hex)!;
+            sel.ApplyPropertyValue(TextElement.ForegroundProperty, new SolidColorBrush(color));
+        }
+        catch { /* 非法颜色忽略 */ }
+        Editor.Focus();
+        SaveCurrent();
+    }
+
+    private void ApplySize(double size)
+    {
+        var sel = Editor.Selection;
+        if (sel.IsEmpty) { Editor.Focus(); return; }
+        sel.ApplyPropertyValue(TextElement.FontSizeProperty, size);
+        Editor.Focus();
+        SaveCurrent();
+    }
+
+    private void ClearColor_Click(object sender, RoutedEventArgs e)
+    {
+        ColorPopup.IsOpen = false;
+        ClearSelectionProperty(TextElement.ForegroundProperty);
+    }
+
+    /// <summary>清除选区内各 Inline 的某个本地属性(着色/字号「默认」)。</summary>
+    private void ClearSelectionProperty(DependencyProperty prop)
+    {
+        var sel = Editor.Selection;
+        if (sel.IsEmpty) { Editor.Focus(); return; }
+        var p = sel.Start;
+        while (p != null && p.CompareTo(sel.End) < 0)
+        {
+            if (p.Parent is Inline inl) inl.ClearValue(prop);
+            var next = p.GetNextContextPosition(LogicalDirection.Forward);
+            if (next == null) break;
+            p = next;
+        }
+        Editor.Focus();
+        SaveCurrent();
+    }
+
+    // ===================== 右键:加入到待办 =====================
+
+    private void EditorMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        // 仅当有选中文本时可「加入到待办」
+        AddToTodoMenuItem.IsEnabled = !Editor.Selection.IsEmpty
+                                      && !string.IsNullOrWhiteSpace(Editor.Selection.Text);
+    }
+
+    private void AddSelectionToTodo_Click(object sender, RoutedEventArgs e)
+    {
+        var text = Editor.Selection.Text;
+        if (_vm != null && !string.IsNullOrWhiteSpace(text))
+            _vm.AddTaskFromText(text);
     }
 }
