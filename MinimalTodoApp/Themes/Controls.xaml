@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:conv="clr-namespace:MinimalTodoApp.Converters"
+                    xmlns:infra="clr-namespace:MinimalTodoApp.Infrastructure"
                     xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework">
 
     <!-- ===================== 转换器 ===================== -->
@@ -12,6 +13,7 @@
     <conv:StringToBrushConverter x:Key="StringToBrush" />
     <conv:DueStateToBrushConverter x:Key="DueStateToBrush" />
     <conv:PriorityToBrushConverter x:Key="PriorityToBrush" />
+    <conv:PriorityToLightBrushConverter x:Key="PriorityToLightBrush" />
     <conv:PriorityRingBrushConverter x:Key="PriorityRingBrush" />
     <conv:PriorityToTextConverter x:Key="PriorityToText" />
     <conv:EqualityToBoolConverter x:Key="EqualityToBool" />
@@ -481,16 +483,18 @@
                                 CornerRadius="12">
                             <Grid>
                                 <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="11" Opacity="0" />
-                                <!-- 优先级色块:贴卡片左边缘的竖条(开启“前置色块”设置时显示，红/黄/绿按优先级);
-                                     纵向居中、固定高度，避开卡片圆角不外露 -->
-                                <Border x:Name="prioBlock" Width="4" Height="18" CornerRadius="2"
-                                        HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0"
-                                        Background="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
-                                        Visibility="{Binding DataContext.ShowPriorityBlock, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}" />
                                 <Border Padding="14,9">
                                     <ContentPresenter VerticalAlignment="Center" />
                                 </Border>
                             </Grid>
+                        </Border>
+                        <!-- 优先级整条左脊(方案二):覆盖在卡片最左侧的实心 4px 色条(调浅色)。
+                             覆盖层裁到卡片 12 圆角(RoundedClip),色条贴外缘 x=0(盖住 1px 边框故与外缘平齐),
+                             上下两端随卡片圆角自然收口,与预览稿一致;不挡点击 -->
+                        <Border x:Name="prioClip" infra:RoundedClip.Radius="12" IsHitTestVisible="False"
+                                Visibility="{Binding DataContext.ShowPriorityBlock, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}">
+                            <Border Width="4" HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                                    Background="{Binding Priority, Converter={StaticResource PriorityToLightBrush}}" />
                         </Border>
                     </Grid>
                     <ControlTemplate.Triggers>

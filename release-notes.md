@@ -11,7 +11,7 @@ A big feature release: a brand-new **Notes / Inbox** module plus task and groupi
 - **Select text → Add to to-do** — right-click selected note text to turn each line into a task.
 - **Group management by right-click** — create a group by right-clicking any group (then rename inline); rename existing groups; fold/expand "All to-dos" to hide your groups.
 - **Ungrouped to-dos** — create tasks under "All to-dos" that don't belong to any group; drag a task onto "All to-dos" to remove it from its group.
-- **Priority color block (optional)** — a setting to hide the checkbox ring color and instead show a red/yellow/green block in front of each task to indicate priority.
+- **Priority color block (optional)** — a setting to hide the checkbox ring color and instead show a soft full-height color bar (red/amber/green) flush along each task card's left edge, rounded to follow the card corners. Off by default, so existing users are unaffected.
 - **Modernized dialogs & fixes** — note/group deletion now uses a themed confirm dialog; fixed task text looking blurry on hover.
 - Data and settings carry over as-is.
 
@@ -28,7 +28,7 @@ Download `MinimalTodoApp-v1.2.0-win-x64.exe` and just double-click — no .NET r
 - **选中文本 → 加入待办** —— 右键便签中选中的文本，可逐行转为待办。
 - **分组右键管理** —— 右键任意分组即可「新建分组」（随后内联重命名）；重命名已有分组；折叠/展开「所有待办」以收起分组列表。
 - **未分组待办** —— 可在「所有待办」下创建不属于任何分组的待办；把待办拖到「所有待办」即可移出分组。
-- **优先级色块（可选）** —— 新增设置：隐藏勾选圈的优先级颜色，改在任务前方用红/黄/绿色块区分优先级。
+- **优先级色块（可选）** —— 新增设置：隐藏勾选圈的优先级颜色，改在任务卡片左侧用一条贴边、随卡片圆角收口的淡色竖条（红/橙/绿）区分优先级。默认关闭，存量用户不受影响。
 - **弹窗现代化与修复** —— 便签/分组删除改用主题化确认弹窗；修复鼠标悬停时任务文字发虚。
 - 数据与设置完全兼容，升级即用。
 

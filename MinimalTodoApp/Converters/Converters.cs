@@ -149,6 +149,26 @@ public class PriorityToBrushConverter : IValueConverter
 }
 
 /// <summary>
+/// Priority -> 左脊色条画刷:在优先级色(红/橙/绿)基础上向白色混合调浅,与白卡更协调、不刺眼。
+/// 混合比例 0~1(越大越浅),默认 0.45;可经 ConverterParameter 覆盖。
+/// </summary>
+public class PriorityToLightBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var baseColor = PriorityToBrushConverter.BrushFor(value is Models.Priority p ? p : Models.Priority.Medium).Color;
+        double t = 0.45;
+        if (parameter is string s && double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var pt))
+            t = Math.Clamp(pt, 0, 1);
+        byte Mix(byte c) => (byte)Math.Round(c + (255 - c) * t);
+        return new SolidColorBrush(Color.FromRgb(Mix(baseColor.R), Mix(baseColor.G), Mix(baseColor.B)));
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>
 /// 任务勾选圈环色:(Priority, 是否“圆圈不显示颜色”) -> 画刷。
 /// 开启“无色圆圈”时返回中性灰(优先取主题 MutedText)，颜色由前置色块体现;否则按优先级着色。
 /// </summary>
