@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -197,6 +198,50 @@ public partial class NotesViewModel : ObservableObject
             Notes.Add(note);
         }
         SelectedNote = Notes[0];
+    }
+
+    // ===== 待办 → 便签(切到 MD 视图时调用) =====
+
+    /// <summary>
+    /// 把当前可见的待办带入当前便签:尚未链接的任务追加为任务块(文本=标题、勾选=完成态、建立链接)，
+    /// 已链接的跳过——便签里于是始终能看到待办的 MD 形态;已有的 MD 文本原样保留.
+    /// </summary>
+    public void SyncTodosIntoNote(IEnumerable<TodoItem> items)
+    {
+        EnsureNoteSelected();
+        if (SelectedNote == null) return;
+
+        // 全部便签中已链接的待办都不重复带入(同一任务只在一处呈现)
+        var linked = new HashSet<Guid>(
+            Notes.SelectMany(n => n.Blocks)
+                 .Where(b => b.LinkedTodoId.HasValue)
+                 .Select(b => b.LinkedTodoId!.Value));
+
+        bool added = false;
+        foreach (var item in items)
+        {
+            if (linked.Contains(item.Id)) continue;
+
+            // 追加位置:末尾的空段落之前(保持"尾部空段落"在最后，点击留白手感不变)
+            int insertAt = CurrentBlocks.Count;
+            while (insertAt > 0)
+            {
+                var prev = CurrentBlocks[insertAt - 1];
+                if (prev.Type == NoteBlockType.Paragraph && prev.Text.Length == 0) insertAt--;
+                else break;
+            }
+
+            InsertBlock(insertAt, new NoteBlock
+            {
+                Type = NoteBlockType.Task,
+                Text = item.Title,
+                IsChecked = item.IsCompleted,
+                LinkedTodoId = item.Id,
+            });
+            added = true;
+        }
+
+        if (added) CommitSave();
     }
 
     // ===== 提取待办 =====

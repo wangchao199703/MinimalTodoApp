@@ -100,7 +100,11 @@ public partial class MainWindow : Window
 
         // 恢复上次的便签视图(中央区域切到便签时初始化编辑器)；订阅便签里的"返回待办"
         NotesPanel.ExitRequested += () => SetNotesView(false);
-        if (Vm != null && Vm.IsNotesViewOpen) NotesPanel.Init(Vm);
+        if (Vm != null && Vm.IsNotesViewOpen)
+        {
+            NotesPanel.Init(Vm);
+            Vm.NotesVm?.SyncTodosIntoNote(Vm.Items);
+        }
 
         // 禁用 Windows Aero Snap 手势，避免拖到边缘触发系统的自动最大化/分屏
         var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
@@ -884,6 +888,8 @@ public partial class MainWindow : Window
         if (open)
         {
             NotesPanel.Init(Vm);
+            // 待办 → MD:把当前可见待办带入便签(未链接的追加为任务块)，MD 里始终有值
+            Vm.NotesVm?.SyncTodosIntoNote(Vm.Items);
             Anim.IntroScaleFade(NotesPanel);
         }
         else

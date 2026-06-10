@@ -63,8 +63,8 @@
             <Button Grid.Column="7" Style="{StaticResource NoteToolButton}"
                     Content="☐" Click="TaskButton_Click" ToolTip="{DynamicResource S.Note.TaskList}" />
 
-            <!-- 返回待办:切回任务列表(MD 文本常驻,任务块自动转成待办) -->
-            <Button Grid.Column="9" Style="{StaticResource GhostButton}" Padding="10,5"
+            <!-- 返回待办:切回任务列表(MD 文本常驻,新任务块自动转成待办).主操作样式醒目易找 -->
+            <Button Grid.Column="9" x:Name="BackToTasksButton" Style="{StaticResource AccentButton}" Padding="12,5"
                     Focusable="False" Click="BackToTasks_Click"
                     ToolTip="{DynamicResource S.Note.BackToTasks}">
                 <StackPanel Orientation="Horizontal">
