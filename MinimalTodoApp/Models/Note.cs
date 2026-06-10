@@ -66,6 +66,17 @@ public partial class Note : ObservableObject
     [ObservableProperty]
     private string title = string.Empty;
 
+    /// <summary>用户自定义标题(重命名).非空时覆盖派生标题;空则回退到正文首行/「无标题便签」.持久化.</summary>
+    [ObservableProperty]
+    private string customTitle = string.Empty;
+
+    /// <summary>是否处于侧栏标题内联重命名态(运行时状态，不持久化).</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool isEditing;
+
+    partial void OnCustomTitleChanged(string value) => OnPropertyChanged(nameof(DisplayTitle));
+
     /// <summary>正文(Markdown 文本)。支持 # 标题 / - 无序 / - [ ] 任务 / **加粗** *斜体* ~~删除线~~ &lt;u&gt;下划线&lt;/u&gt;.</summary>
     [ObservableProperty]
     private string content = string.Empty;
@@ -85,9 +96,11 @@ public partial class Note : ObservableObject
 
     public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
-    /// <summary>列表展示名:空标题显示「无标题」(本地化).</summary>
+    /// <summary>列表展示名:自定义标题优先 → 正文首行派生 → 「无标题便签」(本地化).</summary>
     [JsonIgnore]
-    public string DisplayTitle => string.IsNullOrWhiteSpace(Title) ? Loc.T("S.Note.Untitled") : Title;
+    public string DisplayTitle =>
+        !string.IsNullOrWhiteSpace(CustomTitle) ? CustomTitle
+        : string.IsNullOrWhiteSpace(Title) ? Loc.T("S.Note.Untitled") : Title;
 
     /// <summary>Title 变化时同步刷新 DisplayTitle(供下拉列表绑定).</summary>
     partial void OnTitleChanged(string value) => OnPropertyChanged(nameof(DisplayTitle));

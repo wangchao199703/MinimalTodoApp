@@ -28,20 +28,37 @@
                   ToolTip="{Binding DisplayTitle}">
                 <Grid.ContextMenu>
                     <ContextMenu>
+                        <MenuItem Header="{DynamicResource S.Note.Rename}" Click="NoteRename_Click" />
                         <MenuItem Header="{DynamicResource S.Note.Delete}" Click="InboxDeleteNote_Click" />
                     </ContextMenu>
                 </Grid.ContextMenu>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="18" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="&#xE70B;"
                            FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            Foreground="{DynamicResource MutedText}" />
+                <!-- 标题:非编辑态显示文本;编辑态显示输入框(右键重命名 / 悬停铅笔进入) -->
                 <TextBlock Grid.Column="1" Text="{Binding DisplayTitle}" Margin="6,0,0,0"
                            VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
-                           Foreground="{DynamicResource PrimaryText}" />
+                           Foreground="{DynamicResource PrimaryText}"
+                           Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                <TextBox Grid.Column="1" Margin="6,0,0,0" FontSize="12" Padding="2,1"
+                         Style="{StaticResource FlatTextBox}" VerticalAlignment="Center"
+                         Text="{Binding CustomTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                         IsVisibleChanged="NoteTitleEdit_IsVisibleChanged"
+                         LostKeyboardFocus="NoteTitleEdit_LostFocus"
+                         KeyDown="NoteTitleEdit_KeyDown" />
+                <!-- 悬停显示的「重命名」铅笔:鼠标移到便签行即出现，点击进入标题编辑 -->
+                <Button Grid.Column="2" Click="NoteRename_Click" Style="{StaticResource IconButton}"
+                        Margin="2,0,0,0" Padding="3,0" Focusable="False"
+                        ToolTip="{DynamicResource S.Note.Rename}"
+                        Content="&#xE70F;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="11"
+                        Visibility="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource BoolToVis}}" />
             </Grid>
         </DataTemplate>
     </Window.Resources>

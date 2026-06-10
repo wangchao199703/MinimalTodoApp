@@ -511,6 +511,7 @@
     <sys:String x:Key="S.Note.Untitled">无标题便签</sys:String>
     <sys:String x:Key="S.Note.New">新建便签</sys:String>
     <sys:String x:Key="S.Note.Delete">删除便签</sys:String>
+    <sys:String x:Key="S.Note.Rename">重命名</sys:String>
     <sys:String x:Key="S.Note.DeleteConfirm">确定删除这篇便签？此操作不可撤销。</sys:String>
     <sys:String x:Key="S.Note.Bold">加粗（Ctrl+B）</sys:String>
     <sys:String x:Key="S.Note.Italic">斜体（Ctrl+I）</sys:String>

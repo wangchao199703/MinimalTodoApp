@@ -123,6 +123,21 @@ public partial class NotesViewModel : ObservableObject
         CommitSave();
     }
 
+    /// <summary>开始重命名便签(右键/悬停编辑):置内联编辑态.</summary>
+    public void RenameNote(Note? note)
+    {
+        if (note != null) note.IsEditing = true;
+    }
+
+    /// <summary>结束便签标题内联编辑(回车/失焦):去空白后持久化.</summary>
+    public void EndEditNote(Note? note)
+    {
+        if (note == null) return;
+        note.IsEditing = false;
+        note.CustomTitle = (note.CustomTitle ?? string.Empty).Trim();
+        CommitSave();
+    }
+
     /// <summary>删除指定便签(视图层先弹确认).</summary>
     public void DeleteNote(Note? note)
     {

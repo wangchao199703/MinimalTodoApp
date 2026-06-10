@@ -511,6 +511,7 @@
     <sys:String x:Key="S.Note.Untitled">Untitled note</sys:String>
     <sys:String x:Key="S.Note.New">New note</sys:String>
     <sys:String x:Key="S.Note.Delete">Delete note</sys:String>
+    <sys:String x:Key="S.Note.Rename">Rename</sys:String>
     <sys:String x:Key="S.Note.DeleteConfirm">Delete this note? This cannot be undone.</sys:String>
     <sys:String x:Key="S.Note.Bold">Bold (Ctrl+B)</sys:String>
     <sys:String x:Key="S.Note.Italic">Italic (Ctrl+I)</sys:String>

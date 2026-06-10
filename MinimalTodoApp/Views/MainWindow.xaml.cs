@@ -1220,6 +1220,42 @@ public partial class MainWindow : Window
             Vm.NotesVm.SelectedNote = note;
     }
 
+    // ===== 收集箱:便签标题重命名(右键 / 悬停铅笔 → 内联编辑) =====
+
+    /// <summary>右键「重命名」或悬停铅笔:把该便签置为标题编辑态。</summary>
+    private void NoteRename_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement fe) return;
+        var note = fe.DataContext as Note;   // 铅笔按钮 / 菜单项 DataContext 均为该便签
+        if (note == null && fe is MenuItem mi
+            && (mi.Parent as ContextMenu)?.PlacementTarget is FrameworkElement pt)
+            note = pt.DataContext as Note;
+        if (note != null) Vm?.NotesVm?.RenameNote(note);
+    }
+
+    private void NoteTitleEdit_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (sender is TextBox tb && tb.IsVisible)
+        {
+            tb.Focus();
+            tb.SelectAll();
+        }
+    }
+
+    private void NoteTitleEdit_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter || e.Key == Key.Escape)
+        {
+            if (sender is TextBox tb && tb.DataContext is Note note) Vm?.NotesVm?.EndEditNote(note);
+            e.Handled = true;
+        }
+    }
+
+    private void NoteTitleEdit_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox tb && tb.DataContext is Note note) Vm?.NotesVm?.EndEditNote(note);
+    }
+
     // ===== 收集箱:便签分组内联重命名 =====
 
     private void NoteGroupNameEdit_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
