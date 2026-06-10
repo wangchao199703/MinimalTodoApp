@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Windows.Media.Imaging;
 
 namespace MinimalTodoApp.Infrastructure;
 
@@ -37,6 +38,32 @@ public static class NoteImageStore
         {
             return null;
         }
+    }
+
+    /// <summary>把内存位图(粘贴/拖入的图片)编码为 PNG 存入仓库，返回文件名;失败返回 null.</summary>
+    public static string? SaveBitmap(BitmapSource? bmp)
+    {
+        if (bmp == null) return null;
+        try
+        {
+            var name = Guid.NewGuid().ToString("N") + ".png";
+            var enc = new PngBitmapEncoder();
+            enc.Frames.Add(BitmapFrame.Create(bmp));
+            using var fs = File.Create(Path.Combine(Dir, name));
+            enc.Save(fs);
+            return name;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>判断文件是否为支持的图片扩展名.</summary>
+    public static bool IsImageFile(string path)
+    {
+        var ext = Path.GetExtension(path).ToLowerInvariant();
+        return ext is ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".webp";
     }
 
     /// <summary>由文件名解析为仓库内完整路径(不校验存在性).</summary>

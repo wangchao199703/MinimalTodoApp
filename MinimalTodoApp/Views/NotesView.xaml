@@ -83,6 +83,9 @@
                          FontSize="{Binding DataContext.FontSize, RelativeSource={RelativeSource AncestorType=Window}}"
                          AcceptsTab="True" SpellCheck.IsEnabled="False"
                          VerticalScrollBarVisibility="Auto"
+                         AllowDrop="True"
+                         PreviewDragOver="Editor_PreviewDragOver"
+                         PreviewDrop="Editor_PreviewDrop"
                          TextChanged="Editor_TextChanged">
                 <RichTextBox.ContextMenu>
                     <ContextMenu Opened="EditorMenu_Opened">

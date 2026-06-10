@@ -31,6 +31,8 @@ public partial class NotesView : UserControl
     public NotesView()
     {
         InitializeComponent();
+        // 拦截粘贴:剪贴板含图片时存盘并内嵌(而非粘贴不持久化的位图)
+        DataObject.AddPastingHandler(Editor, Editor_Pasting);
     }
 
     /// <summary>由 MainWindow 调用:绑定数据上下文并订阅便签切换.</summary>
@@ -239,17 +241,82 @@ public partial class NotesView : UserControl
         if (dlg.ShowDialog() != true) return;
 
         var fileName = NoteImageStore.Import(dlg.FileName);
-        if (fileName == null) return;
+        if (fileName != null) InsertImageByFileName(fileName);
+    }
 
-        // 图片独占一行:插入到光标所在段落之后
+    /// <summary>把仓库内图片文件名作为独占一行的图片插入到光标段落之后并保存.</summary>
+    private void InsertImageByFileName(string fileName)
+    {
         var image = MarkdownFlowDocument.NewImageInline(fileName);
         var para = new Paragraph(image) { Margin = new Thickness(0) };
-        var caretPara = Editor.CaretPosition.Paragraph;
+        var caretPara = Editor.CaretPosition?.Paragraph;
         if (caretPara != null) Editor.Document.Blocks.InsertAfter(caretPara, para);
         else Editor.Document.Blocks.Add(para);
 
         Editor.Focus();
         SaveCurrent();
+    }
+
+    /// <summary>粘贴:剪贴板含图片(且非纯文本)时存盘内嵌，取消默认粘贴.</summary>
+    private void Editor_Pasting(object sender, DataObjectPastingEventArgs e)
+    {
+        if (Vm?.SelectedNote == null) return;
+        var d = e.DataObject;
+        bool hasImage = d.GetDataPresent(DataFormats.Bitmap);
+        bool hasText = d.GetDataPresent(DataFormats.UnicodeText) || d.GetDataPresent(DataFormats.Text);
+        if (!hasImage || hasText) return;   // 文本粘贴走默认逻辑
+
+        var fileName = NoteImageStore.SaveBitmap(System.Windows.Clipboard.GetImage());
+        if (fileName != null)
+        {
+            InsertImageByFileName(fileName);
+            e.CancelCommand();   // 阻止默认(不持久化的)位图粘贴
+        }
+    }
+
+    /// <summary>拖拽悬停:拖入图片文件/位图时允许放置.</summary>
+    private void Editor_PreviewDragOver(object sender, DragEventArgs e)
+    {
+        if (DragHasImage(e.Data))
+        {
+            e.Effects = DragDropEffects.Copy;
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>拖拽放置:把拖入的图片文件/位图存盘并内嵌.</summary>
+    private void Editor_PreviewDrop(object sender, DragEventArgs e)
+    {
+        if (Vm?.SelectedNote == null || !DragHasImage(e.Data)) return;
+
+        bool inserted = false;
+        if (e.Data.GetDataPresent(DataFormats.FileDrop) &&
+            e.Data.GetData(DataFormats.FileDrop) is string[] files)
+        {
+            foreach (var f in files)
+            {
+                if (!NoteImageStore.IsImageFile(f)) continue;
+                var fn = NoteImageStore.Import(f);
+                if (fn != null) { InsertImageByFileName(fn); inserted = true; }
+            }
+        }
+        else if (e.Data.GetDataPresent(DataFormats.Bitmap))
+        {
+            var fn = NoteImageStore.SaveBitmap(e.Data.GetData(DataFormats.Bitmap) as System.Windows.Media.Imaging.BitmapSource);
+            if (fn != null) { InsertImageByFileName(fn); inserted = true; }
+        }
+
+        if (inserted) e.Handled = true;
+    }
+
+    /// <summary>拖拽数据是否含可内嵌的图片(图片文件 或 位图).</summary>
+    private static bool DragHasImage(IDataObject data)
+    {
+        if (data.GetDataPresent(DataFormats.Bitmap)) return true;
+        if (data.GetDataPresent(DataFormats.FileDrop) &&
+            data.GetData(DataFormats.FileDrop) is string[] files)
+            return files.Any(NoteImageStore.IsImageFile);
+        return false;
     }
 
     private void ApplyColor(string hex)

@@ -481,6 +481,12 @@
                                 CornerRadius="12">
                             <Grid>
                                 <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="11" Opacity="0" />
+                                <!-- 优先级色块:贴卡片左边缘的竖条(开启“前置色块”设置时显示，红/黄/绿按优先级);
+                                     纵向居中、固定高度，避开卡片圆角不外露 -->
+                                <Border x:Name="prioBlock" Width="4" Height="18" CornerRadius="2"
+                                        HorizontalAlignment="Left" VerticalAlignment="Center" Margin="0"
+                                        Background="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
+                                        Visibility="{Binding DataContext.ShowPriorityBlock, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}" />
                                 <Border Padding="14,9">
                                     <ContentPresenter VerticalAlignment="Center" />
                                 </Border>
