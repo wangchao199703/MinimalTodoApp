@@ -316,7 +316,7 @@
     <sys:String x:Key="S.Settings.Holidays">显示节假日</sys:String>
     <sys:String x:Key="S.Settings.HolidaysDesc">在日历中标注国内法定节假日并高亮放假日（联网获取，首次需联网）</sys:String>
     <sys:String x:Key="S.Settings.RestoreDefaults">恢复默认设置</sys:String>
-    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">字体微软雅黑、字号 13、行距 1.0、勾选框 18</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">字体微软雅黑 UI、字号 14、行距 1.1、勾选框 18</sys:String>
     <sys:String x:Key="S.Settings.RestoreDone">已恢复默认外观设置.</sys:String>
     <sys:String x:Key="S.Settings.AutoStart">开机自启动</sys:String>
     <sys:String x:Key="S.Settings.AutoStartDesc">登录 Windows 时自动运行（当前用户）</sys:String>

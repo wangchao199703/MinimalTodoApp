@@ -70,12 +70,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     };
 
     // ===== 产品默认外观(首次运行 / 点击“恢复默认设置”时套用) =====
-    /// <summary>默认字体:微软雅黑.</summary>
-    public const string DefaultFontFamily = "Microsoft YaHei";
-    /// <summary>默认字号:13(较此前 12 略增，长文更易读).</summary>
-    public const double DefaultFontSize = 13;
-    /// <summary>默认行距倍率:1.0(较此前 1.3 更紧凑舒适).</summary>
-    public const double DefaultLineSpacing = 1.0;
+    /// <summary>默认字体:微软雅黑 UI(界面专用度量更紧凑清晰，英文回退 Segoe UI；即“跟随系统”).</summary>
+    public const string DefaultFontFamily = "Microsoft YaHei UI, Segoe UI";
+    /// <summary>默认字号:14(较此前 13 略增，与现代系统正文字号一致、更易读).</summary>
+    public const double DefaultFontSize = 14;
+    /// <summary>默认行距倍率:1.1(较此前 1.0 略松，更透气).</summary>
+    public const double DefaultLineSpacing = 1.1;
     /// <summary>默认勾选框直径:18(较此前 16 略增，更易点选).</summary>
     public const double DefaultCheckboxSize = 18;
 
@@ -95,7 +95,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         RebuildThemeGroups();
 
         // 字体设置(字体/字号/行距):从持久化恢复，App 启动时会显式 FontManager.Apply 一次。
-        // 首次运行(尚未做过开机自启动初始化)统一套用产品默认:微软雅黑 / 字号 13 / 行距 1.0 / 勾选框 18。
+        // 首次运行(尚未做过开机自启动初始化)统一套用产品默认:微软雅黑 UI / 字号 14 / 行距 1.1 / 勾选框 18。
         if (!_data.StartupInitialized)
         {
             fontFamily = DefaultFontFamily;
@@ -626,7 +626,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 恢复默认外观设置:字体微软雅黑、字号 13、行距 1.0、勾选框 18。
+    /// 恢复默认外观设置:字体微软雅黑 UI、字号 14、行距 1.1、勾选框 18。
     /// 经属性赋值触发 FontManager.Apply + 持久化，设置面板即时预览；同步刷新字体下拉选中项。
     /// </summary>
     public void ResetDefaultSettings()

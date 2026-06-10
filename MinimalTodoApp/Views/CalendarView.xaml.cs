@@ -98,6 +98,7 @@ public partial class CalendarView : UserControl
     }
 
     // ===== 视图切换 / 导航 =====
+    // 仅用户主动导航时播放过渡动画(自动重渲染如待办变化/节假日就绪不闪动画)
     private void ViewTab_Checked(object sender, RoutedEventArgs e)
     {
         if (!IsLoaded) return;
@@ -105,10 +106,16 @@ public partial class CalendarView : UserControl
         {
             _mode = m;
             Render();
+            Anim.IntroScaleFade(CalendarHost);            // 切视图:与设置弹窗同款缩放+淡入
         }
     }
 
-    private void Today_Click(object sender, RoutedEventArgs e) { _anchor = DateTime.Today; Render(); }
+    private void Today_Click(object sender, RoutedEventArgs e)
+    {
+        _anchor = DateTime.Today;
+        Render();
+        Anim.IntroScaleFade(CalendarHost);
+    }
 
     private void Prev_Click(object sender, RoutedEventArgs e) => Shift(-1);
 
@@ -123,6 +130,7 @@ public partial class CalendarView : UserControl
             _ => _anchor.AddMonths(dir),
         };
         Render();
+        Anim.FadeSlideIn(CalendarHost, dx: 24 * dir);     // 翻页:内容沿翻页方向弹性滑入
     }
 
     // ===== 渲染入口 =====

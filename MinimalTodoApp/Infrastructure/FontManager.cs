@@ -24,7 +24,7 @@ public static class FontManager
     public const double MinSize = 10;
     public const double MaxSize = 18;
 
-    /// <summary>行距倍率可调范围(默认 1.0;下限与设置面板滑块一致，否则用户拖到 0.4 会被夹回).</summary>
+    /// <summary>行距倍率可调范围(默认 1.1;下限与设置面板滑块一致，否则用户拖到 0.4 会被夹回).</summary>
     public const double MinSpacing = 0.4;
     public const double MaxSpacing = 1.8;
 
@@ -56,9 +56,9 @@ public static class FontManager
     public static void Apply(string? family, double size, double spacing, double checkboxSize)
     {
         if (string.IsNullOrWhiteSpace(family)) family = SystemDefault;
-        // 非法值(≤0)兜底为产品默认(字号 13 / 行距 1.0，与 MainViewModel.Default* 一致)
-        size = Math.Clamp(size <= 0 ? 13 : size, MinSize, MaxSize);
-        spacing = Math.Clamp(spacing <= 0 ? 1.0 : spacing, MinSpacing, MaxSpacing);
+        // 非法值(≤0)兜底为产品默认(字号 14 / 行距 1.1，与 MainViewModel.Default* 一致)
+        size = Math.Clamp(size <= 0 ? 14 : size, MinSize, MaxSize);
+        spacing = Math.Clamp(spacing <= 0 ? 1.1 : spacing, MinSpacing, MaxSpacing);
         // 勾选框直径:未设置(≤0)时默认≈字号+2(视觉与文字等高)，否则夹取到合理范围
         checkboxSize = Math.Clamp(checkboxSize <= 0 ? size + 2 : checkboxSize, MinCheckbox, MaxCheckbox);
 

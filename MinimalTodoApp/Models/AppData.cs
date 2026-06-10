@@ -22,11 +22,11 @@ public class AppData
     /// <summary>正文/任务文字字体(可在设置里调整，持久化).空串表示跟随系统默认字体.</summary>
     public string FontFamily { get; set; } = "Microsoft YaHei UI, Segoe UI";
 
-    /// <summary>正文/任务文字基准字号(可在设置里调整，持久化).默认中=13.</summary>
-    public double FontSize { get; set; } = 13;
+    /// <summary>正文/任务文字基准字号(可在设置里调整，持久化).默认 14(与现代系统正文一致).</summary>
+    public double FontSize { get; set; } = 14;
 
-    /// <summary>行距倍率(默认 1.0，紧凑舒适)，同时影响文字行高与任务行间距，持久化.</summary>
-    public double LineSpacing { get; set; } = 1.0;
+    /// <summary>行距倍率(默认 1.1，略松更透气)，同时影响文字行高与任务行间距，持久化.</summary>
+    public double LineSpacing { get; set; } = 1.1;
 
     /// <summary>勾选框圆环直径(可在设置里调整，持久化).0=未设置(首次按字号+2，约与文字等高).</summary>
     public double CheckboxSize { get; set; }

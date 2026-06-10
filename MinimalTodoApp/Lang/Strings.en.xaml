@@ -316,7 +316,7 @@
     <sys:String x:Key="S.Settings.Holidays">Show holidays</sys:String>
     <sys:String x:Key="S.Settings.HolidaysDesc">Mark Chinese public holidays on the calendar and highlight days off (fetched online; first run needs a connection)</sys:String>
     <sys:String x:Key="S.Settings.RestoreDefaults">Restore defaults</sys:String>
-    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">Microsoft YaHei, size 13, spacing 1.0, checkbox 18</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">Microsoft YaHei UI, size 14, spacing 1.1, checkbox 18</sys:String>
     <sys:String x:Key="S.Settings.RestoreDone">Default appearance restored.</sys:String>
     <sys:String x:Key="S.Settings.AutoStart">Run at startup</sys:String>
     <sys:String x:Key="S.Settings.AutoStartDesc">Launch automatically when you sign in to Windows (current user)</sys:String>
