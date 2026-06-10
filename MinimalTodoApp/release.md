@@ -2,6 +2,17 @@
 
 > 每次发布在此登记版本号与变更摘要（最新在上）。详细实现见同目录 `优化记录.md`，对外发布说明见仓库根 `release-notes.md`。
 
+### v1.2.0 补5（第四十轮）—— 2026-06-10（版本号保持 1.2.0，**本轮发布 Release 包**）
+
+便签字体统一 + 便签插图 + 待办优先级色块。版本号保持 **1.2.0**（`<Version>1.2.0` / `<FileVersion>1.2.0.0` / `<AssemblyVersion>1.2.0.0`，未改动）：
+
+1. **便签字体字号改用全局**：移除上一轮便签独立的「收集箱」字体/字号/行距设置与编辑器字号按钮——便签正文统一跟随设置「字体」页的全局字体/字号/行距（与任务区一致）。保留便签选区着色。
+2. **便签插入图片**：工具栏新增「插入图片」，选图后复制持久化到 `%AppData%\MinimalTodoApp\note-images`，正文以 `<img=文件名>` 记录、重开自动还原。
+3. **待办优先级色块**：设置「常规」新增开关——开启后勾选圈不显示优先级颜色（转中性灰），改在任务最前方用红/黄/绿色块区分优先级（类似分组色块）。
+4. **数据兼容**：新增 `AppData.ShowPriorityBlock`（默认关），移除上一轮 `NoteFontFamily/NoteFontSize/NoteLineSpacing`，旧 data.json 完全兼容。**国际化**：新增 `S.Note.InsertImage` / `S.Settings.PriorityBlock(Desc)`，移除 `S.Settings.Nav.Inbox`/`S.Settings.Note.*`，中英成对。
+
+> 本轮经 `release.ps1` 发布 Release 包。详细实现见 `优化记录.md` 第四十轮。
+
 ### v1.2.0 补4（第三十九轮）—— 2026-06-10（版本号保持 1.2.0）
 
 分组与收集箱重构 + 便签富文本增强（**本轮仅构建无依赖 exe，暂不发布 Release 包**）。版本号保持 **1.2.0**（`<Version>1.2.0` / `<FileVersion>1.2.0.0` / `<AssemblyVersion>1.2.0.0`，未改动）：

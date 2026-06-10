@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using MinimalTodoApp.Models;
 
 namespace MinimalTodoApp.Infrastructure;
@@ -97,6 +98,30 @@ public static class MarkdownFlowDocument
         return new InlineUIContainer(cb) { BaselineAlignment = BaselineAlignment.Center };
     }
 
+    /// <summary>由仓库文件名构建内嵌图片的行内容器(Image.Tag 存文件名供序列化)。</summary>
+    public static InlineUIContainer NewImageInline(string fileName)
+    {
+        var img = new Image
+        {
+            Tag = fileName,
+            Stretch = Stretch.Uniform,
+            MaxWidth = 360,
+            Margin = new Thickness(0, 2, 0, 2),
+        };
+        try
+        {
+            var bmp = new BitmapImage();
+            bmp.BeginInit();
+            bmp.CacheOption = BitmapCacheOption.OnLoad;   // 立即读盘,不锁定文件
+            bmp.UriSource = new Uri(NoteImageStore.ResolvePath(fileName));
+            bmp.EndInit();
+            img.Source = bmp;
+            if (bmp.PixelWidth > 0) img.Width = Math.Min(360, bmp.PixelWidth);
+        }
+        catch { /* 图片缺失/损坏:占位空容器，不影响其它内容 */ }
+        return new InlineUIContainer(img) { BaselineAlignment = BaselineAlignment.Center };
+    }
+
     public static InlineUIContainer NewBulletMarker()
     {
         var dot = new TextBlock
@@ -124,6 +149,20 @@ public static class MarkdownFlowDocument
 
         while (i < text.Length)
         {
+            // 内嵌图片 <img=文件名>:自包含标记(无闭合)，渲染为图片
+            if (Starts(text, i, "<img="))
+            {
+                int gt = text.IndexOf('>', i);
+                if (gt > i)
+                {
+                    string fileName = text.Substring(i + 5, gt - (i + 5));
+                    Flush();
+                    result.Add(NewImageInline(fileName));
+                    i = gt + 1;
+                    continue;
+                }
+            }
+
             var (open, close, factory) = MatchOpen(text, i);
             if (open != null)
             {
@@ -239,8 +278,11 @@ public static class MarkdownFlowDocument
     {
         switch (inline)
         {
-            case InlineUIContainer:
-                return;                         // 行首标记(复选框/圆点)不参与文本序列化
+            case InlineUIContainer uic:
+                // 内嵌图片序列化为 <img=文件名>;行首标记(复选框/圆点)不参与文本序列化
+                if (uic.Child is Image img && img.Tag is string fn && fn.Length > 0)
+                    sb.Append($"<img={fn}>");
+                return;
             case LineBreak:
                 sb.Append('\n');                // 软换行:重载时会成为新段落(可接受)
                 return;
@@ -344,7 +386,8 @@ public static class MarkdownFlowDocument
 
     private static string StripInline(string line)
     {
-        // 先去带参数的着色/字号标记，再去固定标记(** 在 * 之前，避免被当成两个 *)
+        // 先去带参数的着色/字号/图片标记，再去固定标记(** 在 * 之前，避免被当成两个 *)
+        line = Regex.Replace(line, "<img=[^>]*>", string.Empty);
         line = Regex.Replace(line, "</?color(=#[0-9A-Fa-f]{6})?>", string.Empty);
         line = Regex.Replace(line, "</?size(=[0-9.]+)?>", string.Empty);
         foreach (var token in new[] { "**", "<u>", "</u>", "~~", "*" })

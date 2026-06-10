@@ -524,6 +524,7 @@
     <sys:String x:Key="S.Note.DefaultColor">默认颜色</sys:String>
     <sys:String x:Key="S.Note.DefaultSize">默认字号</sys:String>
     <sys:String x:Key="S.Note.AddToTodo">加入到待办</sys:String>
+    <sys:String x:Key="S.Note.InsertImage">插入图片</sys:String>
     <sys:String x:Key="S.Note.NewGroup">新建分组</sys:String>
     <sys:String x:Key="S.Note.NewGroupName">新分组</sys:String>
     <sys:String x:Key="S.Note.RenameGroup">重命名分组</sys:String>
@@ -543,11 +544,8 @@
     <sys:String x:Key="S.Menu.Copy">复制</sys:String>
     <sys:String x:Key="S.Menu.Paste">粘贴</sys:String>
 
-    <!-- ============ 收集箱设置(v1.2.0 补4) ============ -->
-    <sys:String x:Key="S.Settings.Nav.Inbox">收集箱</sys:String>
-    <sys:String x:Key="S.Settings.Note.Desc">以下设置作用于新建的便签（已打开的便签下次加载时生效）。</sys:String>
-    <sys:String x:Key="S.Settings.Note.Font">字体</sys:String>
-    <sys:String x:Key="S.Settings.Note.Size">字号</sys:String>
-    <sys:String x:Key="S.Settings.Note.LineSpacing">行距</sys:String>
+    <!-- ============ 待办优先级色块(v1.2.0 补5) ============ -->
+    <sys:String x:Key="S.Settings.PriorityBlock">待办前置优先级色块</sys:String>
+    <sys:String x:Key="S.Settings.PriorityBlockDesc">开启后勾选圈不显示优先级颜色，改在任务最前方用红/黄/绿色块区分优先级。</sys:String>
 
 </ResourceDictionary>

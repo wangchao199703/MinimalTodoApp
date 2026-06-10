@@ -12,6 +12,7 @@
     <conv:StringToBrushConverter x:Key="StringToBrush" />
     <conv:DueStateToBrushConverter x:Key="DueStateToBrush" />
     <conv:PriorityToBrushConverter x:Key="PriorityToBrush" />
+    <conv:PriorityRingBrushConverter x:Key="PriorityRingBrush" />
     <conv:PriorityToTextConverter x:Key="PriorityToText" />
     <conv:EqualityToBoolConverter x:Key="EqualityToBool" />
     <conv:IndentToMarginConverter x:Key="IndentToMargin" />

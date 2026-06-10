@@ -53,28 +53,22 @@ public partial class NotesView : UserControl
     /// <summary>把当前选中便签的 Markdown 正文解析进编辑器(无选中则清空).</summary>
     private void LoadDocument()
     {
-        // 便签使用「收集箱设置」里的默认字号/字体/行距作为基准(标题按基准放大)
-        if (_vm != null && _vm.NoteFontSize > 0) _baseFontSize = _vm.NoteFontSize;
+        // 便签统一使用全局字体/字号/行距(与任务区一致),不再有便签独立设置.
+        if (_vm != null && _vm.FontSize > 0) _baseFontSize = _vm.FontSize;
 
         _suppress = true;
         try
         {
             var note = Vm?.SelectedNote;
             Editor.IsReadOnly = note == null;
-            Editor.FontSize = _baseFontSize;
-            if (_vm != null && !string.IsNullOrWhiteSpace(_vm.NoteFontFamily))
-            {
-                try { Editor.FontFamily = new System.Windows.Media.FontFamily(_vm.NoteFontFamily); }
-                catch { Editor.ClearValue(FontFamilyProperty); }
-            }
-            else Editor.ClearValue(FontFamilyProperty);
+            // 字体/字号跟随 XAML 上的全局绑定(AppFontFamily / DataContext.FontSize)，此处不覆盖.
 
             Editor.Document = note == null
                 ? new FlowDocument()
                 : MarkdownFlowDocument.ToFlowDocument(note.Content, _baseFontSize, OnCheckToggled);
 
-            // 行距(整篇默认):基准字号 × 行距倍率
-            double spacing = _vm?.NoteLineSpacing ?? 1.2;
+            // 行距(整篇默认):全局基准字号 × 全局行距倍率
+            double spacing = _vm?.LineSpacing ?? 1.1;
             if (spacing > 0) Editor.Document.LineHeight = _baseFontSize * spacing;
         }
         finally
@@ -190,8 +184,6 @@ public partial class NotesView : UserControl
         "#E11D48", "#EA580C", "#F59E0B", "#16A34A", "#0891B2",
         "#2563EB", "#7C3AED", "#DB2777", "#111827", "#6B7280",
     };
-    private static readonly double[] SizePresets = { 12, 14, 16, 18, 20, 24, 28 };
-
     private bool _palettesBuilt;
 
     private void BuildPalettes()
@@ -215,33 +207,6 @@ public partial class NotesView : UserControl
             btn.Click += (_, _) => { ColorPopup.IsOpen = false; ApplyColor(hex); };
             ColorSwatches.Children.Add(btn);
         }
-
-        foreach (var sz in SizePresets)
-        {
-            var btn = new Button
-            {
-                Content = sz.ToString("0") + "px",
-                HorizontalContentAlignment = HorizontalAlignment.Left,
-                Padding = new Thickness(8, 5, 8, 5),
-                FontSize = 12,
-                Style = (Style)FindResource("GhostButton"),
-            };
-            double s = sz;
-            btn.Click += (_, _) => { SizePopup.IsOpen = false; ApplySize(s); };
-            SizeOptions.Children.Add(btn);
-        }
-
-        // 「默认字号」清除选区本地字号
-        var def = new Button
-        {
-            Content = (string)TryFindResource("S.Note.DefaultSize") ?? "默认字号",
-            HorizontalContentAlignment = HorizontalAlignment.Left,
-            Padding = new Thickness(8, 5, 8, 5),
-            FontSize = 12,
-            Style = (Style)FindResource("GhostButton"),
-        };
-        def.Click += (_, _) => { SizePopup.IsOpen = false; ClearSelectionProperty(TextElement.FontSizeProperty); };
-        SizeOptions.Children.Add(def);
     }
 
     private ControlTemplate BuildSwatchTemplate()
@@ -262,10 +227,29 @@ public partial class NotesView : UserControl
         ColorPopup.IsOpen = true;
     }
 
-    private void SizeButton_Click(object sender, RoutedEventArgs e)
+    // ===================== 插入图片 =====================
+
+    private void InsertImage_Click(object sender, RoutedEventArgs e)
     {
-        BuildPalettes();
-        SizePopup.IsOpen = true;
+        if (Vm?.SelectedNote == null) return;
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "图片 Images|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.webp|所有文件 All files|*.*",
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        var fileName = NoteImageStore.Import(dlg.FileName);
+        if (fileName == null) return;
+
+        // 图片独占一行:插入到光标所在段落之后
+        var image = MarkdownFlowDocument.NewImageInline(fileName);
+        var para = new Paragraph(image) { Margin = new Thickness(0) };
+        var caretPara = Editor.CaretPosition.Paragraph;
+        if (caretPara != null) Editor.Document.Blocks.InsertAfter(caretPara, para);
+        else Editor.Document.Blocks.Add(para);
+
+        Editor.Focus();
+        SaveCurrent();
     }
 
     private void ApplyColor(string hex)
@@ -278,15 +262,6 @@ public partial class NotesView : UserControl
             sel.ApplyPropertyValue(TextElement.ForegroundProperty, new SolidColorBrush(color));
         }
         catch { /* 非法颜色忽略 */ }
-        Editor.Focus();
-        SaveCurrent();
-    }
-
-    private void ApplySize(double size)
-    {
-        var sel = Editor.Selection;
-        if (sel.IsEmpty) { Editor.Focus(); return; }
-        sel.ApplyPropertyValue(TextElement.FontSizeProperty, size);
         Editor.Focus();
         SaveCurrent();
     }

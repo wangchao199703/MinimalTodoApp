@@ -65,19 +65,10 @@
                     </Border>
                 </Popup>
 
-                <!-- 字号:点开预设字号 -->
-                <Button x:Name="SizeButton" Style="{StaticResource NoteToolButton}"
-                        Content="A&#x207A;" Click="SizeButton_Click" ToolTip="{DynamicResource S.Note.FontSize}" />
-                <Popup x:Name="SizePopup" PlacementTarget="{Binding ElementName=SizeButton}"
-                       Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
-                    <Border Background="{DynamicResource PopupBg}" CornerRadius="10" Margin="4"
-                            BorderBrush="{DynamicResource Divider}" BorderThickness="1" Padding="6">
-                        <Border.Effect>
-                            <DropShadowEffect BlurRadius="18" ShadowDepth="0" Opacity="0.3" Color="#000000" />
-                        </Border.Effect>
-                        <StackPanel x:Name="SizeOptions" Width="120" />
-                    </Border>
-                </Popup>
+                <!-- 插入图片:选图后复制到本地 note-images 目录并内嵌 -->
+                <Button x:Name="ImageButton" Style="{StaticResource NoteToolButton}"
+                        Content="&#xE91B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                        Click="InsertImage_Click" ToolTip="{DynamicResource S.Note.InsertImage}" />
             </StackPanel>
         </Grid>
 

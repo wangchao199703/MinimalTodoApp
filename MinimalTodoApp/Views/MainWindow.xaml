@@ -778,11 +778,23 @@
                                             </ContextMenu>
                                         </Grid.ContextMenu>
 
-                                        <!-- 圆形勾选框（Col0）：圆环按优先级着色，完成时填充 + 白勾 -->
-                                        <CheckBox Grid.Column="0" Style="{StaticResource TaskCheckBox}"
-                                                  VerticalAlignment="Center" Margin="0,0,3,0"
-                                                  BorderBrush="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
-                                                  IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
+                                        <!-- 圆形勾选框（Col0）：默认圆环按优先级着色；开启“前置色块”时圆环转中性灰，
+                                             并在最前方显示优先级色块(红/黄/绿)区分优先级 -->
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,3,0">
+                                            <Border Width="4" CornerRadius="2" Margin="0,0,7,0"
+                                                    VerticalAlignment="Stretch" MinHeight="16"
+                                                    Background="{Binding Priority, Converter={StaticResource PriorityToBrush}}"
+                                                    Visibility="{Binding DataContext.ShowPriorityBlock, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVis}}" />
+                                            <CheckBox Style="{StaticResource TaskCheckBox}" VerticalAlignment="Center"
+                                                      IsChecked="{Binding IsCompleted, Mode=TwoWay}">
+                                                <CheckBox.BorderBrush>
+                                                    <MultiBinding Converter="{StaticResource PriorityRingBrush}">
+                                                        <Binding Path="Priority" />
+                                                        <Binding Path="DataContext.ShowPriorityBlock" RelativeSource="{RelativeSource AncestorType=Window}" />
+                                                    </MultiBinding>
+                                                </CheckBox.BorderBrush>
+                                            </CheckBox>
+                                        </StackPanel>
 
                                         <!-- 标题（Col1）：默认显示文本（超长截断显示前部）；单击进入编辑 -->
                                         <Grid Grid.Column="1" VerticalAlignment="Center">

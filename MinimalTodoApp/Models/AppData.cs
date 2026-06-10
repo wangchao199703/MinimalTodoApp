@@ -64,15 +64,6 @@ public class AppData
     /// <summary>收集箱根是否折叠(持久化):折叠时侧栏隐藏便签分组与便签列表.</summary>
     public bool InboxCollapsed { get; set; }
 
-    /// <summary>新建便签的默认字体(空=跟随便签默认).持久化.</summary>
-    public string NoteFontFamily { get; set; } = "";
-
-    /// <summary>新建便签的默认字号(便签正文基准字号).默认 15.持久化.</summary>
-    public double NoteFontSize { get; set; } = 15;
-
-    /// <summary>新建便签的默认行距倍率.默认 1.2.持久化.</summary>
-    public double NoteLineSpacing { get; set; } = 1.2;
-
     /// <summary>中央区域是否处于便签视图(持久化，下次启动恢复).</summary>
     public bool NotesViewOpen { get; set; }
 
@@ -126,4 +117,10 @@ public class AppData
 
     /// <summary>是否已展示过"拖拽任务到日历设置截止时间"的一次性功能提示(仅提示一次).</summary>
     public bool CalendarDragHintShown { get; set; }
+
+    /// <summary>
+    /// 待办勾选圈是否「不显示优先级颜色」:开启后圆环用中性灰，改在任务最前方显示一个优先级色块
+    /// (红/黄/绿 三色，类似分组色块)来区分优先级.默认关闭(沿用彩色圆环).
+    /// </summary>
+    public bool ShowPriorityBlock { get; set; }
 }

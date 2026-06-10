@@ -127,6 +127,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         reminderSoundEnabled = _data.ReminderSoundEnabled;
         autoUpdateEnabled = _data.AutoUpdateEnabled;
         showHolidays = _data.ShowHolidays;
+        showPriorityBlock = _data.ShowPriorityBlock;
         dockEdge = _data.DockEdge;
 
         // 从缓存恢复节假日(近十年)，避免启动即联网;每天最多一次的联网刷新由 EnsureHolidaysAsync 异步完成
@@ -355,6 +356,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>日历是否显示国内法定节假日(默认开启，持久化).联网获取并本地缓存.</summary>
     [ObservableProperty]
     private bool showHolidays = true;
+
+    /// <summary>待办勾选圈是否不显示优先级颜色(改用任务前置色块).持久化.</summary>
+    [ObservableProperty]
+    private bool showPriorityBlock;
+
+    partial void OnShowPriorityBlockChanged(bool value) => SaveData();
 
     /// <summary>显示节假日开关变化时:持久化 + 通知日历重渲染.</summary>
     public event Action? HolidaysVisibilityChanged;
@@ -650,48 +657,6 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         FontSize = DefaultFontSize;
         LineSpacing = DefaultLineSpacing;
         CheckboxSize = DefaultCheckboxSize;
-    }
-
-    // ===== 收集箱(便签)默认外观:作用于新建便签(已打开的便签下次加载时生效) =====
-
-    /// <summary>新建便签的默认字体(空=跟随便签默认字体).持久化.</summary>
-    public string NoteFontFamily
-    {
-        get => _data.NoteFontFamily ?? "";
-        set
-        {
-            var v = value ?? "";
-            if (_data.NoteFontFamily == v) return;
-            _data.NoteFontFamily = v;
-            OnPropertyChanged();
-            SaveData();
-        }
-    }
-
-    /// <summary>新建便签的默认字号(便签正文基准字号).持久化.</summary>
-    public double NoteFontSize
-    {
-        get => _data.NoteFontSize > 0 ? _data.NoteFontSize : 15;
-        set
-        {
-            if (Math.Abs(_data.NoteFontSize - value) < 0.001) return;
-            _data.NoteFontSize = value;
-            OnPropertyChanged();
-            SaveData();
-        }
-    }
-
-    /// <summary>新建便签的默认行距倍率.持久化.</summary>
-    public double NoteLineSpacing
-    {
-        get => _data.NoteLineSpacing > 0 ? _data.NoteLineSpacing : 1.2;
-        set
-        {
-            if (Math.Abs(_data.NoteLineSpacing - value) < 0.001) return;
-            _data.NoteLineSpacing = value;
-            OnPropertyChanged();
-            SaveData();
-        }
     }
 
     /// <summary>
@@ -2138,6 +2103,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.SoundEnabled = SoundEnabled;
         _data.ReminderSoundEnabled = ReminderSoundEnabled;
         _data.ShowHolidays = ShowHolidays;
+        _data.ShowPriorityBlock = ShowPriorityBlock;
         _data.DockEdge = DockEdge;
         _data.NotesViewOpen = IsNotesViewOpen;
         NotesVm?.WriteTo(_data);   // 回写便签集合与选中便签 Id

@@ -148,6 +148,28 @@ public class PriorityToBrushConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>
+/// 任务勾选圈环色:(Priority, 是否“圆圈不显示颜色”) -> 画刷。
+/// 开启“无色圆圈”时返回中性灰(优先取主题 MutedText)，颜色由前置色块体现;否则按优先级着色。
+/// </summary>
+public class PriorityRingBrushConverter : IMultiValueConverter
+{
+    public object Convert(object[] values, Type targetType, object? parameter, CultureInfo culture)
+    {
+        bool noColor = values.Length > 1 && values[1] is bool b && b;
+        if (noColor)
+        {
+            if (Application.Current?.TryFindResource("MutedText") is Brush br) return br;
+            return new SolidColorBrush((Color)ColorConverter.ConvertFromString("#9CA3AF"));
+        }
+        var p = values.Length > 0 && values[0] is Models.Priority pr ? pr : Models.Priority.Medium;
+        return PriorityToBrushConverter.BrushFor(p);
+    }
+
+    public object[] ConvertBack(object? value, Type[] targetTypes, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>Priority -> 中文标签.</summary>
 public class PriorityToTextConverter : IValueConverter
 {
