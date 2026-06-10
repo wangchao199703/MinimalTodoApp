@@ -1,3 +1,41 @@
+## MinimalTodoApp v1.2.0
+
+### English
+
+A big feature release: a brand-new **Notes / Inbox** module plus task and grouping upgrades — still a single self-contained exe, no .NET runtime needed.
+
+- **Notes (Inbox)** — a rich-text note editor (bold/italic/underline/strikethrough, headings, bullet & checkable task lists) living in the left sidebar. Notes persist as Markdown.
+- **Note groups & drag-and-drop** — organize notes into collapsible groups; drag notes to reorder, move between groups, or back to the inbox root. The inbox and each group fold/expand from the right-click menu.
+- **Insert images into notes** — pick an image and it's copied into local storage and embedded inline; it stays with the note across restarts.
+- **Text color in notes** — color any selection; notes follow the app's global font/size/line-spacing (one consistent setting, no per-note font controls).
+- **Select text → Add to to-do** — right-click selected note text to turn each line into a task.
+- **Group management by right-click** — create a group by right-clicking any group (then rename inline); rename existing groups; fold/expand "All to-dos" to hide your groups.
+- **Ungrouped to-dos** — create tasks under "All to-dos" that don't belong to any group; drag a task onto "All to-dos" to remove it from its group.
+- **Priority color block (optional)** — a setting to hide the checkbox ring color and instead show a red/yellow/green block in front of each task to indicate priority.
+- **Modernized dialogs & fixes** — note/group deletion now uses a themed confirm dialog; fixed task text looking blurry on hover.
+- Data and settings carry over as-is.
+
+Download `MinimalTodoApp-v1.2.0-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
+
+### 简体中文
+
+功能大版本：全新「便签 / 收集箱」模块 + 待办与分组升级 —— 仍是自包含单文件 exe，无需安装 .NET 运行时。
+
+- **便签（收集箱）** —— 左侧栏内置富文本便签编辑器（加粗/斜体/下划线/删除线、标题、无序列表、可勾选任务列表），正文以 Markdown 持久化。
+- **便签分组与拖拽** —— 便签可归入可折叠分组；拖动便签重排、跨组移动、或拖回收集箱根；收集箱与各分组均可右键折叠/展开。
+- **便签插入图片** —— 选图后复制到本地并内嵌，重启后图片仍随便签保留。
+- **便签文字着色** —— 可对选中文字着色；便签字体/字号/行距统一跟随应用全局设置（不再有便签单独的字体设置）。
+- **选中文本 → 加入待办** —— 右键便签中选中的文本，可逐行转为待办。
+- **分组右键管理** —— 右键任意分组即可「新建分组」（随后内联重命名）；重命名已有分组；折叠/展开「所有待办」以收起分组列表。
+- **未分组待办** —— 可在「所有待办」下创建不属于任何分组的待办；把待办拖到「所有待办」即可移出分组。
+- **优先级色块（可选）** —— 新增设置：隐藏勾选圈的优先级颜色，改在任务前方用红/黄/绿色块区分优先级。
+- **弹窗现代化与修复** —— 便签/分组删除改用主题化确认弹窗；修复鼠标悬停时任务文字发虚。
+- 数据与设置完全兼容，升级即用。
+
+下载 `MinimalTodoApp-v1.2.0-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。
+
+---
+
 ## MinimalTodoApp v1.1.7
 
 ### English
