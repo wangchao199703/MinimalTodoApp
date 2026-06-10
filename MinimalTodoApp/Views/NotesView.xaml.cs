@@ -3,7 +3,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using MinimalTodoApp.Infrastructure;
 using MinimalTodoApp.Models;
@@ -416,27 +415,10 @@ public partial class NotesView : UserControl
         Vm.EnsureNoteSelected();   // 删到一篇不剩则自动新建空便签
     }
 
-    private void Extract_Click(object sender, RoutedEventArgs e)
-    {
-        if (Vm == null) return;
-        int n = Vm.ExtractTodos();
-        ShowFeedback(n > 0 ? Loc.F("S.Note.ExtractDone", n) : Loc.T("S.Note.ExtractNone"));
-    }
+    /// <summary>切回待办列表的请求(MainWindow 订阅:自动提取任务块为待办、切换视图).</summary>
+    public event Action? ExitRequested;
 
-    /// <summary>提取结果短暂浮现后淡出.</summary>
-    private void ShowFeedback(string text)
-    {
-        ExtractFeedback.Text = text;
-        ExtractFeedback.BeginAnimation(OpacityProperty, null);
-        ExtractFeedback.Opacity = 1;
-
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(600))
-        {
-            BeginTime = TimeSpan.FromSeconds(2),
-            EasingFunction = Anim.EaseOut(),
-        };
-        ExtractFeedback.BeginAnimation(OpacityProperty, fade);
-    }
+    private void BackToTasks_Click(object sender, RoutedEventArgs e) => ExitRequested?.Invoke();
 
     /// <summary>点击尾部留白:聚焦末块(空段落)或在末尾追加新段落.</summary>
     private void TailClicker_Click(object sender, MouseButtonEventArgs e)

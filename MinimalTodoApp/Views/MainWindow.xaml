@@ -160,9 +160,8 @@
                         <Grid Margin="4,8">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
-                                <!-- 分组列表占据弹性空间(*)，使“新建分组/便签/使用说明/导入导出/主题/收起”紧贴底部堆叠 -->
+                                <!-- 分组列表占据弹性空间(*)，使“新建分组/使用说明/导入导出/主题/收起”紧贴底部堆叠 -->
                                 <RowDefinition Height="*" />
-                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -307,33 +306,8 @@
                                 </Button>
                             </Grid>
 
-                            <!-- 便签（中央区域任务列表 ↔ 便签视图切换;打开时高亮） -->
-                            <Button Grid.Row="3" Margin="0,2,0,0" Height="28" Padding="6,0"
-                                    Click="NotesButton_Click" ToolTip="{DynamicResource S.Note.Sidebar}">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                                        <Setter Property="HorizontalContentAlignment" Value="Left" />
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
-                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding IsNotesViewOpen}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
-                                                <Setter Property="Foreground" Value="{DynamicResource Accent}" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="&#xE70B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" Width="18"
-                                               TextAlignment="Center" VerticalAlignment="Center" />
-                                    <TextBlock Text="{DynamicResource S.Note.Sidebar}" Margin="6,0,0,0" FontSize="12" VerticalAlignment="Center"
-                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
-                                </StackPanel>
-                            </Button>
-
                             <!-- 使用说明（展开=图标+文字左对齐，折叠=书本图标居中） -->
-                            <Button Grid.Row="4" Margin="0,2,0,0" Height="28" Padding="6,0"
+                            <Button Grid.Row="3" Margin="0,2,0,0" Height="28" Padding="6,0"
                                     Click="Help_Click" ToolTip="{DynamicResource S.Help}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
@@ -354,7 +328,7 @@
                             </Button>
 
                             <!-- 导入导出（展开=图标+文字左对齐，折叠=图标居中），与“使用说明”同款 -->
-                            <Grid Grid.Row="5" Margin="0,2,0,0">
+                            <Grid Grid.Row="4" Margin="0,2,0,0">
                                 <ToggleButton x:Name="IoToggle" Height="28" Padding="6,0" ToolTip="{DynamicResource S.ImportExport}">
                                     <ToggleButton.Style>
                                         <Style TargetType="ToggleButton" BasedOn="{StaticResource SidebarToggleButton}">
@@ -405,7 +379,7 @@
                             </Grid>
 
                             <!-- 修改主题：点击打开独立的主题选择窗口（可拖动、不遮挡主程序、实时预览） -->
-                            <Button Grid.Row="6" x:Name="ThemeButton" Margin="0,2,0,0" Height="28" Padding="6,0"
+                            <Button Grid.Row="5" x:Name="ThemeButton" Margin="0,2,0,0" Height="28" Padding="6,0"
                                     Click="OpenThemePicker_Click" ToolTip="{DynamicResource S.ChangeTheme}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
@@ -426,7 +400,7 @@
                             </Button>
 
                             <!-- 收起侧边栏（展开=三横图标+文字左对齐，折叠=三横图标居中，最底部） -->
-                            <Button Grid.Row="7" Margin="0,2,0,0" Height="28" Padding="6,0"
+                            <Button Grid.Row="6" Margin="0,2,0,0" Height="28" Padding="6,0"
                                     Command="{Binding ToggleSidebarCommand}" ToolTip="{DynamicResource S.Tip.ToggleSidebar}">
                                 <Button.Style>
                                     <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
@@ -477,6 +451,13 @@
                                        Foreground="{DynamicResource PrimaryText}" />
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- 便签(MD) ↔ 待办 切换:中央区域换成 Markdown 便签视图(文本常驻,切回时自动把任务块转成待办) -->
+                            <Button x:Name="NotesToggleButton" Style="{StaticResource CaptionButton}"
+                                    Margin="0,0,2,0"
+                                    ToolTip="{DynamicResource S.Note.Sidebar}"
+                                    Click="NotesButton_Click">
+                                <TextBlock Text="&#xE70B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="14" />
+                            </Button>
                             <Grid VerticalAlignment="Center">
                                 <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
                                               ToolTip="{Binding SortTooltip}">

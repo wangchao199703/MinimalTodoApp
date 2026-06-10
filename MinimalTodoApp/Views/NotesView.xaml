@@ -63,15 +63,17 @@
             <Button Grid.Column="7" Style="{StaticResource NoteToolButton}"
                     Content="☐" Click="TaskButton_Click" ToolTip="{DynamicResource S.Note.TaskList}" />
 
-            <!-- 提取结果反馈(短暂显示后淡出) -->
-            <TextBlock Grid.Column="8" x:Name="ExtractFeedback" HorizontalAlignment="Right"
-                       VerticalAlignment="Center" Margin="8,0" Opacity="0"
-                       Foreground="{DynamicResource SuccessText}" FontSize="12" />
-
-            <!-- 提取待办 -->
-            <Button Grid.Column="9" Style="{StaticResource AccentButton}" Padding="12,6"
-                    Focusable="False" Click="Extract_Click"
-                    Content="{DynamicResource S.Note.Extract}" />
+            <!-- 返回待办:切回任务列表(MD 文本常驻,任务块自动转成待办) -->
+            <Button Grid.Column="9" Style="{StaticResource GhostButton}" Padding="10,5"
+                    Focusable="False" Click="BackToTasks_Click"
+                    ToolTip="{DynamicResource S.Note.BackToTasks}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE73E;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                               FontSize="13" VerticalAlignment="Center" />
+                    <TextBlock Text="{DynamicResource S.Note.BackToTasks}" Margin="6,0,0,0"
+                               FontSize="12" VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
         </Grid>
 
         <!-- ===== 块编辑器 ===== -->

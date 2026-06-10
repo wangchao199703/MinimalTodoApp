@@ -510,10 +510,8 @@
     <sys:String x:Key="S.Note.Untitled">无标题便签</sys:String>
     <sys:String x:Key="S.Note.New">新建便签</sys:String>
     <sys:String x:Key="S.Note.Delete">删除便签</sys:String>
-    <sys:String x:Key="S.Note.DeleteConfirm">确定删除当前便签？已提取的待办会保留。</sys:String>
-    <sys:String x:Key="S.Note.Extract">提取待办</sys:String>
-    <sys:String x:Key="S.Note.ExtractDone">已提取 {0} 条待办</sys:String>
-    <sys:String x:Key="S.Note.ExtractNone">没有可提取的新任务项</sys:String>
+    <sys:String x:Key="S.Note.DeleteConfirm">确定删除当前便签？已转换的待办会保留。</sys:String>
+    <sys:String x:Key="S.Note.BackToTasks">返回待办</sys:String>
     <sys:String x:Key="S.Note.Bold">加粗（Ctrl+B，**文字**）</sys:String>
     <sys:String x:Key="S.Note.Heading">标题（循环 H1→H2→H3，或输入 # ）</sys:String>
     <sys:String x:Key="S.Note.Bullet">无序列表（或输入 - ）</sys:String>

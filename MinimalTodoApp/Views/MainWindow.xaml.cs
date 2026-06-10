@@ -98,7 +98,8 @@ public partial class MainWindow : Window
         // 恢复上次的日程面板展开状态(上次展开则启动也展开，窗口随之加宽)
         if (Vm != null && Vm.ScheduleOpen) OpenSchedule();
 
-        // 恢复上次的便签视图(中央区域切到便签时初始化编辑器)
+        // 恢复上次的便签视图(中央区域切到便签时初始化编辑器)；订阅便签里的"返回待办"
+        NotesPanel.ExitRequested += () => SetNotesView(false);
         if (Vm != null && Vm.IsNotesViewOpen) NotesPanel.Init(Vm);
 
         // 禁用 Windows Aero Snap 手势，避免拖到边缘触发系统的自动最大化/分屏
@@ -867,20 +868,27 @@ public partial class MainWindow : Window
         Application.Current.Shutdown();
     }
 
-    // ===== 便签视图切换 =====
+    // ===== 便签(MD) ↔ 待办 视图切换 =====
 
-    /// <summary>侧栏「便签」:中央区域在任务列表与便签视图之间互斥切换，进场播统一缩放+淡入.</summary>
-    private void NotesButton_Click(object sender, RoutedEventArgs e)
+    /// <summary>任务区头部的便签按钮:切到 Markdown 便签视图.</summary>
+    private void NotesButton_Click(object sender, RoutedEventArgs e) => SetNotesView(true);
+
+    /// <summary>
+    /// 中央区域在任务列表与便签视图间互斥切换.切回待办时**自动**把便签里的任务块
+    /// 转成全局待办(无新任务块则什么都不加)——MD 文本永远常驻、不被清空.
+    /// </summary>
+    private void SetNotesView(bool open)
     {
-        if (Vm == null) return;
-        Vm.IsNotesViewOpen = !Vm.IsNotesViewOpen;
-        if (Vm.IsNotesViewOpen)
+        if (Vm == null || Vm.IsNotesViewOpen == open) return;
+        Vm.IsNotesViewOpen = open;
+        if (open)
         {
             NotesPanel.Init(Vm);
             Anim.IntroScaleFade(NotesPanel);
         }
         else
         {
+            Vm.NotesVm?.ExtractTodos();        // 自动转换(替代原"提取待办"按钮)
             Vm.NotesVm?.FlushPendingSave();
             Anim.IntroScaleFade(TaskArea);
         }
