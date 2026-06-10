@@ -55,6 +55,15 @@ public class AppData
     /// <summary>右侧日程面板是否展开(持久化，上次展开则下次启动也展开).</summary>
     public bool ScheduleOpen { get; set; }
 
+    /// <summary>全部便签(v1.2.0 新增便签模块).向后兼容默认空.</summary>
+    public List<Note> Notes { get; set; } = new();
+
+    /// <summary>中央区域是否处于便签视图(持久化，下次启动恢复).</summary>
+    public bool NotesViewOpen { get; set; }
+
+    /// <summary>上次选中的便签 Id.</summary>
+    public Guid? SelectedNoteId { get; set; }
+
     /// <summary>用户自定义主题列表.</summary>
     public List<CustomTheme> CustomThemes { get; set; } = new();
 

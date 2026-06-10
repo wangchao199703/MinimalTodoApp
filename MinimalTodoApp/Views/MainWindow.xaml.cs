@@ -98,6 +98,9 @@ public partial class MainWindow : Window
         // 恢复上次的日程面板展开状态(上次展开则启动也展开，窗口随之加宽)
         if (Vm != null && Vm.ScheduleOpen) OpenSchedule();
 
+        // 恢复上次的便签视图(中央区域切到便签时初始化编辑器)
+        if (Vm != null && Vm.IsNotesViewOpen) NotesPanel.Init(Vm);
+
         // 禁用 Windows Aero Snap 手势，避免拖到边缘触发系统的自动最大化/分屏
         var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
         NativeMethods.DisableAeroSnap(hwnd);
@@ -510,6 +513,7 @@ public partial class MainWindow : Window
     protected override void OnClosing(CancelEventArgs e)
     {
         SyncSidebarWidthBack();
+        Vm?.NotesVm?.FlushPendingSave();   // 便签可能有挂起的防抖保存，关闭/隐藏前落盘
 
         // 点击“关闭”按钮(或系统调用关闭)时不退出，而是隐藏到托盘，程序常驻
         if (!_allowClose)
@@ -861,6 +865,25 @@ public partial class MainWindow : Window
         SyncSidebarWidthBack();
         try { TrayIcon.Dispose(); } catch { /* 托盘已释放,忽略 */ }   // 释放托盘图标，避免残留
         Application.Current.Shutdown();
+    }
+
+    // ===== 便签视图切换 =====
+
+    /// <summary>侧栏「便签」:中央区域在任务列表与便签视图之间互斥切换，进场播统一缩放+淡入.</summary>
+    private void NotesButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm == null) return;
+        Vm.IsNotesViewOpen = !Vm.IsNotesViewOpen;
+        if (Vm.IsNotesViewOpen)
+        {
+            NotesPanel.Init(Vm);
+            Anim.IntroScaleFade(NotesPanel);
+        }
+        else
+        {
+            Vm.NotesVm?.FlushPendingSave();
+            Anim.IntroScaleFade(TaskArea);
+        }
     }
 
     // ===== 主题选择独立窗口 =====

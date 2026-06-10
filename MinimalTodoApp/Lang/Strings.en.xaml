@@ -505,4 +505,18 @@
     <sys:String x:Key="S.Toast.DefaultTitle">Todo reminder</sys:String>
     <sys:String x:Key="S.Toast.ClickToClose">Click to close</sys:String>
 
+    <!-- ============ Notes (v1.2.0) ============ -->
+    <sys:String x:Key="S.Note.Sidebar">Notes</sys:String>
+    <sys:String x:Key="S.Note.Untitled">Untitled note</sys:String>
+    <sys:String x:Key="S.Note.New">New note</sys:String>
+    <sys:String x:Key="S.Note.Delete">Delete note</sys:String>
+    <sys:String x:Key="S.Note.DeleteConfirm">Delete this note? Extracted to-dos will be kept.</sys:String>
+    <sys:String x:Key="S.Note.Extract">Extract to-dos</sys:String>
+    <sys:String x:Key="S.Note.ExtractDone">{0} to-do(s) extracted</sys:String>
+    <sys:String x:Key="S.Note.ExtractNone">No new task items to extract</sys:String>
+    <sys:String x:Key="S.Note.Bold">Bold (Ctrl+B, **text**)</sys:String>
+    <sys:String x:Key="S.Note.Heading">Heading (cycles H1→H2→H3, or type # )</sys:String>
+    <sys:String x:Key="S.Note.Bullet">Bullet list (or type - )</sys:String>
+    <sys:String x:Key="S.Note.TaskList">Task list (or type - [ ] )</sys:String>
+
 </ResourceDictionary>

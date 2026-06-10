@@ -177,6 +177,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         RefreshItems();
         RefreshGroupCounts();
 
+        // 便签模块(v1.2.0):独立 VM，持有便签集合与双向同步逻辑
+        NotesVm = new NotesViewModel(this, _data);
+        isNotesViewOpen = _data.NotesViewOpen;
+
         // 首次启动:默认注册开机自启动(仅执行一次，之后尊重用户在设置里的手动开关)
         EnsureFirstRunStartup();
 
@@ -343,6 +347,15 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     /// <summary>显示节假日开关变化时:持久化 + 通知日历重渲染.</summary>
     public event Action? HolidaysVisibilityChanged;
+
+    /// <summary>便签模块 VM(构造尾段创建;此前 _allItems 的事件回调里须用 ?. 访问).</summary>
+    public NotesViewModel? NotesVm { get; private set; }
+
+    /// <summary>中央区域是否处于便签视图(任务列表 ↔ 便签互斥切换，持久化).</summary>
+    [ObservableProperty]
+    private bool isNotesViewOpen;
+
+    partial void OnIsNotesViewOpenChanged(bool value) => SaveData();
 
     /// <summary>新任务输入框文本.</summary>
     [ObservableProperty]
@@ -1535,6 +1548,56 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         // 同样延后到构造末尾统一保存.
     }
 
+    // ===== 便签模块协作入口(NotesViewModel 调用) =====
+
+    /// <summary>按 Id 查找任务(便签任务块经 LinkedTodoId 反查;查不到=链接悬空).</summary>
+    public TodoItem? FindItem(Guid id) => _allItems.FirstOrDefault(i => i.Id == id);
+
+    /// <summary>
+    /// 从便签「提取待办」程序化创建任务.目标分组与手动添加一致(当前普通分组→第一个普通分组→兜底建"收件箱").
+    /// 关键:completed=true 时在挂 PropertyChanged 事件**之前**按 MoveForCompletion 的不变量直接落位
+    /// (IsCompleted=true、GroupId=已完成分组、OriginalGroupId=原目标分组)，绝不经完成事件管线(否则会放烟花/动画).
+    /// 批量提取结束后由 <see cref="AfterTasksAddedFromNote"/> 统一刷新与保存.
+    /// </summary>
+    public TodoItem AddTaskFromNote(string title, bool completed)
+    {
+        var target = SelectedGroup;
+        if (target == null || target.IsCompletedGroup || target.IsAllUncompletedGroup)
+            target = FirstNormalGroup;
+        target ??= CreateGroupInternal("收件箱");
+
+        var completedGroup = CompletedGroup;
+        bool toCompleted = completed && completedGroup != null;
+
+        var item = new TodoItem
+        {
+            Title = title,
+            IsCompleted = completed,
+            GroupId = toCompleted ? completedGroup!.Id : target.Id,
+            OriginalGroupId = toCompleted ? target.Id : null,
+            OrderIndex = _allItems.Where(i => i.GroupId == target.Id)
+                                  .Select(i => i.OrderIndex).DefaultIfEmpty(-1).Max() + 1,
+            CreatedAt = DateTime.Now,
+        };
+
+        _allItems.Add(item);
+        item.PropertyChanged += OnItemPropertyChanged;
+        return item;
+    }
+
+    /// <summary>批量提取完成后的统一刷新与保存.</summary>
+    public void AfterTasksAddedFromNote()
+    {
+        RecomputeParents();
+        RefreshItems();
+        RefreshGroupCounts();
+        OnPropertyChanged(nameof(ParentCandidates));
+        SaveData();
+    }
+
+    /// <summary>便签内容变化时的保存入口(NotesVm 防抖后调用;SaveData 会经 WriteTo 回写便签数据).</summary>
+    public void RequestSaveFromNotes() => SaveData();
+
     /// <summary>完成状态变化时，在“已完成”分组与原分组之间移动任务.</summary>
     private void MoveForCompletion(TodoItem item)
     {
@@ -1825,6 +1888,11 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         if (e.PropertyName == nameof(TodoItem.IsCompleted))
         {
+            // 待办 → 便签:同步所有链接到该待办的任务块勾选状态.
+            // 必须在 _completingFamily 早退之前，否则父勾选联动完成的子任务对应的块不会同步.
+            if (sender is TodoItem tdi)
+                NotesVm?.SyncTodoCompletionToBlocks(tdi.Id, tdi.IsCompleted);
+
             // 整族完成/取消完成期间(连带触发的祖先与子孙)，只保存，不再分支重入
             if (_completingFamily || _uncompletingFamily)
             {
@@ -2014,6 +2082,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.ReminderSoundEnabled = ReminderSoundEnabled;
         _data.ShowHolidays = ShowHolidays;
         _data.DockEdge = DockEdge;
+        _data.NotesViewOpen = IsNotesViewOpen;
+        NotesVm?.WriteTo(_data);   // 回写便签集合与选中便签 Id
         // CustomThemes 已在 AddCustomTheme 中维护到 _data，无需在此覆盖
 
         _dataService.Save(_data);
