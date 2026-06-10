@@ -54,17 +54,23 @@ public partial class NoteBlock : ObservableObject
 }
 
 /// <summary>
-/// 一篇便签.Title 是派生缓存(取首个非空块文本去标记截断)，保存时刷新，
-/// 这样加载便签列表无需解析 Blocks.
+/// 一篇便签.正文以 Markdown 字符串(<see cref="Content"/>)持久化，由 RichTextBox 富文本编辑器加载/保存.
+/// Title 是派生缓存(取首个非空行去标记截断)，保存时刷新，这样加载便签列表无需解析正文.
+/// 旧版块格式(<see cref="Blocks"/>)仅在加载时一次性迁移为 Content，之后不再写入.
 /// </summary>
 public partial class Note : ObservableObject
 {
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    /// <summary>标题(派生缓存：首个非空块的纯文本，截 30 字).</summary>
+    /// <summary>标题(派生缓存：首个非空行的纯文本，截 30 字).</summary>
     [ObservableProperty]
     private string title = string.Empty;
 
+    /// <summary>正文(Markdown 文本)。支持 # 标题 / - 无序 / - [ ] 任务 / **加粗** *斜体* ~~删除线~~ &lt;u&gt;下划线&lt;/u&gt;.</summary>
+    [ObservableProperty]
+    private string content = string.Empty;
+
+    /// <summary>旧版块格式正文(v1.2.0 早期).仅供反序列化与一次性迁移到 <see cref="Content"/>，新数据不写入.</summary>
     public List<NoteBlock> Blocks { get; set; } = new();
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;

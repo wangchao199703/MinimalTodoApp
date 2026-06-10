@@ -98,13 +98,8 @@ public partial class MainWindow : Window
         // 恢复上次的日程面板展开状态(上次展开则启动也展开，窗口随之加宽)
         if (Vm != null && Vm.ScheduleOpen) OpenSchedule();
 
-        // 恢复上次的便签视图(中央区域切到便签时初始化编辑器)；订阅便签里的"返回待办"
-        NotesPanel.ExitRequested += () => SetNotesView(false);
-        if (Vm != null && Vm.IsNotesViewOpen)
-        {
-            NotesPanel.Init(Vm);
-            Vm.NotesVm?.SyncTodosIntoNote(Vm.Items);
-        }
+        // 便签编辑器:初始化(DataContext=NotesVm),随后由侧栏「收集箱」选中便签驱动显示
+        if (Vm != null) NotesPanel.Init(Vm);
 
         // 禁用 Windows Aero Snap 手势，避免拖到边缘触发系统的自动最大化/分屏
         var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
@@ -429,6 +424,13 @@ public partial class MainWindow : Window
             ApplyAcrylicForTheme();
         else if (e.PropertyName == nameof(MainViewModel.AlwaysOnTop))
             ApplyAlwaysOnTop();
+        else if (e.PropertyName == nameof(MainViewModel.IsNotesViewOpen) && Vm != null)
+        {
+            // 打开便签时清掉分组列表的高亮(SelectedItem 是 OneWay,本地清空不回写 SelectedGroup),
+            // 既避免分组/便签双高亮,也让之后再点同一分组能作为全新选择触发切回.
+            if (Vm.IsNotesViewOpen) GroupList.SelectedItem = null;
+            Anim.IntroScaleFade(Vm.IsNotesViewOpen ? (FrameworkElement)NotesPanel : TaskArea);
+        }
     }
 
     /// <summary>“毛玻璃”主题时开启 Acrylic 模糊，其余主题关闭.</summary>
@@ -872,32 +874,50 @@ public partial class MainWindow : Window
         Application.Current.Shutdown();
     }
 
-    // ===== 便签(MD) ↔ 待办 视图切换 =====
+    // ===== 侧栏:分组选择 / 已完成 / 收集箱便签 =====
 
-    /// <summary>任务区头部的便签按钮:切到 Markdown 便签视图.</summary>
-    private void NotesButton_Click(object sender, RoutedEventArgs e) => SetNotesView(true);
-
-    /// <summary>
-    /// 中央区域在任务列表与便签视图间互斥切换.切回待办时**自动**把便签里的任务块
-    /// 转成全局待办(无新任务块则什么都不加)——MD 文本永远常驻、不被清空.
-    /// </summary>
-    private void SetNotesView(bool open)
+    /// <summary>分组列表选择变化:推到 VM.SelectedGroup。
+    /// SelectedItem 是 OneWay,这里只在选中真实分组时回写;忽略 null(选「已完成」导致本列表清空时不要把 SelectedGroup 抹成 null)。</summary>
+    private void GroupList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (Vm == null || Vm.IsNotesViewOpen == open) return;
-        Vm.IsNotesViewOpen = open;
-        if (open)
-        {
-            NotesPanel.Init(Vm);
-            // 待办 → MD:把当前可见待办带入便签(未链接的追加为任务块)，MD 里始终有值
-            Vm.NotesVm?.SyncTodosIntoNote(Vm.Items);
-            Anim.IntroScaleFade(NotesPanel);
-        }
-        else
-        {
-            Vm.NotesVm?.ExtractTodos();        // 自动转换(替代原"提取待办"按钮)
-            Vm.NotesVm?.FlushPendingSave();
-            Anim.IntroScaleFade(TaskArea);
-        }
+        if (Vm == null) return;
+        if (sender is ListBox { SelectedItem: TodoGroup g })
+            SelectGroup(g);
+    }
+
+    /// <summary>点击「已完成」独立行:切到已完成视图。</summary>
+    private void Completed_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm?.CompletedGroup is { } completed) SelectGroup(completed);
+    }
+
+    /// <summary>选中分组并退出便签视图。显式清便签:即使点的是当前已选分组(SelectedGroup 不变,
+    /// OnSelectedGroupChanged 不触发),也要能从便签切回任务列表。</summary>
+    private void SelectGroup(TodoGroup g)
+    {
+        if (Vm == null) return;
+        if (Vm.NotesVm?.SelectedNote != null) Vm.NotesVm.SelectedNote = null;  // → IsNotesViewOpen=false
+        Vm.SelectedGroup = g;
+        // OneWay 绑定在 SelectedGroup 未变时不会自动同步高亮;打开便签曾把高亮清成 null,这里补回.
+        // 已完成不在本列表(置 null,由其独立行高亮).
+        GroupList.SelectedItem = g.IsCompletedGroup ? null : g;
+    }
+
+    /// <summary>收集箱便签右键「删除」:确认后删除该便签。</summary>
+    private void InboxDeleteNote_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm?.NotesVm == null || sender is not MenuItem mi) return;
+        // ContextMenu 不在可视树:其 DataContext 由 PlacementTarget 继承;两条路径都兜一下
+        var note = mi.DataContext as Note
+                   ?? ((mi.Parent as ContextMenu)?.PlacementTarget as FrameworkElement)?.DataContext as Note;
+        if (note == null) return;
+
+        var result = MessageBox.Show(
+            Loc.T("S.Note.DeleteConfirm"), Loc.T("S.Note.Delete"),
+            MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (result != MessageBoxResult.Yes) return;
+
+        Vm.NotesVm.DeleteNote(note);
     }
 
     // ===== 主题选择独立窗口 =====

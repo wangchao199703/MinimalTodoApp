@@ -506,15 +506,18 @@
     <sys:String x:Key="S.Toast.ClickToClose">Click to close</sys:String>
 
     <!-- ============ Notes (v1.2.0) ============ -->
-    <sys:String x:Key="S.Note.Sidebar">Notes</sys:String>
+    <sys:String x:Key="S.Note.Inbox">Inbox</sys:String>
+    <sys:String x:Key="S.Note.WriteSomething">Write something</sys:String>
     <sys:String x:Key="S.Note.Untitled">Untitled note</sys:String>
     <sys:String x:Key="S.Note.New">New note</sys:String>
     <sys:String x:Key="S.Note.Delete">Delete note</sys:String>
-    <sys:String x:Key="S.Note.DeleteConfirm">Delete this note? Converted to-dos will be kept.</sys:String>
-    <sys:String x:Key="S.Note.BackToTasks">Back to to-dos</sys:String>
-    <sys:String x:Key="S.Note.Bold">Bold (Ctrl+B, **text**)</sys:String>
-    <sys:String x:Key="S.Note.Heading">Heading (cycles H1→H2→H3, or type # )</sys:String>
-    <sys:String x:Key="S.Note.Bullet">Bullet list (or type - )</sys:String>
-    <sys:String x:Key="S.Note.TaskList">Task list (or type - [ ] )</sys:String>
+    <sys:String x:Key="S.Note.DeleteConfirm">Delete this note? This cannot be undone.</sys:String>
+    <sys:String x:Key="S.Note.Bold">Bold (Ctrl+B)</sys:String>
+    <sys:String x:Key="S.Note.Italic">Italic (Ctrl+I)</sys:String>
+    <sys:String x:Key="S.Note.Underline">Underline (Ctrl+U)</sys:String>
+    <sys:String x:Key="S.Note.Strikethrough">Strikethrough</sys:String>
+    <sys:String x:Key="S.Note.Heading">Heading (cycles H1→H2→H3)</sys:String>
+    <sys:String x:Key="S.Note.Bullet">Bullet list</sys:String>
+    <sys:String x:Key="S.Note.TaskList">Task list (checkable)</sys:String>
 
 </ResourceDictionary>

@@ -506,15 +506,18 @@
     <sys:String x:Key="S.Toast.ClickToClose">点击关闭</sys:String>
 
     <!-- ============ 便签(v1.2.0) ============ -->
-    <sys:String x:Key="S.Note.Sidebar">便签</sys:String>
+    <sys:String x:Key="S.Note.Inbox">收集箱</sys:String>
+    <sys:String x:Key="S.Note.WriteSomething">写点什么</sys:String>
     <sys:String x:Key="S.Note.Untitled">无标题便签</sys:String>
     <sys:String x:Key="S.Note.New">新建便签</sys:String>
     <sys:String x:Key="S.Note.Delete">删除便签</sys:String>
-    <sys:String x:Key="S.Note.DeleteConfirm">确定删除当前便签？已转换的待办会保留。</sys:String>
-    <sys:String x:Key="S.Note.BackToTasks">返回待办</sys:String>
-    <sys:String x:Key="S.Note.Bold">加粗（Ctrl+B，**文字**）</sys:String>
-    <sys:String x:Key="S.Note.Heading">标题（循环 H1→H2→H3，或输入 # ）</sys:String>
-    <sys:String x:Key="S.Note.Bullet">无序列表（或输入 - ）</sys:String>
-    <sys:String x:Key="S.Note.TaskList">待办列表（或输入 - [ ] ）</sys:String>
+    <sys:String x:Key="S.Note.DeleteConfirm">确定删除这篇便签？此操作不可撤销。</sys:String>
+    <sys:String x:Key="S.Note.Bold">加粗（Ctrl+B）</sys:String>
+    <sys:String x:Key="S.Note.Italic">斜体（Ctrl+I）</sys:String>
+    <sys:String x:Key="S.Note.Underline">下划线（Ctrl+U）</sys:String>
+    <sys:String x:Key="S.Note.Strikethrough">删除线</sys:String>
+    <sys:String x:Key="S.Note.Heading">标题（循环 H1→H2→H3）</sys:String>
+    <sys:String x:Key="S.Note.Bullet">无序列表</sys:String>
+    <sys:String x:Key="S.Note.TaskList">任务列表（可勾选）</sys:String>
 
 </ResourceDictionary>

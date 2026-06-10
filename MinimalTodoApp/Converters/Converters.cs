@@ -258,24 +258,3 @@ public class EqualityToBoolConverter : IValueConverter
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();
 }
-
-/// <summary>便签块类型 + 基准字号 -> 实际字号(H1=×1.6 / H2=×1.35 / H3=×1.15 / 其余×1)，仿 IndentFontSizeConverter.</summary>
-public class BlockFontSizeConverter : IMultiValueConverter
-{
-    public object Convert(object?[] values, Type targetType, object? parameter, CultureInfo culture)
-    {
-        var type = values.Length > 0 && values[0] is Models.NoteBlockType t ? t : Models.NoteBlockType.Paragraph;
-        double baseSize = values.Length > 1 && values[1] is double d && d > 0 ? d : 14;
-        double factor = type switch
-        {
-            Models.NoteBlockType.H1 => 1.6,
-            Models.NoteBlockType.H2 => 1.35,
-            Models.NoteBlockType.H3 => 1.15,
-            _ => 1.0
-        };
-        return baseSize * factor;
-    }
-
-    public object[] ConvertBack(object value, Type[] targetTypes, object? parameter, CultureInfo culture)
-        => throw new NotSupportedException();
-}
