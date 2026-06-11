@@ -881,9 +881,9 @@
 
     <!-- ===================== 现代细长滚动条 ===================== -->
     <!-- 半透明灰：在明亮/暗黑/透明等所有主题上都清晰可辨，无需逐主题配色。
-         调浅(更轻盈)：默认 0x40、悬停/拖动 0x80。 -->
-    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#40888888" />
-    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#80888888" />
+         更细更透明，避免在窄侧栏里遮挡图标：默认 0x2E、悬停/拖动 0x66。 -->
+    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#55888888" />
+    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#99888888" />
 
     <!-- 翻页区：完全透明、不抢焦点（去掉默认的方块/箭头按钮） -->
     <Style x:Key="ScrollBarPageButton" TargetType="RepeatButton">
@@ -906,8 +906,14 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Border x:Name="t" CornerRadius="3" Margin="1.5"
-                            Background="{DynamicResource ScrollThumbBrush}" />
+                    <!-- 滑块元素宽度被 ScrollViewer 模板固定(改 Width 无效),
+                         故只画一条靠右的细条(3px)作可见滑块,既细又不遮挡窄侧栏图标;
+                         整块仍可拖动。竖向滚动条用;横向在本应用各列表均已禁用。 -->
+                    <Grid Background="Transparent">
+                        <Border x:Name="t" CornerRadius="2" Width="3" Margin="0,0,2,0"
+                                HorizontalAlignment="Right"
+                                Background="{DynamicResource ScrollThumbBrush}" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="t" Property="Background" Value="{DynamicResource ScrollThumbHoverBrush}" />
@@ -924,6 +930,8 @@
     <!-- 默认（无 Key）样式：应用到所有 ScrollBar，含任务列表内的滚动条 -->
     <Style TargetType="ScrollBar">
         <Setter Property="Background" Value="Transparent" />
+        <!-- 注:多数容器(侧栏/列表)的 ScrollViewer 会本地固定滚动条宽度,此 Width 仅作兜底;
+             实际「细」由 ScrollThumb 模板里靠右的 3px 细条保证。 -->
         <Setter Property="Width" Value="6" />
         <Setter Property="Template">
             <Setter.Value>
@@ -940,7 +948,9 @@
                                               Command="ScrollBar.PageDownCommand" />
                             </Track.IncreaseRepeatButton>
                             <Track.Thumb>
-                                <Thumb Style="{StaticResource ScrollThumb}" MinHeight="28" MinWidth="28" />
+                                <!-- 默认按竖向:仅约束最小「长度」(高)，宽度跟随滚动条粗细(6)。
+                                     横向时在下方 Orientation 触发器里改约束最小宽、放开高。 -->
+                                <Thumb x:Name="PART_Thumb" Style="{StaticResource ScrollThumb}" MinHeight="28" />
                             </Track.Thumb>
                         </Track>
                     </Grid>
@@ -958,6 +968,31 @@
                 <Setter Property="Height" Value="6" />
             </Trigger>
         </Style.Triggers>
+    </Style>
+
+    <!-- ===================== 浮层滚动条的 ScrollViewer（侧栏窄条用） =====================
+         默认 ScrollViewer 把竖向滚动条排在内容右侧、占一截布局宽度,在窄侧栏里会把图标挤偏
+         且与底部按钮不对齐;且其内部把滚动条宽度写死(样式改 Width 无效)。
+         这里自建模板:滚动条**浮在内容之上**(同一 Grid 单元、右对齐),不占布局宽度——
+         上方滚动区图标与底部按钮都按完整宽度居中、自然对齐;并由本地 Width 真正控制其粗细。 -->
+    <Style x:Key="OverlayScrollViewer" TargetType="ScrollViewer">
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollViewer">
+                    <Grid>
+                        <ScrollContentPresenter Margin="{TemplateBinding Padding}"
+                                                CanContentScroll="{TemplateBinding CanContentScroll}" />
+                        <ScrollBar x:Name="PART_VerticalScrollBar" Orientation="Vertical"
+                                   Width="8" HorizontalAlignment="Right"
+                                   Minimum="0"
+                                   Maximum="{TemplateBinding ScrollableHeight}"
+                                   ViewportSize="{TemplateBinding ViewportHeight}"
+                                   Value="{TemplateBinding VerticalOffset}"
+                                   Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ===================== 优先级选择 Chip（对话框用） ===================== -->

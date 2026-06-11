@@ -39,9 +39,9 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="1" Text="&#xE70B;"
-                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="13"
+                           FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
-                           Foreground="{DynamicResource MutedText}" />
+                           Foreground="{DynamicResource SecondaryText}" />
                 <!-- 标题:非编辑态显示文本;编辑态显示输入框(右键「重命名」/ 双击进入) -->
                 <TextBlock Grid.Column="2" Text="{Binding DisplayTitle}" Margin="6,0,0,0"
                            VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
@@ -60,6 +60,20 @@
         <!-- 便签项容器:在侧栏项样式基础上加「双击重命名」(单击仍是选中→打开便签) -->
         <Style x:Key="NoteItemContainerStyle" TargetType="ListBoxItem" BasedOn="{StaticResource SidebarItemStyle}">
             <EventSetter Event="MouseDoubleClick" Handler="NoteItem_DoubleClick" />
+        </Style>
+
+        <!-- 折叠侧栏窄条:便签/分组图标按钮(高度与上方分组项一致,选中便签显示色块) -->
+        <Style x:Key="RailIconButtonStyle" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,1" />
+        </Style>
+        <Style x:Key="RailNoteButtonStyle" TargetType="Button" BasedOn="{StaticResource RailIconButtonStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsActive}" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
 
@@ -209,8 +223,10 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
-                            <!-- 上部滚动区:所有待办+普通分组(可拖排序) → 新建分组 → 已完成 → 收集箱/便签 -->
-                            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto"
+                            <!-- 上部滚动区:所有待办+普通分组(可拖排序) → 新建分组 → 已完成 → 收集箱/便签。
+                                 用浮层滚动条样式:滚动条不占布局宽度,窄条里图标与底部按钮对齐、不被遮挡。 -->
+                            <ScrollViewer Grid.Row="0" Style="{StaticResource OverlayScrollViewer}"
+                                          VerticalScrollBarVisibility="Auto"
                                           HorizontalScrollBarVisibility="Disabled">
                                 <StackPanel>
 
@@ -404,56 +420,104 @@
                                     </Style>
                                 </Button.Style>
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <!-- 折叠箭头占位列(已完成无折叠,留空对齐);窄条折叠态收 0 -->
-                                        <ColumnDefinition Width="14">
-                                            <ColumnDefinition.Style>
-                                                <Style TargetType="ColumnDefinition">
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
-                                                            <Setter Property="Width" Value="0" />
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </ColumnDefinition.Style>
-                                        </ColumnDefinition>
-                                        <ColumnDefinition Width="20" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="1" Text="{Binding CompletedGroup.Icon}"
+                                    <!-- 展开态:箭头占位列 + 图标 + 名称 + 计数(与「所有待办」对齐) -->
+                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="14" />
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="{Binding CompletedGroup.Icon}"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding CompletedGroup.DisplayName}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding CompletedGroup.ItemCount}" Margin="4,0"
+                                                   VerticalAlignment="Center" FontSize="11"
+                                                   Foreground="{DynamicResource MutedText}" />
+                                    </Grid>
+                                    <!-- 折叠态(窄条):仅图标居中,与分组图标对齐不裁切 -->
+                                    <TextBlock Text="{Binding CompletedGroup.Icon}"
                                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="{DynamicResource PrimaryText}" />
-                                    <TextBlock Grid.Column="2" Text="{Binding CompletedGroup.DisplayName}" Margin="6,0,0,0"
-                                               VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
                                                Foreground="{DynamicResource PrimaryText}"
-                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
-                                    <TextBlock Grid.Column="3" Text="{Binding CompletedGroup.ItemCount}" Margin="4,0"
-                                               VerticalAlignment="Center" FontSize="11"
-                                               Foreground="{DynamicResource MutedText}"
-                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
                                 </Grid>
                             </Button>
 
                             <!-- ===== 收集箱(便签):可折叠便签树 ===== -->
-                            <!-- 折叠侧栏(窄条)时:收集箱化为可定位色块,点击=选中收集箱视图(进入便签);当前在便签视图时高亮 -->
-                            <Button Margin="0,12,0,0" Height="28" Padding="0"
-                                    ToolTip="{DynamicResource S.Note.Inbox}"
-                                    Command="{Binding NotesVm.OpenInboxCommand}"
-                                    Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsNotesViewOpen}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                           FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Button>
+                            <!-- 折叠侧栏(窄条)时:收集箱整树化为可定位图标列(收集箱 + 未分组便签 + 分组及组内便签),
+                                 与待办分组一致;点击便签图标直接打开该篇,点击收集箱/分组图标进入便签视图。 -->
+                            <StackPanel Margin="0,2,0,0"
+                                        Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}">
+                                <!-- 收集箱 定位块:点击=选中收集箱视图;在便签视图时高亮 -->
+                                <Button ToolTip="{DynamicResource S.Note.Inbox}"
+                                        Command="{Binding NotesVm.OpenInboxCommand}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource RailIconButtonStyle}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsNotesViewOpen}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
+                                    <TextBlock Text="&#xEC50;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                               FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                </Button>
+
+                                <!-- 未分组便签图标:点击=打开该便签 -->
+                                <ItemsControl ItemsSource="{Binding NotesVm.UngroupedNotes}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource RailNoteButtonStyle}"
+                                                    ToolTip="{Binding DisplayTitle}"
+                                                    Command="{Binding DataContext.NotesVm.SelectNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                    CommandParameter="{Binding}">
+                                                <TextBlock Text="&#xE70B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                           FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource SecondaryText}" />
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <!-- 便签分组(文件夹图标) + 组内便签(便签图标,分组折叠时隐藏) -->
+                                <ItemsControl ItemsSource="{Binding NotesVm.NoteGroups}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <Button Style="{StaticResource RailIconButtonStyle}"
+                                                        ToolTip="{Binding Name}"
+                                                        Command="{Binding DataContext.NotesVm.OpenInboxCommand, RelativeSource={RelativeSource AncestorType=Window}}">
+                                                    <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                               FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Foreground="{DynamicResource SecondaryText}" />
+                                                </Button>
+                                                <ItemsControl ItemsSource="{Binding Notes}"
+                                                              Visibility="{Binding IsCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Button Style="{StaticResource RailNoteButtonStyle}"
+                                                                    ToolTip="{Binding DisplayTitle}"
+                                                                    Command="{Binding DataContext.NotesVm.SelectNoteCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}">
+                                                                <TextBlock Text="&#xE70B;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                           FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                           Foreground="{DynamicResource SecondaryText}" />
+                                                            </Button>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
 
                             <!-- 展开侧栏时:完整收集箱树 -->
                             <StackPanel Margin="0,12,0,0"
@@ -495,8 +559,8 @@
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
-                                        <TextBlock Grid.Column="1" Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                                   FontSize="14" Width="20" TextAlignment="Center" VerticalAlignment="Center"
+                                        <TextBlock Grid.Column="1" Text="&#xEC50;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                   FontSize="15" Width="20" TextAlignment="Center" VerticalAlignment="Center"
                                                    Foreground="{DynamicResource SecondaryText}" />
                                         <TextBlock Grid.Column="2" Text="{DynamicResource S.Note.Inbox}" Margin="6,0,0,0" FontSize="12"
                                                    FontWeight="SemiBold" VerticalAlignment="Center"
@@ -571,8 +635,8 @@
                                                                 </TextBlock.Style>
                                                             </TextBlock>
                                                             <TextBlock Grid.Column="1" Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                                                       FontSize="13" Width="20" TextAlignment="Center" VerticalAlignment="Center"
-                                                                       Foreground="{DynamicResource MutedText}" />
+                                                                       FontSize="15" Width="20" TextAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{DynamicResource SecondaryText}" />
                                                             <!-- 分组名 / 内联重命名 -->
                                                             <TextBlock Grid.Column="2" Text="{Binding DisplayName}" Margin="6,0,0,0"
                                                                        VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"

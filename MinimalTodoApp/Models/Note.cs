@@ -75,6 +75,11 @@ public partial class Note : ObservableObject
     [property: JsonIgnore]
     private bool isEditing;
 
+    /// <summary>是否为当前选中便签(运行时状态，不持久化).折叠侧栏窄条里据此给图标加选中色块.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool isActive;
+
     partial void OnCustomTitleChanged(string value) => OnPropertyChanged(nameof(DisplayTitle));
 
     /// <summary>正文(Markdown 文本)。支持 # 标题 / - 无序 / - [ ] 任务 / **加粗** *斜体* ~~删除线~~ &lt;u&gt;下划线&lt;/u&gt;.</summary>

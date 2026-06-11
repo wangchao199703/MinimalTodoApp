@@ -52,6 +52,7 @@ public partial class NotesViewModel : ObservableObject
         // 恢复上次选中的便签(无则保持 null:从分组视图启动时便签区无选中)
         var restoreId = data.SelectedNoteId;
         selectedNote = restoreId.HasValue ? Notes.FirstOrDefault(n => n.Id == restoreId.Value) : null;
+        if (selectedNote != null) selectedNote.IsActive = true;
     }
 
     /// <summary>全部便签(扁平主集合，持久化的真相来源).</summary>
@@ -75,6 +76,8 @@ public partial class NotesViewModel : ObservableObject
 
     partial void OnSelectedNoteChanged(Note? oldValue, Note? newValue)
     {
+        if (oldValue != null) oldValue.IsActive = false;
+        if (newValue != null) newValue.IsActive = true;   // 折叠窄条据此高亮选中便签图标
         FlushPendingSave();              // 切换前先把上一篇落盘
         _main.OnNoteSelected(newValue);  // 通知主 VM 切视图 + 持久化选中 id
     }
@@ -240,6 +243,13 @@ public partial class NotesViewModel : ObservableObject
     /// <summary>打开收集箱视图(折叠侧栏时点击收集箱色块):选中一篇便签→主区切到便签视图.</summary>
     [RelayCommand]
     private void OpenInbox() => EnsureNoteSelected();
+
+    /// <summary>选中指定便签(折叠侧栏窄条里点击便签图标直接打开该篇).</summary>
+    [RelayCommand]
+    private void SelectNote(Note? note)
+    {
+        if (note != null) SelectedNote = note;
+    }
 
     /// <summary>拖动重排分组顺序(NotesDropHandler 调用).</summary>
     public void MoveNoteGroup(NoteGroup? group, int insertIndex)
