@@ -415,10 +415,12 @@
                                 </BeginStoryboard>
                             </Trigger.ExitActions>
                         </Trigger>
-                        <Trigger Property="IsSelected" Value="True">
+                        <!-- 选中色块绑模型的 IsHighlighted(由 MainViewModel.RefreshSidebarSelection 统一计算,
+                             全侧栏唯一),不再依赖 ListBoxItem.IsSelected——后者在多列表/OneWay 绑定下会残留. -->
+                        <DataTrigger Binding="{Binding IsHighlighted}" Value="True">
                             <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
                             <Setter TargetName="ind" Property="Opacity" Value="1" />
-                            <Trigger.EnterActions>
+                            <DataTrigger.EnterActions>
                                 <BeginStoryboard>
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="ind" Storyboard.TargetProperty="Opacity"
@@ -435,9 +437,9 @@
                                         </DoubleAnimation>
                                     </Storyboard>
                                 </BeginStoryboard>
-                            </Trigger.EnterActions>
+                            </DataTrigger.EnterActions>
                             <!-- 取消选中必须用退场动画压掉进场 Storyboard 的保持值,否则切到其他分组后旧指示条仍亮着 -->
-                            <Trigger.ExitActions>
+                            <DataTrigger.ExitActions>
                                 <BeginStoryboard>
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="ind" Storyboard.TargetProperty="Opacity"
@@ -454,8 +456,8 @@
                                         </DoubleAnimation>
                                     </Storyboard>
                                 </BeginStoryboard>
-                            </Trigger.ExitActions>
-                        </Trigger>
+                            </DataTrigger.ExitActions>
+                        </DataTrigger>
                         <!-- 侧栏收起时收紧内边距，让窄条里有足够空间完整显示居中的圆形色点 -->
                         <DataTrigger Binding="{Binding DataContext.SidebarCollapsed, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                             <Setter TargetName="b" Property="Padding" Value="4,8" />

@@ -86,4 +86,12 @@ public partial class TodoGroup : ObservableObject
     [ObservableProperty]
     [property: JsonIgnore]
     private bool isEditing;
+
+    /// <summary>
+    /// 侧栏选中色块(运行时状态，不持久化).由 MainViewModel.RefreshSidebarSelection 统一计算,
+    /// 整个侧栏同一时刻只有一个元素为 true;视图层只绑定本标志,不依赖 ListBox 的 IsSelected.
+    /// </summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool isHighlighted;
 }

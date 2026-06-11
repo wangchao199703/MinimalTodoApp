@@ -220,6 +220,20 @@ public partial class MainWindow : Window
         Vm.ReminderTriggered += OnReminderTriggered;
         Vm.TaskAdded -= OnTaskAdded;
         Vm.TaskAdded += OnTaskAdded;
+        Vm.CentralViewAnimate -= OnCentralViewAnimate;
+        Vm.CentralViewAnimate += OnCentralViewAnimate;
+    }
+
+    /// <summary>
+    /// 中央区切换的进场动画:待办↔待办、便签↔便签、待办↔便签 统一在此播放 IntroScaleFade。
+    /// 进入便签视图时顺带清掉分组列表高亮(SelectedItem 为 OneWay,本地清空不回写 SelectedGroup),
+    /// 避免分组/便签双高亮,且让之后再点同一分组能作为全新选择触发切回。
+    /// </summary>
+    private void OnCentralViewAnimate(bool isNotes)
+    {
+        if (Vm == null) return;
+        if (isNotes) GroupList.SelectedItem = null;
+        Anim.IntroScaleFade(isNotes ? (FrameworkElement)NotesPanel : TaskArea);
     }
 
     /// <summary>
@@ -424,13 +438,8 @@ public partial class MainWindow : Window
             ApplyAcrylicForTheme();
         else if (e.PropertyName == nameof(MainViewModel.AlwaysOnTop))
             ApplyAlwaysOnTop();
-        else if (e.PropertyName == nameof(MainViewModel.IsNotesViewOpen) && Vm != null)
-        {
-            // 打开便签时清掉分组列表的高亮(SelectedItem 是 OneWay,本地清空不回写 SelectedGroup),
-            // 既避免分组/便签双高亮,也让之后再点同一分组能作为全新选择触发切回.
-            if (Vm.IsNotesViewOpen) GroupList.SelectedItem = null;
-            Anim.IntroScaleFade(Vm.IsNotesViewOpen ? (FrameworkElement)NotesPanel : TaskArea);
-        }
+        // 中央区切换动画与清高亮统一由 CentralViewAnimate 事件处理(见 OnCentralViewAnimate),
+        // 覆盖待办↔待办、便签↔便签;IsNotesViewOpen 仍用于 Visibility 绑定,无需在此处理.
     }
 
     /// <summary>“毛玻璃”主题时开启 Acrylic 模糊，其余主题关闭.</summary>
@@ -1216,8 +1225,30 @@ public partial class MainWindow : Window
     private void InboxNotes_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         // 仅当本列表新增了选中项时才回写(被动清空时 AddedItems 为空,不动 SelectedNote)
-        if (Vm?.NotesVm != null && e.AddedItems.Count > 0 && e.AddedItems[0] is Note note)
-            Vm.NotesVm.SelectedNote = note;
+        if (Vm?.NotesVm == null || e.AddedItems.Count == 0 || e.AddedItems[0] is not Note note) return;
+        Vm.NotesVm.SelectedNote = note;
+
+        // 收集箱有多个便签 ListBox(未分组 + 各分组),清掉其它列表里的残留选中,
+        // 否则它们各自保留 IsSelected,再点回那一篇时本列表「无变化」不触发 SelectionChanged → 选不动.
+        foreach (var lb in FindVisualChildren<System.Windows.Controls.ListBox>(InboxTree))
+        {
+            if (!ReferenceEquals(lb, sender) && lb.SelectedItem != null)
+                lb.SelectedItem = null;
+        }
+    }
+
+    /// <summary>深度优先枚举可视树中指定类型的后代元素.</summary>
+    private static System.Collections.Generic.IEnumerable<T> FindVisualChildren<T>(DependencyObject? root)
+        where T : DependencyObject
+    {
+        if (root == null) yield break;
+        int n = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < n; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T t) yield return t;
+            foreach (var d in FindVisualChildren<T>(child)) yield return d;
+        }
     }
 
     // ===== 收集箱:便签标题重命名(右键 / 双击 → 内联编辑) =====

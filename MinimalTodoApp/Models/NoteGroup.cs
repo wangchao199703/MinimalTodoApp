@@ -38,5 +38,14 @@ public partial class NoteGroup : ObservableObject
     [JsonIgnore]
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Loc.T("S.Note.UntitledGroup") : Name;
 
+    /// <summary>
+    /// 该分组下是否含当前选中(激活)的便签(运行时状态,不持久化).
+    /// 由 NotesViewModel.RefreshSelection 统一赋值;分组折叠把选中便签藏起来时,
+    /// 分组头/文件夹图标据此显示选中色块,保证「选中态」在任何折叠组合下都可见.
+    /// </summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private bool hasActiveNote;
+
     partial void OnNameChanged(string value) => OnPropertyChanged(nameof(DisplayName));
 }

@@ -189,6 +189,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         NotesVm = new NotesViewModel(this, _data);
         // 仅当确有选中便签时才恢复便签视图(选中便签可能已被删除)
         isNotesViewOpen = _data.NotesViewOpen && NotesVm.SelectedNote != null;
+        RefreshSidebarSelection();   // 启动态的侧栏色块:统一入口一次算清(待办/便签两侧)
 
         // 首次启动:默认注册开机自启动(仅执行一次，之后尊重用户在设置里的手动开关)
         EnsureFirstRunStartup();
@@ -366,6 +367,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>显示节假日开关变化时:持久化 + 通知日历重渲染.</summary>
     public event Action? HolidaysVisibilityChanged;
 
+    /// <summary>
+    /// 请求中央区进场动画(true=便签视图,false=任务列表).视图层订阅后播放 IntroScaleFade,
+    /// 覆盖 待办↔待办、便签↔便签、待办↔便签 全部切换(各路径仅触发一次,无重复动画).
+    /// </summary>
+    public event Action<bool>? CentralViewAnimate;
+
     /// <summary>便签模块 VM(构造尾段创建;此前 _allItems 的事件回调里须用 ?. 访问).</summary>
     public NotesViewModel? NotesVm { get; private set; }
 
@@ -527,14 +534,39 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         OnPropertyChanged(nameof(IsCompletedSelected));
         OnPropertyChanged(nameof(CurrentTitle));
         RefreshItems();
+        RefreshSidebarSelection();
         SaveData();
+        CentralViewAnimate?.Invoke(false);   // 待办↔待办、便签→待办 切换的进场动画
     }
 
     /// <summary>便签选中变化时由 NotesVm 调用:有便签→显示编辑器,无→切回任务列表;并持久化选中便签 id.</summary>
     public void OnNoteSelected(Note? note)
     {
         IsNotesViewOpen = note != null;   // OnIsNotesViewOpenChanged 会 SaveData
+        RefreshSidebarSelection();
         SaveData();                       // 切换同为便签时 IsNotesViewOpen 不变,这里兜底持久化 SelectedNoteId
+        if (note != null) CentralViewAnimate?.Invoke(true);   // 待办→便签、便签↔便签 切换的进场动画
+    }
+
+    /// <summary>
+    /// 侧栏选中色块的唯一计算入口(单一数据源).整个侧栏(所有待办/普通分组/已完成/便签/便签分组)
+    /// 同一时刻只点亮一个色块,展开与折叠(窄条)共用同一份标志:
+    ///  - 便签视图:任务侧全部熄灭;仅选中便签 IsActive=true(其分组折叠时由分组头/文件夹兜底,见 XAML);
+    ///  - 任务视图:仅当前分组 IsHighlighted=true;普通分组被「所有待办」折叠隐藏时,色块落到「所有待办」.
+    /// 视图层一律绑定 IsHighlighted / IsActive / HasActiveNote,不依赖任何 ListBox 的 IsSelected.
+    /// </summary>
+    public void RefreshSidebarSelection()
+    {
+        TodoGroup? target = null;
+        if (!IsNotesViewOpen)
+        {
+            target = SelectedGroup ?? AllUncompletedGroup;
+            if (target is { IsCompletedGroup: false, IsAllUncompletedGroup: false }
+                && AllUncompletedGroup is { IsCollapsed: true } all)
+                target = all;   // 选中分组被折叠隐藏:色块落到「所有待办」行
+        }
+        foreach (var g in Groups) g.IsHighlighted = ReferenceEquals(g, target);
+        NotesVm?.RefreshSelection(IsNotesViewOpen);
     }
 
     partial void OnSelectedSortOptionChanged(SortOption value)
@@ -645,18 +677,46 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 恢复默认外观设置:字体微软雅黑 UI、字号 14、行距 1.1、勾选框 18。
-    /// 经属性赋值触发 FontManager.Apply + 持久化，设置面板即时预览；同步刷新字体下拉选中项。
+    /// 恢复默认设置:把「外观 + 行为开关 + 布局尺寸 + 待办/便签排版」一并还原为产品默认。
+    /// 经各属性 setter 触发即时应用 + 持久化。**不动**语言,以及便签/分组/任务等用户数据
+    /// (SelectedGroup / Sort / IsNotesViewOpen / DockEdge / 开机自启动 亦保持不变)。
     /// </summary>
     public void ResetDefaultSettings()
     {
-        // 先切字体:更新下拉选中项(级联回写 FontFamily 并应用)
+        // —— 待办区字体:更新下拉选中项(级联回写 FontFamily 并应用) ——
         var font = Fonts.FirstOrDefault(f => f.Key == DefaultFontFamily) ?? Fonts[0];
         SelectedFont = font;
         FontFamily = font.Key;       // 兜底:即便选中项未变也确保字体被应用
         FontSize = DefaultFontSize;
         LineSpacing = DefaultLineSpacing;
         CheckboxSize = DefaultCheckboxSize;
+
+        // —— 便签排版(收集箱设置) ——
+        if (NotesVm != null)
+        {
+            NotesVm.SelectedNoteFont = font;        // 级联回写 NoteFontFamily
+            NotesVm.NoteFontFamily = DefaultFontFamily;
+            NotesVm.NoteFontSize = DefaultFontSize;
+            NotesVm.NoteLineSpacing = DefaultLineSpacing;
+        }
+
+        // —— 外观 + 行为开关 ——
+        var light = Themes.FirstOrDefault(t => t.Key == ThemeManager.Light);
+        if (light != null) SelectedTheme = light;   // OnSelectedThemeChanged 应用主题 + 持久化
+        EffectsEnabled = true;
+        SoundEnabled = false;
+        ReminderSoundEnabled = true;
+        AutoUpdateEnabled = true;
+        ShowHolidays = true;
+        ShowPriorityBlock = false;
+        AlwaysOnTop = false;
+
+        // —— 布局尺寸 ——
+        SidebarWidth = 113;
+        InputBarHeight = 40;
+        ScheduleWidth = 300;
+        ScheduleOpen = false;
+        SidebarCollapsed = false;
     }
 
     /// <summary>
@@ -1287,6 +1347,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     {
         if (group == null) return;
         group.IsCollapsed = !group.IsCollapsed;
+        RefreshSidebarSelection();   // 折叠把选中分组藏起来时,色块落到「所有待办」;展开则归还
         SaveData();
     }
 

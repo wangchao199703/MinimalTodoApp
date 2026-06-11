@@ -70,6 +70,15 @@ public class AppData
     /// <summary>上次选中的便签 Id.</summary>
     public Guid? SelectedNoteId { get; set; }
 
+    /// <summary>便签正文字体(收集箱设置，与待办区独立).空=继承全局/产品默认(向后兼容:存量用户便签外观不变).</summary>
+    public string NoteFontFamily { get; set; } = "";
+
+    /// <summary>便签正文基准字号(收集箱设置).0=未设置(继承全局).</summary>
+    public double NoteFontSize { get; set; }
+
+    /// <summary>便签正文行距倍率(收集箱设置).0=未设置(继承全局).</summary>
+    public double NoteLineSpacing { get; set; }
+
     /// <summary>用户自定义主题列表.</summary>
     public List<CustomTheme> CustomThemes { get; set; } = new();
 

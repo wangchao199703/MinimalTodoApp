@@ -46,13 +46,20 @@ public partial class NotesViewModel : ObservableObject
         DropHandler = new NotesDropHandler(this);
         RebuildGroupedView();
 
+        // 便签专属排版(收集箱设置):未设置时继承当前全局字体/字号/行距,
+        // 保证存量用户(无 NoteFont* 字段)便签外观与升级前一致,之后可在「收集箱」设置里独立调整.
+        noteFontFamily = string.IsNullOrWhiteSpace(data.NoteFontFamily) ? _main.FontFamily : data.NoteFontFamily;
+        noteFontSize = data.NoteFontSize > 0 ? data.NoteFontSize : (_main.FontSize > 0 ? _main.FontSize : 14);
+        noteLineSpacing = data.NoteLineSpacing > 0 ? data.NoteLineSpacing : (_main.LineSpacing > 0 ? _main.LineSpacing : 1.1);
+        selectedNoteFont = _main.Fonts.FirstOrDefault(f => f.Key == noteFontFamily) ?? _main.Fonts[0];
+
         _saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(800) };
         _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); CommitSave(); };
 
-        // 恢复上次选中的便签(无则保持 null:从分组视图启动时便签区无选中)
+        // 恢复上次选中的便签(无则保持 null:从分组视图启动时便签区无选中).
+        // 色块(IsActive)不在此处赋值:主 VM 构造末尾统一调 RefreshSidebarSelection.
         var restoreId = data.SelectedNoteId;
         selectedNote = restoreId.HasValue ? Notes.FirstOrDefault(n => n.Id == restoreId.Value) : null;
-        if (selectedNote != null) selectedNote.IsActive = true;
     }
 
     /// <summary>全部便签(扁平主集合，持久化的真相来源).</summary>
@@ -74,12 +81,51 @@ public partial class NotesViewModel : ObservableObject
     [ObservableProperty]
     private Note? selectedNote;
 
+    // ===== 便签专属排版(收集箱设置;与待办区字体独立,默认继承全局) =====
+
+    /// <summary>便签正文字体(收集箱设置).由设置面板下拉变更.</summary>
+    [ObservableProperty]
+    private string noteFontFamily = "";
+
+    /// <summary>设置面板「收集箱」里当前选中的便签字体项(变更后回写 <see cref="NoteFontFamily"/>).</summary>
+    [ObservableProperty]
+    private FontInfo selectedNoteFont = null!;
+
+    /// <summary>便签正文基准字号(收集箱设置).</summary>
+    [ObservableProperty]
+    private double noteFontSize = 14;
+
+    /// <summary>便签正文行距倍率(收集箱设置).</summary>
+    [ObservableProperty]
+    private double noteLineSpacing = 1.1;
+
+    partial void OnSelectedNoteFontChanged(FontInfo value)
+    {
+        if (value == null) return;
+        NoteFontFamily = value.Key;   // 级联回写并经下方持久化;编辑器经绑定/重排即时生效
+    }
+
+    partial void OnNoteFontFamilyChanged(string value) => _main.RequestSaveFromNotes();
+    partial void OnNoteFontSizeChanged(double value) => _main.RequestSaveFromNotes();
+    partial void OnNoteLineSpacingChanged(double value) => _main.RequestSaveFromNotes();
+
     partial void OnSelectedNoteChanged(Note? oldValue, Note? newValue)
     {
-        if (oldValue != null) oldValue.IsActive = false;
-        if (newValue != null) newValue.IsActive = true;   // 折叠窄条据此高亮选中便签图标
         FlushPendingSave();              // 切换前先把上一篇落盘
-        _main.OnNoteSelected(newValue);  // 通知主 VM 切视图 + 持久化选中 id
+        // 色块(IsActive/HasActiveNote)不在此处维护:由 OnNoteSelected → RefreshSidebarSelection 统一计算
+        _main.OnNoteSelected(newValue);  // 通知主 VM 切视图 + 刷新整侧栏色块 + 持久化选中 id
+    }
+
+    /// <summary>
+    /// 刷新便签侧的选中色块(由 MainViewModel.RefreshSidebarSelection 统一调用,勿单独使用):
+    /// 任务视图下全部熄灭;便签视图下仅当前选中便签 IsActive=true,
+    /// 并同步各分组的 HasActiveNote(分组折叠时由分组头/文件夹图标兜底显示色块).
+    /// </summary>
+    public void RefreshSelection(bool notesViewOpen)
+    {
+        var active = notesViewOpen ? SelectedNote : null;
+        foreach (var n in Notes) n.IsActive = ReferenceEquals(n, active);
+        foreach (var g in NoteGroups) g.HasActiveNote = g.Notes.Any(n => n.IsActive);
     }
 
     /// <summary>按 GroupId/OrderIndex 把扁平 Notes 重新分发到「未分组」与各分组的运行时视图集合.</summary>
@@ -94,6 +140,8 @@ public partial class NotesViewModel : ObservableObject
             g.Notes.Clear();
             foreach (var n in Notes.Where(n => n.GroupId == g.Id).OrderBy(n => n.OrderIndex))
                 g.Notes.Add(n);
+            // 结构变化(拖拽归组/新建/删除)后同步分组的「含选中便签」标志,保证折叠分组的兜底色块跟手
+            g.HasActiveNote = g.Notes.Any(n => n.IsActive);
         }
     }
 
@@ -314,5 +362,8 @@ public partial class NotesViewModel : ObservableObject
         data.NoteGroups = NoteGroups.ToList();
         data.InboxCollapsed = InboxCollapsed;
         data.SelectedNoteId = SelectedNote?.Id;
+        data.NoteFontFamily = NoteFontFamily;
+        data.NoteFontSize = NoteFontSize;
+        data.NoteLineSpacing = NoteLineSpacing;
     }
 }

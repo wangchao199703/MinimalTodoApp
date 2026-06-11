@@ -40,7 +40,7 @@ public partial class NotesView : UserControl
     {
         if (_vm == vm || vm.NotesVm == null) return;
         _vm = vm;
-        _baseFontSize = vm.FontSize > 0 ? vm.FontSize : 14;
+        _baseFontSize = vm.NotesVm.NoteFontSize > 0 ? vm.NotesVm.NoteFontSize : 14;
         DataContext = vm.NotesVm;
         vm.NotesVm.PropertyChanged += OnNotesVmPropertyChanged;
         LoadDocument();
@@ -48,29 +48,33 @@ public partial class NotesView : UserControl
 
     private void OnNotesVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(NotesViewModel.SelectedNote))
+        // 切换便签、或在「收集箱」设置里改便签字体/字号/行距时都重建文档(字号变化需重算标题等)
+        if (e.PropertyName == nameof(NotesViewModel.SelectedNote)
+            || e.PropertyName == nameof(NotesViewModel.NoteFontSize)
+            || e.PropertyName == nameof(NotesViewModel.NoteFontFamily)
+            || e.PropertyName == nameof(NotesViewModel.NoteLineSpacing))
             LoadDocument();
     }
 
     /// <summary>把当前选中便签的 Markdown 正文解析进编辑器(无选中则清空).</summary>
     private void LoadDocument()
     {
-        // 便签统一使用全局字体/字号/行距(与任务区一致),不再有便签独立设置.
-        if (_vm != null && _vm.FontSize > 0) _baseFontSize = _vm.FontSize;
+        // 便签使用「收集箱」设置里的便签专属字体/字号/行距(与任务区独立,默认继承全局).
+        if (Vm != null && Vm.NoteFontSize > 0) _baseFontSize = Vm.NoteFontSize;
 
         _suppress = true;
         try
         {
             var note = Vm?.SelectedNote;
             Editor.IsReadOnly = note == null;
-            // 字体/字号跟随 XAML 上的全局绑定(AppFontFamily / DataContext.FontSize)，此处不覆盖.
+            // 字体/字号跟随 XAML 上对便签设置的绑定(NoteFontFamily / NoteFontSize)，此处不覆盖.
 
             Editor.Document = note == null
                 ? new FlowDocument()
                 : MarkdownFlowDocument.ToFlowDocument(note.Content, _baseFontSize, OnCheckToggled);
 
-            // 行距(整篇默认):全局基准字号 × 全局行距倍率
-            double spacing = _vm?.LineSpacing ?? 1.1;
+            // 行距(整篇默认):便签基准字号 × 便签行距倍率
+            double spacing = Vm?.NoteLineSpacing ?? 1.1;
             if (spacing > 0) Editor.Document.LineHeight = _baseFontSize * spacing;
         }
         finally

@@ -2,6 +2,21 @@
 
 > 每次发布在此登记版本号与变更摘要（最新在上）。详细实现见同目录 `优化记录.md`，对外发布说明见仓库根 `release-notes.md`。
 
+### v1.2.1（设置拆分 + 切换动画 + 恢复默认增强 + 侧栏色块重写）—— 2026-06-11（**版本号升至 1.2.1，正式发布 v1.2.1 Release**）
+
+版本号升级为 **1.2.1**（`<Version>1.2.1` / `<FileVersion>1.2.1.0` / `<AssemblyVersion>1.2.1.0`，三处同步）：
+
+1. **设置拆分（待办 / 收集箱）**：设置窗口导航重排为 **通用 / 待办 / 收集箱 / 关于** 四项。
+   - 「待办」页 = 任务区字体（字体/字号/行距/勾选框）+ 待办开关（完成特效/完成音效/提醒音效/显示节假日/优先级色块）；
+   - 「收集箱」页 = 便签**专属排版**（便签字体/字号/行距，与任务区独立）；新增 `AppData.NoteFontFamily/NoteFontSize/NoteLineSpacing`，**默认继承全局**，存量便签外观不变；
+   - 「通用」页 = 开机自启动 + 恢复默认设置。
+2. **切换动画补全**：新增 `MainViewModel.CentralViewAnimate` 事件，待办↔待办、便签↔便签 切换也播放 `IntroScaleFade`（与待办↔便签一致），无重复动画。
+3. **恢复默认增强**：`ResetDefaultSettings` 扩展为重置 外观（主题）+ 全部行为开关 + 布局尺寸 + 待办与便签排版；**不动**语言与便签/分组/任务等数据；设置窗口重置后回填勾选框。
+4. **侧栏选中色块重写（单一数据源）**：废弃多 ListBox 各自 `IsSelected` 的高亮方式，改由唯一入口 `MainViewModel.RefreshSidebarSelection()` 统一计算 `TodoGroup.IsHighlighted` / `Note.IsActive` / `NoteGroup.HasActiveNote`，全侧栏**任何时刻恰好一个色块**，展开与折叠共用。修复：跨分组选不中第二篇便签；「已完成」/便签在某些状态无色块；窄条选中态补上**强调色竖条 + 底色**（与展开列表一致，淡底色在 40px 窄条几乎不可见的问题解决）；选中便签所在分组/收集箱根折叠时色块落到分组头/文件夹/收集箱图标兜底。
+5. **国际化**：新增 `S.Settings.Nav.Todo/Nav.Inbox/NoteFont/NoteFontDesc`、改 `S.Settings.RestoreDefaultsDesc/RestoreDone`，中英成对无裸键。
+
+> 本轮经 `release.ps1` 正式发布 **v1.2.1** Release（打 tag v1.2.1、上传无依赖单文件 exe）。详细实现见 `优化记录.md` 第四十一轮。
+
 ### v1.2.0 补7·微调（侧栏层级对齐 + 折叠/重命名/滚动条打磨）—— 2026-06-11（版本号保持 1.2.0，**重新发布 v1.2.0 Release**）
 
 版本号保持 **1.2.0**（`<Version>1.2.0` / `<FileVersion>1.2.0.0` / `<AssemblyVersion>1.2.0.0`，未改动）：

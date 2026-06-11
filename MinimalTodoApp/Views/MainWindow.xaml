@@ -57,23 +57,89 @@
             </Grid>
         </DataTemplate>
 
-        <!-- 便签项容器:在侧栏项样式基础上加「双击重命名」(单击仍是选中→打开便签) -->
-        <Style x:Key="NoteItemContainerStyle" TargetType="ListBoxItem" BasedOn="{StaticResource SidebarItemStyle}">
+        <!-- 便签项容器:单击=选中→打开便签;双击=重命名.
+             选中高亮以「便签是否为当前激活项」(Note.IsActive,全局唯一)为依据,而非各 ListBox 自身的
+             IsSelected——收集箱里未分组/各分组分属多个 ListBox,用 IsSelected 会出现多个残留色块. -->
+        <Style x:Key="NoteItemContainerStyle" TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Margin" Value="0,1" />
             <EventSetter Event="MouseDoubleClick" Handler="NoteItem_DoubleClick" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Grid>
+                            <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                            <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                            <Border x:Name="b" Background="Transparent" Padding="10,8">
+                                <ContentPresenter VerticalAlignment="Center" />
+                            </Border>
+                            <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                    Background="{DynamicResource Accent}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="hover" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                <Setter TargetName="ind" Property="Opacity" Value="1" />
+                            </DataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
-        <!-- 折叠侧栏窄条:便签/分组图标按钮(高度与上方分组项一致,选中便签显示色块) -->
+        <!-- 折叠侧栏窄条:便签/分组图标按钮(高度与上方分组项一致) -->
         <Style x:Key="RailIconButtonStyle" TargetType="Button" BasedOn="{StaticResource GhostButton}">
             <Setter Property="Height" Value="32" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0,1" />
         </Style>
-        <Style x:Key="RailNoteButtonStyle" TargetType="Button" BasedOn="{StaticResource RailIconButtonStyle}">
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsActive}" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
-                </DataTrigger>
-            </Style.Triggers>
+
+        <!-- 窄条可选中图标按钮(便签/便签分组共用):选中态=底色+左侧强调色竖条,
+             与展开态侧栏项完全一致的视觉强度(仅淡底色在 40px 窄条里几乎不可见)。
+             两个触发器分别对便签(IsActive)与分组(IsCollapsed+HasActiveNote)生效,
+             绑定到对方不存在的属性时静默不命中,因此可共用同一模板. -->
+        <Style x:Key="RailNoteButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="32" />
+            <Setter Property="Margin" Value="0,1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                            <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                    Background="{DynamicResource Accent}"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="hover" Property="Opacity" Value="1" />
+                            </Trigger>
+                            <!-- 便签:当前激活便签 -->
+                            <DataTrigger Binding="{Binding IsActive}" Value="True">
+                                <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                <Setter TargetName="ind" Property="Opacity" Value="1" />
+                            </DataTrigger>
+                            <!-- 便签分组:折叠且组内含激活便签(被隐藏便签的兜底色块) -->
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding IsCollapsed}" Value="True" />
+                                    <Condition Binding="{Binding HasActiveNote}" Value="True" />
+                                </MultiDataTrigger.Conditions>
+                                <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                <Setter TargetName="ind" Property="Opacity" Value="1" />
+                            </MultiDataTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
     </Window.Resources>
 
@@ -395,7 +461,7 @@
 
                             <!-- (新建分组已移到分组右键菜单:右键任意分组 → 新建分组,新分组进入内联重命名) -->
 
-                            <!-- 已完成:顶层独立成行(与「所有待办」对称,不缩进);点击切到已完成视图,高亮跟随 IsCompletedSelected -->
+                            <!-- 已完成:顶层独立成行(与「所有待办」对称,不缩进);点击切到已完成视图,色块绑 CompletedGroup.IsHighlighted -->
                             <Button x:Name="CompletedRow" Margin="0,2,0,0" Height="32"
                                     HorizontalContentAlignment="Stretch" Click="Completed_Click"
                                     ToolTip="{Binding CompletedGroup.DisplayName}">
@@ -406,13 +472,40 @@
                                     </ContextMenu>
                                 </Button.ContextMenu>
                                 <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                    <!-- 自带模板:选中态=底色+左侧强调色竖条,与分组行(SidebarItemStyle)视觉一致.
+                                         色块绑 IsHighlighted(统一入口计算,便签视图下自动熄灭),展开/窄条共用. -->
+                                    <Style TargetType="Button">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Focusable" Value="False" />
                                         <!-- 与「所有待办」(SidebarItemStyle Padding 10) 左对齐;窄条折叠态收紧回 6 保持原居中 -->
                                         <Setter Property="Padding" Value="10,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid>
+                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                                            <ContentPresenter VerticalAlignment="Center"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </Border>
+                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                                                Background="{DynamicResource Accent}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding CompletedGroup.IsHighlighted}" Value="True">
+                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsCompletedSelected}" Value="True">
-                                                <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
-                                            </DataTrigger>
                                             <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
                                                 <Setter Property="Padding" Value="6,0" />
                                             </DataTrigger>
@@ -453,18 +546,12 @@
                                  与待办分组一致;点击便签图标直接打开该篇,点击收集箱/分组图标进入便签视图。 -->
                             <StackPanel Margin="0,2,0,0"
                                         Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}">
-                                <!-- 收集箱 定位块:点击=选中收集箱视图;在便签视图时高亮 -->
-                                <Button ToolTip="{DynamicResource S.Note.Inbox}"
+                                <!-- 收集箱 定位块:点击=进入便签视图。不再随 IsNotesViewOpen 高亮:
+                                     便签视图下总有一个激活便签(其图标或所在折叠分组的文件夹已显示色块),
+                                     收集箱根再高亮就成了第二个多余色块,与展开树(收集箱头不高亮)也不一致。 -->
+                                <Button Style="{StaticResource RailIconButtonStyle}"
+                                        ToolTip="{DynamicResource S.Note.Inbox}"
                                         Command="{Binding NotesVm.OpenInboxCommand}">
-                                    <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource RailIconButtonStyle}">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsNotesViewOpen}" Value="True">
-                                                    <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
                                     <TextBlock Text="&#xEC50;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                                FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center"
                                                Foreground="{DynamicResource SecondaryText}" />
@@ -491,7 +578,8 @@
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel>
-                                                <Button Style="{StaticResource RailIconButtonStyle}"
+                                                <!-- 分组(文件夹)图标:折叠且组内含选中便签时显示选中色块+竖条(便签被折叠隐藏的兜底) -->
+                                                <Button Style="{StaticResource RailNoteButtonStyle}"
                                                         ToolTip="{Binding Name}"
                                                         Command="{Binding DataContext.NotesVm.OpenInboxCommand, RelativeSource={RelativeSource AncestorType=Window}}">
                                                     <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
@@ -522,10 +610,24 @@
                             <!-- 展开侧栏时:完整收集箱树 -->
                             <StackPanel Margin="0,12,0,0"
                                         Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-                                <!-- 收集箱 头:点击折叠/展开;右键「新建便签 / 新建分组 / 折叠展开」 -->
-                                <Button Style="{StaticResource GhostButton}" Height="28" Padding="10,0"
+                                <!-- 收集箱 头:点击折叠/展开;右键「新建便签 / 新建分组 / 折叠展开」。
+                                     根折叠把整树(含选中便签)藏起时,且处于便签视图,由收集箱头兜底显示色块 -->
+                                <Button Height="28" Padding="10,0"
                                         HorizontalContentAlignment="Stretch"
                                         Command="{Binding NotesVm.ToggleInboxCollapseCommand}">
+                                    <Button.Style>
+                                        <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                            <Style.Triggers>
+                                                <MultiDataTrigger>
+                                                    <MultiDataTrigger.Conditions>
+                                                        <Condition Binding="{Binding NotesVm.InboxCollapsed}" Value="True" />
+                                                        <Condition Binding="{Binding IsNotesViewOpen}" Value="True" />
+                                                    </MultiDataTrigger.Conditions>
+                                                    <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                </MultiDataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Button.Style>
                                     <Button.ContextMenu>
                                         <ContextMenu>
                                             <MenuItem Header="{DynamicResource S.Note.New}"
@@ -569,13 +671,16 @@
                                 </Button>
 
                                 <!-- 收集箱内容(根折叠时整体隐藏) -->
-                                <StackPanel Visibility="{Binding NotesVm.InboxCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                <!-- 便签选中跨多个 ListBox(未分组 + 各分组):不绑定 SelectedItem(绑定到外来值会让
+                                     Selector「卡死」,导致点了一篇后选不动另一篇);改为点选后由代码清掉其它列表的选中,
+                                     高亮统一以 Note.IsActive 为准. -->
+                                <StackPanel x:Name="InboxTree"
+                                            Visibility="{Binding NotesVm.InboxCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
 
                                     <!-- 未分组便签(收集箱根下,B 级缩进,与分组同层) -->
                                     <ListBox Margin="16,2,0,0" Style="{StaticResource FlatListBox}"
                                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                              ItemsSource="{Binding NotesVm.UngroupedNotes}"
-                                             SelectedItem="{Binding NotesVm.SelectedNote, Mode=OneWay}"
                                              SelectionChanged="InboxNotes_SelectionChanged"
                                              ItemContainerStyle="{StaticResource NoteItemContainerStyle}"
                                              ItemTemplate="{StaticResource NoteItemTemplate}"
@@ -591,12 +696,25 @@
                                             <DataTemplate>
                                                 <!-- 便签分组:整体 B 级缩进(与未分组便签/待办分组同层) -->
                                                 <StackPanel Margin="16,0,0,0">
-                                                    <!-- 分组头:点击折叠/展开;右键菜单 -->
-                                                    <Button Style="{StaticResource GhostButton}" Height="26" Padding="10,0" Margin="0,2,0,0"
+                                                    <!-- 分组头:点击折叠/展开;右键菜单。折叠且组内含选中便签时,显示选中色块(被折叠隐藏的便签兜底) -->
+                                                    <Button Height="26" Padding="10,0" Margin="0,2,0,0"
                                                             HorizontalContentAlignment="Stretch"
                                                             Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             Command="{Binding DataContext.NotesVm.ToggleNoteGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                                             CommandParameter="{Binding}">
+                                                        <Button.Style>
+                                                            <Style TargetType="Button" BasedOn="{StaticResource GhostButton}">
+                                                                <Style.Triggers>
+                                                                    <MultiDataTrigger>
+                                                                        <MultiDataTrigger.Conditions>
+                                                                            <Condition Binding="{Binding IsCollapsed}" Value="True" />
+                                                                            <Condition Binding="{Binding HasActiveNote}" Value="True" />
+                                                                        </MultiDataTrigger.Conditions>
+                                                                        <Setter Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                                    </MultiDataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Button.Style>
                                                         <Button.ContextMenu>
                                                             <ContextMenu>
                                                                 <MenuItem Header="{DynamicResource S.Note.New}"
@@ -657,7 +775,6 @@
                                                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                                              Visibility="{Binding IsCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
                                                              ItemsSource="{Binding Notes}"
-                                                             SelectedItem="{Binding DataContext.NotesVm.SelectedNote, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
                                                              SelectionChanged="InboxNotes_SelectionChanged"
                                                              ItemContainerStyle="{StaticResource NoteItemContainerStyle}"
                                                              ItemTemplate="{StaticResource NoteItemTemplate}"

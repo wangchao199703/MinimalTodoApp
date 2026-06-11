@@ -307,17 +307,21 @@
 
     <!-- ============ 设置对话框 ============ -->
     <sys:String x:Key="S.Settings.Title">设置</sys:String>
-    <sys:String x:Key="S.Settings.Nav.General">常规</sys:String>
+    <sys:String x:Key="S.Settings.Nav.Todo">待办</sys:String>
+    <sys:String x:Key="S.Settings.Nav.Inbox">收集箱</sys:String>
+    <sys:String x:Key="S.Settings.Nav.General">通用</sys:String>
     <sys:String x:Key="S.Settings.Nav.Font">字体</sys:String>
     <sys:String x:Key="S.Settings.Nav.About">关于</sys:String>
+    <sys:String x:Key="S.Settings.NoteFont">便签字体</sys:String>
+    <sys:String x:Key="S.Settings.NoteFontDesc">设置便签正文的字体、字号与行距（与任务区独立，仅作用于便签编辑器）</sys:String>
     <sys:String x:Key="S.About.Support">支持开发者</sys:String>
     <sys:String x:Key="S.About.SupportDesc">这是我利用业余时间打磨的免费小工具。如果它帮到了你，欢迎到 GitHub 给项目点一个 ⭐ Star —— 这是对作者最大的鼓励，也能让更多人发现它。</sys:String>
     <sys:String x:Key="S.About.StarButton">去点 Star</sys:String>
     <sys:String x:Key="S.Settings.Holidays">显示节假日</sys:String>
     <sys:String x:Key="S.Settings.HolidaysDesc">在日历中标注国内法定节假日并高亮放假日（联网获取，首次需联网）</sys:String>
     <sys:String x:Key="S.Settings.RestoreDefaults">恢复默认设置</sys:String>
-    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">字体微软雅黑 UI、字号 14、行距 1.1、勾选框 18</sys:String>
-    <sys:String x:Key="S.Settings.RestoreDone">已恢复默认外观设置.</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDefaultsDesc">将外观、各项开关、布局尺寸与待办/便签排版一并还原为默认（不影响语言与你的便签、分组、任务数据）</sys:String>
+    <sys:String x:Key="S.Settings.RestoreDone">已恢复全部默认设置.</sys:String>
     <sys:String x:Key="S.Settings.AutoStart">开机自启动</sys:String>
     <sys:String x:Key="S.Settings.AutoStartDesc">登录 Windows 时自动运行（当前用户）</sys:String>
     <sys:String x:Key="S.Settings.Effects">完成特效</sys:String>

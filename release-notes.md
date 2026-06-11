@@ -1,3 +1,31 @@
+## MinimalTodoApp v1.2.1
+
+### English
+
+A polish release on top of v1.2.0 — separate To-do / Inbox settings, smoother view transitions, a stronger Restore-defaults, and a fully rewritten sidebar selection highlight. Still a single self-contained exe, no .NET runtime needed.
+
+- **To-do / Inbox settings split** — Settings is reorganized into **General / To-do / Inbox / About**. The To-do tab holds the task-area font and to-do toggles; the new **Inbox tab gives notes their own font, size and line spacing**, independent from the task area. Existing notes keep their current look (they inherit your global font until you change them).
+- **Transitions everywhere** — switching between two to-do groups, or between two notes, now plays the same scale-and-fade entrance that to-do↔notes already had.
+- **Restore defaults, expanded** — one click now restores appearance, all toggles, layout sizes and both to-do & note typography to defaults. Your language and your notes / groups / tasks are never touched.
+- **Sidebar selection highlight rewritten** — the selected item's color block is now driven by a single source of truth, so there is always **exactly one** highlight, consistent between the expanded sidebar and the collapsed rail. Fixed: couldn't select a second note across groups; the "Completed" row and notes showed no block in some states; the collapsed rail now shows a clear accent bar + tint just like the expanded list, and a note inside a collapsed group falls back to highlighting its folder.
+- Data and settings carry over as-is.
+
+Download `MinimalTodoApp-v1.2.1-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
+
+### 简体中文
+
+在 v1.2.0 基础上的打磨版：拆分「待办 / 收集箱」设置、补全切换动画、增强「恢复默认」、并彻底重写侧栏选中色块。仍是自包含单文件 exe，无需安装 .NET 运行时。
+
+- **拆分「待办 / 收集箱」设置** —— 设置重排为**通用 / 待办 / 收集箱 / 关于**。「待办」页放任务区字体与待办开关；新增的**「收集箱」页让便签拥有独立的字体、字号、行距**，与任务区互不影响。存量便签外观不变（在你修改前继续沿用全局字体）。
+- **切换动画补全** —— 待办与待办之间、便签与便签之间切换，现在和「待办↔便签」一样有「缩放 + 淡入」进场动画。
+- **恢复默认增强** —— 一键恢复现在会把外观、全部开关、布局尺寸、待办与便签排版一并还原为默认；语言与你的便签 / 分组 / 任务数据绝不改动。
+- **侧栏选中色块重写** —— 选中项的色块改由单一数据源统一计算，任何时刻**只有一个**高亮，展开侧栏与折叠窄条完全一致。修复：跨分组选不中第二篇便签；某些状态下「已完成」与便签不显示色块；折叠窄条现在和展开列表一样显示清晰的强调色竖条 + 底色，选中便签所在分组折叠时色块落到其文件夹图标。
+- 数据与设置完全兼容，升级即用。
+
+下载 `MinimalTodoApp-v1.2.1-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。
+
+---
+
 ## MinimalTodoApp v1.2.0
 
 ### English

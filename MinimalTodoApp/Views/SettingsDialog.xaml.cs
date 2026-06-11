@@ -49,11 +49,14 @@ public partial class SettingsDialog : Window
         if (e.ButtonState == MouseButtonState.Pressed) DragMove();
     }
 
-    /// <summary>左侧导航:切到“常规”分组.</summary>
-    private void GeneralNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(GeneralPanel);
+    /// <summary>左侧导航:切到“待办”分组(任务区字体 + 待办相关开关).</summary>
+    private void TodoNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(TodoPanel);
 
-    /// <summary>左侧导航:切到“字体”分组.</summary>
-    private void FontNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(FontPanel);
+    /// <summary>左侧导航:切到“收集箱”分组(便签专属字体/字号/行距).</summary>
+    private void InboxNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(InboxPanel);
+
+    /// <summary>左侧导航:切到“通用”分组(开机自启动 + 恢复默认).</summary>
+    private void GeneralNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(GeneralPanel);
 
     /// <summary>左侧导航:切到“关于”分组.</summary>
     private void AboutNav_Checked(object sender, RoutedEventArgs e) => ShowPanel(AboutPanel);
@@ -61,9 +64,10 @@ public partial class SettingsDialog : Window
     /// <summary>仅显示指定面板，其余隐藏(控件可能尚未初始化完成,需判空).</summary>
     private void ShowPanel(UIElement? target)
     {
-        if (GeneralPanel == null || FontPanel == null || AboutPanel == null) return;
+        if (TodoPanel == null || InboxPanel == null || GeneralPanel == null || AboutPanel == null) return;
+        TodoPanel.Visibility = ReferenceEquals(target, TodoPanel) ? Visibility.Visible : Visibility.Collapsed;
+        InboxPanel.Visibility = ReferenceEquals(target, InboxPanel) ? Visibility.Visible : Visibility.Collapsed;
         GeneralPanel.Visibility = ReferenceEquals(target, GeneralPanel) ? Visibility.Visible : Visibility.Collapsed;
-        FontPanel.Visibility = ReferenceEquals(target, FontPanel) ? Visibility.Visible : Visibility.Collapsed;
         AboutPanel.Visibility = ReferenceEquals(target, AboutPanel) ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -81,11 +85,25 @@ public partial class SettingsDialog : Window
         catch { StatusText.Text = Loc.T("S.Settings.OpFailed"); }
     }
 
-    /// <summary>恢复默认设置:字体微软雅黑、字号 12、行距 1.3、勾选框 16(经 VM 实时应用并持久化).</summary>
+    /// <summary>
+    /// 恢复默认设置:把外观/行为开关/布局尺寸/待办与便签排版一并还原为产品默认(经 VM 实时应用并持久化)。
+    /// 重置后本窗口的开关是构造时一次性赋值、不会自动回填,故此处用 _initializing 包裹手动同步一遍。
+    /// </summary>
     private void RestoreDefaults_Click(object sender, RoutedEventArgs e)
     {
         if (_vm == null) return;
         _vm.ResetDefaultSettings();
+
+        // 重新同步本窗口勾选框到 VM 的默认值(AutoStart 为系统注册表状态,不在重置范围,保持不变)
+        _initializing = true;
+        EffectsCheck.IsChecked = _vm.EffectsEnabled;
+        SoundCheck.IsChecked = _vm.SoundEnabled;
+        ReminderSoundCheck.IsChecked = _vm.ReminderSoundEnabled;
+        AutoUpdateCheck.IsChecked = _vm.AutoUpdateEnabled;
+        HolidaysCheck.IsChecked = _vm.ShowHolidays;
+        PriorityBlockCheck.IsChecked = _vm.ShowPriorityBlock;
+        _initializing = false;
+
         StatusText.Text = Loc.T("S.Settings.RestoreDone");
     }
 
