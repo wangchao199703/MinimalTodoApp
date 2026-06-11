@@ -348,9 +348,10 @@ public partial class MainWindow : Window
         var containers = new System.Collections.Generic.List<ListBoxItem>();
         if (willLeaveView)
         {
-            // 四象限视图:卡片在四个象限列表里;常规视图:在任务列表里
-            var lists = Vm.IsQuadrantSelected
-                ? new[] { QuadList1, QuadList2, QuadList3, QuadList4 }
+            // 四象限:四个象限列表;标签看板:看板内全部容器列表;常规视图:任务列表
+            System.Collections.Generic.IEnumerable<ListBox?> lists =
+                Vm.IsQuadrantSelected ? new[] { QuadList1, QuadList2, QuadList3, QuadList4 }
+                : Vm.IsTagBoardSelected ? FindVisualChildren<ListBox>(TagBoardItems)
                 : new[] { TaskList };
             foreach (var f in family)
             {
@@ -916,6 +917,70 @@ public partial class MainWindow : Window
         if (Vm?.QuadrantGroup is { } quadrant) SelectGroup(quadrant);
     }
 
+    /// <summary>点击「标签看板」独立行:切到标签看板视图。</summary>
+    private void TagBoard_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm?.TagBoardGroup is { } board) SelectGroup(board);
+    }
+
+    /// <summary>标签看板容器右键「重命名」:置该标签内联编辑态。</summary>
+    private void TagRename_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: TagColumnVm { Tag: { } g } }) Vm?.RenameGroupCommand.Execute(g);
+    }
+
+    /// <summary>标签看板容器右键「改图标」:复用图标选择器。</summary>
+    private void TagChangeIcon_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm == null || sender is not MenuItem { DataContext: TagColumnVm { Tag: { } g } }) return;
+        var dlg = new IconPickerDialog(Vm, g) { Owner = this };
+        dlg.ShowDialog();
+    }
+
+    /// <summary>标签看板容器右键「删除」:删标签(其下任务转为无标签)。</summary>
+    private void TagDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { DataContext: TagColumnVm { Tag: { } g } }) Vm?.DeleteGroupCommand.Execute(g);
+    }
+
+    // ===== 新建待办·标签选择器 =====
+
+    private void OpenTagPicker_Click(object sender, RoutedEventArgs e) => NewTaskTagPopup.IsOpen = true;
+
+    private void TagPick_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm != null && sender is FrameworkElement { Tag: TodoGroup g }) Vm.NewTaskTagId = g.Id;
+        NewTaskTagPopup.IsOpen = false;
+    }
+
+    private void TagPickNone_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm != null) Vm.NewTaskTagId = null;
+        NewTaskTagPopup.IsOpen = false;
+    }
+
+    private void TagDeleteFromPicker_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm != null && sender is FrameworkElement { Tag: TodoGroup g }) Vm.DeleteGroupCommand.Execute(g);
+        // 不关闭浮层,便于连续操作
+    }
+
+    private void NewTagNameBox_KeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter) { TagCreate_Click(sender, e); e.Handled = true; }
+    }
+
+    private void TagCreate_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm == null) return;
+        var name = NewTagNameBox.Text?.Trim();
+        if (string.IsNullOrWhiteSpace(name)) return;
+        var g = Vm.CreateTag(name);
+        NewTagNameBox.Text = string.Empty;
+        Vm.NewTaskTagId = g.Id;
+        NewTaskTagPopup.IsOpen = false;
+    }
+
     /// <summary>选中分组并退出便签视图。显式清便签:即使点的是当前已选分组(SelectedGroup 不变,
     /// OnSelectedGroupChanged 不触发),也要能从便签切回任务列表。</summary>
     private void SelectGroup(TodoGroup g)
@@ -923,9 +988,8 @@ public partial class MainWindow : Window
         if (Vm == null) return;
         if (Vm.NotesVm?.SelectedNote != null) Vm.NotesVm.SelectedNote = null;  // → IsNotesViewOpen=false
         Vm.SelectedGroup = g;
-        // OneWay 绑定在 SelectedGroup 未变时不会自动同步高亮;打开便签曾把高亮清成 null,这里补回.
-        // 已完成/四象限不在本列表(置 null,由其各自独立行高亮).
-        GroupList.SelectedItem = (g.IsCompletedGroup || g.IsQuadrantGroup) ? null : g;
+        // GroupList 仅含「所有待办」一项;其它视图入口(已完成/四象限/标签看板)为独立按钮,置 null 由各自高亮.
+        GroupList.SelectedItem = g.IsAllUncompletedGroup ? g : null;
     }
 
     /// <summary>收集箱便签右键「删除」:确认后删除该便签。</summary>

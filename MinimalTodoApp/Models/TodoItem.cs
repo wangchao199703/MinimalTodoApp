@@ -116,6 +116,26 @@ public partial class TodoItem : ObservableObject
     [JsonIgnore]
     public string SubtaskText => Loc.F("S.Task.SubtaskCount", CompletedChildCount, ChildCount);
 
+    /// <summary>所属标签名(由 ViewModel 维护,用于列表里的标签 chip).不序列化.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    [NotifyPropertyChangedFor(nameof(HasTag))]
+    private string tagName = string.Empty;
+
+    /// <summary>所属标签图标字形(由 ViewModel 维护).不序列化.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private string tagIcon = string.Empty;
+
+    /// <summary>所属标签颜色(十六进制,由 ViewModel 维护,用于 chip 淡底).不序列化.</summary>
+    [ObservableProperty]
+    [property: JsonIgnore]
+    private string tagColor = "#3B82F6";
+
+    /// <summary>是否有标签(即 TagName 非空).计算属性,不序列化.</summary>
+    [JsonIgnore]
+    public bool HasTag => !string.IsNullOrEmpty(TagName);
+
     /// <summary>是否启用周期提醒(到点后每隔固定时间反复提醒，直到任务完成).</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasReminder))]

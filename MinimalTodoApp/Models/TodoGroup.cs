@@ -26,6 +26,7 @@ public partial class TodoGroup : ObservableObject
         IsAllUncompletedGroup ? Loc.T("S.Group.AllUncompleted")
         : IsCompletedGroup ? Loc.T("S.Group.Completed")
         : IsQuadrantGroup ? Loc.T("S.Group.Quadrant")
+        : IsTagBoardGroup ? Loc.T("S.Group.TagBoard")
         : Name;
 
     /// <summary>语言切换时由 ViewModel 调用,刷新内置分组的本地化显示名.</summary>
@@ -68,13 +69,21 @@ public partial class TodoGroup : ObservableObject
     [NotifyPropertyChangedFor(nameof(IndentMargin))]
     private bool isQuadrantGroup;
 
+    /// <summary>是否为内置“标签看板”视图分组:把未完成任务按标签分容器展示的派生视图，不存任务/不可删除/不可作为新任务目标.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IndentMargin))]
+    private bool isTagBoardGroup;
+
+    /// <summary>是否为内置视图分组(所有待办/已完成/四象限/标签看板)，即非普通标签.不序列化.</summary>
+    [JsonIgnore]
+    public bool IsSpecialGroup => IsAllUncompletedGroup || IsCompletedGroup || IsQuadrantGroup || IsTagBoardGroup;
+
     /// <summary>
-    /// 侧栏层级缩进:普通分组(工作/学习/生活 及自建分组)作为“所有待办”的子级右移一级；
-    /// 内置视图分组“所有待办/已完成/四象限”为顶层不缩进.不参与序列化.
+    /// 侧栏层级缩进:内置视图分组为顶层不缩进;普通标签(已不在侧栏列出)沿用 0.不参与序列化.
     /// </summary>
     [JsonIgnore]
     public Thickness IndentMargin =>
-        (IsAllUncompletedGroup || IsCompletedGroup || IsQuadrantGroup) ? new Thickness(0) : new Thickness(16, 0, 0, 0);
+        IsSpecialGroup ? new Thickness(0) : new Thickness(16, 0, 0, 0);
 
     /// <summary>该分组下的任务数量.运行时计算，不参与序列化.</summary>
     [ObservableProperty]

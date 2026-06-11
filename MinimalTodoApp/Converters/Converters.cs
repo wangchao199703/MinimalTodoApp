@@ -108,6 +108,39 @@ public class StringToBrushConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+/// <summary>十六进制颜色 -> 向白混合调浅的画刷(用于标签 chip 淡底).混合比例默认 0.82,可经参数覆盖.</summary>
+public class HexToLightBrushConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        Color baseColor;
+        try { baseColor = (Color)ColorConverter.ConvertFromString(value as string ?? "#3B82F6"); }
+        catch { baseColor = (Color)ColorConverter.ConvertFromString("#3B82F6"); }
+        double t = 0.82;
+        if (parameter is string s && double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var pt))
+            t = Math.Clamp(pt, 0, 1);
+        byte Mix(byte c) => (byte)Math.Round(c + (255 - c) * t);
+        return new SolidColorBrush(Color.FromRgb(Mix(baseColor.R), Mix(baseColor.G), Mix(baseColor.B)));
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+/// <summary>容器宽度 -> 一行两列的列宽(value/2 再减去间距/滚动条余量).用于标签看板 WrapPanel.ItemWidth.</summary>
+public class HalfWidthConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is double w && w > 0)
+            return Math.Max(180, (w - 26) / 2.0);   // 26 ≈ 两列间距 + 滚动条余量
+        return 280.0;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 /// <summary>DueState -> 倒计时文字颜色(引用当前主题的动态资源画刷).</summary>
 public class DueStateToBrushConverter : IValueConverter
 {

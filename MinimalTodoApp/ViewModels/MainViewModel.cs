@@ -84,6 +84,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     {
         FavDropHandler = new FavoritesDropHandler(this);
         QuadDropHandler = new QuadrantDropHandler(this);
+        TagDropHandler = new TagBoardDropHandler(this);
 
         _data = _dataService.Load();
         SeedDefaultsIfEmpty();
@@ -143,7 +144,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         // 侧栏分组区数据源:排除「已完成」(它在「新建分组」按钮之下单独成行).
         // 已完成恒为 Groups 末位,过滤后剩余项索引与 Groups 一一对齐,故拖拽重排逻辑无需改动.
         var sidebarView = new CollectionViewSource { Source = Groups };
-        sidebarView.Filter += (_, e) => e.Accepted = e.Item is TodoGroup tg && !tg.IsCompletedGroup && !tg.IsQuadrantGroup;
+        sidebarView.Filter += (_, e) => e.Accepted = e.Item is TodoGroup tg && tg.IsAllUncompletedGroup;
         SidebarGroups = sidebarView.View;
         _allItems = _data.Items.ToList();
         foreach (var item in _allItems)
@@ -155,6 +156,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         EnsureAllUncompletedGroup();
         EnsureCompletedGroup();
         EnsureQuadrantGroup();
+        EnsureTagBoardGroup();
         AssignDefaultGroupIcons();   // 旧数据(无图标)按类型/名称补默认图标
         InitDefaultGroupIconsOnce(); // 首次启动:强制标准分组用默认图标(修正旧的随手选)
         MigrateCompletedItems();
@@ -239,6 +241,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     /// <summary>四象限拖拽处理器(同象限内重排,绑定到四个象限 ListBox).</summary>
     public QuadrantDropHandler QuadDropHandler { get; }
+
+    /// <summary>标签看板的列集合(每个标签一列 + 末尾「无标签」列).</summary>
+    public ObservableCollection<TagColumnVm> TagColumns { get; } = new();
+
+    /// <summary>标签看板拖拽处理器(同列重排 / 跨列改标签).</summary>
+    public TagBoardDropHandler TagDropHandler { get; }
 
     public List<SortOption> SortOptions { get; }
 
@@ -508,6 +516,19 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>新任务是否已选择父待办.</summary>
     public bool HasNewTaskParent => NewTaskParentId.HasValue;
 
+    /// <summary>新任务选择的标签 Id(null=无标签).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(NewTaskTagDisplay))]
+    private Guid? newTaskTagId;
+
+    /// <summary>新任务标签选择按钮的显示文案(标签名 / 「无标签」).</summary>
+    public string NewTaskTagDisplay =>
+        (NewTaskTagId.HasValue ? Groups.FirstOrDefault(g => g.Id == NewTaskTagId.Value)?.Name : null)
+        ?? Loc.T("S.Tag.Untagged");
+
+    /// <summary>新建待办标签选择器的候选标签(全部普通标签).</summary>
+    public IEnumerable<TodoGroup> TagOptions => NormalTagGroups;
+
     /// <summary>可作为父待办的候选任务列表(排除已完成的任务).</summary>
     public IEnumerable<TodoItem> ParentCandidates => _allItems.Where(i => !i.IsCompleted);
 
@@ -519,6 +540,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     /// <summary>当前是否选中“四象限”视图(用于内容区在普通列表与 2×2 象限面板间切换).</summary>
     public bool IsQuadrantSelected => SelectedGroup?.IsQuadrantGroup == true;
+
+    /// <summary>当前是否选中“标签看板”视图.</summary>
+    public bool IsTagBoardSelected => SelectedGroup?.IsTagBoardGroup == true;
+
+    /// <summary>当前是否为“看板类”视图(四象限 / 标签看板):普通任务列表与排序按钮隐藏.</summary>
+    public bool IsBoardSelected => IsQuadrantSelected || IsTagBoardSelected;
 
     /// <summary>右侧标题:当前分组名 / “全部任务”(内置分组用本地化显示名).</summary>
     public string CurrentTitle => SelectedGroup?.DisplayName ?? Loc.T("S.AllTasks");
@@ -554,13 +581,21 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>内置“四象限”视图分组(派生视图，不存任务).</summary>
     public TodoGroup? QuadrantGroup => Groups.FirstOrDefault(g => g.IsQuadrantGroup);
 
-    /// <summary>第一个可作为新任务归属的普通分组(排除“已完成”/“所有待办”/“四象限”).</summary>
-    private TodoGroup? FirstNormalGroup =>
-        Groups.FirstOrDefault(g => !g.IsCompletedGroup && !g.IsAllUncompletedGroup && !g.IsQuadrantGroup);
+    /// <summary>内置“标签看板”视图分组(派生视图，不存任务).</summary>
+    public TodoGroup? TagBoardGroup => Groups.FirstOrDefault(g => g.IsTagBoardGroup);
 
-    /// <summary>右键「移动到分组」子菜单的候选分组(排除内置“已完成”/“所有待办”/“四象限”分组).</summary>
-    public IEnumerable<TodoGroup> MoveTargetGroups =>
-        Groups.Where(g => !g.IsCompletedGroup && !g.IsAllUncompletedGroup && !g.IsQuadrantGroup);
+    /// <summary>所有“普通标签”(排除全部内置视图分组)，按 OrderIndex 顺序.</summary>
+    public IEnumerable<TodoGroup> NormalTagGroups => Groups.Where(g => !g.IsSpecialGroup);
+
+    /// <summary>取某任务所属的标签(普通分组);找不到=无标签返回 null.</summary>
+    public TodoGroup? TagOf(TodoItem item) =>
+        Groups.FirstOrDefault(g => !g.IsSpecialGroup && g.Id == item.GroupId);
+
+    /// <summary>第一个可作为新任务归属的普通标签.</summary>
+    private TodoGroup? FirstNormalGroup => Groups.FirstOrDefault(g => !g.IsSpecialGroup);
+
+    /// <summary>右键「移动到标签」子菜单的候选标签(排除全部内置视图分组).</summary>
+    public IEnumerable<TodoGroup> MoveTargetGroups => Groups.Where(g => !g.IsSpecialGroup);
 
     public string DataFilePath => _dataService.FilePath;
 
@@ -577,6 +612,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         OnPropertyChanged(nameof(IsAllSelected));
         OnPropertyChanged(nameof(IsCompletedSelected));
         OnPropertyChanged(nameof(IsQuadrantSelected));
+        OnPropertyChanged(nameof(IsTagBoardSelected));
+        OnPropertyChanged(nameof(IsBoardSelected));
         OnPropertyChanged(nameof(CurrentTitle));
         RefreshItems();
         RefreshSidebarSelection();
@@ -602,14 +639,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// </summary>
     public void RefreshSidebarSelection()
     {
-        TodoGroup? target = null;
-        if (!IsNotesViewOpen)
-        {
-            target = SelectedGroup ?? AllUncompletedGroup;
-            if (target is { IsCompletedGroup: false, IsAllUncompletedGroup: false }
-                && AllUncompletedGroup is { IsCollapsed: true } all)
-                target = all;   // 选中分组被折叠隐藏:色块落到「所有待办」行
-        }
+        // 侧栏只剩内置视图入口(所有待办/已完成/四象限/标签看板);各自独立行绑 IsHighlighted.
+        TodoGroup? target = IsNotesViewOpen ? null : (SelectedGroup ?? AllUncompletedGroup);
         foreach (var g in Groups) g.IsHighlighted = ReferenceEquals(g, target);
         NotesVm?.RefreshSelection(IsNotesViewOpen);
     }
@@ -834,6 +865,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         foreach (var o in QuickTimeOptions) o.RefreshLabel();
         foreach (var o in ReminderUnits) o.RefreshLabel();
         foreach (var g in Groups) g.RefreshDisplayName();
+        OnPropertyChanged(nameof(NewTaskTagDisplay));   // 「无标签」按钮文案随语言刷新
+        if (IsTagBoardSelected) RefreshTagBoard();      // 看板「无标签」列标题随语言刷新
 
         // 内置主题名随语言切换:重建列表并按 Key 复位选中项(ThemeInfo 为不可变 record)
         var selectedKey = SelectedTheme?.Key;
@@ -974,46 +1007,39 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     [RelayCommand(CanExecute = nameof(CanAddTask))]
     private void AddTask()
     {
-        // 目标分组判定:
-        //  - 普通分组 → 建到该分组;
-        //  - “所有待办”聚合视图 / 全部任务(null) → 建为“未分组”待办(归属“所有待办”组本身，只在该视图出现，不进任何普通分组);
-        //  - “已完成”不能作为新建目标 → 同样落为未分组待办。
-        var target = SelectedGroup;
-        // “已完成”“四象限”均为视图分组,不能作为新建目标 → 落为“未分组”待办(归属“所有待办”)
-        if (target != null && (target.IsCompletedGroup || target.IsQuadrantGroup))
-            target = null;
-        if (target == null)
-            target = AllUncompletedGroup;
-        if (target == null)
-            target = FirstNormalGroup ?? CreateGroupInternal("收件箱");
-
-        // 如果选择了父待办，自动设置缩进层级为父待办的层级+1，并定位到父所在分组
+        // 目标标签判定(GroupId 现在存“标签 id”，Guid.Empty = 无标签):
+        //  - 有父待办 → 跟随父的标签(子待办与父同标签);
+        //  - 否则 → 新建时选择的标签 NewTaskTagId;未选则无标签(Guid.Empty)。
         int indentLevel = 0;
-        TodoItem? parent = null;
-        if (NewTaskParentId.HasValue)
+        TodoItem? parent = NewTaskParentId.HasValue
+            ? _allItems.FirstOrDefault(i => i.Id == NewTaskParentId.Value)
+            : null;
+
+        Guid targetGroupId;
+        if (parent != null)
         {
-            parent = _allItems.FirstOrDefault(i => i.Id == NewTaskParentId.Value);
-            if (parent != null)
-            {
-                indentLevel = Math.Min(parent.IndentLevel + 1, 6);
-                // 子待办应该在父待办所在的分组
-                target = Groups.FirstOrDefault(g => g.Id == parent.GroupId) ?? target;
-            }
+            indentLevel = Math.Min(parent.IndentLevel + 1, 6);
+            targetGroupId = parent.GroupId;
+        }
+        else
+        {
+            var tag = NewTaskTagId.HasValue
+                ? Groups.FirstOrDefault(g => !g.IsSpecialGroup && g.Id == NewTaskTagId.Value)
+                : null;
+            targetGroupId = tag?.Id ?? Guid.Empty;
         }
 
-        // 计算插入位置:有父待办时插到“父及其全部子孙”之后(紧贴父待办下方)，
-        // 否则追加到当前分组末尾。
+        // 计算插入位置:有父待办时插到“父及其全部子孙”之后(紧贴父待办下方)，否则追加到同标签末尾。
         int orderIndex;
         if (parent != null)
         {
             int insertAfter = parent.OrderIndex;
             foreach (var d in GetDescendants(parent))
-                if (d.GroupId == target.Id && d.OrderIndex > insertAfter)
+                if (d.GroupId == targetGroupId && d.OrderIndex > insertAfter)
                     insertAfter = d.OrderIndex;
 
-            // 把插入点之后的同组任务整体后移一位，腾出位置
             _suppressSave = true;
-            foreach (var sib in _allItems.Where(i => i.GroupId == target.Id && i.OrderIndex > insertAfter))
+            foreach (var sib in _allItems.Where(i => i.GroupId == targetGroupId && i.OrderIndex > insertAfter))
                 sib.OrderIndex++;
             _suppressSave = false;
 
@@ -1021,7 +1047,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         }
         else
         {
-            orderIndex = _allItems.Where(i => i.GroupId == target.Id)
+            orderIndex = _allItems.Where(i => i.GroupId == targetGroupId)
                                   .Select(i => i.OrderIndex)
                                   .DefaultIfEmpty(-1).Max() + 1;
         }
@@ -1029,7 +1055,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         var item = new TodoItem
         {
             Title = NewTaskTitle.Trim(),
-            GroupId = target.Id,
+            GroupId = targetGroupId,
             DueDate = NewTaskDueDate,
             Priority = NewTaskPriority,
             OrderIndex = orderIndex,
@@ -1050,9 +1076,36 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         NewTaskReminderEnabled = false;
         NewTaskReminderInterval = 30;
         NewTaskParentId = null;
+        NewTaskTagId = null;
 
         // 添加子待办后展开父待办,确保新子项立即可见
         if (parent != null) parent.IsCollapsed = false;
+
+        RecomputeParents();
+        RefreshItems();
+        RefreshGroupCounts();
+        OnPropertyChanged(nameof(ParentCandidates));
+        SaveData();
+        TaskAdded?.Invoke(item);
+    }
+
+    /// <summary>标签看板容器内「+ 添加」:用指定标签(null=无标签)建一条默认待办.</summary>
+    public void AddTaskToTag(TodoGroup? tag, string title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) return;
+        Guid gid = (tag != null && !tag.IsSpecialGroup) ? tag.Id : Guid.Empty;
+        int orderIndex = _allItems.Where(i => i.GroupId == gid)
+                                  .Select(i => i.OrderIndex).DefaultIfEmpty(-1).Max() + 1;
+        var item = new TodoItem
+        {
+            Title = title.Trim(),
+            GroupId = gid,
+            Priority = Priority.Medium,
+            OrderIndex = orderIndex,
+            CreatedAt = DateTime.Now,
+        };
+        _allItems.Add(item);
+        item.PropertyChanged += OnItemPropertyChanged;
 
         RecomputeParents();
         RefreshItems();
@@ -1372,11 +1425,11 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     [RelayCommand]
     private void RenameGroup(TodoGroup? group)
     {
-        if (group == null || group.IsCompletedGroup || group.IsAllUncompletedGroup) return;
+        if (group == null || group.IsSpecialGroup) return;   // 内置视图分组不可重命名
         group.IsEditing = true;
     }
 
-    /// <summary>结束分组内联编辑(回车/失焦):空名兜底为默认名，刷新并保存。</summary>
+    /// <summary>结束标签内联编辑(回车/失焦):空名兜底为默认名，刷新看板列头/列表 chip 并保存。</summary>
     public void EndEditGroup(TodoGroup? group)
     {
         if (group == null) return;
@@ -1386,6 +1439,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         else
             group.Name = group.Name.Trim();
         group.RefreshDisplayName();
+        OnPropertyChanged(nameof(TagOptions));
+        OnPropertyChanged(nameof(NewTaskTagDisplay));
+        RefreshItems();   // 刷新列表 chip 与标签看板列头
         SaveData();
     }
 
@@ -1412,27 +1468,49 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         return g;
     }
 
+    /// <summary>新建一个标签(标签选择器的「+」):指定名称与可选图标字形，返回新标签并持久化。</summary>
+    public TodoGroup CreateTag(string name, string? glyph = null)
+    {
+        string nm = string.IsNullOrWhiteSpace(name) ? Loc.T("S.Group.NewName") : name.Trim();
+        var g = new TodoGroup
+        {
+            Name = nm,
+            OrderIndex = Groups.Count,
+            Color = Palette[Groups.Count % Palette.Length],
+            Icon = string.IsNullOrEmpty(glyph) ? GroupIcons.IconForName(nm) : glyph
+        };
+        Groups.Add(g);
+        OnPropertyChanged(nameof(TagOptions));
+        if (IsTagBoardSelected) RefreshTagBoard();
+        SaveData();
+        return g;
+    }
+
     [RelayCommand]
     private void DeleteGroup(TodoGroup? group)
     {
-        // “已完成”/“所有待办”都是内置视图分组，不可删除
-        if (group == null || group.IsCompletedGroup || group.IsAllUncompletedGroup) return;
+        // 内置视图分组(所有待办/已完成/四象限/标签看板)不可删
+        if (group == null || group.IsSpecialGroup) return;
 
-        // 连带删除该分组下的任务
-        var toRemove = _allItems.Where(i => i.GroupId == group.Id).ToList();
-        foreach (var i in toRemove)
-        {
-            i.PropertyChanged -= OnItemPropertyChanged;
-            _allItems.Remove(i);
-        }
+        // 删标签:其下任务转为「无标签」(GroupId=Empty)，不删任务
+        _suppressSave = true;
+        foreach (var i in _allItems.Where(i => i.GroupId == group.Id).ToList())
+            i.GroupId = Guid.Empty;
+        _suppressSave = false;
 
         Groups.Remove(group);
+        if (NewTaskTagId == group.Id) NewTaskTagId = null;
+        OnPropertyChanged(nameof(TagOptions));
+
         if (SelectedGroup == group)
+        {
             SelectedGroup = null;   // 触发刷新
+        }
         else
         {
             RefreshItems();
             RefreshGroupCounts();
+            if (IsTagBoardSelected) RefreshTagBoard();
         }
         SaveData();
     }
@@ -1471,6 +1549,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         if (group == null || string.IsNullOrEmpty(glyph)) return;
         group.Icon = glyph;
         group.IconImage = "";   // 切回字形图标
+        RefreshItems();         // 刷新列表 chip 与标签看板列头
         SaveData();
     }
 
@@ -1479,6 +1558,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     {
         if (group == null || string.IsNullOrEmpty(path)) return;
         group.IconImage = path;
+        RefreshItems();
         SaveData();
     }
 
@@ -1677,6 +1757,15 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Icon = GroupIcons.Quadrant,
             IsQuadrantGroup = true
         });
+
+        _data.Groups.Add(new TodoGroup
+        {
+            Name = "标签看板",
+            OrderIndex = defaults.Length + 3,
+            Color = "#0EA5E9",
+            Icon = GroupIcons.TagBoard,
+            IsTagBoardGroup = true
+        });
     }
 
     /// <summary>确保始终存在唯一的“所有待办”分组(旧数据升级时补建)，并置于最前.</summary>
@@ -1729,6 +1818,22 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         };
         Groups.Add(g);
         // 构造期间不在此保存(同 EnsureCompletedGroup),由构造末尾统一保存.
+    }
+
+    /// <summary>确保始终存在唯一的“标签看板”视图分组(旧数据升级时补建)，置于末尾.</summary>
+    private void EnsureTagBoardGroup()
+    {
+        if (Groups.Any(g => g.IsTagBoardGroup)) return;
+
+        var g = new TodoGroup
+        {
+            Name = "标签看板",
+            OrderIndex = Groups.Count,
+            Color = "#0EA5E9",
+            Icon = GroupIcons.TagBoard,
+            IsTagBoardGroup = true
+        };
+        Groups.Add(g);
     }
 
     /// <summary>旧数据迁移:把优先级为 None 的任务统一升级为 Medium(不再保留“无优先级”选项).</summary>
@@ -1896,6 +2001,23 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             }
         }
 
+        // 顺带刷新每条任务的标签 chip(列表里显示标签名/图标/淡色底)
+        var tagById = NormalTagGroups.ToDictionary(g => g.Id);
+        foreach (var it in _allItems)
+        {
+            if (tagById.TryGetValue(it.GroupId, out var tg))
+            {
+                it.TagName = tg.Name;
+                it.TagIcon = tg.Icon;
+                it.TagColor = tg.Color;
+            }
+            else
+            {
+                it.TagName = string.Empty;
+                it.TagIcon = string.Empty;
+            }
+        }
+
         IEnumerable<TodoItem> query = _allItems;
 
         if (SelectedGroup != null)
@@ -1937,6 +2059,57 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         // 四象限视图:同步重算四格(完成/取消完成/迁移后都会经此刷新,卡片自动进出象限)
         if (IsQuadrantSelected) RefreshQuadrants();
+        // 标签看板视图:同步重建各标签列
+        if (IsTagBoardSelected) RefreshTagBoard();
+    }
+
+    /// <summary>
+    /// 重建标签看板:每个普通标签一列 + 末尾固定「无标签」列;每列填该标签下未完成顶层任务(按 OrderIndex).
+    /// 标签集合变化(增删/改名/改图标)或任务增删/拖动/完成后调用.
+    /// </summary>
+    private void RefreshTagBoard()
+    {
+        TagColumns.Clear();
+
+        var pending = _allItems.Where(i => !i.IsCompleted && i.ParentId == null)
+                               .OrderBy(i => i.OrderIndex)
+                               .ToList();
+
+        foreach (var tag in NormalTagGroups.OrderBy(g => g.OrderIndex).ToList())
+        {
+            var col = new TagColumnVm(this, tag);
+            foreach (var it in pending.Where(i => i.GroupId == tag.Id))
+                col.Items.Add(it);
+            TagColumns.Add(col);
+        }
+
+        // 「无标签」列:GroupId 不指向任何普通标签的未完成顶层任务
+        var tagIds = NormalTagGroups.Select(g => g.Id).ToHashSet();
+        var untaggedCol = new TagColumnVm(this, null);
+        foreach (var it in pending.Where(i => !tagIds.Contains(i.GroupId)))
+            untaggedCol.Items.Add(it);
+        TagColumns.Add(untaggedCol);
+    }
+
+    /// <summary>
+    /// 标签看板落点统一入口:同列内→重排;跨列→把任务标签改为目标列标签(「无标签」列=Guid.Empty),重建看板.
+    /// </summary>
+    public void DropToTag(TodoItem item, ObservableCollection<TodoItem> target, int insertIndex)
+    {
+        var col = TagColumns.FirstOrDefault(c => ReferenceEquals(c.Items, target));
+        if (col == null) return;
+
+        // 同列:仅重排顺序(复用四象限重排算法)
+        if (target.Contains(item))
+        {
+            ReorderQuadrant(target, item, insertIndex);
+            return;
+        }
+
+        // 跨列:改标签(不动优先级/截止/完成)
+        item.GroupId = col.Tag?.Id ?? Guid.Empty;
+        RefreshTagBoard();
+        SaveData();
     }
 
     /// <summary>四象限「重要」判定:默认高+中为重要;设置为「仅高」时只有高优先级算重要.</summary>
@@ -2135,8 +2308,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         {
             if (g.IsAllUncompletedGroup)
                 g.ItemCount = _allItems.Count(i => !i.IsCompleted);             // 所有待办:全部未完成
-            else if (g.IsQuadrantGroup)
-                g.ItemCount = _allItems.Count(i => !i.IsCompleted && i.ParentId == null);   // 四象限:仅顶层未完成
+            else if (g.IsQuadrantGroup || g.IsTagBoardGroup)
+                g.ItemCount = _allItems.Count(i => !i.IsCompleted && i.ParentId == null);   // 四象限/标签看板:仅顶层未完成
             else if (g.IsCompletedGroup)
                 g.ItemCount = _allItems.Count(i => i.GroupId == g.Id);          // 已完成:统计全部
             else

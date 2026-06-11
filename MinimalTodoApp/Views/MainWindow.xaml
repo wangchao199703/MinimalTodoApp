@@ -337,42 +337,13 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
 
-                                            <!-- 右键菜单：新建分组(任意分组都可) / 重命名 / 折叠展开(所有待办) / 更改图标 / 清空 / 删除 -->
-                                            <Grid.ContextMenu>
-                                                <ContextMenu>
-                                                    <MenuItem Header="{DynamicResource S.Group.New}"
-                                                              Command="{Binding PlacementTarget.Tag.AddGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                    <!-- 折叠/展开:仅“所有待办”显示(收起其下普通分组) -->
-                                                    <MenuItem Header="{DynamicResource S.Group.ToggleCollapse}"
-                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}}"
-                                                              Command="{Binding PlacementTarget.Tag.ToggleGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                    <!-- 以下仅普通分组(所有待办除外) -->
-                                                    <MenuItem Header="{DynamicResource S.Group.Rename}"
-                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
-                                                              Command="{Binding PlacementTarget.Tag.RenameGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                    <MenuItem Header="{DynamicResource S.Group.ChangeIcon}" Click="GroupChangeIcon_Click"
-                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
-                                                    <Separator Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
-                                                    <MenuItem Header="{DynamicResource S.Group.Clear}"
-                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
-                                                              Command="{Binding PlacementTarget.Tag.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                    <MenuItem Header="{DynamicResource S.Group.Delete}"
-                                                              Visibility="{Binding PlacementTarget.DataContext.IsAllUncompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
-                                                              Command="{Binding PlacementTarget.Tag.DeleteGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
-                                                              CommandParameter="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                                </ContextMenu>
-                                            </Grid.ContextMenu>
+                                            <!-- 标签重构后「所有待办」为纯视图入口,无右键操作 -->
 
-                                            <!-- 折叠箭头(仅「所有待办」):点击收起/展开其下普通分组;窄条折叠态隐藏 -->
+                                            <!-- 折叠箭头已移除(标签重构后「所有待办」下无子分组):始终隐藏,仅保留 14px 占位列对齐 -->
                                             <Button x:Name="GroupArrow" Grid.Column="0" Width="14" Padding="0"
                                                     Background="Transparent" BorderThickness="0" Cursor="Hand"
                                                     VerticalAlignment="Stretch" Focusable="False"
-                                                    Command="{Binding DataContext.ToggleGroupCollapseCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                    CommandParameter="{Binding}"
-                                                    Visibility="{Binding IsAllUncompletedGroup, Converter={StaticResource BoolToVis}}">
+                                                    Visibility="Collapsed">
                                                 <Button.Template>
                                                     <ControlTemplate TargetType="Button">
                                                         <Border Background="Transparent">
@@ -470,9 +441,6 @@
                                         <MenuItem Header="{DynamicResource S.Group.ClearCompleted}"
                                                   Command="{Binding PlacementTarget.DataContext.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
                                                   CommandParameter="{Binding PlacementTarget.DataContext.CompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
-                                        <Separator />
-                                        <MenuItem Header="{DynamicResource S.Group.New}"
-                                                  Command="{Binding PlacementTarget.DataContext.AddGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                     </ContextMenu>
                                 </Button.ContextMenu>
                                 <Button.Style>
@@ -609,6 +577,75 @@
                                     </Grid>
                                     <!-- 折叠态(窄条):仅图标居中 -->
                                     <TextBlock Text="{Binding QuadrantGroup.Icon}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryText}"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                            </Button>
+
+                            <!-- 标签看板:顶层独立成行(与「已完成」「四象限」同级);点击切到标签看板视图 -->
+                            <Button x:Name="TagBoardRow" Margin="0,2,0,0" Height="32"
+                                    HorizontalContentAlignment="Stretch" Click="TagBoard_Click"
+                                    ToolTip="{Binding TagBoardGroup.DisplayName}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Focusable" Value="False" />
+                                        <Setter Property="Padding" Value="10,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid>
+                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                                            <ContentPresenter VerticalAlignment="Center"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </Border>
+                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                                                Background="{DynamicResource Accent}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding TagBoardGroup.IsHighlighted}" Value="True">
+                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="Padding" Value="6,0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Grid>
+                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="14" />
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="{Binding TagBoardGroup.Icon}"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding TagBoardGroup.DisplayName}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding TagBoardGroup.ItemCount}" Margin="4,0"
+                                                   VerticalAlignment="Center" FontSize="11"
+                                                   Foreground="{DynamicResource MutedText}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding TagBoardGroup.Icon}"
                                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                                Foreground="{DynamicResource PrimaryText}"
@@ -1024,7 +1061,7 @@
                                        Foreground="{DynamicResource PrimaryText}" />
 
                             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
-                                        Visibility="{Binding IsQuadrantSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        Visibility="{Binding IsBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
                             <Grid VerticalAlignment="Center">
                                 <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
                                               ToolTip="{Binding SortTooltip}">
@@ -1064,7 +1101,7 @@
 
                         <!-- 任务列表（支持拖拽排序 + 右键菜单 + Tab/Shift+Tab 调整缩进） -->
                         <ListBox x:Name="TaskList" Grid.Row="1" Style="{StaticResource FlatListBox}"
-                                 Visibility="{Binding IsQuadrantSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
+                                 Visibility="{Binding IsBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
                                  ItemContainerStyle="{StaticResource TaskItemStyle}"
                                  ItemsSource="{Binding Items}"
                                  PreviewKeyDown="TaskList_PreviewKeyDown"
@@ -1219,6 +1256,19 @@
 
                                         <!-- 置顶图钉 + 周期提醒小铃铛（Col4） -->
                                         <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <!-- 标签 chip:有标签时显示(图标 + 名称,淡色底) -->
+                                            <Border Margin="6,0,0,0" CornerRadius="8" Padding="6,1"
+                                                    VerticalAlignment="Center"
+                                                    Background="{Binding TagColor, Converter={StaticResource HexToLightBrush}}"
+                                                    Visibility="{Binding HasTag, Converter={StaticResource BoolToVis}}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding TagIcon}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                               FontSize="10" VerticalAlignment="Center" Margin="0,0,3,0"
+                                                               Foreground="{Binding TagColor, Converter={StaticResource StringToBrush}}" />
+                                                    <TextBlock Text="{Binding TagName}" FontSize="10" VerticalAlignment="Center"
+                                                               Foreground="{Binding TagColor, Converter={StaticResource StringToBrush}}" />
+                                                </StackPanel>
+                                            </Border>
                                             <TextBlock Text="&#xE718;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
                                                        FontSize="12" Margin="6,0,0,0"
                                                        VerticalAlignment="Center" Foreground="{DynamicResource Accent}"
@@ -1427,6 +1477,98 @@
                                 </DockPanel>
                             </Border>
                         </Grid>
+
+                        <!-- ==================== 标签看板：每标签一容器(一行两个,高随内容);仅标签看板视图可见 ==================== -->
+                        <ScrollViewer x:Name="TagBoardArea" Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled" Padding="0,0,4,0"
+                                      Visibility="{Binding IsTagBoardSelected, Converter={StaticResource BoolToVis}}">
+                            <ItemsControl x:Name="TagBoardItems" ItemsSource="{Binding TagColumns}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel ItemWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource HalfWidth}}" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <!-- 标签容器:复用四象限容器外观 -->
+                                        <Border Margin="0,0,8,8" Background="{DynamicResource CardBg}" CornerRadius="10"
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                            <Border.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="{DynamicResource S.Tag.Rename}" Click="TagRename_Click"
+                                                              Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                    <MenuItem Header="{DynamicResource S.Tag.ChangeIcon}" Click="TagChangeIcon_Click"
+                                                              Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                    <Separator Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                    <MenuItem Header="{DynamicResource S.Tag.Delete}" Click="TagDelete_Click"
+                                                              Visibility="{Binding IsUntagged, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                </ContextMenu>
+                                            </Border.ContextMenu>
+                                            <DockPanel Margin="10,8,10,10">
+                                                <!-- 表头:图标徽标 + 名称(可内联重命名) + 计数 -->
+                                                <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6"
+                                                            Background="{Binding Color, Converter={StaticResource HexToLightBrush}}">
+                                                        <Grid>
+                                                            <TextBlock Text="{Binding Icon}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                       Foreground="{Binding Color, Converter={StaticResource StringToBrush}}"
+                                                                       Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                            <Image Source="{Binding IconImage, Converter={StaticResource PathToImage}}"
+                                                                   Width="18" Height="18"
+                                                                   Visibility="{Binding HasIconImage, Converter={StaticResource BoolToVis}}" />
+                                                        </Grid>
+                                                    </Border>
+                                                    <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
+                                                                   TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{DynamicResource PrimaryText}"
+                                                                   Visibility="{Binding Tag.IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                        <TextBox DataContext="{Binding Tag}" Style="{StaticResource FlatTextBox}"
+                                                                 Padding="2,1" FontSize="13"
+                                                                 Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                 Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                                                                 IsVisibleChanged="GroupNameEdit_IsVisibleChanged"
+                                                                 LostKeyboardFocus="GroupNameEdit_LostFocus"
+                                                                 KeyDown="GroupNameEdit_KeyDown" />
+                                                    </Grid>
+                                                    <TextBlock Grid.Column="2" Text="{Binding Items.Count}" VerticalAlignment="Center"
+                                                               FontSize="13" FontWeight="SemiBold"
+                                                               Foreground="{Binding Color, Converter={StaticResource StringToBrush}}" />
+                                                </Grid>
+
+                                                <!-- 容器内「+ 添加」输入(回车=以本标签建任务) -->
+                                                <Grid DockPanel.Dock="Bottom" Margin="0,6,0,0">
+                                                    <TextBox Style="{StaticResource FlatTextBox}" Padding="6,3" FontSize="12"
+                                                             Text="{Binding NewText, UpdateSourceTrigger=PropertyChanged}">
+                                                        <TextBox.InputBindings>
+                                                            <KeyBinding Key="Enter" Command="{Binding AddCommand}" />
+                                                        </TextBox.InputBindings>
+                                                    </TextBox>
+                                                    <TextBlock Text="{DynamicResource S.Tag.AddPlaceholder}" Margin="8,0,0,0"
+                                                               VerticalAlignment="Center" IsHitTestVisible="False" FontSize="12"
+                                                               Foreground="{DynamicResource MutedText}"
+                                                               Visibility="{Binding NewText, Converter={StaticResource EmptyToVis}}" />
+                                                </Grid>
+
+                                                <!-- 任务列表(高随内容,不内部滚动);跨容器拖动改标签 -->
+                                                <ListBox Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding Items}"
+                                                         ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                         dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                                         dd:DragDrop.DropHandler="{Binding DataContext.TagDropHandler, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                         dd:DragDrop.UseDefaultDragAdorner="True"
+                                                         dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                            </DockPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
 
                         <!-- 输入任务文本后弹出：优先级（3 个色块）+ 截止时间按钮 + 周期提醒按钮 + 父待办 -->
                         <Border Grid.Row="2" Margin="0,10,0,0" Padding="10,8"
@@ -1708,6 +1850,84 @@
                                     </Popup>
                                 </Grid>
 
+                                <!-- 标签选择(默认无标签;可选已有标签 / ❌删除 / + 新建) -->
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="58" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{DynamicResource S.Tag.Label}" VerticalAlignment="Center" FontSize="12"
+                                               Foreground="{DynamicResource SecondaryText}" />
+                                    <Grid Grid.Column="1" HorizontalAlignment="Left">
+                                        <Button x:Name="NewTaskTagButton" Click="OpenTagPicker_Click"
+                                                Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                                HorizontalContentAlignment="Left" Padding="8,4" MinWidth="130">
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="{Binding NewTaskTagDisplay}" FontSize="12" VerticalAlignment="Center" />
+                                                <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                           FontSize="10" Margin="8,0,0,0" VerticalAlignment="Center"
+                                                           Foreground="{DynamicResource MutedText}" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Popup x:Name="NewTaskTagPopup" PlacementTarget="{Binding ElementName=NewTaskTagButton}"
+                                               Placement="Bottom" StaysOpen="False" AllowsTransparency="True" PopupAnimation="Fade">
+                                            <Border Background="{DynamicResource PopupBg}" CornerRadius="8"
+                                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                    Padding="6" Margin="6" MinWidth="200">
+                                                <Border.Effect>
+                                                    <DropShadowEffect BlurRadius="16" ShadowDepth="0" Opacity="0.3" Color="#000000" />
+                                                </Border.Effect>
+                                                <StackPanel>
+                                                    <Button Content="{DynamicResource S.Tag.Untagged}" Click="TagPickNone_Click"
+                                                            Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Padding="8,5" FontSize="12" />
+                                                    <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                                                        <ItemsControl ItemsSource="{Binding TagOptions}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid>
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="*" />
+                                                                            <ColumnDefinition Width="Auto" />
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <Button Grid.Column="0" Tag="{Binding}" Click="TagPick_Click"
+                                                                                Style="{StaticResource GhostButton}" HorizontalContentAlignment="Left" Padding="8,5">
+                                                                            <StackPanel Orientation="Horizontal">
+                                                                                <TextBlock Text="{Binding Icon}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                                           FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                                                           Foreground="{Binding Color, Converter={StaticResource StringToBrush}}" />
+                                                                                <TextBlock Text="{Binding Name}" FontSize="12" VerticalAlignment="Center" />
+                                                                            </StackPanel>
+                                                                        </Button>
+                                                                        <Button Grid.Column="1" Tag="{Binding}" Click="TagDeleteFromPicker_Click"
+                                                                                Style="{StaticResource GhostButton}" Padding="7,3"
+                                                                                ToolTip="{DynamicResource S.Tag.Delete}">
+                                                                            <TextBlock Text="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                                       FontSize="11" Foreground="{DynamicResource MutedText}" />
+                                                                        </Button>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </ScrollViewer>
+                                                    <Border Background="{DynamicResource Divider}" Height="1" Margin="0,4" />
+                                                    <!-- 新建标签:输入名称 + 加号(默认图标,可在看板右键改) -->
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBox x:Name="NewTagNameBox" Grid.Column="0" Style="{StaticResource FlatTextBox}"
+                                                                 Padding="6,3" FontSize="12" KeyDown="NewTagNameBox_KeyDown" />
+                                                        <Button Grid.Column="1" Content="{DynamicResource S.Tag.New}" Click="TagCreate_Click"
+                                                                Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                                                Margin="4,0,0,0" Padding="8,3" FontSize="12" />
+                                                    </Grid>
+                                                </StackPanel>
+                                            </Border>
+                                        </Popup>
+                                    </Grid>
+                                </Grid>
+
                                 <!-- 父待办选择（创建子待办） -->
                                 <Grid Margin="0,6,0,0">
                                     <Grid.ColumnDefinitions>
@@ -1742,10 +1962,12 @@
                         <GridSplitter x:Name="InputBarSplitter" Grid.Row="3" Height="5"
                                       HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
                                       Background="Transparent" ResizeBehavior="PreviousAndNext"
-                                      ResizeDirection="Rows" Cursor="SizeNS" Margin="0,4,0,0" />
+                                      ResizeDirection="Rows" Cursor="SizeNS" Margin="0,4,0,0"
+                                      Visibility="{Binding IsTagBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
 
-                        <!-- 添加任务输入栏（底部，可拖动调整高度，持久化）;四象限视图也可新增(落为未分组待办) -->
-                        <Border Grid.Row="4" Margin="0,2,0,0">
+                        <!-- 添加任务输入栏（底部）;四象限可新增(落为无标签);标签看板隐藏(各容器内自带「+ 添加」) -->
+                        <Border Grid.Row="4" Margin="0,2,0,0"
+                                Visibility="{Binding IsTagBoardSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />

@@ -11,6 +11,8 @@
     <conv:BoolToVisibilityConverter x:Key="BoolToVis" />
     <conv:DueDateDisplayConverter x:Key="DueDisplay" />
     <conv:StringToBrushConverter x:Key="StringToBrush" />
+    <conv:HexToLightBrushConverter x:Key="HexToLightBrush" />
+    <conv:HalfWidthConverter x:Key="HalfWidth" />
     <conv:DueStateToBrushConverter x:Key="DueStateToBrush" />
     <conv:PriorityToBrushConverter x:Key="PriorityToBrush" />
     <conv:PriorityToLightBrushConverter x:Key="PriorityToLightBrush" />

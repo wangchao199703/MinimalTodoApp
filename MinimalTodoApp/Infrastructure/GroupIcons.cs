@@ -23,6 +23,8 @@ public static class GroupIcons
     public static readonly string Completed = G(0xE930);
     /// <summary>四象限视图图标(四宫格 ViewAll 字形)。</summary>
     public static readonly string Quadrant = G(0xE8A9);
+    /// <summary>标签看板视图图标(标签 Tag 字形)。</summary>
+    public static readonly string TagBoard = G(0xE8EC);
 
     private static IReadOnlyList<string> Glyphs(params int[] codes) => codes.Select(G).ToArray();
 
