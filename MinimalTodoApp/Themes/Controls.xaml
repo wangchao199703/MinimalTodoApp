@@ -880,9 +880,10 @@
     </Style>
 
     <!-- ===================== 现代细长滚动条 ===================== -->
-    <!-- 半透明灰：在明亮/暗黑/透明等所有主题上都清晰可辨，无需逐主题配色 -->
-    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#73888888" />
-    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#B3888888" />
+    <!-- 半透明灰：在明亮/暗黑/透明等所有主题上都清晰可辨，无需逐主题配色。
+         调浅(更轻盈)：默认 0x40、悬停/拖动 0x80。 -->
+    <SolidColorBrush x:Key="ScrollThumbBrush" Color="#40888888" />
+    <SolidColorBrush x:Key="ScrollThumbHoverBrush" Color="#80888888" />
 
     <!-- 翻页区：完全透明、不抢焦点（去掉默认的方块/箭头按钮） -->
     <Style x:Key="ScrollBarPageButton" TargetType="RepeatButton">
@@ -905,7 +906,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Thumb">
-                    <Border x:Name="t" CornerRadius="4" Margin="2"
+                    <Border x:Name="t" CornerRadius="3" Margin="1.5"
                             Background="{DynamicResource ScrollThumbBrush}" />
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -923,7 +924,7 @@
     <!-- 默认（无 Key）样式：应用到所有 ScrollBar，含任务列表内的滚动条 -->
     <Style TargetType="ScrollBar">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Width" Value="8" />
+        <Setter Property="Width" Value="6" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ScrollBar">
@@ -954,7 +955,7 @@
         <Style.Triggers>
             <Trigger Property="Orientation" Value="Horizontal">
                 <Setter Property="Width" Value="Auto" />
-                <Setter Property="Height" Value="8" />
+                <Setter Property="Height" Value="6" />
             </Trigger>
         </Style.Triggers>
     </Style>

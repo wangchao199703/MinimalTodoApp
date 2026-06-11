@@ -1220,17 +1220,27 @@ public partial class MainWindow : Window
             Vm.NotesVm.SelectedNote = note;
     }
 
-    // ===== 收集箱:便签标题重命名(右键 / 悬停铅笔 → 内联编辑) =====
+    // ===== 收集箱:便签标题重命名(右键 / 双击 → 内联编辑) =====
 
-    /// <summary>右键「重命名」或悬停铅笔:把该便签置为标题编辑态。</summary>
+    /// <summary>右键「重命名」:把该便签置为标题编辑态。</summary>
     private void NoteRename_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not FrameworkElement fe) return;
-        var note = fe.DataContext as Note;   // 铅笔按钮 / 菜单项 DataContext 均为该便签
+        var note = fe.DataContext as Note;   // 菜单项 DataContext 为该便签
         if (note == null && fe is MenuItem mi
             && (mi.Parent as ContextMenu)?.PlacementTarget is FrameworkElement pt)
             note = pt.DataContext as Note;
         if (note != null) Vm?.NotesVm?.RenameNote(note);
+    }
+
+    /// <summary>双击便签行:进入标题内联编辑(单击仍走选中→打开便签)。</summary>
+    private void NoteItem_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement fe && fe.DataContext is Note note)
+        {
+            Vm?.NotesVm?.RenameNote(note);
+            e.Handled = true;
+        }
     }
 
     private void NoteTitleEdit_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)

@@ -237,6 +237,10 @@ public partial class NotesViewModel : ObservableObject
         CommitSave();
     }
 
+    /// <summary>打开收集箱视图(折叠侧栏时点击收集箱色块):选中一篇便签→主区切到便签视图.</summary>
+    [RelayCommand]
+    private void OpenInbox() => EnsureNoteSelected();
+
     /// <summary>拖动重排分组顺序(NotesDropHandler 调用).</summary>
     public void MoveNoteGroup(NoteGroup? group, int insertIndex)
     {
