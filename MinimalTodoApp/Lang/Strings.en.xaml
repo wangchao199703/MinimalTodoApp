@@ -30,6 +30,7 @@
     <sys:String x:Key="S.AllTasks">All Tasks</sys:String>
     <sys:String x:Key="S.Group.AllUncompleted">All To-dos</sys:String>
     <sys:String x:Key="S.Group.Completed">Done</sys:String>
+    <sys:String x:Key="S.Group.Quadrant">Matrix</sys:String>
     <sys:String x:Key="S.NewGroup">New Group</sys:String>
     <sys:String x:Key="S.Help">Help</sys:String>
     <sys:String x:Key="S.ImportExport">Import / Export</sys:String>
@@ -176,6 +177,7 @@
     <sys:String x:Key="S.IconCat.Symbol">Symbols</sys:String>
     <sys:String x:Key="S.IconCat.Custom">Custom</sys:String>
     <sys:String x:Key="S.Group.Clear">Clear group</sys:String>
+    <sys:String x:Key="S.Group.ClearCompleted">Clear completed</sys:String>
     <sys:String x:Key="S.Group.Delete">Delete group</sys:String>
     <sys:String x:Key="S.GroupColor.Blue">Blue</sys:String>
     <sys:String x:Key="S.GroupColor.Green">Green</sys:String>
@@ -552,5 +554,19 @@
     <!-- ============ To-do priority block (v1.2.0 patch 5) ============ -->
     <sys:String x:Key="S.Settings.PriorityBlock">Priority color block before to-do</sys:String>
     <sys:String x:Key="S.Settings.PriorityBlockDesc">When on, the checkbox ring shows no priority color; a red/yellow/green block in front of each task indicates priority instead.</sys:String>
+
+    <!-- ============ Eisenhower matrix (v1.2.1) ============ -->
+    <sys:String x:Key="S.Quadrant.Q1Title">Do First</sys:String>
+    <sys:String x:Key="S.Quadrant.Q1Desc">Important &amp; Urgent</sys:String>
+    <sys:String x:Key="S.Quadrant.Q2Title">Schedule</sys:String>
+    <sys:String x:Key="S.Quadrant.Q2Desc">Important &amp; Not Urgent</sys:String>
+    <sys:String x:Key="S.Quadrant.Q3Title">Delegate</sys:String>
+    <sys:String x:Key="S.Quadrant.Q3Desc">Not Important &amp; Urgent</sys:String>
+    <sys:String x:Key="S.Quadrant.Q4Title">Eliminate</sys:String>
+    <sys:String x:Key="S.Quadrant.Q4Desc">Not Important &amp; Not Urgent</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantImportant">Matrix: count "Medium" priority as important</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantImportantDesc">By default both "High" and "Medium" count as important; turn off to treat only "High" as important.</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantUrgent">Matrix: count "due within 3 days" as urgent</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantUrgentDesc">By default only "overdue or due today" is urgent; turn on to also treat "due within 3 days" as urgent.</sys:String>
 
 </ResourceDictionary>

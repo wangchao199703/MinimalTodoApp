@@ -2,8 +2,9 @@
 
 ### English
 
-A polish release on top of v1.2.0 — separate To-do / Inbox settings, smoother view transitions, a stronger Restore-defaults, and a fully rewritten sidebar selection highlight. Still a single self-contained exe, no .NET runtime needed.
+Adds a brand-new **Eisenhower Matrix (Four Quadrants)** view, on top of the v1.2.1 polish (separate To-do / Inbox settings, smoother view transitions, stronger Restore-defaults, rewritten sidebar highlight). Still a single self-contained exe, no .NET runtime needed.
 
+- **Four-Quadrant (Eisenhower Matrix) view** — a new entry right below "Done" in the sidebar. Your top-level open tasks are auto-sorted into **Do First / Schedule / Delegate / Eliminate** by **priority (important)** and **due date (urgent)**. Rules are adjustable in Settings → To-do (treat "Medium" as important; treat "due within 3 days" as urgent). Reorder within a quadrant, or drag a card across quadrants to pin it there **without changing its priority/due date**. Completing a card plays the slide-away animation; create tasks right from the matrix; right-click "Done" to **Clear completed**.
 - **To-do / Inbox settings split** — Settings is reorganized into **General / To-do / Inbox / About**. The To-do tab holds the task-area font and to-do toggles; the new **Inbox tab gives notes their own font, size and line spacing**, independent from the task area. Existing notes keep their current look (they inherit your global font until you change them).
 - **Transitions everywhere** — switching between two to-do groups, or between two notes, now plays the same scale-and-fade entrance that to-do↔notes already had.
 - **Restore defaults, expanded** — one click now restores appearance, all toggles, layout sizes and both to-do & note typography to defaults. Your language and your notes / groups / tasks are never touched.
@@ -14,8 +15,9 @@ Download `MinimalTodoApp-v1.2.1-win-x64.exe` and just double-click — no .NET r
 
 ### 简体中文
 
-在 v1.2.0 基础上的打磨版：拆分「待办 / 收集箱」设置、补全切换动画、增强「恢复默认」、并彻底重写侧栏选中色块。仍是自包含单文件 exe，无需安装 .NET 运行时。
+新增**四象限（艾森豪威尔矩阵）**视图，并包含 v1.2.1 的打磨内容（拆分「待办 / 收集箱」设置、补全切换动画、增强「恢复默认」、重写侧栏选中色块）。仍是自包含单文件 exe，无需安装 .NET 运行时。
 
+- **四象限（艾森豪威尔矩阵）视图** —— 侧栏「已完成」正下方新增入口；按**优先级（重要）+ 截止日期（紧急）**把顶层未完成待办自动分到 **立即处理 / 计划安排 / 委派他人 / 考虑删除** 四格。判定规则可在设置→待办里调整（重要是否含「中」、紧急是否含「3 天内」）。同象限内拖动重排；跨象限拖动让卡片停在目标象限且**不改变优先级/截止日期**。勾选完成有卡片消失动画；可在矩阵内直接新建待办；右键「已完成」可**清空已完成**。
 - **拆分「待办 / 收集箱」设置** —— 设置重排为**通用 / 待办 / 收集箱 / 关于**。「待办」页放任务区字体与待办开关；新增的**「收集箱」页让便签拥有独立的字体、字号、行距**，与任务区互不影响。存量便签外观不变（在你修改前继续沿用全局字体）。
 - **切换动画补全** —— 待办与待办之间、便签与便签之间切换，现在和「待办↔便签」一样有「缩放 + 淡入」进场动画。
 - **恢复默认增强** —— 一键恢复现在会把外观、全部开关、布局尺寸、待办与便签排版一并还原为默认；语言与你的便签 / 分组 / 任务数据绝不改动。

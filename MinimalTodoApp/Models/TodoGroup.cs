@@ -25,6 +25,7 @@ public partial class TodoGroup : ObservableObject
     public string DisplayName =>
         IsAllUncompletedGroup ? Loc.T("S.Group.AllUncompleted")
         : IsCompletedGroup ? Loc.T("S.Group.Completed")
+        : IsQuadrantGroup ? Loc.T("S.Group.Quadrant")
         : Name;
 
     /// <summary>语言切换时由 ViewModel 调用,刷新内置分组的本地化显示名.</summary>
@@ -62,13 +63,18 @@ public partial class TodoGroup : ObservableObject
     [NotifyPropertyChangedFor(nameof(IndentMargin))]
     private bool isAllUncompletedGroup;
 
+    /// <summary>是否为内置“四象限”视图分组:按重要/紧急把所有未完成任务装入四格的派生视图，不存任务/不可删除/不可作为新任务目标.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IndentMargin))]
+    private bool isQuadrantGroup;
+
     /// <summary>
     /// 侧栏层级缩进:普通分组(工作/学习/生活 及自建分组)作为“所有待办”的子级右移一级；
-    /// 内置视图分组“所有待办/已完成”为顶层不缩进.不参与序列化.
+    /// 内置视图分组“所有待办/已完成/四象限”为顶层不缩进.不参与序列化.
     /// </summary>
     [JsonIgnore]
     public Thickness IndentMargin =>
-        (IsAllUncompletedGroup || IsCompletedGroup) ? new Thickness(0) : new Thickness(16, 0, 0, 0);
+        (IsAllUncompletedGroup || IsCompletedGroup || IsQuadrantGroup) ? new Thickness(0) : new Thickness(16, 0, 0, 0);
 
     /// <summary>该分组下的任务数量.运行时计算，不参与序列化.</summary>
     [ObservableProperty]

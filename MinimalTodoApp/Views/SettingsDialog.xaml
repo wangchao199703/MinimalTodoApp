@@ -255,6 +255,38 @@
                                       Checked="PriorityBlock_Changed" Unchecked="PriorityBlock_Changed" />
                         </Grid>
 
+                        <!-- 四象限·重要判定(是否把「中」优先级也算作重要) -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.QuadrantImportant}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.QuadrantImportantDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <CheckBox x:Name="QuadrantImportantCheck" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                      Checked="QuadrantImportant_Changed" Unchecked="QuadrantImportant_Changed" />
+                        </Grid>
+
+                        <!-- 四象限·紧急判定(是否把「3 天内到期」也算作紧急) -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.QuadrantUrgent}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.QuadrantUrgentDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <CheckBox x:Name="QuadrantUrgentCheck" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                      Checked="QuadrantUrgent_Changed" Unchecked="QuadrantUrgent_Changed" />
+                        </Grid>
+
                     </StackPanel>
                 </ScrollViewer>
 

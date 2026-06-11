@@ -132,4 +132,15 @@ public class AppData
     /// (红/黄/绿 三色，类似分组色块)来区分优先级.默认关闭(沿用彩色圆环).
     /// </summary>
     public bool ShowPriorityBlock { get; set; }
+
+    /// <summary>
+    /// 四象限「重要」判定是否仅含「高」优先级:true=仅高为重要;false(默认)=高+中均为重要.
+    /// </summary>
+    public bool QuadrantImportantHighOnly { get; set; }
+
+    /// <summary>
+    /// 四象限「紧急」判定是否纳入「3 天内到期(临近)」:true=逾期/今天/3天内都算紧急;
+    /// false(默认)=仅逾期或今天到期算紧急.
+    /// </summary>
+    public bool QuadrantUrgentIncludeSoon { get; set; }
 }

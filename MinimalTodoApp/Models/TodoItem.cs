@@ -87,6 +87,14 @@ public partial class TodoItem : ObservableObject
     [ObservableProperty]
     private bool isPinned;
 
+    /// <summary>
+    /// 四象限手动归属覆盖(1=立即处理,2=计划安排,3=委派他人,4=可删除;null=按优先级/截止自动派生).
+    /// 用户在四象限里跨格拖动任务时设置,使卡片停在目标象限而不修改其优先级/截止日期;
+    /// 之后手动改优先级或截止日期会清空该覆盖,回归自动归类.参与序列化(向后兼容默认 null).
+    /// </summary>
+    [ObservableProperty]
+    private int? quadrantOverride;
+
     /// <summary>是否有子待办(由 ViewModel 维护,用于显示折叠箭头).不参与序列化.</summary>
     [ObservableProperty]
     [property: JsonIgnore]

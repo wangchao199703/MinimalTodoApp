@@ -346,12 +346,22 @@ public partial class MainWindow : Window
         bool willLeaveView = Vm.SelectedGroup != null && !Vm.SelectedGroup.IsCompletedGroup;
 
         var containers = new System.Collections.Generic.List<ListBoxItem>();
-        if (willLeaveView && TaskList != null)
+        if (willLeaveView)
         {
+            // 四象限视图:卡片在四个象限列表里;常规视图:在任务列表里
+            var lists = Vm.IsQuadrantSelected
+                ? new[] { QuadList1, QuadList2, QuadList3, QuadList4 }
+                : new[] { TaskList };
             foreach (var f in family)
             {
-                if (TaskList.ItemContainerGenerator.ContainerFromItem(f) is ListBoxItem c)
-                    containers.Add(c);
+                foreach (var lb in lists)
+                {
+                    if (lb?.ItemContainerGenerator.ContainerFromItem(f) is ListBoxItem c)
+                    {
+                        containers.Add(c);
+                        break;
+                    }
+                }
             }
         }
 
@@ -900,6 +910,12 @@ public partial class MainWindow : Window
         if (Vm?.CompletedGroup is { } completed) SelectGroup(completed);
     }
 
+    /// <summary>点击「四象限」独立行:切到四象限视图。</summary>
+    private void Quadrant_Click(object sender, RoutedEventArgs e)
+    {
+        if (Vm?.QuadrantGroup is { } quadrant) SelectGroup(quadrant);
+    }
+
     /// <summary>选中分组并退出便签视图。显式清便签:即使点的是当前已选分组(SelectedGroup 不变,
     /// OnSelectedGroupChanged 不触发),也要能从便签切回任务列表。</summary>
     private void SelectGroup(TodoGroup g)
@@ -908,8 +924,8 @@ public partial class MainWindow : Window
         if (Vm.NotesVm?.SelectedNote != null) Vm.NotesVm.SelectedNote = null;  // → IsNotesViewOpen=false
         Vm.SelectedGroup = g;
         // OneWay 绑定在 SelectedGroup 未变时不会自动同步高亮;打开便签曾把高亮清成 null,这里补回.
-        // 已完成不在本列表(置 null,由其独立行高亮).
-        GroupList.SelectedItem = g.IsCompletedGroup ? null : g;
+        // 已完成/四象限不在本列表(置 null,由其各自独立行高亮).
+        GroupList.SelectedItem = (g.IsCompletedGroup || g.IsQuadrantGroup) ? null : g;
     }
 
     /// <summary>收集箱便签右键「删除」:确认后删除该便签。</summary>

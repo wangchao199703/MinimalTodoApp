@@ -467,6 +467,10 @@
                                     ToolTip="{Binding CompletedGroup.DisplayName}">
                                 <Button.ContextMenu>
                                     <ContextMenu>
+                                        <MenuItem Header="{DynamicResource S.Group.ClearCompleted}"
+                                                  Command="{Binding PlacementTarget.DataContext.ClearGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                                  CommandParameter="{Binding PlacementTarget.DataContext.CompletedGroup, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
+                                        <Separator />
                                         <MenuItem Header="{DynamicResource S.Group.New}"
                                                   Command="{Binding PlacementTarget.DataContext.AddGroupCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" />
                                     </ContextMenu>
@@ -534,6 +538,77 @@
                                     </Grid>
                                     <!-- 折叠态(窄条):仅图标居中,与分组图标对齐不裁切 -->
                                     <TextBlock Text="{Binding CompletedGroup.Icon}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryText}"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                            </Button>
+
+                            <!-- 四象限:顶层独立成行(与「已完成」同级,不缩进);点击切到四象限视图,色块绑 QuadrantGroup.IsHighlighted -->
+                            <Button x:Name="QuadrantRow" Margin="0,2,0,0" Height="32"
+                                    HorizontalContentAlignment="Stretch" Click="Quadrant_Click"
+                                    ToolTip="{Binding QuadrantGroup.DisplayName}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Focusable" Value="False" />
+                                        <Setter Property="Padding" Value="10,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid>
+                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                                            <ContentPresenter VerticalAlignment="Center"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </Border>
+                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                                                Background="{DynamicResource Accent}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding QuadrantGroup.IsHighlighted}" Value="True">
+                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="Padding" Value="6,0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Grid>
+                                    <!-- 展开态:箭头占位列 + 图标 + 名称 + 计数(与「已完成」对齐) -->
+                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="14" />
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="{Binding QuadrantGroup.Icon}"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantGroup.DisplayName}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding QuadrantGroup.ItemCount}" Margin="4,0"
+                                                   VerticalAlignment="Center" FontSize="11"
+                                                   Foreground="{DynamicResource MutedText}" />
+                                    </Grid>
+                                    <!-- 折叠态(窄条):仅图标居中 -->
+                                    <TextBlock Text="{Binding QuadrantGroup.Icon}"
                                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                                Foreground="{DynamicResource PrimaryText}"
@@ -948,7 +1023,8 @@
                                        TextTrimming="CharacterEllipsis"
                                        Foreground="{DynamicResource PrimaryText}" />
 
-                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                                        Visibility="{Binding IsQuadrantSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
                             <Grid VerticalAlignment="Center">
                                 <ToggleButton x:Name="SortToggle" Style="{StaticResource CaptionToggleButton}"
                                               ToolTip="{Binding SortTooltip}">
@@ -988,6 +1064,7 @@
 
                         <!-- 任务列表（支持拖拽排序 + 右键菜单 + Tab/Shift+Tab 调整缩进） -->
                         <ListBox x:Name="TaskList" Grid.Row="1" Style="{StaticResource FlatListBox}"
+                                 Visibility="{Binding IsQuadrantSelected, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"
                                  ItemContainerStyle="{StaticResource TaskItemStyle}"
                                  ItemsSource="{Binding Items}"
                                  PreviewKeyDown="TaskList_PreviewKeyDown"
@@ -1158,6 +1235,198 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
+
+                        <!-- ==================== 四象限面板(2×2)：按重要/紧急装桶；仅四象限视图可见 ==================== -->
+                        <!-- 同一象限内可拖动重排(不改优先级/截止日期)，跨象限无落点。 -->
+                        <Grid x:Name="QuadrantArea" Grid.Row="1"
+                              Visibility="{Binding IsQuadrantSelected, Converter={StaticResource BoolToVis}}">
+                            <Grid.Resources>
+                                <!-- 象限卡片:勾选框 + 标题 + 倒计时;勾选直接走既有完成流程 -->
+                                <DataTemplate x:Key="QuadrantCardTemplate">
+                                    <Border Background="{DynamicResource CardBg}" CornerRadius="6" Margin="0,0,0,4"
+                                            BorderBrush="{DynamicResource Divider}" BorderThickness="1" Padding="8,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Grid.Column="0" VerticalAlignment="Top" Margin="0,1,8,0"
+                                                      IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="13"
+                                                           Foreground="{DynamicResource PrimaryText}" />
+                                                <TextBlock Text="{Binding DueCountdownText}" FontSize="11" Margin="0,2,0,0"
+                                                           Foreground="{DynamicResource MutedText}"
+                                                           Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                                <!-- 象限内 ListBox:透明无边框、卡片自绘选中、禁横向滚动 -->
+                                <Style x:Key="QuadrantListBox" TargetType="ListBox" BasedOn="{StaticResource FlatListBox}">
+                                    <Setter Property="ItemTemplate" Value="{StaticResource QuadrantCardTemplate}" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Padding" Value="0" />
+                                    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+                                    <Setter Property="ItemContainerStyle">
+                                        <Setter.Value>
+                                            <Style TargetType="ListBoxItem">
+                                                <Setter Property="Padding" Value="0" />
+                                                <Setter Property="Margin" Value="0" />
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="ListBoxItem">
+                                                            <ContentPresenter />
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Grid.Resources>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Q1 立即处理(重要&紧急) 红 -->
+                            <Border Grid.Row="0" Grid.Column="0" Margin="0,0,4,4"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1AEF4444">
+                                            <TextBlock Text="&#xE7BA;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#EF4444"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q1Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q1Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ1.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#EF4444" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList1" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ1}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Q2 计划安排(重要&不紧急) 蓝 -->
+                            <Border Grid.Row="0" Grid.Column="1" Margin="4,0,0,4"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1A3B82F6">
+                                            <TextBlock Text="&#xE787;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#3B82F6"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q2Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q2Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ2.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#3B82F6" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList2" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ2}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Q3 委派他人(不重要&紧急) 琥珀 -->
+                            <Border Grid.Row="1" Grid.Column="0" Margin="0,4,4,0"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1AF59E0B">
+                                            <TextBlock Text="&#xE716;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#F59E0B"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q3Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q3Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ3.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#F59E0B" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList3" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ3}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+
+                            <!-- Q4 可删除(不重要&不紧急) 灰 -->
+                            <Border Grid.Row="1" Grid.Column="1" Margin="4,4,0,0"
+                                    Background="{DynamicResource CardBg}" CornerRadius="10"
+                                    BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                <DockPanel Margin="10,8,10,10">
+                                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Grid.Column="0" Width="26" Height="26" CornerRadius="6" Background="#1A9CA3AF">
+                                            <TextBlock Text="&#xE74D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                       FontSize="14" Foreground="#9CA3AF"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q4Title}" FontSize="13" FontWeight="SemiBold"
+                                                       Foreground="{DynamicResource PrimaryText}" />
+                                            <TextBlock Text="{DynamicResource S.Quadrant.Q4Desc}" FontSize="11"
+                                                       Foreground="{DynamicResource MutedText}" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="2" Text="{Binding QuadrantQ4.Count}" VerticalAlignment="Center"
+                                                   FontSize="13" Foreground="#9CA3AF" FontWeight="SemiBold" />
+                                    </Grid>
+                                    <ListBox x:Name="QuadList4" Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding QuadrantQ4}"
+                                             dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
+                                             dd:DragDrop.DropHandler="{Binding QuadDropHandler}"
+                                             dd:DragDrop.UseDefaultDragAdorner="True"
+                                             dd:DragDrop.DefaultDragAdornerOpacity="0.85" />
+                                </DockPanel>
+                            </Border>
+                        </Grid>
 
                         <!-- 输入任务文本后弹出：优先级（3 个色块）+ 截止时间按钮 + 周期提醒按钮 + 父待办 -->
                         <Border Grid.Row="2" Margin="0,10,0,0" Padding="10,8"
@@ -1475,7 +1744,7 @@
                                       Background="Transparent" ResizeBehavior="PreviousAndNext"
                                       ResizeDirection="Rows" Cursor="SizeNS" Margin="0,4,0,0" />
 
-                        <!-- 添加任务输入栏（底部，可拖动调整高度，持久化） -->
+                        <!-- 添加任务输入栏（底部，可拖动调整高度，持久化）;四象限视图也可新增(落为未分组待办) -->
                         <Border Grid.Row="4" Margin="0,2,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>

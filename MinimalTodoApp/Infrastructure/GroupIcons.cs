@@ -21,6 +21,8 @@ public static class GroupIcons
     public static readonly string Folder = G(0xE8B7);
     public static readonly string AllTodos = G(0xE8FD);
     public static readonly string Completed = G(0xE930);
+    /// <summary>四象限视图图标(四宫格 ViewAll 字形)。</summary>
+    public static readonly string Quadrant = G(0xE8A9);
 
     private static IReadOnlyList<string> Glyphs(params int[] codes) => codes.Select(G).ToArray();
 

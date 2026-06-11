@@ -83,6 +83,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     public MainViewModel()
     {
         FavDropHandler = new FavoritesDropHandler(this);
+        QuadDropHandler = new QuadrantDropHandler(this);
 
         _data = _dataService.Load();
         SeedDefaultsIfEmpty();
@@ -128,6 +129,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         autoUpdateEnabled = _data.AutoUpdateEnabled;
         showHolidays = _data.ShowHolidays;
         showPriorityBlock = _data.ShowPriorityBlock;
+        quadrantImportantHighOnly = _data.QuadrantImportantHighOnly;
+        quadrantUrgentIncludeSoon = _data.QuadrantUrgentIncludeSoon;
         dockEdge = _data.DockEdge;
 
         // 从缓存恢复节假日(近十年)，避免启动即联网;每天最多一次的联网刷新由 EnsureHolidaysAsync 异步完成
@@ -140,7 +143,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         // 侧栏分组区数据源:排除「已完成」(它在「新建分组」按钮之下单独成行).
         // 已完成恒为 Groups 末位,过滤后剩余项索引与 Groups 一一对齐,故拖拽重排逻辑无需改动.
         var sidebarView = new CollectionViewSource { Source = Groups };
-        sidebarView.Filter += (_, e) => e.Accepted = e.Item is TodoGroup tg && !tg.IsCompletedGroup;
+        sidebarView.Filter += (_, e) => e.Accepted = e.Item is TodoGroup tg && !tg.IsCompletedGroup && !tg.IsQuadrantGroup;
         SidebarGroups = sidebarView.View;
         _allItems = _data.Items.ToList();
         foreach (var item in _allItems)
@@ -151,6 +154,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _suppressSave = true;
         EnsureAllUncompletedGroup();
         EnsureCompletedGroup();
+        EnsureQuadrantGroup();
         AssignDefaultGroupIcons();   // 旧数据(无图标)按类型/名称补默认图标
         InitDefaultGroupIconsOnce(); // 首次启动:强制标准分组用默认图标(修正旧的随手选)
         MigrateCompletedItems();
@@ -208,6 +212,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
                 item.RefreshDueState();
                 CheckReminder(item, now);
             }
+            // 紧急判定依赖“逾期/今天/临近”,跨日或临界时需重新装桶,使卡片自动换格
+            if (IsQuadrantSelected) RefreshQuadrants();
         };
         _countdownTimer.Start();
     }
@@ -221,6 +227,18 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     /// <summary>当前界面显示(已过滤+排序)的任务集合，绑定到任务列表并支持拖拽.</summary>
     public ObservableCollection<TodoItem> Items { get; }
+
+    /// <summary>四象限·立即处理(重要&紧急).仅四象限视图使用.</summary>
+    public ObservableCollection<TodoItem> QuadrantQ1 { get; } = new();
+    /// <summary>四象限·计划安排(重要&不紧急).</summary>
+    public ObservableCollection<TodoItem> QuadrantQ2 { get; } = new();
+    /// <summary>四象限·委派他人(不重要&紧急).</summary>
+    public ObservableCollection<TodoItem> QuadrantQ3 { get; } = new();
+    /// <summary>四象限·可删除(不重要&不紧急).</summary>
+    public ObservableCollection<TodoItem> QuadrantQ4 { get; } = new();
+
+    /// <summary>四象限拖拽处理器(同象限内重排,绑定到四个象限 ListBox).</summary>
+    public QuadrantDropHandler QuadDropHandler { get; }
 
     public List<SortOption> SortOptions { get; }
 
@@ -364,6 +382,26 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
     partial void OnShowPriorityBlockChanged(bool value) => SaveData();
 
+    /// <summary>四象限「重要」是否仅含「高」优先级(false=高+中均重要).持久化;变更后重算象限.</summary>
+    [ObservableProperty]
+    private bool quadrantImportantHighOnly;
+
+    partial void OnQuadrantImportantHighOnlyChanged(bool value)
+    {
+        if (IsQuadrantSelected) RefreshQuadrants();
+        SaveData();
+    }
+
+    /// <summary>四象限「紧急」是否纳入「3 天内到期」(false=仅逾期/今天).持久化;变更后重算象限.</summary>
+    [ObservableProperty]
+    private bool quadrantUrgentIncludeSoon;
+
+    partial void OnQuadrantUrgentIncludeSoonChanged(bool value)
+    {
+        if (IsQuadrantSelected) RefreshQuadrants();
+        SaveData();
+    }
+
     /// <summary>显示节假日开关变化时:持久化 + 通知日历重渲染.</summary>
     public event Action? HolidaysVisibilityChanged;
 
@@ -479,6 +517,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>当前是否选中“已完成”分组(侧栏「已完成」独立行高亮用).</summary>
     public bool IsCompletedSelected => SelectedGroup?.IsCompletedGroup == true;
 
+    /// <summary>当前是否选中“四象限”视图(用于内容区在普通列表与 2×2 象限面板间切换).</summary>
+    public bool IsQuadrantSelected => SelectedGroup?.IsQuadrantGroup == true;
+
     /// <summary>右侧标题:当前分组名 / “全部任务”(内置分组用本地化显示名).</summary>
     public string CurrentTitle => SelectedGroup?.DisplayName ?? Loc.T("S.AllTasks");
 
@@ -510,13 +551,16 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>内置“所有待办”分组(聚合视图，不存任务).</summary>
     public TodoGroup? AllUncompletedGroup => Groups.FirstOrDefault(g => g.IsAllUncompletedGroup);
 
-    /// <summary>第一个可作为新任务归属的普通分组(排除“已完成”与“所有待办”).</summary>
-    private TodoGroup? FirstNormalGroup =>
-        Groups.FirstOrDefault(g => !g.IsCompletedGroup && !g.IsAllUncompletedGroup);
+    /// <summary>内置“四象限”视图分组(派生视图，不存任务).</summary>
+    public TodoGroup? QuadrantGroup => Groups.FirstOrDefault(g => g.IsQuadrantGroup);
 
-    /// <summary>右键「移动到分组」子菜单的候选分组(排除内置“已完成”/“所有待办”分组).</summary>
+    /// <summary>第一个可作为新任务归属的普通分组(排除“已完成”/“所有待办”/“四象限”).</summary>
+    private TodoGroup? FirstNormalGroup =>
+        Groups.FirstOrDefault(g => !g.IsCompletedGroup && !g.IsAllUncompletedGroup && !g.IsQuadrantGroup);
+
+    /// <summary>右键「移动到分组」子菜单的候选分组(排除内置“已完成”/“所有待办”/“四象限”分组).</summary>
     public IEnumerable<TodoGroup> MoveTargetGroups =>
-        Groups.Where(g => !g.IsCompletedGroup && !g.IsAllUncompletedGroup);
+        Groups.Where(g => !g.IsCompletedGroup && !g.IsAllUncompletedGroup && !g.IsQuadrantGroup);
 
     public string DataFilePath => _dataService.FilePath;
 
@@ -532,6 +576,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         OnPropertyChanged(nameof(IsAllSelected));
         OnPropertyChanged(nameof(IsCompletedSelected));
+        OnPropertyChanged(nameof(IsQuadrantSelected));
         OnPropertyChanged(nameof(CurrentTitle));
         RefreshItems();
         RefreshSidebarSelection();
@@ -709,6 +754,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         AutoUpdateEnabled = true;
         ShowHolidays = true;
         ShowPriorityBlock = false;
+        QuadrantImportantHighOnly = false;
+        QuadrantUrgentIncludeSoon = false;
         AlwaysOnTop = false;
 
         // —— 布局尺寸 ——
@@ -932,7 +979,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         //  - “所有待办”聚合视图 / 全部任务(null) → 建为“未分组”待办(归属“所有待办”组本身，只在该视图出现，不进任何普通分组);
         //  - “已完成”不能作为新建目标 → 同样落为未分组待办。
         var target = SelectedGroup;
-        if (target != null && target.IsCompletedGroup)
+        // “已完成”“四象限”均为视图分组,不能作为新建目标 → 落为“未分组”待办(归属“所有待办”)
+        if (target != null && (target.IsCompletedGroup || target.IsQuadrantGroup))
             target = null;
         if (target == null)
             target = AllUncompletedGroup;
@@ -1198,7 +1246,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             {
                 // 已完成分组聚合了多个原分组的家庭，OrderIndex 互相碰撞;若在此按位置重派生
                 // ParentId，会把子待办错误重挂到无关项。完成的家庭迁入时父子关系已正确，应冻结。
-                if (grp.IsCompletedGroup || grp.IsAllUncompletedGroup) continue;
+                if (grp.IsCompletedGroup || grp.IsAllUncompletedGroup || grp.IsQuadrantGroup) continue;
 
                 var groupItems = _allItems.Where(i => i.GroupId == grp.Id)
                                            .OrderBy(i => i.OrderIndex)
@@ -1620,6 +1668,15 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             Icon = GroupIcons.Completed,
             IsCompletedGroup = true
         });
+
+        _data.Groups.Add(new TodoGroup
+        {
+            Name = "四象限",
+            OrderIndex = defaults.Length + 2,
+            Color = "#7C72F6",
+            Icon = GroupIcons.Quadrant,
+            IsQuadrantGroup = true
+        });
     }
 
     /// <summary>确保始终存在唯一的“所有待办”分组(旧数据升级时补建)，并置于最前.</summary>
@@ -1655,6 +1712,23 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         };
         Groups.Add(g);
         // 注意:构造期间不在此保存，避免覆盖尚未恢复的选中分组；由构造末尾统一保存.
+    }
+
+    /// <summary>确保始终存在唯一的“四象限”视图分组(旧数据升级时补建)，并置于“已完成”之后(末尾).</summary>
+    private void EnsureQuadrantGroup()
+    {
+        if (Groups.Any(g => g.IsQuadrantGroup)) return;
+
+        var g = new TodoGroup
+        {
+            Name = "四象限",
+            OrderIndex = Groups.Count,
+            Color = "#7C72F6",
+            Icon = GroupIcons.Quadrant,
+            IsQuadrantGroup = true
+        };
+        Groups.Add(g);
+        // 构造期间不在此保存(同 EnsureCompletedGroup),由构造末尾统一保存.
     }
 
     /// <summary>旧数据迁移:把优先级为 None 的任务统一升级为 Medium(不再保留“无优先级”选项).</summary>
@@ -1860,6 +1934,113 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         Items.Clear();
         foreach (var item in ordered)
             Items.Add(item);
+
+        // 四象限视图:同步重算四格(完成/取消完成/迁移后都会经此刷新,卡片自动进出象限)
+        if (IsQuadrantSelected) RefreshQuadrants();
+    }
+
+    /// <summary>四象限「重要」判定:默认高+中为重要;设置为「仅高」时只有高优先级算重要.</summary>
+    private bool IsImportant(TodoItem item) =>
+        QuadrantImportantHighOnly ? item.Priority == Priority.High : item.Priority >= Priority.Medium;
+
+    /// <summary>四象限「紧急」判定:已逾期或今天到期为紧急;设置开启「含3天内」时临近(Soon)也算.无截止=不紧急.</summary>
+    private bool IsUrgent(TodoItem item)
+    {
+        var s = item.DueState;
+        if (s == DueState.Overdue || s == DueState.Today) return true;
+        return QuadrantUrgentIncludeSoon && s == DueState.Soon;
+    }
+
+    /// <summary>
+    /// 重新把所有未完成任务按(重要/紧急)装入四格.每格内按 OrderIndex 排序,
+    /// 拖拽重排通过在格内置换 OrderIndex 持久化.四象限平铺所有未完成项(含子待办,各自独立判定).
+    /// </summary>
+    private void RefreshQuadrants()
+    {
+        QuadrantQ1.Clear();
+        QuadrantQ2.Clear();
+        QuadrantQ3.Clear();
+        QuadrantQ4.Clear();
+
+        // 仅顶层(父/根)待办进入四象限:子待办不单独装桶(归在其父任务名下)
+        var pending = _allItems.Where(i => !i.IsCompleted && i.ParentId == null)
+                               .OrderBy(i => i.OrderIndex)
+                               .ToList();
+        foreach (var item in pending)
+            QuadrantCollectionFor(QuadrantIndexFor(item)).Add(item);
+    }
+
+    /// <summary>计算某任务应归入的象限序号(1..4):有手动覆盖用覆盖,否则按重要/紧急派生.</summary>
+    private int QuadrantIndexFor(TodoItem item)
+    {
+        if (item.QuadrantOverride is >= 1 and <= 4) return item.QuadrantOverride.Value;
+        bool important = IsImportant(item);
+        bool urgent = IsUrgent(item);
+        return important ? (urgent ? 1 : 2) : (urgent ? 3 : 4);
+    }
+
+    /// <summary>象限序号(1..4) → 对应集合.</summary>
+    private ObservableCollection<TodoItem> QuadrantCollectionFor(int index) => index switch
+    {
+        1 => QuadrantQ1,
+        2 => QuadrantQ2,
+        3 => QuadrantQ3,
+        _ => QuadrantQ4,
+    };
+
+    /// <summary>某象限集合 → 序号(1..4);非象限集合返回 0.</summary>
+    private int QuadrantIndexOf(ObservableCollection<TodoItem> col)
+    {
+        if (ReferenceEquals(col, QuadrantQ1)) return 1;
+        if (ReferenceEquals(col, QuadrantQ2)) return 2;
+        if (ReferenceEquals(col, QuadrantQ3)) return 3;
+        if (ReferenceEquals(col, QuadrantQ4)) return 4;
+        return 0;
+    }
+
+    /// <summary>
+    /// 四象限落点统一入口:同格内→重排;跨格→给任务设置手动象限覆盖(不改优先级/截止日期)后重算装桶.
+    /// </summary>
+    public void DropToQuadrant(TodoItem item, ObservableCollection<TodoItem> target, int insertIndex)
+    {
+        int targetIndex = QuadrantIndexOf(target);
+        if (targetIndex == 0) return;
+
+        // 同格:仅重排顺序
+        if (target.Contains(item))
+        {
+            ReorderQuadrant(target, item, insertIndex);
+            return;
+        }
+
+        // 跨格:写入手动覆盖(若与自动派生结果相同则清空覆盖,保持"自动"语义),重算装桶
+        bool important = IsImportant(item);
+        bool urgent = IsUrgent(item);
+        int derived = important ? (urgent ? 1 : 2) : (urgent ? 3 : 4);
+        item.QuadrantOverride = targetIndex == derived ? (int?)null : targetIndex;
+        RefreshQuadrants();
+        SaveData();
+    }
+
+    /// <summary>
+    /// 四象限同格内重排:把 item 移到 insertIndex,并仅在该格成员之间置换它们各自的 OrderIndex
+    /// 来持久化新顺序(不改优先级/截止日期,也不扰动其它任务的全局顺序).
+    /// </summary>
+    public void ReorderQuadrant(ObservableCollection<TodoItem> col, TodoItem item, int insertIndex)
+    {
+        int oldIndex = col.IndexOf(item);
+        if (oldIndex < 0) return;
+        if (insertIndex > oldIndex) insertIndex--;          // 移除原项后目标索引前移(gong 落点语义)
+        if (insertIndex < 0) insertIndex = 0;
+        if (insertIndex >= col.Count) insertIndex = col.Count - 1;
+        if (insertIndex == oldIndex) return;
+
+        col.Move(oldIndex, insertIndex);
+
+        // 持久化:取该格现有的 OrderIndex 值集合,按新可视顺序回填(仅子集内置换,不影响其它任务)
+        var slots = col.Select(i => i.OrderIndex).OrderBy(x => x).ToList();
+        for (int i = 0; i < col.Count; i++) col[i].OrderIndex = slots[i];
+        SaveData();
     }
 
     /// <summary>
@@ -1954,6 +2135,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         {
             if (g.IsAllUncompletedGroup)
                 g.ItemCount = _allItems.Count(i => !i.IsCompleted);             // 所有待办:全部未完成
+            else if (g.IsQuadrantGroup)
+                g.ItemCount = _allItems.Count(i => !i.IsCompleted && i.ParentId == null);   // 四象限:仅顶层未完成
             else if (g.IsCompletedGroup)
                 g.ItemCount = _allItems.Count(i => i.GroupId == g.Id);          // 已完成:统计全部
             else
@@ -1973,6 +2156,15 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             or nameof(TodoItem.HasChildren)
             or nameof(TodoItem.IsEditing))
             return;
+
+        // 手动改优先级/截止日期:清空四象限手动覆盖,回归自动归类;并刷新象限视图
+        if (e.PropertyName is nameof(TodoItem.Priority) or nameof(TodoItem.DueDate))
+        {
+            if (sender is TodoItem ti && ti.QuadrantOverride.HasValue) ti.QuadrantOverride = null;
+            if (IsQuadrantSelected) RefreshQuadrants();
+            SaveData();
+            return;
+        }
 
         if (e.PropertyName == nameof(TodoItem.IsCompleted))
         {
@@ -2165,6 +2357,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         _data.ReminderSoundEnabled = ReminderSoundEnabled;
         _data.ShowHolidays = ShowHolidays;
         _data.ShowPriorityBlock = ShowPriorityBlock;
+        _data.QuadrantImportantHighOnly = QuadrantImportantHighOnly;
+        _data.QuadrantUrgentIncludeSoon = QuadrantUrgentIncludeSoon;
         _data.DockEdge = DockEdge;
         _data.NotesViewOpen = IsNotesViewOpen;
         NotesVm?.WriteTo(_data);   // 回写便签集合与选中便签 Id

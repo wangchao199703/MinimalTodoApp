@@ -30,6 +30,9 @@ public partial class SettingsDialog : Window
             AutoUpdateCheck.IsChecked = _vm.AutoUpdateEnabled;
             HolidaysCheck.IsChecked = _vm.ShowHolidays;
             PriorityBlockCheck.IsChecked = _vm.ShowPriorityBlock;
+            // 勾选框语义=「含中优先级」,与 VM 的 HighOnly 取反
+            QuadrantImportantCheck.IsChecked = !_vm.QuadrantImportantHighOnly;
+            QuadrantUrgentCheck.IsChecked = _vm.QuadrantUrgentIncludeSoon;
         }
         _initializing = false;
 
@@ -102,6 +105,8 @@ public partial class SettingsDialog : Window
         AutoUpdateCheck.IsChecked = _vm.AutoUpdateEnabled;
         HolidaysCheck.IsChecked = _vm.ShowHolidays;
         PriorityBlockCheck.IsChecked = _vm.ShowPriorityBlock;
+        QuadrantImportantCheck.IsChecked = !_vm.QuadrantImportantHighOnly;
+        QuadrantUrgentCheck.IsChecked = _vm.QuadrantUrgentIncludeSoon;
         _initializing = false;
 
         StatusText.Text = Loc.T("S.Settings.RestoreDone");
@@ -141,6 +146,19 @@ public partial class SettingsDialog : Window
     {
         if (_initializing || _vm == null) return;
         _vm.ShowPriorityBlock = PriorityBlockCheck.IsChecked == true;   // 触发持久化 + 任务列表即时重绘
+    }
+
+    private void QuadrantImportant_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _vm == null) return;
+        // 勾选=「高+中均重要」=> HighOnly 取反;触发持久化 + 四象限重算
+        _vm.QuadrantImportantHighOnly = QuadrantImportantCheck.IsChecked != true;
+    }
+
+    private void QuadrantUrgent_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || _vm == null) return;
+        _vm.QuadrantUrgentIncludeSoon = QuadrantUrgentCheck.IsChecked == true;   // 触发持久化 + 四象限重算
     }
 
     /// <summary>手动检查更新:无视“此版本不再提示”，有新版即弹更新对话框，否则提示已是最新.</summary>

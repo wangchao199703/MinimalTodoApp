@@ -30,6 +30,7 @@
     <sys:String x:Key="S.AllTasks">全部任务</sys:String>
     <sys:String x:Key="S.Group.AllUncompleted">所有待办</sys:String>
     <sys:String x:Key="S.Group.Completed">已完成</sys:String>
+    <sys:String x:Key="S.Group.Quadrant">四象限</sys:String>
     <sys:String x:Key="S.NewGroup">新建分组</sys:String>
     <sys:String x:Key="S.Help">使用说明</sys:String>
     <sys:String x:Key="S.ImportExport">导入导出</sys:String>
@@ -176,6 +177,7 @@
     <sys:String x:Key="S.IconCat.Symbol">符号</sys:String>
     <sys:String x:Key="S.IconCat.Custom">自定义</sys:String>
     <sys:String x:Key="S.Group.Clear">清空分组</sys:String>
+    <sys:String x:Key="S.Group.ClearCompleted">清空已完成</sys:String>
     <sys:String x:Key="S.Group.Delete">删除分组</sys:String>
     <sys:String x:Key="S.GroupColor.Blue">蓝</sys:String>
     <sys:String x:Key="S.GroupColor.Green">绿</sys:String>
@@ -552,5 +554,19 @@
     <!-- ============ 待办优先级色块(v1.2.0 补5) ============ -->
     <sys:String x:Key="S.Settings.PriorityBlock">待办前置优先级色块</sys:String>
     <sys:String x:Key="S.Settings.PriorityBlockDesc">开启后勾选圈不显示优先级颜色，改在任务最前方用红/黄/绿色块区分优先级。</sys:String>
+
+    <!-- ============ 四象限(v1.2.1) ============ -->
+    <sys:String x:Key="S.Quadrant.Q1Title">立即处理</sys:String>
+    <sys:String x:Key="S.Quadrant.Q1Desc">重要 &amp; 紧急</sys:String>
+    <sys:String x:Key="S.Quadrant.Q2Title">计划安排</sys:String>
+    <sys:String x:Key="S.Quadrant.Q2Desc">重要 &amp; 不紧急</sys:String>
+    <sys:String x:Key="S.Quadrant.Q3Title">委派他人</sys:String>
+    <sys:String x:Key="S.Quadrant.Q3Desc">不重要 &amp; 紧急</sys:String>
+    <sys:String x:Key="S.Quadrant.Q4Title">考虑删除</sys:String>
+    <sys:String x:Key="S.Quadrant.Q4Desc">不重要 &amp; 不紧急</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantImportant">四象限·重要含「中」优先级</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantImportantDesc">默认「高」和「中」均视为重要；关闭后仅「高」优先级算重要。</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantUrgent">四象限·紧急含「3 天内到期」</sys:String>
+    <sys:String x:Key="S.Settings.QuadrantUrgentDesc">默认仅「已逾期或今天到期」算紧急；开启后「3 天内到期」也算紧急。</sys:String>
 
 </ResourceDictionary>
