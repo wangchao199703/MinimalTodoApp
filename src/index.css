@@ -573,6 +573,34 @@ body {
   color: var(--primary-text);
 }
 
+/* ===== 细长滚动条(对齐旧版 ScrollThumb:靠边 3px 圆角细条 + 透明轨道 +
+   无箭头按钮,默认 #55888888、悬停/拖动加深 #99888888,滑块最短 28px) ===== */
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  /* 7px 槽内留 2px 透明边 → 可见滑块 3px(旧版同款) */
+  background: rgba(136, 136, 136, 0.33);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 4px;
+  min-height: 28px;
+  min-width: 28px;
+}
+*::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:active {
+  background: rgba(136, 136, 136, 0.6);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+}
+
 /* 玻璃系:面板背板模糊(模糊对象是应用内渐变背景) */
 .glassy .bg-card,
 .glassy .bg-input {
