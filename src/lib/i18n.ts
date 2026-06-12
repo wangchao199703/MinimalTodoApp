@@ -62,6 +62,7 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ConfirmDeleteTaskTree": "确定删除该任务及其全部子任务？此操作不可撤销。",
     "S.X.ConfirmDeleteTag": "确定删除标签「{0}」？其下任务将变为无标签。",
     "S.X.ConfirmClearCompleted": "确定清空全部已完成任务？此操作不可撤销。",
+    "S.X.NoteGroupDeleteConfirm": "确定删除该分组？组内便签将移入其他分组，不会被删除。",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -120,6 +121,8 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ConfirmDeleteTaskTree": "Delete this task and all its subtasks? This cannot be undone.",
     "S.X.ConfirmDeleteTag": 'Delete tag "{0}"? Its tasks will become untagged.',
     "S.X.ConfirmClearCompleted": "Clear all completed tasks? This cannot be undone.",
+    "S.X.NoteGroupDeleteConfirm":
+      "Delete this group? Its notes move to another group and are not deleted.",
   },
 };
 

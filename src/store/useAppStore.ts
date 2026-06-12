@@ -167,7 +167,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addNote: async (groupId) => {
     const note = await ipc.createNote(groupId);
-    set((s) => ({ notes: [note, ...s.notes], selectedNoteId: note.id }));
+    // 未指定分组时后端落到默认分组(可能自动新建「收集箱」),同步分组列表
+    const noteGroups = groupId ? get().noteGroups : await ipc.getNoteGroups();
+    set((s) => ({ notes: [note, ...s.notes], noteGroups, selectedNoteId: note.id }));
   },
 
   patchNote: async (req) => {
@@ -200,11 +202,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   removeNoteGroup: async (id) => {
     await ipc.deleteNoteGroup(id);
-    set((s) => ({
-      noteGroups: s.noteGroups.filter((g) => g.id !== id),
-      // 外键已把便签移回收集箱,本地同步
-      notes: s.notes.map((n) => (n.group_id === id ? { ...n, group_id: null } : n)),
-    }));
+    // 后端把组内便签归入剩余的第一个分组(必要时自动新建「收集箱」),整体回灌
+    const [notes, noteGroups] = await Promise.all([ipc.getNotes(), ipc.getNoteGroups()]);
+    set({ notes, noteGroups });
   },
 
   setScheduleOpen: (scheduleOpen) => {

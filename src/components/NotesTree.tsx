@@ -5,7 +5,7 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { ChevronRight, FilePlus2, Folder, Inbox, Trash2, X } from "lucide-react";
+import { ChevronRight, FilePlus2, Folder, Trash2, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
@@ -14,12 +14,13 @@ import { ipc, type Note, type NoteGroup } from "../lib/tauri-ipc";
 import { confirm } from "./ui/ConfirmDialog";
 
 /**
- * 主侧栏内的便签树(收集箱/分组/便签三级):
+ * 主侧栏内的便签树(分组/便签两级):
  * 原便签视图第二侧边栏整体迁入,配色改用 sidebar token。
+ * 收集箱已实体化为普通分组(初始自带、可删可改名),树里只有真实分组。
  * 点便签 = 选中并跳到便签视图;拖拽重排/拖入分组逻辑原样保留。
  */
 
-/** 把元素注册为「拖便签进分组」的释放目标(groupId 空串 = 收集箱) */
+/** 把元素注册为「拖便签进分组」的释放目标 */
 function useNoteGroupDrop(groupId: string) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [isOver, setIsOver] = useState(false);
@@ -170,7 +171,7 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
                 if (
                   await confirm({
                     title: t("S.Note.DeleteGroup"),
-                    message: t("S.Note.GroupDeleteConfirm"),
+                    message: t("S.X.NoteGroupDeleteConfirm"),
                   })
                 )
                   void removeNoteGroup(group.id);
@@ -191,12 +192,8 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
 export default function NotesTree() {
   const notes = useAppStore((s) => s.notes);
   const noteGroups = useAppStore((s) => s.noteGroups);
-  const selectedNoteId = useAppStore((s) => s.selectedNoteId);
-  const settings = useAppStore((s) => s.settings);
-  const saveSetting = useAppStore((s) => s.saveSetting);
   const patchNote = useAppStore((s) => s.patchNote);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
-  const inboxDrop = useNoteGroupDrop("");
 
   // 便签拖拽:行间重排 / 拖到分组头移入分组(对齐旧版 NotesDropHandler)
   useEffect(() => {
@@ -211,7 +208,7 @@ export default function NotesTree() {
         if (!src) return;
 
         if (target.data.type === "note-group") {
-          const gid = target.data.groupId as string; // "" = 收集箱
+          const gid = target.data.groupId as string;
           if ((src.group_id ?? "") !== gid) void patchNote({ id: srcId, group_id: gid });
           return;
         }
@@ -246,50 +243,9 @@ export default function NotesTree() {
     list.push(n);
     byGroup.set(n.group_id, list);
   }
-  const inbox = byGroup.get(null) ?? [];
-  const inboxCollapsed = settings["inbox_collapsed"] === "1";
 
   return (
     <div ref={listRef} className="flex flex-col gap-0.5 pl-4">
-      <div>
-        {/* 收集箱:与分组头同版式,整行点击折叠,箭头悬停淡入 */}
-        <div className="group/sec relative flex items-center">
-          <div
-            ref={inboxDrop.ref}
-            onClick={() => saveSetting("inbox_collapsed", inboxCollapsed ? "0" : "1")}
-            className={`flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-              inboxDrop.isOver
-                ? "bg-sidebar-selected ring-1 ring-accent"
-                : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
-            }`}
-          >
-            <Inbox size={14} className="shrink-0" />
-            <span className="min-w-0 flex-1 truncate">{t("S.X.Inbox")}</span>
-            {inbox.length > 0 && (
-              <span className="text-xs text-sidebar-muted transition-opacity duration-150 group-hover/sec:opacity-0">
-                {inbox.length}
-              </span>
-            )}
-          </div>
-          <span className="pointer-events-none absolute right-1 flex items-center opacity-0 transition-opacity duration-150 group-hover/sec:pointer-events-auto group-hover/sec:opacity-100">
-            <button
-              title={inboxCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
-              onClick={(e) => {
-                e.stopPropagation();
-                saveSetting("inbox_collapsed", inboxCollapsed ? "0" : "1");
-              }}
-              className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-            >
-              <ChevronRight
-                size={12}
-                className={`transition-transform duration-150 ${inboxCollapsed ? "" : "rotate-90"}`}
-              />
-            </button>
-          </span>
-        </div>
-        {!inboxCollapsed &&
-          inbox.map((n) => <NoteRow key={n.id} note={n} active={selectedNoteId === n.id} />)}
-      </div>
       {noteGroups.map((g) => (
         <GroupSection key={g.id} group={g} notes={byGroup.get(g.id) ?? []} />
       ))}

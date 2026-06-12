@@ -315,6 +315,11 @@ pub fn get_notes(db: State<Db>) -> CmdResult<Vec<Note>> {
 #[tauri::command(rename_all = "snake_case")]
 pub fn create_note(db: State<Db>, group_id: Option<String>) -> CmdResult<Note> {
     let conn = db.0.lock().map_err(err)?;
+    // 便签必须归属某个分组:未指定时落到默认分组(无分组则自动建「收集箱」)
+    let gid = match group_id {
+        Some(g) if !g.is_empty() => g,
+        _ => crate::database::default_note_group_id(&conn).map_err(err)?,
+    };
     let id = uuid::Uuid::new_v4().to_string();
     let order: i64 = conn
         .query_row("SELECT COALESCE(MIN(order_index), 1) - 1 FROM notes", [], |r| r.get(0))
@@ -323,7 +328,7 @@ pub fn create_note(db: State<Db>, group_id: Option<String>) -> CmdResult<Note> {
     conn.execute(
         "INSERT INTO notes (id, group_id, order_index, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?4)",
-        params![id, group_id, order, now],
+        params![id, gid, order, now],
     )
     .map_err(err)?;
     conn.query_row("SELECT * FROM notes WHERE id = ?1", params![id], row_to_note)
@@ -346,7 +351,11 @@ pub fn update_note(db: State<Db>, req: UpdateNoteRequest) -> CmdResult<Note> {
         n.content = v;
     }
     if let Some(v) = patch(req.group_id) {
-        n.group_id = v;
+        // 空串(原「移回收集箱」语义)→ 默认分组;便签不再有无分组状态
+        n.group_id = match v {
+            Some(g) => Some(g),
+            None => Some(crate::database::default_note_group_id(&conn).map_err(err)?),
+        };
     }
     n.updated_at = now_text();
     conn.execute(
@@ -438,8 +447,10 @@ pub fn update_note_group(
 #[tauri::command]
 pub fn delete_note_group(db: State<Db>, id: String) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
-    // 便签的 group_id 外键 ON DELETE SET NULL,自动回到收集箱
+    // 外键 ON DELETE SET NULL 先置空,再由自愈逻辑把组内便签归入剩余的第一个分组
+    // (一个分组都不剩且有便签时,自动新建「收集箱」承接)
     conn.execute("DELETE FROM note_groups WHERE id = ?1", params![id]).map_err(err)?;
+    crate::database::ensure_notes_grouped(&conn, false).map_err(err)?;
     Ok(())
 }
 

@@ -18,6 +18,11 @@ pub fn run() {
         Err(e) => eprintln!("data.json 导入失败,跳过:{e}"),
     }
 
+    // 收集箱实体化:无分组的便签归入「收集箱」实体分组(幂等自愈,覆盖老库与导入数据)
+    if let Err(e) = database::ensure_notes_grouped(&conn, true) {
+        eprintln!("便签分组自愈失败:{e}");
+    }
+
     tauri::Builder::default()
         // 单实例必须最先注册:第二个实例启动时唤起已运行的主窗口
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
