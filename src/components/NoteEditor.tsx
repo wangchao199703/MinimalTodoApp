@@ -185,8 +185,8 @@ export default function NoteEditor({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      {/* 工具栏(对齐旧版便签工具栏) */}
-      <div className="flex shrink-0 items-center gap-0.5 border-b border-divider px-2 py-1">
+      {/* 工具栏(对齐旧版便签工具栏);窄窗口自动换行,避免字色/插图按钮被裁 */}
+      <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-divider px-2 py-1">
         <Btn title={t("S.Note.Heading")} active={editor.isActive("heading")} onClick={cycleHeading}>
           <Heading size={13} />
         </Btn>
