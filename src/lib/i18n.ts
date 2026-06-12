@@ -56,6 +56,8 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ViewWeek": "周",
     "S.X.ViewMonth": "月",
     "S.X.DayFmt": "{0}月{1}日",
+    "S.X.InheritGlobal": "继承全局",
+    "S.X.Inherit": "继承",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -108,6 +110,8 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ViewWeek": "Week",
     "S.X.ViewMonth": "Month",
     "S.X.DayFmt": "{0}/{1}",
+    "S.X.InheritGlobal": "Inherit global",
+    "S.X.Inherit": "Inherit",
   },
 };
 
