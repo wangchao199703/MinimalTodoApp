@@ -61,38 +61,39 @@ function useReminderLoop() {
   }, []);
 }
 
-/** Glass/Warm 主题的应用内渐变底(对齐 todo-flow App.tsx 的背景层) */
+/** 玻璃系主题的应用内渐变底:基础 135° 渐变 + 同色系径向光晕(风格同 todo-flow Glass) */
+const BACKDROPS: Record<string, { base: string; glow: string }> = {
+  glass: {
+    base: "linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)",
+    glow:
+      "radial-gradient(ellipse at 20% 50%, rgba(124,114,246,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(167,139,250,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(99,102,241,0.08) 0%, transparent 50%)",
+  },
+  "glass-ocean": {
+    base: "linear-gradient(135deg, #0f2027 0%, #15323e 30%, #1b4a5e 60%, #0f2027 100%)",
+    glow:
+      "radial-gradient(ellipse at 20% 50%, rgba(56,189,248,0.14) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(34,211,238,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(14,165,233,0.08) 0%, transparent 50%)",
+  },
+  "glass-forest": {
+    base: "linear-gradient(135deg, #0d1f15 0%, #123026 30%, #175c40 60%, #0d1f15 100%)",
+    glow:
+      "radial-gradient(ellipse at 20% 50%, rgba(52,211,153,0.13) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(16,185,129,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(5,150,105,0.08) 0%, transparent 50%)",
+  },
+  "glass-sunset": {
+    base: "linear-gradient(135deg, #2b1224 0%, #3c1a2c 30%, #5a2433 60%, #2b1224 100%)",
+    glow:
+      "radial-gradient(ellipse at 20% 50%, rgba(251,113,89,0.14) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(244,114,182,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(249,115,22,0.08) 0%, transparent 50%)",
+  },
+};
+
 function ThemeBackdrop({ theme }: { theme: string }) {
-  if (theme === "glass") {
-    return (
-      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)",
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "radial-gradient(ellipse at 20% 50%, rgba(124,114,246,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(167,139,250,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(99,102,241,0.08) 0%, transparent 50%)",
-          }}
-        />
-      </div>
-    );
-  }
-  if (theme === "warm") {
-    return (
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 -z-10"
-        style={{ background: "linear-gradient(135deg, #161514 0%, #1c1a17 40%, #22201c 100%)" }}
-      />
-    );
-  }
-  return null;
+  const bd = BACKDROPS[theme];
+  if (!bd) return null;
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+      <div className="absolute inset-0" style={{ background: bd.base }} />
+      <div className="absolute inset-0" style={{ background: bd.glow }} />
+    </div>
+  );
 }
 
 /** 视图分发中心:无路由,所有视图由 store 的 view 状态条件渲染 */

@@ -1,68 +1,47 @@
-// 主题系统(对齐 todo-flow):6 套主题,CSS class 切换,变量定义在 index.css。
-// light = :root 基线;dark/glass/warm/lumina 为根节点 class;system 跟随系统明暗。
-// glass/warm 的渐变底由 App 内 ThemeBackdrop 绘制(不透窗、不用亚克力)。
+// 主题系统:Glass 玻璃拟态家族(4 色)+ 经典浅色/深色。
+// 玻璃系共用 .glassy 面板体系(index.css),各变体只换强调色与渐变底(App 的 ThemeBackdrop)。
 
-export const VALID_THEMES = ["lumina", "light", "dark", "warm", "glass", "system"] as const;
+export const VALID_THEMES = [
+  "glass",
+  "glass-ocean",
+  "glass-forest",
+  "glass-sunset",
+  "light",
+  "dark",
+] as const;
 export type Theme = (typeof VALID_THEMES)[number];
 
 export const THEME_LABELS: Record<Theme, string> = {
-  lumina: "Lumina",
+  glass: "Glass",
+  "glass-ocean": "Ocean",
+  "glass-forest": "Forest",
+  "glass-sunset": "Sunset",
   light: "Light",
   dark: "Dark",
-  warm: "Warm",
-  glass: "Glass",
-  system: "System",
 };
 
-function systemPrefersDark(): boolean {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
+export const GLASS_THEMES: Theme[] = ["glass", "glass-ocean", "glass-forest", "glass-sunset"];
 
-/** dark class 的解析结果(glass/warm 属深色基调,对齐 todo-flow) */
-export function resolveIsDark(theme: Theme): boolean {
-  switch (theme) {
-    case "dark":
-    case "glass":
-    case "warm":
-      return true;
-    case "system":
-      return systemPrefersDark();
-    default:
-      return false;
-  }
+export function isGlassTheme(theme: Theme): boolean {
+  return GLASS_THEMES.includes(theme);
 }
-
-let mq: MediaQueryList | null = null;
-let mqHandler: ((e: MediaQueryListEvent) => void) | null = null;
 
 export function applyTheme(theme: Theme) {
   const root = document.documentElement;
-  const dark = resolveIsDark(theme);
-  root.classList.toggle("dark", dark);
-  root.classList.toggle("glass", theme === "glass");
-  root.classList.toggle("warm", theme === "warm");
-  root.classList.toggle("lumina", theme === "lumina");
-  root.style.colorScheme = dark ? "dark" : "light";
+  const glassy = isGlassTheme(theme);
+  const dark = theme !== "light";
 
-  // system:监听系统明暗变化实时跟随
-  if (mq && mqHandler) {
-    mq.removeEventListener("change", mqHandler);
-    mq = null;
-    mqHandler = null;
+  root.classList.toggle("dark", dark);
+  root.classList.toggle("glassy", glassy);
+  for (const g of GLASS_THEMES) {
+    root.classList.toggle(g, theme === g);
   }
-  if (theme === "system") {
-    mq = window.matchMedia("(prefers-color-scheme: dark)");
-    mqHandler = (e) => {
-      root.classList.toggle("dark", e.matches);
-      root.style.colorScheme = e.matches ? "dark" : "light";
-    };
-    mq.addEventListener("change", mqHandler);
-  }
+  root.style.colorScheme = dark ? "dark" : "light";
 }
 
-/** 旧版主题键迁移:同名直接用,其余(旧 102 套)按名称含 dark 与否回退明/暗 */
+/** 旧主题键迁移:light/dark 保留,其余(含旧 102 套与 lumina/warm/system)一律回到 glass */
 export function migrateThemeKey(saved: string | undefined): Theme {
-  const v = (saved ?? "light").toLowerCase();
+  const v = (saved ?? "glass").toLowerCase();
   if ((VALID_THEMES as readonly string[]).includes(v)) return v as Theme;
-  return v.includes("dark") || v.includes("graphite") || v.includes("slate") ? "dark" : "light";
+  return "glass";
 }

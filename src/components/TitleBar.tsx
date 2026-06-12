@@ -3,11 +3,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   CalendarDays,
   Check,
-  Flame,
-  Lightbulb,
+  Leaf,
   Menu,
   Minus,
-  Monitor,
   Moon,
   Palette,
   Pin,
@@ -16,6 +14,8 @@ import {
   Sparkles,
   Square,
   Sun,
+  Sunset,
+  Waves,
   X,
 } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
@@ -26,14 +26,14 @@ import { Popover, MenuItem } from "./ui/Popover";
 import SettingsDialog from "./dialogs/SettingsDialog";
 import UpdateDialog from "./dialogs/UpdateDialog";
 
-/** 六主题(对齐 todo-flow 的顺序与图标) */
+/** 玻璃系四色 + 经典浅色/深色 */
 const THEME_OPTIONS: { key: Theme; icon: typeof Sun }[] = [
-  { key: "lumina", icon: Lightbulb },
+  { key: "glass", icon: Sparkles },
+  { key: "glass-ocean", icon: Waves },
+  { key: "glass-forest", icon: Leaf },
+  { key: "glass-sunset", icon: Sunset },
   { key: "light", icon: Sun },
   { key: "dark", icon: Moon },
-  { key: "warm", icon: Flame },
-  { key: "glass", icon: Sparkles },
-  { key: "system", icon: Monitor },
 ];
 
 const win = getCurrentWindow();
