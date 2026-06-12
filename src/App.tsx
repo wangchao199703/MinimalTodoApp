@@ -96,6 +96,24 @@ const BACKDROPS: Record<string, { base: string; glow: string }> = {
   },
 };
 
+/** 平滑动画窗口宽度(rAF + easeOutCubic),配合日历滑入避免 setSize 瞬变闪屏 */
+function animateWindowWidth(
+  win: ReturnType<typeof getCurrentWindow>,
+  logicalHeight: number,
+  fromW: number,
+  toW: number,
+  duration = 160,
+) {
+  const start = performance.now();
+  const tick = (now: number) => {
+    const r = Math.min(1, (now - start) / duration);
+    const e = 1 - Math.pow(1 - r, 3);
+    void win.setSize(new LogicalSize(fromW + (toW - fromW) * e, logicalHeight));
+    if (r < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
 function ThemeBackdrop({ theme }: { theme: string }) {
   const bd = BACKDROPS[theme];
   if (!bd) return null;
@@ -150,13 +168,13 @@ export default function App() {
           setTaskWidth(Math.max(280, locked - calW)); // 最大化无法扩窗:从待办匀出日历
         } else {
           setTaskWidth(locked);
-          await win.setSize(new LogicalSize(lw + calW, lh)); // 窗口右扩出日历,待办不变
+          animateWindowWidth(win, lh, lw, lw + calW); // 窗口平滑右扩出日历,待办不变
         }
       } else {
-        // 关闭:记录日历当前宽度,缩回窗口,待办恢复弹性
+        // 关闭:记录日历当前宽度,平滑缩回窗口,待办恢复弹性
         const cw = calRef.current?.offsetWidth ?? calW;
         saveSetting("schedule_width", String(Math.round(cw)));
-        if (!maximized) await win.setSize(new LogicalSize(Math.max(360, lw - cw), lh));
+        if (!maximized) animateWindowWidth(win, lh, lw, Math.max(360, lw - cw));
       }
     })();
   }, [scheduleOpen, loaded, saveSetting]);
@@ -245,7 +263,7 @@ export default function App() {
                 onMouseDown={startTaskResize}
                 className="w-1 shrink-0 cursor-col-resize bg-divider hover:bg-accent/40"
               />
-              <aside ref={calRef} className="flex min-w-0 flex-1 flex-col bg-content">
+              <aside ref={calRef} className="cal-in flex min-w-0 flex-1 flex-col bg-content">
                 <CalendarView />
               </aside>
             </>

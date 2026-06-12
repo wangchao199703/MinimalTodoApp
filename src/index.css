@@ -608,6 +608,21 @@ body {
   opacity: 0.4;
 }
 
+/* 日历面板淡入 + 右滑入(对齐旧版 FadeSlideIn,配合窗口平滑扩展防闪屏) */
+@keyframes cal-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.cal-in {
+  animation: cal-in 0.16s ease-out;
+}
+
 /* 便签 Markdown 预览样式 */
 .md-body .md-h1 { font-size: 1.4em; font-weight: 700; margin: 0.4em 0; }
 .md-body .md-h2 { font-size: 1.25em; font-weight: 700; margin: 0.4em 0; }

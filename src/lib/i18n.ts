@@ -52,6 +52,10 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.CollapseSidebar": "折叠侧栏",
     "S.X.ExpandSidebar": "展开侧栏",
     "S.X.Calendar": "日历",
+    "S.X.ViewDay": "日",
+    "S.X.ViewWeek": "周",
+    "S.X.ViewMonth": "月",
+    "S.X.DayFmt": "{0}月{1}日",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -100,6 +104,10 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.CollapseSidebar": "Collapse sidebar",
     "S.X.ExpandSidebar": "Expand sidebar",
     "S.X.Calendar": "Calendar",
+    "S.X.ViewDay": "Day",
+    "S.X.ViewWeek": "Week",
+    "S.X.ViewMonth": "Month",
+    "S.X.DayFmt": "{0}/{1}",
   },
 };
 
