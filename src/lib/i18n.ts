@@ -51,6 +51,7 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.NoDayTasks": "这一天没有截止的任务",
     "S.X.CollapseSidebar": "折叠侧栏",
     "S.X.ExpandSidebar": "展开侧栏",
+    "S.X.Calendar": "日历",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -98,6 +99,7 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.NoDayTasks": "Nothing due this day",
     "S.X.CollapseSidebar": "Collapse sidebar",
     "S.X.ExpandSidebar": "Expand sidebar",
+    "S.X.Calendar": "Calendar",
   },
 };
 

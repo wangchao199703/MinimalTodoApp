@@ -9,10 +9,10 @@ import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
 import TaskList from "./components/TaskList";
 import QuickAdd from "./components/QuickAdd";
-import SchedulePanel from "./components/SchedulePanel";
 import QuadrantView from "./components/views/QuadrantView";
 import TagBoardView from "./components/views/TagBoardView";
 import NotesView from "./components/views/NotesView";
+import CalendarView from "./components/views/CalendarView";
 import Toasts from "./components/ui/Toasts";
 import UpdateDialog from "./components/dialogs/UpdateDialog";
 import { checkForUpdate, type UpdateInfo } from "./lib/updater";
@@ -112,8 +112,8 @@ export default function App() {
   const init = useAppStore((s) => s.init);
   const view = useAppStore((s) => s.view);
   const language = useAppStore((s) => s.language);
-  const scheduleOpen = useAppStore((s) => s.scheduleOpen);
   const theme = useAppStore((s) => s.theme);
+  const scheduleOpen = useAppStore((s) => s.scheduleOpen);
 
   useEffect(() => {
     void init();
@@ -170,7 +170,12 @@ export default function App() {
               </>
             )}
           </main>
-          {scheduleOpen && view.kind !== "notes" && <SchedulePanel />}
+          {/* 日历作为右侧并排面板:主列表仍可见,可把待办拖进日历某天设截止 */}
+          {scheduleOpen && view.kind !== "notes" && (
+            <aside className="flex w-[480px] shrink-0 flex-col border-l border-divider bg-content">
+              <CalendarView />
+            </aside>
+          )}
         </div>
       </div>
       <Toasts />
