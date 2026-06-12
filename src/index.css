@@ -247,6 +247,64 @@
   --sidebar-border: #d6dec7;
 }
 
+/* —— 经典护眼配色:Solarized Light(Ethan Schoonover 原始色,暖纸基底) —— */
+.light-solarized {
+  --window-bg: #fdf6e3;
+  --titlebar-bg: #f7f0db;
+  --content-bg: #fdf6e3;
+  --card-bg: #fffbf0;
+  --card-hover-bg: #eee8d5;
+  --input-bg: #eee8d5;
+  --primary-text: #586e75;
+  --secondary-text: #657b83;
+  --muted-text: #93a1a1;
+  --accent: #268bd2;
+  --accent-text: #ffffff;
+  --divider: #e7e0c9;
+  --selected-item-bg: #e3ecf3;
+  --overdue-text: #dc322f;
+  --warning-text: #b58900;
+  --success-text: #859900;
+  --popup-bg: #fffbf0;
+  --sidebar-bg: #eee8d5;
+  --sidebar-fg: #657b83;
+  --sidebar-fg-strong: #586e75;
+  --sidebar-muted: #93a1a1;
+  --sidebar-hover-bg: #e3dcc4;
+  --sidebar-selected-bg: #dde7ef;
+  --sidebar-selected-fg: #1f7bbf;
+  --sidebar-border: #ddd6be;
+}
+
+/* —— 经典护眼配色:Paper(羊皮纸暖底 + 墨青强调,阅读/便签友好) —— */
+.light-paper {
+  --window-bg: #f3ead4;
+  --titlebar-bg: #ece1c6;
+  --content-bg: #f3ead4;
+  --card-bg: #faf4e4;
+  --card-hover-bg: #e8ddc1;
+  --input-bg: #e8ddc1;
+  --primary-text: #433a2b;
+  --secondary-text: #6b6150;
+  --muted-text: #9d9279;
+  --accent: #2c7a6f;
+  --accent-text: #ffffff;
+  --divider: #e0d4b6;
+  --selected-item-bg: #d9e7e3;
+  --overdue-text: #b3503a;
+  --warning-text: #b07a2e;
+  --success-text: #5f7d3b;
+  --popup-bg: #faf4e4;
+  --sidebar-bg: #ece1c6;
+  --sidebar-fg: #6b6150;
+  --sidebar-fg-strong: #433a2b;
+  --sidebar-muted: #9d9279;
+  --sidebar-hover-bg: #e0d4b6;
+  --sidebar-selected-bg: #d9e7e3;
+  --sidebar-selected-fg: #246b61;
+  --sidebar-border: #ddd0b0;
+}
+
 /* ============ 深色系变体(基于 .dark,只覆盖色调与强调色) ============ */
 .dark-midnight {
   --window-bg: hsl(0 0% 7%);
@@ -526,6 +584,64 @@
   --sidebar-selected-bg: #1c4d52;
   --sidebar-selected-fg: #2dd4bf;
   --sidebar-border: #1e454f;
+}
+
+/* —— 经典护眼配色:Solarized Dark(Ethan Schoonover 原始色,深青基底) —— */
+.dark-solarized {
+  --window-bg: #002b36;
+  --titlebar-bg: #00242e;
+  --content-bg: #002b36;
+  --card-bg: #073642;
+  --card-hover-bg: #0b4250;
+  --input-bg: #073642;
+  --primary-text: #93a1a1;
+  --secondary-text: #839496;
+  --muted-text: #5f757b;
+  --divider: #0c4250;
+  --accent: #268bd2;
+  --accent-text: #002b36;
+  --selected-item-bg: #0e4a5a;
+  --overdue-text: #dc322f;
+  --warning-text: #b58900;
+  --success-text: #859900;
+  --popup-bg: #073642;
+  --sidebar-bg: #00242e;
+  --sidebar-fg: #839496;
+  --sidebar-fg-strong: #93a1a1;
+  --sidebar-muted: #5f757b;
+  --sidebar-hover-bg: #073642;
+  --sidebar-selected-bg: #0e4a5a;
+  --sidebar-selected-fg: #268bd2;
+  --sidebar-border: #0c4250;
+}
+
+/* —— 经典护眼配色:Gruvbox Dark(Pavel Pertsev 原始色,暖复古) —— */
+.dark-gruvbox {
+  --window-bg: #282828;
+  --titlebar-bg: #1d2021;
+  --content-bg: #282828;
+  --card-bg: #32302f;
+  --card-hover-bg: #3c3836;
+  --input-bg: #32302f;
+  --primary-text: #ebdbb2;
+  --secondary-text: #bdae93;
+  --muted-text: #a89984;
+  --divider: #3c3836;
+  --accent: #fe8019;
+  --accent-text: #282828;
+  --selected-item-bg: #423a31;
+  --overdue-text: #fb4934;
+  --warning-text: #fabd2f;
+  --success-text: #b8bb26;
+  --popup-bg: #32302f;
+  --sidebar-bg: #1d2021;
+  --sidebar-fg: #d5c4a1;
+  --sidebar-fg-strong: #fbf1c7;
+  --sidebar-muted: #a89984;
+  --sidebar-hover-bg: #3c3836;
+  --sidebar-selected-bg: #423a31;
+  --sidebar-selected-fg: #fe8019;
+  --sidebar-border: #3c3836;
 }
 
 /* 把颜色变量注册为 Tailwind 语义色(bg-card、text-text-1 等) */

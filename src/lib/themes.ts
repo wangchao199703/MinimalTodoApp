@@ -21,6 +21,9 @@ export const LIGHT_THEMES = [
   "light-haze",
   "light-clay",
   "light-meadow", // 旧版 Forest(改名避免与玻璃 Forest 撞名)
+  // 经典护眼配色(业界公认的耐看配色,原始色值)
+  "light-solarized",
+  "light-paper",
 ] as const;
 export const DARK_THEMES = [
   "dark",
@@ -32,6 +35,9 @@ export const DARK_THEMES = [
   "dark-slate",
   "dark-graphite",
   "dark-teal", // 旧版 Ocean(改名避免与玻璃 Ocean 撞名)
+  // 经典护眼配色
+  "dark-solarized",
+  "dark-gruvbox",
 ] as const;
 
 export const VALID_THEMES = [...GLASS_THEMES, ...LIGHT_THEMES, ...DARK_THEMES] as const;
@@ -53,6 +59,8 @@ export const THEME_LABELS: Record<Theme, string> = {
   "light-haze": "Haze",
   "light-clay": "Clay",
   "light-meadow": "Meadow",
+  "light-solarized": "Solarized",
+  "light-paper": "Paper",
   dark: "Dark",
   "dark-midnight": "Midnight",
   "dark-mocha": "Mocha",
@@ -61,6 +69,8 @@ export const THEME_LABELS: Record<Theme, string> = {
   "dark-slate": "Slate",
   "dark-graphite": "Graphite",
   "dark-teal": "Teal",
+  "dark-solarized": "Solarized",
+  "dark-gruvbox": "Gruvbox",
 };
 
 /** 菜单色板预览:底色 | 强调色(对角分割小药丸) */
@@ -74,6 +84,8 @@ export const THEME_PREVIEW: Record<Theme, { bg: string; accent: string }> = {
   "light-haze": { bg: "#f0f2f5", accent: "#6e8ca8" },
   "light-clay": { bg: "#f3eeea", accent: "#b08968" },
   "light-meadow": { bg: "#f4f6f0", accent: "#4d7c2f" },
+  "light-solarized": { bg: "#fdf6e3", accent: "#268bd2" },
+  "light-paper": { bg: "#f3ead4", accent: "#2c7a6f" },
   dark: { bg: "#101117", accent: "#8170f7" },
   "dark-midnight": { bg: "#121212", accent: "#5598f8" },
   "dark-mocha": { bg: "#171311", accent: "#d1a047" },
@@ -82,6 +94,8 @@ export const THEME_PREVIEW: Record<Theme, { bg: string; accent: string }> = {
   "dark-slate": { bg: "#282d33", accent: "#8aa0b6" },
   "dark-graphite": { bg: "#2a2c2e", accent: "#8fa1ae" },
   "dark-teal": { bg: "#0f2027", accent: "#2dd4bf" },
+  "dark-solarized": { bg: "#002b36", accent: "#268bd2" },
+  "dark-gruvbox": { bg: "#282828", accent: "#fe8019" },
   glass: { bg: "#16213e", accent: "#7c72f6" },
   "glass-ocean": { bg: "#15323e", accent: "#38bdf8" },
   "glass-forest": { bg: "#123026", accent: "#34d399" },
