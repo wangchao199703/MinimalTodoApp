@@ -72,6 +72,14 @@ pub struct UpdateTaskRequest {
     pub last_reminded_at: Option<String>,
 }
 
+/// 用户自定义主题:18 个颜色键的字典,缺键由前端用 Light 兜底
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomTheme {
+    pub key: String,
+    pub display: String,
+    pub colors: std::collections::HashMap<String, String>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct UpdateGroupRequest {
     pub id: String,

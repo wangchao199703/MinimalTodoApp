@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useAppStore } from "./store/useAppStore";
 import { parseDue, nowText } from "./lib/date";
+import { f } from "./lib/i18n";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
 import TaskList from "./components/TaskList";
@@ -19,7 +20,7 @@ function useReminderLoop() {
         if (!t.reminder_enabled || t.is_completed) continue;
         const base = t.last_reminded_at ?? t.created_at;
         if (now - parseDue(base).getTime() >= t.reminder_interval_minutes * 60000) {
-          pushToast(t.title);
+          pushToast(f("S.Fmt.ReminderToastTitle", t.title));
           void patchTask({ id: t.id, last_reminded_at: nowText() });
         }
       }
@@ -34,6 +35,7 @@ export default function App() {
   const loaded = useAppStore((s) => s.loaded);
   const init = useAppStore((s) => s.init);
   const view = useAppStore((s) => s.view);
+  const language = useAppStore((s) => s.language);
 
   useEffect(() => {
     void init();
@@ -44,7 +46,8 @@ export default function App() {
   if (!loaded) return null;
 
   return (
-    <div className="flex h-full flex-col bg-window">
+    // key=language:切换语言时整树重建,所有 t() 文案即时刷新
+    <div key={language} className="flex h-full flex-col bg-window">
       <TitleBar />
       <div className="flex min-h-0 flex-1">
         <Sidebar />

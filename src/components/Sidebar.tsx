@@ -6,6 +6,7 @@ import { CheckCircle2, Inbox, Kanban, LayoutGrid, Plus, Tag, X } from "lucide-re
 import { useAppStore, type View } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
+import { t } from "../lib/i18n";
 import type { Group } from "../lib/tauri-ipc";
 
 function viewKey(v: View): string {
@@ -89,7 +90,7 @@ function GroupRow({ group, count, active }: { group: Group; count: number; activ
           <span className="min-w-0 flex-1 truncate">{group.name}</span>
           {count > 0 && <span className="text-xs text-muted">{count}</span>}
           <button
-            title="删除标签"
+            title={t("S.Tag.Delete")}
             onClick={(e) => {
               e.stopPropagation();
               void removeGroup(group.id);
@@ -143,36 +144,36 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-0.5 p-2">
         <NavRow
           icon={<Inbox size={14} className="shrink-0" />}
-          label="全部待办"
+          label={t("S.Group.AllUncompleted")}
           count={uncompleted.length}
           active={activeKey === "all"}
           onClick={() => setView({ kind: "all" })}
         />
         <NavRow
           icon={<LayoutGrid size={14} className="shrink-0" />}
-          label="四象限"
+          label={t("S.Group.Quadrant")}
           active={activeKey === "quadrant"}
           onClick={() => setView({ kind: "quadrant" })}
         />
         <NavRow
           icon={<Kanban size={14} className="shrink-0" />}
-          label="标签看板"
+          label={t("S.Group.TagBoard")}
           active={activeKey === "tagboard"}
           onClick={() => setView({ kind: "tagboard" })}
         />
         <NavRow
           icon={<CheckCircle2 size={14} className="shrink-0" />}
-          label="已完成"
+          label={t("S.Group.Completed")}
           active={activeKey === "completed"}
           onClick={() => setView({ kind: "completed" })}
         />
       </nav>
 
       <div className="flex items-center justify-between px-3 pt-2 pb-1">
-        <span className="text-xs font-medium text-muted">标签</span>
+        <span className="text-xs font-medium text-muted">{t("S.Tag.Label")}</span>
         <button
-          title="新建标签"
-          onClick={() => void addGroup("新标签")}
+          title={t("S.Tag.New")}
+          onClick={() => void addGroup(t("S.X.NewTagName"))}
           className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-card-hover hover:text-text-1"
         >
           <Plus size={13} />

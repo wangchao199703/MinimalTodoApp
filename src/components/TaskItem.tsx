@@ -16,6 +16,7 @@ import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { childStats } from "../lib/sort";
 import { dueState, countdownText, formatDue } from "../lib/date";
+import { t } from "../lib/i18n";
 import type { Task } from "../lib/tauri-ipc";
 import { Popover, MenuItem } from "./ui/Popover";
 import DuePicker from "./DuePicker";
@@ -26,7 +27,11 @@ const PRIORITY_COLOR: Record<number, string> = {
   3: "var(--overdue-text)",
 };
 
-export const PRIORITY_LABEL: Record<number, string> = { 1: "低", 2: "中", 3: "高" };
+export const PRIORITY_KEY: Record<number, string> = {
+  1: "S.Priority.Low",
+  2: "S.Priority.Medium",
+  3: "S.Priority.High",
+};
 
 const DUE_CLASS: Record<string, string> = {
   overdue: "text-overdue",
@@ -86,7 +91,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
 
       {totalChildren > 0 ? (
         <button
-          title={task.is_collapsed ? "展开子任务" : "折叠子任务"}
+          title={task.is_collapsed ? t("S.X.Expand") : t("S.X.Collapse")}
           onClick={() => void toggleCollapse(task)}
           className="-ml-1 flex h-4 w-4 shrink-0 items-center justify-center text-muted hover:text-text-1"
         >
@@ -97,7 +102,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       )}
 
       <button
-        title={task.is_completed ? "取消完成" : "完成"}
+        title={task.is_completed ? t("S.X.Uncomplete") : t("S.X.Complete")}
         onClick={() => void toggleComplete(task)}
         className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
         style={{
@@ -164,14 +169,14 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       {task.is_pinned && <Pin size={12} className="shrink-0 text-accent" />}
 
       <button
-        title="截止时间"
+        title={t("S.Label.DueTime")}
         onClick={(e) => setDueAnchor(e.currentTarget)}
         className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:text-accent group-hover:flex"
       >
         <Calendar size={13} />
       </button>
       <button
-        title="删除"
+        title={t("S.X.Delete")}
         onClick={() => void removeTask(task.id)}
         className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:text-overdue group-hover:flex"
       >
@@ -198,11 +203,11 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
               }}
             >
               {task.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
-              {task.is_pinned ? "取消置顶" : "置顶"}
+              {task.is_pinned ? t("S.X.Unpin") : t("S.X.Pin")}
             </MenuItem>
 
             <div className="my-1 h-px bg-divider" />
-            <div className="px-2.5 py-1 text-xs text-muted">优先级</div>
+            <div className="px-2.5 py-1 text-xs text-muted">{t("S.Label.Priority")}</div>
             {[3, 2, 1].map((p) => (
               <MenuItem
                 key={p}
@@ -215,7 +220,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
                   className="h-2.5 w-2.5 rounded-full"
                   style={{ background: PRIORITY_COLOR[p] }}
                 />
-                {PRIORITY_LABEL[p]}
+                {t(PRIORITY_KEY[p])}
                 {task.priority === p && <Check size={12} className="ml-auto text-accent" />}
               </MenuItem>
             ))}
@@ -228,7 +233,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
               }}
             >
               <Bell size={13} />
-              {task.reminder_enabled ? "关闭周期提醒" : "周期提醒(30分)"}
+              {task.reminder_enabled ? t("S.X.ReminderOff") : t("S.X.ReminderOn")}
             </MenuItem>
             <MenuItem
               onClick={() => {
@@ -237,7 +242,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
               }}
             >
               <CornerDownRight size={13} />
-              变为子任务
+              {t("S.X.MakeSubtask")}
             </MenuItem>
             {task.parent_id && (
               <MenuItem
@@ -247,7 +252,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
                 }}
               >
                 <CornerUpLeft size={13} />
-                提升一级
+                {t("S.X.Outdent")}
               </MenuItem>
             )}
 
@@ -260,7 +265,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
               }}
             >
               <Trash2 size={13} />
-              删除{totalChildren > 0 ? "(含子任务)" : ""}
+              {totalChildren > 0 ? t("S.X.DeleteWithChildren") : t("S.X.Delete")}
             </MenuItem>
           </div>
         </Popover>

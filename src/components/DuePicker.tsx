@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { QUICK_TIMES, quickTimeToDue, parseDue, toDueText } from "../lib/date";
+import { quickTimes, quickTimeToDue, parseDue, toDueText } from "../lib/date";
+import { t } from "../lib/i18n";
 import { Popover } from "./ui/Popover";
 
 /** 截止时间选择:快捷时间 5m~1w + 自定义日期时分 + 清除 */
@@ -24,7 +25,7 @@ export default function DuePicker(props: {
     <Popover anchor={props.anchor} onClose={props.onClose}>
       <div className="w-56 p-1.5">
         <div className="grid grid-cols-5 gap-1">
-          {QUICK_TIMES.map((q) => (
+          {quickTimes().map((q) => (
             <button
               key={q.label}
               onClick={() => {
@@ -81,7 +82,7 @@ export default function DuePicker(props: {
               }}
               className="rounded-md px-2 py-1 text-xs text-overdue hover:bg-card-hover"
             >
-              清除
+              {t("S.Clear")}
             </button>
           )}
           <button
@@ -92,7 +93,7 @@ export default function DuePicker(props: {
             }}
             className="rounded-md bg-accent px-2.5 py-1 text-xs text-on-accent hover:opacity-90"
           >
-            确定
+            {t("S.Confirm")}
           </button>
         </div>
       </div>

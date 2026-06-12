@@ -25,9 +25,13 @@ export function quadrantOf(t: Task, opts: QuadrantOptions, now?: Date): Quadrant
   return 4;
 }
 
-export const QUADRANT_META: Record<Quadrant, { title: string; color: string }> = {
-  1: { title: "重要且紧急", color: "var(--overdue-text)" },
-  2: { title: "重要不紧急", color: "var(--warning-text)" },
-  3: { title: "紧急不重要", color: "var(--accent)" },
-  4: { title: "不重要不紧急", color: "var(--muted-text)" },
+/** 标题/描述用旧版本地化键(立即处理 / 重要 & 紧急 …) */
+export const QUADRANT_META: Record<
+  Quadrant,
+  { titleKey: string; descKey: string; color: string }
+> = {
+  1: { titleKey: "S.Quadrant.Q1Title", descKey: "S.Quadrant.Q1Desc", color: "var(--overdue-text)" },
+  2: { titleKey: "S.Quadrant.Q2Title", descKey: "S.Quadrant.Q2Desc", color: "var(--warning-text)" },
+  3: { titleKey: "S.Quadrant.Q3Title", descKey: "S.Quadrant.Q3Desc", color: "var(--accent)" },
+  4: { titleKey: "S.Quadrant.Q4Title", descKey: "S.Quadrant.Q4Desc", color: "var(--muted-text)" },
 };

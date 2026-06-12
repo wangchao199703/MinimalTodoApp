@@ -13,6 +13,8 @@ import { useNowTick } from "../TaskList";
 import { useRef } from "react";
 import type { Task } from "../../lib/tauri-ipc";
 
+import { t } from "../../lib/i18n";
+
 function Cell({ q, tasks, now }: { q: Quadrant; tasks: Task[]; now: Date }) {
   const meta = QUADRANT_META[q];
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -33,7 +35,8 @@ function Cell({ q, tasks, now }: { q: Quadrant; tasks: Task[]; now: Date }) {
     <div ref={bodyRef} className="flex min-h-0 flex-col rounded-xl bg-card p-2">
       <div className="mb-1.5 flex items-center gap-1.5 px-1">
         <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} />
-        <span className="text-xs font-medium text-text-2">{meta.title}</span>
+        <span className="text-xs font-medium text-text-2">{t(meta.titleKey)}</span>
+        <span className="text-[10px] text-muted">{t(meta.descKey)}</span>
         <span className="ml-auto text-xs text-muted">{tasks.length}</span>
       </div>
       <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">

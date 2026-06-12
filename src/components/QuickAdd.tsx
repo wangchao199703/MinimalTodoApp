@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Calendar, Flag, Plus, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { formatDue } from "../lib/date";
+import { t } from "../lib/i18n";
 import DuePicker from "./DuePicker";
-import { PRIORITY_LABEL } from "./TaskItem";
+import { PRIORITY_KEY } from "./TaskItem";
 
 const PRIORITY_COLOR: Record<number, string> = {
   1: "var(--success-text)",
@@ -51,18 +52,18 @@ export default function QuickAdd() {
           onKeyDown={(e) => {
             if (e.key === "Enter") submit();
           }}
-          placeholder="添加待办,回车确认"
+          placeholder={t("S.Tag.AddPlaceholder")}
           className="min-w-0 flex-1 bg-transparent text-sm text-text-1 outline-none placeholder:text-muted"
         />
         <button
-          title={`优先级:${PRIORITY_LABEL[priority]}(点击切换)`}
+          title={`${t("S.Label.Priority")}:${t(PRIORITY_KEY[priority])}`}
           onClick={() => setPriorityLocal(priority === 3 ? 1 : priority + 1)}
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-card-hover"
         >
           <Flag size={13} style={{ color: PRIORITY_COLOR[priority] }} />
         </button>
         <button
-          title="截止时间"
+          title={t("S.Label.DueTime")}
           onClick={(e) => setDueAnchor(e.currentTarget)}
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:bg-card-hover hover:text-accent"
         >

@@ -11,6 +11,7 @@ import { useSortableItem } from "../../hooks/useSortableItem";
 import { reorderIds } from "../../lib/dnd";
 import TaskItem from "../TaskItem";
 import { useNowTick } from "../TaskList";
+import { t } from "../../lib/i18n";
 import type { Task } from "../../lib/tauri-ipc";
 
 interface Column {
@@ -86,7 +87,7 @@ export default function TagBoardView() {
   const now = useNowTick();
 
   // 列 = 各标签 + 「无标签」;无标签列位置可拖动调整并持久化(-1 = 末位)
-  const untaggedCol: Column = { id: null, name: "无标签", color: "var(--muted-text)" };
+  const untaggedCol: Column = { id: null, name: t("S.Tag.Untagged"), color: "var(--muted-text)" };
   const cols: Column[] = groups.map((g) => ({ id: g.id, name: g.name, color: g.color }));
   const savedIdx = Number(settings["untagged_column_index"] ?? "-1");
   if (savedIdx >= 0 && savedIdx <= cols.length) cols.splice(savedIdx, 0, untaggedCol);

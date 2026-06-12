@@ -1,0 +1,1275 @@
+{
+ "xaml": {
+  "Light": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#FFFFFF",
+    "TitleBarBg": "#F0F2F5",
+    "SidebarBg": "#F5F6F8",
+    "ContentBg": "#FFFFFF",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#F0F2F5",
+    "InputBg": "#F0F2F5",
+    "PrimaryText": "#1F2329",
+    "SecondaryText": "#5A6470",
+    "MutedText": "#9AA4B0",
+    "Accent": "#007AFF",
+    "AccentText": "#FFFFFF",
+    "Divider": "#E6E8EB",
+    "SelectedItemBg": "#EAF2FF",
+    "OverdueText": "#E5484D",
+    "WarningText": "#D9820B",
+    "SuccessText": "#16A34A",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Dark": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#1E1F22",
+    "TitleBarBg": "#17181B",
+    "SidebarBg": "#17181B",
+    "ContentBg": "#1E1F22",
+    "CardBg": "#26282C",
+    "CardHoverBg": "#2E3136",
+    "InputBg": "#2A2C30",
+    "PrimaryText": "#E6E8EB",
+    "SecondaryText": "#B0B6BE",
+    "MutedText": "#6E767F",
+    "Accent": "#4C9AFF",
+    "AccentText": "#FFFFFF",
+    "Divider": "#303236",
+    "SelectedItemBg": "#2B3A4D",
+    "OverdueText": "#FF6B6B",
+    "WarningText": "#F0A741",
+    "SuccessText": "#4ADE80",
+    "PopupBg": "#26282C"
+   }
+  },
+  "Nord": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#2E3440",
+    "TitleBarBg": "#272C36",
+    "SidebarBg": "#272C36",
+    "ContentBg": "#2E3440",
+    "CardBg": "#3B4252",
+    "CardHoverBg": "#434C5E",
+    "InputBg": "#3B4252",
+    "PrimaryText": "#ECEFF4",
+    "SecondaryText": "#D8DEE9",
+    "MutedText": "#7B8494",
+    "Accent": "#88C0D0",
+    "AccentText": "#2E3440",
+    "Divider": "#434C5E",
+    "SelectedItemBg": "#434C5E",
+    "OverdueText": "#BF616A",
+    "WarningText": "#EBCB8B",
+    "SuccessText": "#A3BE8C",
+    "PopupBg": "#3B4252"
+   }
+  },
+  "Ocean": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#0F2027",
+    "TitleBarBg": "#0A171C",
+    "SidebarBg": "#0B1A20",
+    "ContentBg": "#0F2027",
+    "CardBg": "#173540",
+    "CardHoverBg": "#1E454F",
+    "InputBg": "#173540",
+    "PrimaryText": "#E0F2F1",
+    "SecondaryText": "#A7C5C9",
+    "MutedText": "#5E7C82",
+    "Accent": "#2DD4BF",
+    "AccentText": "#06231F",
+    "Divider": "#1E454F",
+    "SelectedItemBg": "#1C4D52",
+    "OverdueText": "#FF7B72",
+    "WarningText": "#F2C14E",
+    "SuccessText": "#5EEAD4",
+    "PopupBg": "#173540"
+   }
+  },
+  "Forest": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#F4F6F0",
+    "TitleBarBg": "#E6EBDD",
+    "SidebarBg": "#EAEFE0",
+    "ContentBg": "#F4F6F0",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#E6EBDD",
+    "InputBg": "#E6EBDD",
+    "PrimaryText": "#26331F",
+    "SecondaryText": "#4F6041",
+    "MutedText": "#8B9A7D",
+    "Accent": "#4D7C2F",
+    "AccentText": "#FFFFFF",
+    "Divider": "#D6DEC7",
+    "SelectedItemBg": "#DCE7C8",
+    "OverdueText": "#C2410C",
+    "WarningText": "#B45309",
+    "SuccessText": "#3F7A1E",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Rose": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#FFF5F7",
+    "TitleBarBg": "#FCE7EC",
+    "SidebarBg": "#FDEBF0",
+    "ContentBg": "#FFF5F7",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#FCE7EC",
+    "InputBg": "#FBE4EA",
+    "PrimaryText": "#3D1F2A",
+    "SecondaryText": "#7A4A58",
+    "MutedText": "#BC8E9B",
+    "Accent": "#E11D74",
+    "AccentText": "#FFFFFF",
+    "Divider": "#F5D2DC",
+    "SelectedItemBg": "#FBD6E2",
+    "OverdueText": "#D6336C",
+    "WarningText": "#C2730A",
+    "SuccessText": "#2F9E44",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Oat": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#F5F2EC",
+    "TitleBarBg": "#ECE7DD",
+    "SidebarBg": "#EFEAE0",
+    "ContentBg": "#F5F2EC",
+    "CardBg": "#FBF9F4",
+    "CardHoverBg": "#ECE7DD",
+    "InputBg": "#ECE7DD",
+    "PrimaryText": "#3A352D",
+    "SecondaryText": "#6B6356",
+    "MutedText": "#A39B8C",
+    "Accent": "#A8896B",
+    "AccentText": "#FFFFFF",
+    "Divider": "#E2DBCD",
+    "SelectedItemBg": "#E8E0D0",
+    "OverdueText": "#B5675F",
+    "WarningText": "#B58A4A",
+    "SuccessText": "#7E9B6B",
+    "PopupBg": "#FBF9F4"
+   }
+  },
+  "Haze": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#F0F2F5",
+    "TitleBarBg": "#E4E8ED",
+    "SidebarBg": "#E8EBF0",
+    "ContentBg": "#F0F2F5",
+    "CardBg": "#F8FAFC",
+    "CardHoverBg": "#E4E8ED",
+    "InputBg": "#E4E8ED",
+    "PrimaryText": "#2F3640",
+    "SecondaryText": "#5C6672",
+    "MutedText": "#97A1AE",
+    "Accent": "#6E8CA8",
+    "AccentText": "#FFFFFF",
+    "Divider": "#DCE1E8",
+    "SelectedItemBg": "#DDE5EE",
+    "OverdueText": "#B26B6B",
+    "WarningText": "#B08A4E",
+    "SuccessText": "#6E9B7A",
+    "PopupBg": "#F8FAFC"
+   }
+  },
+  "Sage": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#EEF1EC",
+    "TitleBarBg": "#E2E7DD",
+    "SidebarBg": "#E6EBE1",
+    "ContentBg": "#EEF1EC",
+    "CardBg": "#F7F9F4",
+    "CardHoverBg": "#E2E7DD",
+    "InputBg": "#E2E7DD",
+    "PrimaryText": "#313A30",
+    "SecondaryText": "#5C685A",
+    "MutedText": "#97A294",
+    "Accent": "#7C9A78",
+    "AccentText": "#FFFFFF",
+    "Divider": "#D9E0D3",
+    "SelectedItemBg": "#DEE6D7",
+    "OverdueText": "#B06B63",
+    "WarningText": "#AE8C4C",
+    "SuccessText": "#6E9A6A",
+    "PopupBg": "#F7F9F4"
+   }
+  },
+  "Graphite": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#2A2C2E",
+    "TitleBarBg": "#232527",
+    "SidebarBg": "#232527",
+    "ContentBg": "#2A2C2E",
+    "CardBg": "#323538",
+    "CardHoverBg": "#3B3E42",
+    "InputBg": "#323538",
+    "PrimaryText": "#E4E6E8",
+    "SecondaryText": "#B4B8BD",
+    "MutedText": "#7E848B",
+    "Accent": "#8FA1AE",
+    "AccentText": "#1F2123",
+    "Divider": "#3B3E42",
+    "SelectedItemBg": "#3A4047",
+    "OverdueText": "#C77F79",
+    "WarningText": "#C7A668",
+    "SuccessText": "#8FB089",
+    "PopupBg": "#323538"
+   }
+  },
+  "Clay": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#F3EEEA",
+    "TitleBarBg": "#E8DFD8",
+    "SidebarBg": "#ECE4DD",
+    "ContentBg": "#F3EEEA",
+    "CardBg": "#FAF6F2",
+    "CardHoverBg": "#E8DFD8",
+    "InputBg": "#E8DFD8",
+    "PrimaryText": "#3B332E",
+    "SecondaryText": "#6E635B",
+    "MutedText": "#A89B90",
+    "Accent": "#B08968",
+    "AccentText": "#FFFFFF",
+    "Divider": "#E0D5CC",
+    "SelectedItemBg": "#E9DDD2",
+    "OverdueText": "#B66A5E",
+    "WarningText": "#B5894C",
+    "SuccessText": "#7E9A6E",
+    "PopupBg": "#FAF6F2"
+   }
+  },
+  "Fog": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#F1F3F4",
+    "TitleBarBg": "#E6E9EB",
+    "SidebarBg": "#EAEDEF",
+    "ContentBg": "#F1F3F4",
+    "CardBg": "#F9FAFB",
+    "CardHoverBg": "#E6E9EB",
+    "InputBg": "#E6E9EB",
+    "PrimaryText": "#313539",
+    "SecondaryText": "#5F666C",
+    "MutedText": "#9AA1A8",
+    "Accent": "#7E8C99",
+    "AccentText": "#FFFFFF",
+    "Divider": "#DEE2E5",
+    "SelectedItemBg": "#E1E6EA",
+    "OverdueText": "#B16B6B",
+    "WarningText": "#AE884F",
+    "SuccessText": "#6F9778",
+    "PopupBg": "#F9FAFB"
+   }
+  },
+  "Slate": {
+   "group": "Classic",
+   "colors": {
+    "WindowBg": "#282D33",
+    "TitleBarBg": "#20242A",
+    "SidebarBg": "#20242A",
+    "ContentBg": "#282D33",
+    "CardBg": "#30363D",
+    "CardHoverBg": "#3A424B",
+    "InputBg": "#30363D",
+    "PrimaryText": "#DDE3EA",
+    "SecondaryText": "#AEB6C0",
+    "MutedText": "#79828D",
+    "Accent": "#8AA0B6",
+    "AccentText": "#1B1F24",
+    "Divider": "#3A424B",
+    "SelectedItemBg": "#38414C",
+    "OverdueText": "#C77F79",
+    "WarningText": "#C6A567",
+    "SuccessText": "#8BAE8A",
+    "PopupBg": "#30363D"
+   }
+  },
+  "Morandi1": {
+   "group": "Morandi",
+   "colors": {
+    "WindowBg": "#E9ECEF",
+    "TitleBarBg": "#DCE1E6",
+    "SidebarBg": "#E1E6EA",
+    "ContentBg": "#EEF1F3",
+    "CardBg": "#F8FAFB",
+    "CardHoverBg": "#E3E8EC",
+    "InputBg": "#E1E6EA",
+    "PrimaryText": "#2E353B",
+    "SecondaryText": "#5C666E",
+    "MutedText": "#8A949C",
+    "Accent": "#6E8CA0",
+    "AccentText": "#FFFFFF",
+    "Divider": "#D2D8DD",
+    "SelectedItemBg": "#DCE5EB",
+    "OverdueText": "#B5685F",
+    "WarningText": "#B58A4E",
+    "SuccessText": "#6E9072",
+    "PopupBg": "#F8FAFB"
+   }
+  },
+  "Morandi2": {
+   "group": "Morandi",
+   "colors": {
+    "WindowBg": "#EAEDE7",
+    "TitleBarBg": "#DFE3DB",
+    "SidebarBg": "#E3E7DF",
+    "ContentBg": "#EFF2EC",
+    "CardBg": "#F9FBF6",
+    "CardHoverBg": "#E4E9DE",
+    "InputBg": "#E3E7DF",
+    "PrimaryText": "#313630",
+    "SecondaryText": "#5E665A",
+    "MutedText": "#8C9488",
+    "Accent": "#87A07E",
+    "AccentText": "#FFFFFF",
+    "Divider": "#D5DBCF",
+    "SelectedItemBg": "#DEE7D7",
+    "OverdueText": "#B5685F",
+    "WarningText": "#B58A4E",
+    "SuccessText": "#6E9072",
+    "PopupBg": "#F9FBF6"
+   }
+  },
+  "Morandi3": {
+   "group": "Morandi",
+   "colors": {
+    "WindowBg": "#EEE9EA",
+    "TitleBarBg": "#E5DDDF",
+    "SidebarBg": "#E8E1E3",
+    "ContentBg": "#F3EEEF",
+    "CardBg": "#FBF7F8",
+    "CardHoverBg": "#E9E0E2",
+    "InputBg": "#E8E1E3",
+    "PrimaryText": "#382F32",
+    "SecondaryText": "#6A5C60",
+    "MutedText": "#998A8E",
+    "Accent": "#A57E89",
+    "AccentText": "#FFFFFF",
+    "Divider": "#DDD2D5",
+    "SelectedItemBg": "#EBDEE2",
+    "OverdueText": "#B5685F",
+    "WarningText": "#B58A4E",
+    "SuccessText": "#6E9072",
+    "PopupBg": "#FBF7F8"
+   }
+  },
+  "Macaron1": {
+   "group": "Macaron",
+   "colors": {
+    "WindowBg": "#F2F8F6",
+    "TitleBarBg": "#E7F1EE",
+    "SidebarBg": "#EDF4F1",
+    "ContentBg": "#F7FBF9",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#E7F1EE",
+    "InputBg": "#EDF4F1",
+    "PrimaryText": "#23403A",
+    "SecondaryText": "#4C6A63",
+    "MutedText": "#82A39A",
+    "Accent": "#3BA793",
+    "AccentText": "#FFFFFF",
+    "Divider": "#DBEAE5",
+    "SelectedItemBg": "#DEEFE9",
+    "OverdueText": "#E5484D",
+    "WarningText": "#D9820B",
+    "SuccessText": "#16A34A",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Macaron2": {
+   "group": "Macaron",
+   "colors": {
+    "WindowBg": "#FAF4F6",
+    "TitleBarBg": "#F4EAEE",
+    "SidebarBg": "#F6EEF1",
+    "ContentBg": "#FCF7F9",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#F4E8ED",
+    "InputBg": "#F6EEF1",
+    "PrimaryText": "#48303A",
+    "SecondaryText": "#7A5A65",
+    "MutedText": "#B2929C",
+    "Accent": "#D9708F",
+    "AccentText": "#FFFFFF",
+    "Divider": "#EDDCE3",
+    "SelectedItemBg": "#F6E6EC",
+    "OverdueText": "#E5484D",
+    "WarningText": "#D9820B",
+    "SuccessText": "#16A34A",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Macaron3": {
+   "group": "Macaron",
+   "colors": {
+    "WindowBg": "#FAF7EE",
+    "TitleBarBg": "#F3EEDE",
+    "SidebarBg": "#F6F1E3",
+    "ContentBg": "#FCFAF3",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#F1EBDA",
+    "InputBg": "#F6F1E3",
+    "PrimaryText": "#403B26",
+    "SecondaryText": "#6E6743",
+    "MutedText": "#A69D72",
+    "Accent": "#D2A53E",
+    "AccentText": "#3D2F00",
+    "Divider": "#E7DEC6",
+    "SelectedItemBg": "#F2EAD2",
+    "OverdueText": "#E5484D",
+    "WarningText": "#C9820B",
+    "SuccessText": "#16A34A",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Dunhuang1": {
+   "group": "Dunhuang",
+   "colors": {
+    "WindowBg": "#F4EFE5",
+    "TitleBarBg": "#ECE5D6",
+    "SidebarBg": "#EFE8DA",
+    "ContentBg": "#F8F3EA",
+    "CardBg": "#FCF8F0",
+    "CardHoverBg": "#EEE7D8",
+    "InputBg": "#EFE8DA",
+    "PrimaryText": "#3A2E20",
+    "SecondaryText": "#6B5A45",
+    "MutedText": "#9C8A70",
+    "Accent": "#2E6E8E",
+    "AccentText": "#FFFFFF",
+    "Divider": "#DFD3BF",
+    "SelectedItemBg": "#DEE6EA",
+    "OverdueText": "#B23A2E",
+    "WarningText": "#C08A2E",
+    "SuccessText": "#5E8A5A",
+    "PopupBg": "#FCF7EC"
+   }
+  },
+  "Dunhuang2": {
+   "group": "Dunhuang",
+   "colors": {
+    "WindowBg": "#F5EEE5",
+    "TitleBarBg": "#EDE2D5",
+    "SidebarBg": "#F0E7DB",
+    "ContentBg": "#F8F2EB",
+    "CardBg": "#FDF9F1",
+    "CardHoverBg": "#EFE6DA",
+    "InputBg": "#F0E7DB",
+    "PrimaryText": "#3D2C24",
+    "SecondaryText": "#6F5649",
+    "MutedText": "#A48E7E",
+    "Accent": "#AE5E48",
+    "AccentText": "#FFFFFF",
+    "Divider": "#E3D5C5",
+    "SelectedItemBg": "#EFE0D5",
+    "OverdueText": "#A8332B",
+    "WarningText": "#C0822E",
+    "SuccessText": "#5E8A5A",
+    "PopupBg": "#FDF8EF"
+   }
+  },
+  "Dunhuang3": {
+   "group": "Dunhuang",
+   "colors": {
+    "WindowBg": "#211A14",
+    "TitleBarBg": "#1A140F",
+    "SidebarBg": "#1A140F",
+    "ContentBg": "#211A14",
+    "CardBg": "#2C231A",
+    "CardHoverBg": "#372C20",
+    "InputBg": "#2C231A",
+    "PrimaryText": "#EDE2CE",
+    "SecondaryText": "#C2B193",
+    "MutedText": "#8A7A60",
+    "Accent": "#C9A24B",
+    "AccentText": "#211A14",
+    "Divider": "#3A2E22",
+    "SelectedItemBg": "#3E3122",
+    "OverdueText": "#D9776B",
+    "WarningText": "#D9A441",
+    "SuccessText": "#8FB069",
+    "PopupBg": "#2C231A"
+   }
+  },
+  "Mondrian1": {
+   "group": "Mondrian",
+   "colors": {
+    "WindowBg": "#FAFAF7",
+    "TitleBarBg": "#F0F0EC",
+    "SidebarBg": "#F4F4F0",
+    "ContentBg": "#FFFFFF",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#F2F2EE",
+    "InputBg": "#F0F0EC",
+    "PrimaryText": "#1A1A1A",
+    "SecondaryText": "#4A4A4A",
+    "MutedText": "#8A8A8A",
+    "Accent": "#D42A1F",
+    "AccentText": "#FFFFFF",
+    "Divider": "#DCDCD5",
+    "SelectedItemBg": "#FBE3E1",
+    "OverdueText": "#D42A1F",
+    "WarningText": "#E6A700",
+    "SuccessText": "#2E7D32",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Mondrian2": {
+   "group": "Mondrian",
+   "colors": {
+    "WindowBg": "#F8FAFC",
+    "TitleBarBg": "#ECF0F4",
+    "SidebarBg": "#F0F4F8",
+    "ContentBg": "#FFFFFF",
+    "CardBg": "#FFFFFF",
+    "CardHoverBg": "#EEF2F6",
+    "InputBg": "#ECF0F4",
+    "PrimaryText": "#15202B",
+    "SecondaryText": "#44505C",
+    "MutedText": "#8693A0",
+    "Accent": "#1A56C4",
+    "AccentText": "#FFFFFF",
+    "Divider": "#D8E0E8",
+    "SelectedItemBg": "#DDE8FA",
+    "OverdueText": "#D42A1F",
+    "WarningText": "#E6A700",
+    "SuccessText": "#2E7D32",
+    "PopupBg": "#FFFFFF"
+   }
+  },
+  "Mondrian3": {
+   "group": "Mondrian",
+   "colors": {
+    "WindowBg": "#161616",
+    "TitleBarBg": "#0F0F0F",
+    "SidebarBg": "#0F0F0F",
+    "ContentBg": "#161616",
+    "CardBg": "#1F1F1F",
+    "CardHoverBg": "#2A2A2A",
+    "InputBg": "#1F1F1F",
+    "PrimaryText": "#F2F2F2",
+    "SecondaryText": "#BFBFBF",
+    "MutedText": "#808080",
+    "Accent": "#E03127",
+    "AccentText": "#FFFFFF",
+    "Divider": "#2E2E2E",
+    "SelectedItemBg": "#3A2420",
+    "OverdueText": "#FF6B6B",
+    "WarningText": "#F2C84B",
+    "SuccessText": "#5CC98C",
+    "PopupBg": "#1F1F1F"
+   }
+  },
+  "Transparent": {
+   "group": "Transparent",
+   "colors": {
+    "WindowBg": "#CCFFFFFF",
+    "TitleBarBg": "#33FFFFFF",
+    "SidebarBg": "#22FFFFFF",
+    "ContentBg": "#00FFFFFF",
+    "CardBg": "#AAFFFFFF",
+    "CardHoverBg": "#CCFFFFFF",
+    "InputBg": "#88FFFFFF",
+    "PrimaryText": "#15181C",
+    "SecondaryText": "#3C434C",
+    "MutedText": "#5A6470",
+    "Accent": "#3B82F6",
+    "AccentText": "#FFFFFF",
+    "Divider": "#33000000",
+    "SelectedItemBg": "#553B82F6",
+    "OverdueText": "#D32F2F",
+    "WarningText": "#B26A00",
+    "SuccessText": "#15803D",
+    "PopupBg": "#FFFFFFFF"
+   }
+  },
+  "Glass": {
+   "group": "Transparent",
+   "colors": {
+    "WindowBg": "#33222831",
+    "TitleBarBg": "#22000000",
+    "SidebarBg": "#22000000",
+    "ContentBg": "#00000000",
+    "CardBg": "#552B313B",
+    "CardHoverBg": "#88333B47",
+    "InputBg": "#55222831",
+    "PrimaryText": "#F5F7FA",
+    "SecondaryText": "#D2D8E0",
+    "MutedText": "#9AA4B0",
+    "Accent": "#5B9DFF",
+    "AccentText": "#FFFFFF",
+    "Divider": "#33FFFFFF",
+    "SelectedItemBg": "#66416A9E",
+    "OverdueText": "#FF8A8A",
+    "WarningText": "#FFC04D",
+    "SuccessText": "#6EE7A0",
+    "PopupBg": "#FF222831"
+   }
+  }
+ },
+ "palettes": [
+  {
+   "key": "Morandi4",
+   "dark": false,
+   "group": "Morandi",
+   "bg": "#ECEAEF",
+   "card": "#F8F6FA",
+   "text": "#353039",
+   "accent": "#8B7F97"
+  },
+  {
+   "key": "Morandi5",
+   "dark": true,
+   "group": "Morandi",
+   "bg": "#2B2E31",
+   "card": "#34383B",
+   "text": "#DDE1E4",
+   "accent": "#8FA0AE"
+  },
+  {
+   "key": "Morandi6",
+   "dark": false,
+   "group": "Morandi",
+   "bg": "#EFE9E9",
+   "card": "#FAF5F5",
+   "text": "#3B3333",
+   "accent": "#AC8A88"
+  },
+  {
+   "key": "Morandi7",
+   "dark": false,
+   "group": "Morandi",
+   "bg": "#EBEBE3",
+   "card": "#F7F7EF",
+   "text": "#36362C",
+   "accent": "#8C8A66"
+  },
+  {
+   "key": "Morandi8",
+   "dark": false,
+   "group": "Morandi",
+   "bg": "#E6EBEB",
+   "card": "#F4F8F8",
+   "text": "#2D3636",
+   "accent": "#6F9395"
+  },
+  {
+   "key": "Morandi9",
+   "dark": false,
+   "group": "Morandi",
+   "bg": "#ECE7E1",
+   "card": "#F8F3ED",
+   "text": "#383027",
+   "accent": "#A18A6E"
+  },
+  {
+   "key": "Morandi10",
+   "dark": true,
+   "group": "Morandi",
+   "bg": "#2A2F30",
+   "card": "#333A3B",
+   "text": "#DCE3E2",
+   "accent": "#7FA0A0"
+  },
+  {
+   "key": "Morandi11",
+   "dark": false,
+   "group": "Morandi",
+   "bg": "#EDE8EA",
+   "card": "#F9F4F6",
+   "text": "#383036",
+   "accent": "#A0879A"
+  },
+  {
+   "key": "Morandi12",
+   "dark": true,
+   "group": "Morandi",
+   "bg": "#2C2E33",
+   "card": "#353842",
+   "text": "#DBDEE6",
+   "accent": "#8E94B0"
+  },
+  {
+   "key": "Macaron4",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#EAF0FC",
+   "card": "#F6F9FE",
+   "text": "#27314A",
+   "accent": "#5B8DEF"
+  },
+  {
+   "key": "Macaron5",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#F1EAFB",
+   "card": "#FAF6FE",
+   "text": "#342A48",
+   "accent": "#9B6FE0"
+  },
+  {
+   "key": "Macaron6",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#FDEEE6",
+   "card": "#FEF8F4",
+   "text": "#46332A",
+   "accent": "#F0915E"
+  },
+  {
+   "key": "Macaron7",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#ECF6E6",
+   "card": "#F7FBF3",
+   "text": "#2E3A28",
+   "accent": "#7FB857"
+  },
+  {
+   "key": "Macaron8",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#FCEAF0",
+   "card": "#FEF6F9",
+   "text": "#452A33",
+   "accent": "#E96A93"
+  },
+  {
+   "key": "Macaron9",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#E7F4F4",
+   "card": "#F4FAFA",
+   "text": "#243838",
+   "accent": "#4FB0B0"
+  },
+  {
+   "key": "Macaron10",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#F8EFE0",
+   "card": "#FDF8EE",
+   "text": "#443827",
+   "accent": "#D79A47"
+  },
+  {
+   "key": "Macaron11",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#EEECFA",
+   "card": "#F8F7FD",
+   "text": "#322F47",
+   "accent": "#8580E0"
+  },
+  {
+   "key": "Macaron12",
+   "dark": false,
+   "group": "Macaron",
+   "bg": "#FCEBEA",
+   "card": "#FEF6F5",
+   "text": "#46292A",
+   "accent": "#ED6A6A"
+  },
+  {
+   "key": "Dunhuang4",
+   "dark": false,
+   "group": "Dunhuang",
+   "bg": "#F1E6D6",
+   "card": "#FBF4E8",
+   "text": "#3E2E1E",
+   "accent": "#B5763C"
+  },
+  {
+   "key": "Dunhuang5",
+   "dark": false,
+   "group": "Dunhuang",
+   "bg": "#E4ECE2",
+   "card": "#F3F8F0",
+   "text": "#243528",
+   "accent": "#5E8A66"
+  },
+  {
+   "key": "Dunhuang6",
+   "dark": false,
+   "group": "Dunhuang",
+   "bg": "#F3E4DD",
+   "card": "#FCF3EE",
+   "text": "#45291F",
+   "accent": "#C2553F"
+  },
+  {
+   "key": "Dunhuang7",
+   "dark": true,
+   "group": "Dunhuang",
+   "bg": "#1C2530",
+   "card": "#26303C",
+   "text": "#DDE6EE",
+   "accent": "#5C93B5"
+  },
+  {
+   "key": "Dunhuang8",
+   "dark": false,
+   "group": "Dunhuang",
+   "bg": "#ECE3EC",
+   "card": "#F8F2F7",
+   "text": "#382B38",
+   "accent": "#9A6E92"
+  },
+  {
+   "key": "Dunhuang9",
+   "dark": false,
+   "group": "Dunhuang",
+   "bg": "#F4ECD8",
+   "card": "#FCF7EA",
+   "text": "#3E3218",
+   "accent": "#C79A3E"
+  },
+  {
+   "key": "Dunhuang10",
+   "dark": true,
+   "group": "Dunhuang",
+   "bg": "#251918",
+   "card": "#31211F",
+   "text": "#EFD9D2",
+   "accent": "#C26A55"
+  },
+  {
+   "key": "Dunhuang11",
+   "dark": true,
+   "group": "Dunhuang",
+   "bg": "#182420",
+   "card": "#22302B",
+   "text": "#D7E6DD",
+   "accent": "#5FA37E"
+  },
+  {
+   "key": "Dunhuang12",
+   "dark": false,
+   "group": "Dunhuang",
+   "bg": "#F5EFD9",
+   "card": "#FCF8EA",
+   "text": "#403821",
+   "accent": "#C9A53F"
+  },
+  {
+   "key": "Mondrian4",
+   "dark": false,
+   "group": "Mondrian",
+   "bg": "#FAFAF7",
+   "card": "#FFFFFF",
+   "text": "#1A1A1A",
+   "accent": "#D42E2E"
+  },
+  {
+   "key": "Mondrian5",
+   "dark": false,
+   "group": "Mondrian",
+   "bg": "#FAFAF7",
+   "card": "#FFFFFF",
+   "text": "#1A1A1A",
+   "accent": "#E0A106"
+  },
+  {
+   "key": "Mondrian6",
+   "dark": false,
+   "group": "Mondrian",
+   "bg": "#F7F8FA",
+   "card": "#FFFFFF",
+   "text": "#15171A",
+   "accent": "#1F4FD0"
+  },
+  {
+   "key": "Mondrian7",
+   "dark": false,
+   "group": "Mondrian",
+   "bg": "#F2F2EF",
+   "card": "#FBFBF9",
+   "text": "#1C1C1C",
+   "accent": "#444444"
+  },
+  {
+   "key": "Mondrian8",
+   "dark": true,
+   "group": "Mondrian",
+   "bg": "#161616",
+   "card": "#202020",
+   "text": "#F2F2F2",
+   "accent": "#E0463F"
+  },
+  {
+   "key": "Mondrian9",
+   "dark": true,
+   "group": "Mondrian",
+   "bg": "#141619",
+   "card": "#1E2127",
+   "text": "#EEF1F5",
+   "accent": "#4A78E8"
+  },
+  {
+   "key": "Mondrian10",
+   "dark": true,
+   "group": "Mondrian",
+   "bg": "#17160F",
+   "card": "#211F16",
+   "text": "#F3F0E2",
+   "accent": "#E6B53C"
+  },
+  {
+   "key": "Mondrian11",
+   "dark": false,
+   "group": "Mondrian",
+   "bg": "#F5F8F4",
+   "card": "#FFFFFF",
+   "text": "#16201A",
+   "accent": "#1E8E4F"
+  },
+  {
+   "key": "Mondrian12",
+   "dark": false,
+   "group": "Mondrian",
+   "bg": "#FAF6F2",
+   "card": "#FFFFFF",
+   "text": "#211A14",
+   "accent": "#E5631E"
+  },
+  {
+   "key": "Memphis1",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#FFF4F7",
+   "card": "#FFFFFF",
+   "text": "#2A1F26",
+   "accent": "#FF4D8D"
+  },
+  {
+   "key": "Memphis2",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#ECFAFB",
+   "card": "#FFFFFF",
+   "text": "#1C3033",
+   "accent": "#00ACC1"
+  },
+  {
+   "key": "Memphis3",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#FFFAE6",
+   "card": "#FFFFFF",
+   "text": "#2E2A18",
+   "accent": "#F5A300"
+  },
+  {
+   "key": "Memphis4",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#F5EEFC",
+   "card": "#FFFFFF",
+   "text": "#2B2238",
+   "accent": "#8E44E0"
+  },
+  {
+   "key": "Memphis5",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#FFF0EC",
+   "card": "#FFFFFF",
+   "text": "#34221C",
+   "accent": "#FF6B4A"
+  },
+  {
+   "key": "Memphis6",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#E9F8F0",
+   "card": "#FFFFFF",
+   "text": "#1C3329",
+   "accent": "#14B87E"
+  },
+  {
+   "key": "Memphis7",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#EBF0FE",
+   "card": "#FFFFFF",
+   "text": "#1E2740",
+   "accent": "#3D5AFE"
+  },
+  {
+   "key": "Memphis8",
+   "dark": false,
+   "group": "Memphis",
+   "bg": "#FDECF4",
+   "card": "#FFFFFF",
+   "text": "#38222E",
+   "accent": "#EC407A"
+  },
+  {
+   "key": "Memphis9",
+   "dark": true,
+   "group": "Memphis",
+   "bg": "#1B1A1F",
+   "card": "#25242B",
+   "text": "#F0EEF4",
+   "accent": "#FF7A33"
+  },
+  {
+   "key": "Memphis10",
+   "dark": true,
+   "group": "Memphis",
+   "bg": "#15191B",
+   "card": "#1F2528",
+   "text": "#E6EEF0",
+   "accent": "#1FC8C8"
+  },
+  {
+   "key": "Memphis11",
+   "dark": true,
+   "group": "Memphis",
+   "bg": "#1C1620",
+   "card": "#271E2C",
+   "text": "#F0E6F2",
+   "accent": "#E84D9A"
+  },
+  {
+   "key": "Memphis12",
+   "dark": true,
+   "group": "Memphis",
+   "bg": "#14161D",
+   "card": "#1E212B",
+   "text": "#E8ECF5",
+   "accent": "#5979FF"
+  },
+  {
+   "key": "Rococo1",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#FBEFEF",
+   "card": "#FEF8F7",
+   "text": "#3E2E30",
+   "accent": "#C9A24B"
+  },
+  {
+   "key": "Rococo2",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#FBF5E3",
+   "card": "#FEFAEF",
+   "text": "#3E3522",
+   "accent": "#BFA050"
+  },
+  {
+   "key": "Rococo3",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#EDF1F8",
+   "card": "#F8FAFD",
+   "text": "#2C333F",
+   "accent": "#8FA9C9"
+  },
+  {
+   "key": "Rococo4",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#EBF3EC",
+   "card": "#F6FAF5",
+   "text": "#2A352C",
+   "accent": "#B79A52"
+  },
+  {
+   "key": "Rococo5",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#F2ECF6",
+   "card": "#FAF6FB",
+   "text": "#332C3A",
+   "accent": "#A98FC0"
+  },
+  {
+   "key": "Rococo6",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#FBEDE6",
+   "card": "#FEF7F2",
+   "text": "#43302A",
+   "accent": "#C98A5E"
+  },
+  {
+   "key": "Rococo7",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#F7F2E9",
+   "card": "#FCF9F2",
+   "text": "#3A352A",
+   "accent": "#C2A765"
+  },
+  {
+   "key": "Rococo8",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#FAEAEC",
+   "card": "#FEF5F6",
+   "text": "#422A2E",
+   "accent": "#C58A6E"
+  },
+  {
+   "key": "Rococo9",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#E9F1F2",
+   "card": "#F5FAFA",
+   "text": "#273434",
+   "accent": "#7FA8AB"
+  },
+  {
+   "key": "Rococo10",
+   "dark": false,
+   "group": "Rococo",
+   "bg": "#F4ECF0",
+   "card": "#FCF6F9",
+   "text": "#382E34",
+   "accent": "#B58AA0"
+  },
+  {
+   "key": "Rococo11",
+   "dark": true,
+   "group": "Rococo",
+   "bg": "#25201A",
+   "card": "#302A22",
+   "text": "#EFE6D6",
+   "accent": "#C9A24B"
+  },
+  {
+   "key": "Rococo12",
+   "dark": true,
+   "group": "Rococo",
+   "bg": "#1A211C",
+   "card": "#242C26",
+   "text": "#E3ECE2",
+   "accent": "#BB9A55"
+  },
+  {
+   "key": "Matisse1",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#E9F1FA",
+   "card": "#F6FAFE",
+   "text": "#14283A",
+   "accent": "#1E6FC4"
+  },
+  {
+   "key": "Matisse2",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#FCEAE6",
+   "card": "#FEF6F3",
+   "text": "#401F18",
+   "accent": "#D83A2A"
+  },
+  {
+   "key": "Matisse3",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#E6F4EA",
+   "card": "#F4FBF6",
+   "text": "#15301F",
+   "accent": "#1E9E5A"
+  },
+  {
+   "key": "Matisse4",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#FCF6DF",
+   "card": "#FEFBEE",
+   "text": "#3A3212",
+   "accent": "#E3A800"
+  },
+  {
+   "key": "Matisse5",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#FCECEF",
+   "card": "#FEF6F8",
+   "text": "#3E2229",
+   "accent": "#E64C72"
+  },
+  {
+   "key": "Matisse6",
+   "dark": true,
+   "group": "Matisse",
+   "bg": "#122031",
+   "card": "#1C2D40",
+   "text": "#DCE8F2",
+   "accent": "#2E86D0"
+  },
+  {
+   "key": "Matisse7",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#F0EFD8",
+   "card": "#FAFAEB",
+   "text": "#343318",
+   "accent": "#8E8420"
+  },
+  {
+   "key": "Matisse8",
+   "dark": true,
+   "group": "Matisse",
+   "bg": "#251418",
+   "card": "#311E22",
+   "text": "#F2DCDF",
+   "accent": "#E0506A"
+  },
+  {
+   "key": "Matisse9",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#E4F2F0",
+   "card": "#F3FAF9",
+   "text": "#163331",
+   "accent": "#138B82"
+  },
+  {
+   "key": "Matisse10",
+   "dark": false,
+   "group": "Matisse",
+   "bg": "#F0EAFA",
+   "card": "#F9F6FE",
+   "text": "#2A2240",
+   "accent": "#6E45C9"
+  },
+  {
+   "key": "Matisse11",
+   "dark": true,
+   "group": "Matisse",
+   "bg": "#20180F",
+   "card": "#2B2116",
+   "text": "#F2E4D0",
+   "accent": "#E0922E"
+  },
+  {
+   "key": "Matisse12",
+   "dark": true,
+   "group": "Matisse",
+   "bg": "#0F2226",
+   "card": "#193034",
+   "text": "#DCECEE",
+   "accent": "#18A0B0"
+  }
+ ]
+}

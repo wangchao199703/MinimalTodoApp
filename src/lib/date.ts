@@ -1,4 +1,5 @@
 // 日期统一约定:"YYYY-MM-DD HH:mm" 空格分隔;只有日期时为 "YYYY-MM-DD"
+import { f, t } from "./i18n";
 
 export function parseDue(s: string): Date {
   return new Date(s.replace(" ", "T"));
@@ -33,7 +34,7 @@ export function dueState(
   return "normal";
 }
 
-/** 倒计时文案:已逾期N天/N小时/N分钟,剩余N天N小时 / N小时M分钟 / N分钟 */
+/** 倒计时文案(本地化键对齐旧版 S.Fmt.Overdue* / S.Fmt.Remain*) */
 export function countdownText(due: string, now: Date = new Date()): string {
   const diff = parseDue(due).getTime() - now.getTime();
   const abs = Math.abs(diff);
@@ -41,12 +42,18 @@ export function countdownText(due: string, now: Date = new Date()): string {
   const hours = Math.floor((abs % DAY) / 3600000);
   const minutes = Math.floor((abs % 3600000) / 60000);
 
-  let span: string;
-  if (days > 0) span = hours > 0 ? `${days}天${hours}小时` : `${days}天`;
-  else if (hours > 0) span = minutes > 0 ? `${hours}小时${minutes}分钟` : `${hours}小时`;
-  else span = `${Math.max(minutes, 1)}分钟`;
-
-  return diff < 0 ? `已逾期${span}` : `剩余${span}`;
+  if (diff < 0) {
+    if (days > 0) return f("S.Fmt.OverdueDays", days);
+    if (hours > 0) return f("S.Fmt.OverdueHours", hours);
+    return f("S.Fmt.OverdueMinutes", Math.max(minutes, 1));
+  }
+  if (days > 0)
+    return hours > 0 ? f("S.Fmt.RemainDaysHours", days, hours) : f("S.Fmt.RemainDays", days);
+  if (hours > 0)
+    return minutes > 0
+      ? f("S.Fmt.RemainHoursMinutes", hours, minutes)
+      : f("S.Fmt.RemainHours", hours);
+  return f("S.Fmt.RemainMinutes", Math.max(minutes, 1));
 }
 
 /** 截止时间的简短展示,如 "6月15日 14:30";今年内不显示年份 */
@@ -65,19 +72,22 @@ export interface QuickTime {
   minutes: number;
 }
 
-/** 快捷时间选项(对齐旧版 5m~1w) */
-export const QUICK_TIMES: QuickTime[] = [
-  { label: "5分钟", minutes: 5 },
-  { label: "10分钟", minutes: 10 },
-  { label: "30分钟", minutes: 30 },
-  { label: "1小时", minutes: 60 },
-  { label: "2小时", minutes: 120 },
-  { label: "5小时", minutes: 300 },
-  { label: "1天", minutes: 1440 },
-  { label: "2天", minutes: 2880 },
-  { label: "5天", minutes: 7200 },
-  { label: "1周", minutes: 10080 },
-];
+/** 快捷时间选项(对齐旧版 5m~1w),label 按当前语言生成 */
+export function quickTimes(): QuickTime[] {
+  const u = (k: string) => t("S.X.U." + k);
+  return [
+    { label: `5${u("Min")}`, minutes: 5 },
+    { label: `10${u("Min")}`, minutes: 10 },
+    { label: `30${u("Min")}`, minutes: 30 },
+    { label: `1${u("Hour")}`, minutes: 60 },
+    { label: `2${u("Hour")}`, minutes: 120 },
+    { label: `5${u("Hour")}`, minutes: 300 },
+    { label: `1${u("Day")}`, minutes: 1440 },
+    { label: `2${u("Day")}`, minutes: 2880 },
+    { label: `5${u("Day")}`, minutes: 7200 },
+    { label: `1${u("Week")}`, minutes: 10080 },
+  ];
+}
 
 export function quickTimeToDue(minutes: number, now: Date = new Date()): string {
   return toDueText(new Date(now.getTime() + minutes * 60000));

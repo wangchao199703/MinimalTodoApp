@@ -288,6 +288,52 @@ pub fn reorder_tasks(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
     tx.commit().map_err(err)
 }
 
+// ---------- 自定义主题 ----------
+
+#[tauri::command]
+pub fn get_custom_themes(db: State<Db>) -> CmdResult<Vec<CustomTheme>> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut stmt = conn
+        .prepare("SELECT key, display, colors_json FROM custom_themes")
+        .map_err(err)?;
+    let rows = stmt
+        .query_map([], |r| {
+            Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?, r.get::<_, String>(2)?))
+        })
+        .map_err(err)?;
+    let mut out = Vec::new();
+    for row in rows {
+        let (key, display, colors_json) = row.map_err(err)?;
+        let colors = serde_json::from_str(&colors_json).unwrap_or_default();
+        out.push(CustomTheme { key, display, colors });
+    }
+    Ok(out)
+}
+
+#[tauri::command]
+pub fn save_custom_theme(db: State<Db>, theme: CustomTheme) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute(
+        "INSERT INTO custom_themes (key, display, colors_json) VALUES (?1, ?2, ?3)
+         ON CONFLICT(key) DO UPDATE SET display = excluded.display, colors_json = excluded.colors_json",
+        params![
+            theme.key,
+            theme.display,
+            serde_json::to_string(&theme.colors).map_err(err)?
+        ],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_custom_theme(db: State<Db>, key: String) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("DELETE FROM custom_themes WHERE key = ?1", params![key])
+        .map_err(err)?;
+    Ok(())
+}
+
 // ---------- 设置 ----------
 
 #[tauri::command]

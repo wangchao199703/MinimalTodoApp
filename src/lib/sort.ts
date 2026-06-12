@@ -4,13 +4,13 @@ import { parseDue } from "./date";
 /** 6 种排序模式,对齐旧版 SortMode 枚举 */
 export type SortMode = "custom" | "due" | "priority" | "completed" | "created" | "title";
 
-export const SORT_OPTIONS: { mode: SortMode; label: string }[] = [
-  { mode: "custom", label: "自定义(拖拽)" },
-  { mode: "due", label: "截止日期" },
-  { mode: "priority", label: "优先级" },
-  { mode: "completed", label: "未完成优先" },
-  { mode: "created", label: "创建时间" },
-  { mode: "title", label: "标题" },
+export const SORT_OPTIONS: { mode: SortMode; labelKey: string }[] = [
+  { mode: "custom", labelKey: "S.Sort.Custom" },
+  { mode: "due", labelKey: "S.Sort.DueDate" },
+  { mode: "priority", labelKey: "S.Sort.Priority" },
+  { mode: "completed", labelKey: "S.Sort.Completed" },
+  { mode: "created", labelKey: "S.Sort.Created" },
+  { mode: "title", labelKey: "S.Sort.Title" },
 ];
 
 function comparator(mode: SortMode): (a: Task, b: Task) => number {

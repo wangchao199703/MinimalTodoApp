@@ -26,6 +26,9 @@ pub fn run() {
             commands::update_task,
             commands::delete_task,
             commands::reorder_tasks,
+            commands::get_custom_themes,
+            commands::save_custom_theme,
+            commands::delete_custom_theme,
             commands::get_settings,
             commands::set_setting,
         ])
