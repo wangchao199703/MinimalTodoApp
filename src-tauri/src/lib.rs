@@ -1,9 +1,17 @@
 mod commands;
 mod database;
+mod import;
 mod models;
 
 pub fn run() {
     let conn = database::init().expect("数据库初始化失败");
+
+    // 首启迁移:旧版 data.json → SQLite(失败不阻塞启动,从空库开始)
+    match import::maybe_import(&conn) {
+        Ok(true) => eprintln!("已从旧版 data.json 导入数据"),
+        Ok(false) => {}
+        Err(e) => eprintln!("data.json 导入失败,跳过:{e}"),
+    }
 
     tauri::Builder::default()
         .manage(database::Db(std::sync::Mutex::new(conn)))
