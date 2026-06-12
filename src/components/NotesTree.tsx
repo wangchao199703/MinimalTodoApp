@@ -5,7 +5,7 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { ChevronDown, ChevronRight, FilePlus2, Inbox, Trash2, X } from "lucide-react";
+import { ChevronRight, FilePlus2, Folder, Inbox, Trash2, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
@@ -54,7 +54,7 @@ function NoteRow({ note, active }: { note: Note; active: boolean }) {
         selectNote(note.id);
         setView({ kind: "notes" });
       }}
-      className={`group relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-1 pl-3 text-sm ${
+      className={`group relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-1 pl-7 text-sm ${
         active
           ? "bg-sidebar-selected text-sidebar-selected-fg"
           : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
@@ -99,70 +99,88 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
 
   return (
     <div>
-      <div
-        ref={dropRef}
-        className={`group flex items-center gap-1 rounded-md px-1 py-1 ${
-          isOver ? "bg-sidebar-selected ring-1 ring-accent" : ""
-        }`}
-      >
-        <button
-          onClick={() => void toggleCollapse(group)}
-          className="flex h-4 w-4 shrink-0 items-center justify-center text-sidebar-muted hover:text-sidebar-strong"
+      {/* 分组头:与一级导航行同版式(图标+文字+计数);整行点击折叠,
+          折叠箭头/新建/删除平时隐藏、悬停淡入(计数淡出让位),双击重命名 */}
+      <div className="group/sec relative flex items-center">
+        <div
+          ref={dropRef}
+          onClick={() => {
+            if (!editing) void toggleCollapse(group);
+          }}
+          onDoubleClick={() => {
+            setDraft(group.name);
+            setEditing(true);
+          }}
+          className={`flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+            isOver
+              ? "bg-sidebar-selected ring-1 ring-accent"
+              : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+          }`}
         >
-          {group.is_collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-        </button>
-        {editing ? (
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => {
-              setEditing(false);
-              if (draft.trim()) void renameNoteGroup(group.id, draft.trim());
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-            className="min-w-0 flex-1 rounded bg-sidebar-hover px-1 text-xs text-sidebar-strong outline-none"
-          />
-        ) : (
-          <span
-            onDoubleClick={() => {
-              setDraft(group.name);
-              setEditing(true);
-            }}
-            className="min-w-0 flex-1 truncate text-xs font-medium text-sidebar-muted"
+          <Folder size={14} className="shrink-0" />
+          {editing ? (
+            <input
+              autoFocus
+              value={draft}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setDraft(e.target.value)}
+              onBlur={() => {
+                setEditing(false);
+                if (draft.trim()) void renameNoteGroup(group.id, draft.trim());
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+              className="min-w-0 flex-1 rounded bg-sidebar-hover px-1 text-sm text-sidebar-strong outline-none"
+            />
+          ) : (
+            <span className="min-w-0 flex-1 truncate">{group.name}</span>
+          )}
+          {notes.length > 0 && (
+            <span className="text-xs text-sidebar-muted transition-opacity duration-150 group-hover/sec:opacity-0">
+              {notes.length}
+            </span>
+          )}
+        </div>
+        <span className="pointer-events-none absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/sec:pointer-events-auto group-hover/sec:opacity-100">
+          <button
+            title={group.is_collapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+            onClick={() => void toggleCollapse(group)}
+            className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
           >
-            {group.name}
-          </span>
-        )}
-        <button
-          title={t("S.X.NewNote")}
-          onClick={() => {
-            void addNote(group.id);
-            setView({ kind: "notes" });
-          }}
-          className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-sidebar-strong group-hover:flex"
-        >
-          <FilePlus2 size={12} />
-        </button>
-        <button
-          title={t("S.X.Delete")}
-          onClick={() => {
-            void (async () => {
-              if (
-                await confirm({
-                  title: t("S.Note.DeleteGroup"),
-                  message: t("S.Note.GroupDeleteConfirm"),
-                })
-              )
-                void removeNoteGroup(group.id);
-            })();
-          }}
-          className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-overdue group-hover:flex"
-        >
-          <Trash2 size={12} />
-        </button>
+            <ChevronRight
+              size={12}
+              className={`transition-transform duration-150 ${group.is_collapsed ? "" : "rotate-90"}`}
+            />
+          </button>
+          <button
+            title={t("S.X.NewNote")}
+            onClick={() => {
+              void addNote(group.id);
+              setView({ kind: "notes" });
+            }}
+            className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+          >
+            <FilePlus2 size={12} />
+          </button>
+          <button
+            title={t("S.X.Delete")}
+            onClick={() => {
+              void (async () => {
+                if (
+                  await confirm({
+                    title: t("S.Note.DeleteGroup"),
+                    message: t("S.Note.GroupDeleteConfirm"),
+                  })
+                )
+                  void removeNoteGroup(group.id);
+              })();
+            }}
+            className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-overdue"
+          >
+            <Trash2 size={12} />
+          </button>
+        </span>
       </div>
       {!group.is_collapsed &&
         notes.map((n) => <NoteRow key={n.id} note={n} active={selectedNoteId === n.id} />)}
@@ -234,25 +252,40 @@ export default function NotesTree() {
   return (
     <div ref={listRef} className="flex flex-col gap-0.5 pl-4">
       <div>
-        <div
-          ref={inboxDrop.ref}
-          className={`flex items-center gap-1 rounded-md px-1 py-1 ${
-            inboxDrop.isOver ? "bg-sidebar-selected ring-1 ring-accent" : ""
-          }`}
-        >
-          <button
+        {/* 收集箱:与分组头同版式,整行点击折叠,箭头悬停淡入 */}
+        <div className="group/sec relative flex items-center">
+          <div
+            ref={inboxDrop.ref}
             onClick={() => saveSetting("inbox_collapsed", inboxCollapsed ? "0" : "1")}
-            className="flex h-4 w-4 shrink-0 items-center justify-center text-sidebar-muted hover:text-sidebar-strong"
+            className={`flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+              inboxDrop.isOver
+                ? "bg-sidebar-selected ring-1 ring-accent"
+                : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+            }`}
           >
-            {inboxCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-          </button>
-          <Inbox size={11} className="shrink-0 text-sidebar-muted" />
-          <span className="min-w-0 flex-1 truncate text-xs font-medium text-sidebar-muted">
-            {t("S.X.Inbox")}
+            <Inbox size={14} className="shrink-0" />
+            <span className="min-w-0 flex-1 truncate">{t("S.X.Inbox")}</span>
+            {inbox.length > 0 && (
+              <span className="text-xs text-sidebar-muted transition-opacity duration-150 group-hover/sec:opacity-0">
+                {inbox.length}
+              </span>
+            )}
+          </div>
+          <span className="pointer-events-none absolute right-1 flex items-center opacity-0 transition-opacity duration-150 group-hover/sec:pointer-events-auto group-hover/sec:opacity-100">
+            <button
+              title={inboxCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+              onClick={(e) => {
+                e.stopPropagation();
+                saveSetting("inbox_collapsed", inboxCollapsed ? "0" : "1");
+              }}
+              className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+            >
+              <ChevronRight
+                size={12}
+                className={`transition-transform duration-150 ${inboxCollapsed ? "" : "rotate-90"}`}
+              />
+            </button>
           </span>
-          {inbox.length > 0 && (
-            <span className="text-xs text-sidebar-muted">{inbox.length}</span>
-          )}
         </div>
         {!inboxCollapsed &&
           inbox.map((n) => <NoteRow key={n.id} note={n} active={selectedNoteId === n.id} />)}
