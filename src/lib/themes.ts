@@ -2,7 +2,14 @@
 // 基线:light = :root,dark = .dark;其余变体 class 只覆盖少量 token;
 // 玻璃系共用 .glassy 面板体系,渐变底在 App.tsx 的 BACKDROPS。
 
-export const GLASS_THEMES = ["glass", "glass-ocean", "glass-forest", "glass-sunset"] as const;
+export const GLASS_THEMES = [
+  "glass",
+  "glass-ocean",
+  "glass-forest",
+  "glass-sunset",
+  "glass-light", // Frost:浅色玻璃
+  "glass-dark", // Noir:中性深黑玻璃
+] as const;
 export const LIGHT_THEMES = [
   "light",
   "light-lavender",
@@ -35,6 +42,8 @@ export const THEME_LABELS: Record<Theme, string> = {
   "glass-ocean": "Ocean",
   "glass-forest": "Forest",
   "glass-sunset": "Sunset",
+  "glass-light": "Frost",
+  "glass-dark": "Noir",
   light: "Light",
   "light-lavender": "Lavender",
   "light-mint": "Mint",
@@ -77,6 +86,8 @@ export const THEME_PREVIEW: Record<Theme, { bg: string; accent: string }> = {
   "glass-ocean": { bg: "#15323e", accent: "#38bdf8" },
   "glass-forest": { bg: "#123026", accent: "#34d399" },
   "glass-sunset": { bg: "#3c1a2c", accent: "#fb7159" },
+  "glass-light": { bg: "#e8ecf9", accent: "#6d5ef5" },
+  "glass-dark": { bg: "#131316", accent: "#c8cdd6" },
 };
 
 export function isGlassTheme(theme: Theme): boolean {
@@ -86,7 +97,8 @@ export function isGlassTheme(theme: Theme): boolean {
 export function applyTheme(theme: Theme) {
   const root = document.documentElement;
   const glassy = isGlassTheme(theme);
-  const dark = !(LIGHT_THEMES as readonly string[]).includes(theme);
+  // Frost(glass-light)虽属玻璃家族但是浅色基调
+  const dark = !(LIGHT_THEMES as readonly string[]).includes(theme) && theme !== "glass-light";
 
   root.classList.toggle("dark", dark);
   root.classList.toggle("glassy", glassy);

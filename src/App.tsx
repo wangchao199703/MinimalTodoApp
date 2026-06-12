@@ -83,6 +83,16 @@ const BACKDROPS: Record<string, { base: string; glow: string }> = {
     glow:
       "radial-gradient(ellipse at 20% 50%, rgba(251,113,89,0.14) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(244,114,182,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(249,115,22,0.08) 0%, transparent 50%)",
   },
+  "glass-light": {
+    base: "linear-gradient(135deg, #e9edfa 0%, #dde5f8 30%, #e9e0f6 60%, #e9edfa 100%)",
+    glow:
+      "radial-gradient(ellipse at 20% 50%, rgba(124,114,246,0.16) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(96,165,250,0.14) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(244,114,182,0.1) 0%, transparent 50%)",
+  },
+  "glass-dark": {
+    base: "linear-gradient(135deg, #0a0a0c 0%, #131316 35%, #1d1d22 65%, #0a0a0c 100%)",
+    glow:
+      "radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(255,255,255,0.04) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(255,255,255,0.03) 0%, transparent 55%)",
+  },
 };
 
 function ThemeBackdrop({ theme }: { theme: string }) {

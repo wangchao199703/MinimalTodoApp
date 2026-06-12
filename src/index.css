@@ -366,6 +366,54 @@
   --popup-bg: rgba(46, 22, 36, 0.92);
 }
 
+.glass-light {
+  /* Frost·浅色玻璃:明亮渐变底 + 白磨砂面板 + 深色文字 */
+  --titlebar-bg: rgba(255, 255, 255, 0.55);
+  --card-bg: rgba(255, 255, 255, 0.5);
+  --card-hover-bg: rgba(255, 255, 255, 0.68);
+  --input-bg: rgba(255, 255, 255, 0.55);
+  --primary-text: hsl(222 30% 16%);
+  --secondary-text: hsl(222 15% 40%);
+  --muted-text: hsl(222 12% 55%);
+  --divider: hsl(230 30% 20% / 0.1);
+  --accent: hsl(246 85% 62%);
+  --selected-item-bg: hsl(246 85% 62% / 0.13);
+  --overdue-text: #d6336c;
+  --warning-text: #c2730a;
+  --success-text: #2f9e44;
+  --popup-bg: rgba(255, 255, 255, 0.92);
+  --sidebar-bg: rgba(255, 255, 255, 0.5);
+  --sidebar-fg: hsl(222 15% 38%);
+  --sidebar-fg-strong: hsl(222 30% 16%);
+  --sidebar-muted: hsl(222 12% 56%);
+  --sidebar-hover-bg: hsl(230 30% 20% / 0.06);
+  --sidebar-selected-bg: hsl(246 85% 62% / 0.13);
+  --sidebar-selected-fg: hsl(246 80% 50%);
+  --sidebar-border: hsl(230 30% 20% / 0.08);
+}
+
+.glass-dark {
+  /* Noir·中性深黑玻璃:近黑渐变底 + 银灰强调 */
+  --titlebar-bg: rgba(0, 0, 0, 0.45);
+  --card-bg: rgba(255, 255, 255, 0.05);
+  --card-hover-bg: rgba(255, 255, 255, 0.09);
+  --input-bg: rgba(255, 255, 255, 0.07);
+  --primary-text: hsl(0 0% 96%);
+  --secondary-text: hsl(220 6% 68%);
+  --muted-text: hsl(220 6% 52%);
+  --divider: hsl(0 0% 100% / 0.08);
+  --accent: hsl(220 12% 78%);
+  --accent-text: hsl(220 20% 12%);
+  --selected-item-bg: hsl(0 0% 100% / 0.12);
+  --popup-bg: rgba(18, 18, 20, 0.92);
+  --sidebar-bg: rgba(0, 0, 0, 0.5);
+  --sidebar-fg: hsl(220 6% 72%);
+  --sidebar-fg-strong: hsl(0 0% 98%);
+  --sidebar-muted: hsl(220 6% 50%);
+  --sidebar-selected-bg: hsl(0 0% 100% / 0.13);
+  --sidebar-selected-fg: hsl(0 0% 100%);
+}
+
 /* —— 以下四套深色主题移植自旧 WPF 版(原始 hex 一一对应) —— */
 .dark-nord {
   --window-bg: #2e3440;

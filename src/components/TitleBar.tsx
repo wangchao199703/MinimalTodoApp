@@ -4,9 +4,11 @@ import {
   Anchor,
   CalendarDays,
   Check,
+  CircleDot,
   Cloud,
   Clover,
   Coffee,
+  Droplets,
   Flower,
   Flower2,
   Gem,
@@ -64,6 +66,8 @@ const THEME_OPTIONS: { key: Theme; icon: typeof Sun; divider?: boolean }[] = [
   { key: "glass-ocean", icon: Waves },
   { key: "glass-forest", icon: Leaf },
   { key: "glass-sunset", icon: Sunset },
+  { key: "glass-light", icon: Droplets },
+  { key: "glass-dark", icon: CircleDot },
 ];
 
 const win = getCurrentWindow();
