@@ -608,19 +608,20 @@ body {
   opacity: 0.4;
 }
 
-/* 日历面板淡入 + 右滑入(对齐旧版 FadeSlideIn,配合窗口平滑扩展防闪屏) */
-@keyframes cal-in {
-  from {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* 日历面板进场 = 旧版 Anim.FadeSlideIn(dx:24):
+   淡入 200ms CubicEase.EaseOut + 右滑入 280ms BackEase 弹簧(轻微过冲) */
+@keyframes cal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes cal-slide {
+  from { transform: translateX(24px); }
+  to { transform: translateX(0); }
 }
 .cal-in {
-  animation: cal-in 0.16s ease-out;
+  animation:
+    cal-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    cal-slide 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
 }
 
 /* 便签 Markdown 预览样式 */
