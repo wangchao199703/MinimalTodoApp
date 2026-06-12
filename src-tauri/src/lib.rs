@@ -58,9 +58,13 @@ pub fn run() {
             commands::delete_custom_theme,
             commands::get_settings,
             commands::set_setting,
+            commands::note_image_dir,
+            commands::save_note_image,
+            commands::export_file,
             window::set_acrylic,
             window::set_autostart,
             window::get_autostart,
+            window::rebuild_tray,
             updater::apply_update,
         ])
         .run(tauri::generate_context!())

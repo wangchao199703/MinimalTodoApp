@@ -311,7 +311,8 @@ pub fn get_notes(db: State<Db>) -> CmdResult<Vec<Note>> {
     rows.collect::<Result<Vec<_>, _>>().map_err(err)
 }
 
-#[tauri::command]
+// 多词裸参数必须显式 snake_case(Tauri 默认期望 camelCase,缺键的 Option 会静默变 None)
+#[tauri::command(rename_all = "snake_case")]
 pub fn create_note(db: State<Db>, group_id: Option<String>) -> CmdResult<Note> {
     let conn = db.0.lock().map_err(err)?;
     let id = uuid::Uuid::new_v4().to_string();
@@ -409,7 +410,7 @@ pub fn create_note_group(db: State<Db>, name: String) -> CmdResult<NoteGroup> {
         .map_err(err)
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn update_note_group(
     db: State<Db>,
     id: String,
@@ -510,4 +511,56 @@ pub fn set_setting(db: State<Db>, key: String, value: String) -> CmdResult<()> {
     )
     .map_err(err)?;
     Ok(())
+}
+
+// ---------- 导入导出 ----------
+
+/// 把文本写到桌面(无桌面则用户目录),返回完整路径(导出 Markdown 用,免引入 dialog 插件)
+#[tauri::command(rename_all = "snake_case")]
+pub fn export_file(file_name: String, content: String) -> CmdResult<String> {
+    let home = std::env::var("USERPROFILE").map_err(err)?;
+    let desktop = std::path::Path::new(&home).join("Desktop");
+    let dir = if desktop.is_dir() { desktop } else { std::path::PathBuf::from(&home) };
+    // 文件名只保留安全字符,防路径穿越
+    let safe: String = file_name
+        .chars()
+        .filter(|c| !matches!(c, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|'))
+        .collect();
+    let path = dir.join(if safe.is_empty() { "export.md".into() } else { safe });
+    std::fs::write(&path, content).map_err(err)?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+// ---------- 便签图片仓库(沿用旧版 NoteImageStore 目录,正文只存文件名) ----------
+
+fn note_images_dir() -> std::path::PathBuf {
+    let dir = crate::database::data_dir().join("note-images");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+#[tauri::command]
+pub fn note_image_dir() -> String {
+    note_images_dir().to_string_lossy().into_owned()
+}
+
+/// 保存便签图片:invoke 传原始字节,扩展名放 x-ext header,返回仓库内唯一文件名
+#[tauri::command]
+pub fn save_note_image(request: tauri::ipc::Request) -> CmdResult<String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("expected raw body".into());
+    };
+    let ext: String = request
+        .headers()
+        .get("x-ext")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("png")
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .take(8)
+        .collect();
+    let ext = if ext.is_empty() { "png".to_string() } else { ext.to_lowercase() };
+    let name = format!("{}.{}", uuid::Uuid::new_v4().simple(), ext);
+    std::fs::write(note_images_dir().join(&name), bytes).map_err(err)?;
+    Ok(name)
 }

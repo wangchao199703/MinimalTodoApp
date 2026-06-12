@@ -60,12 +60,42 @@ function note(freq: number, at: number, dur: number, gain = 0.12) {
   osc.stop(ctx.currentTime + at + dur);
 }
 
-/** 完成音效:上行三连音 */
+/**
+ * 钟/马林巴音色的一声(对齐旧版 CelebrationSound.AddBell):
+ * 基频 + 泛音(2×0.45 / 3×0.22 / 4.01×0.10),指数衰减包络 + 4ms 淡入去爆音
+ */
+function bell(freq: number, at: number, decay: number, amp: number) {
+  const ctx = audioCtx!;
+  const t0 = ctx.currentTime + at;
+  const dur = 0.95;
+  const partials: [number, number][] = [
+    [1.0, 1.0],
+    [2.0, 0.45],
+    [3.0, 0.22],
+    [4.01, 0.1],
+  ];
+  const env = ctx.createGain();
+  env.gain.setValueAtTime(0.0001, t0);
+  env.gain.linearRampToValueAtTime(amp * 0.22, t0 + 0.004); // 4ms 淡入
+  env.gain.setTargetAtTime(0.0001, t0 + 0.004, 1 / decay); // 指数衰减(时间常数 = 1/decay)
+  env.connect(ctx.destination);
+  for (const [mult, a] of partials) {
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq * mult;
+    g.gain.value = a;
+    osc.connect(g).connect(env);
+    osc.start(t0);
+    osc.stop(t0 + dur);
+  }
+}
+
+/** 完成音效:两声上行铃音 A5→E6(对齐旧版 CelebrationSound,Face ID 解锁风格) */
 export function playCelebration() {
   audioCtx ??= new AudioContext();
-  note(523.25, 0, 0.18); // C5
-  note(659.25, 0.1, 0.18); // E5
-  note(783.99, 0.2, 0.3); // G5
+  bell(880.0, 0, 7.5, 0.55); // A5
+  bell(1318.51, 0.11, 5.5, 0.65); // E6
 }
 
 /** 周期提醒提示音:轻两声 */

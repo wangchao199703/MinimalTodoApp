@@ -1,21 +1,46 @@
 import { useEffect, useRef, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
+  dropTargetForElements,
+  monitorForElements,
+} from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
+import {
   ChevronDown,
   ChevronRight,
-  Eye,
   FilePlus2,
   FolderPlus,
   Inbox,
-  Pencil,
   Trash2,
   X,
 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
-import { renderMarkdown, deriveTitle } from "../../lib/markdown";
+import { useSortableItem } from "../../hooks/useSortableItem";
+import { reorderIds } from "../../lib/dnd";
+import { deriveTitle } from "../../lib/markdown";
 import { t } from "../../lib/i18n";
-import type { Note, NoteGroup } from "../../lib/tauri-ipc";
+import { ipc, type Note, type NoteGroup } from "../../lib/tauri-ipc";
 import { confirm } from "../ui/ConfirmDialog";
+import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
+
+/** 把元素注册为「拖便签进分组」的释放目标(groupId 空串 = 收集箱) */
+function useNoteGroupDrop(groupId: string) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [isOver, setIsOver] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    return dropTargetForElements({
+      element: el,
+      canDrop: ({ source }) => source.data.type === "note",
+      getData: () => ({ type: "note-group", groupId }),
+      onDragEnter: () => setIsOver(true),
+      onDragLeave: () => setIsOver(false),
+      onDrop: () => setIsOver(false),
+    });
+  }, [groupId]);
+  return { ref, isOver };
+}
 
 function displayTitle(n: Note): string {
   return n.custom_title || n.title || t("S.X.UntitledNote");
@@ -24,13 +49,22 @@ function displayTitle(n: Note): string {
 function NoteRow({ note, active }: { note: Note; active: boolean }) {
   const selectNote = useAppStore((s) => s.selectNote);
   const removeNote = useAppStore((s) => s.removeNote);
+  const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("note", note.id);
   return (
     <div
+      ref={ref}
       onClick={() => selectNote(note.id)}
-      className={`group flex cursor-default items-center gap-1.5 rounded-md px-2 py-1.5 text-sm ${
+      className={`group relative flex cursor-default items-center gap-1.5 rounded-md px-2 py-1.5 text-sm ${
         active ? "bg-selected text-text-1" : "text-text-2 hover:bg-card-hover"
-      }`}
+      } ${isDragging ? "dragging" : ""}`}
     >
+      {closestEdge && (
+        <div
+          className={`absolute inset-x-1 z-10 h-0.5 rounded bg-accent ${
+            closestEdge === "top" ? "-top-px" : "-bottom-px"
+          }`}
+        />
+      )}
       <span className="min-w-0 flex-1 truncate">{displayTitle(note)}</span>
       <button
         title={t("S.X.Delete")}
@@ -57,10 +91,17 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
   const addNote = useAppStore((s) => s.addNote);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(group.name);
+  // 拖便签到分组头 = 移入该分组(对齐旧版 NotesDropHandler)
+  const { ref: dropRef, isOver } = useNoteGroupDrop(group.id);
 
   return (
     <div className="mb-1">
-      <div className="group flex items-center gap-1 px-1 py-1">
+      <div
+        ref={dropRef}
+        className={`group flex items-center gap-1 rounded-md px-1 py-1 ${
+          isOver ? "bg-selected ring-1 ring-accent" : ""
+        }`}
+      >
         <button
           onClick={() => void toggleCollapse(group)}
           className="flex h-4 w-4 items-center justify-center text-muted"
@@ -126,16 +167,20 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
 function Editor({ note }: { note: Note }) {
   const patchNote = useAppStore((s) => s.patchNote);
   const settings = useAppStore((s) => s.settings);
-  const [content, setContent] = useState(note.content);
   const [title, setTitle] = useState(note.custom_title);
-  const [preview, setPreview] = useState(false);
+  const contentRef = useRef(note.content);
   const timer = useRef<number | null>(null);
 
-  // 切换便签时重置本地草稿
+  // 图片仓库目录就绪后再挂编辑器,确保首次渲染图片即可解析
+  const [imgReady, setImgReady] = useState(false);
   useEffect(() => {
-    setContent(note.content);
+    void ensureNoteImageDir().then(() => setImgReady(true));
+  }, []);
+
+  // 切换便签时重置本地草稿(正文由 NoteEditor 按 noteId 自行重载)
+  useEffect(() => {
     setTitle(note.custom_title);
-    setPreview(false);
+    contentRef.current = note.content;
   }, [note.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 800ms 防抖自动保存(对齐旧版手感)
@@ -169,36 +214,21 @@ function Editor({ note }: { note: Note }) {
           placeholder={note.title || t("S.X.UntitledNote")}
           onChange={(e) => {
             setTitle(e.target.value);
-            scheduleSave(content, e.target.value);
+            scheduleSave(contentRef.current, e.target.value);
           }}
           className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-text-1 outline-none placeholder:text-muted"
         />
-        <button
-          title={preview ? t("S.X.EditMode") : t("S.X.Preview")}
-          onClick={() => setPreview(!preview)}
-          className={`flex h-6 w-6 items-center justify-center rounded hover:bg-card-hover ${
-            preview ? "text-accent" : "text-text-2"
-          }`}
-        >
-          {preview ? <Pencil size={13} /> : <Eye size={13} />}
-        </button>
       </div>
-      {preview ? (
-        <div
+      {/* 所见即所得 Markdown 编辑器:输入 md 语法实时生效,正文持久化仍为 Markdown 文本 */}
+      {imgReady && (
+        <NoteEditor
+          noteId={note.id}
+          content={note.content}
           style={style}
-          className="md-body min-h-0 flex-1 overflow-y-auto px-4 py-3 select-text"
-          dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }}
-        />
-      ) : (
-        <textarea
-          value={content}
-          onChange={(e) => {
-            setContent(e.target.value);
-            scheduleSave(e.target.value, title);
+          onChange={(md) => {
+            contentRef.current = md;
+            scheduleSave(md, title);
           }}
-          spellCheck={false}
-          style={style}
-          className="min-h-0 flex-1 resize-none bg-transparent px-4 py-3 text-sm text-text-1 outline-none select-text"
         />
       )}
     </div>
@@ -213,7 +243,51 @@ export default function NotesView() {
   const saveSetting = useAppStore((s) => s.saveSetting);
   const addNote = useAppStore((s) => s.addNote);
   const addNoteGroup = useAppStore((s) => s.addNoteGroup);
+  const patchNote = useAppStore((s) => s.patchNote);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
+  const inboxDrop = useNoteGroupDrop("");
+
+  // 便签拖拽:行间重排 / 拖到分组头移入分组(对齐旧版 NotesDropHandler)
+  useEffect(() => {
+    return monitorForElements({
+      canMonitor: ({ source }) => source.data.type === "note",
+      onDrop: ({ source, location }) => {
+        const target = location.current.dropTargets[0];
+        if (!target) return;
+        const state = useAppStore.getState();
+        const srcId = source.data.id as string;
+        const src = state.notes.find((n) => n.id === srcId);
+        if (!src) return;
+
+        if (target.data.type === "note-group") {
+          const gid = target.data.groupId as string; // "" = 收集箱
+          if ((src.group_id ?? "") !== gid) void patchNote({ id: srcId, group_id: gid });
+          return;
+        }
+
+        // 便签 → 便签:重排,跨组时同时改归属
+        const tgt = state.notes.find((n) => n.id === target.data.id);
+        if (!tgt) return;
+        const ordered = [...state.notes].sort((a, b) => a.order_index - b.order_index);
+        const ids = reorderIds(
+          ordered.map((n) => n.id),
+          srcId,
+          tgt.id,
+          extractClosestEdge(target.data),
+        );
+        const pos = new Map(ids.map((id, i) => [id, i]));
+        useAppStore.setState({
+          notes: [...state.notes]
+            .map((n) => ({ ...n, order_index: pos.get(n.id) ?? n.order_index }))
+            .sort((a, b) => a.order_index - b.order_index),
+        });
+        void ipc.reorderNotes(ids);
+        if ((src.group_id ?? null) !== (tgt.group_id ?? null)) {
+          void patchNote({ id: srcId, group_id: tgt.group_id ?? "" });
+        }
+      },
+    });
+  }, [patchNote]);
 
   const byGroup = new Map<string | null, Note[]>();
   for (const n of notes) {
@@ -249,7 +323,12 @@ export default function NotesView() {
         </div>
         <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto p-2 pt-0">
           <div className="mb-1">
-            <div className="flex items-center gap-1 px-1 py-1">
+            <div
+              ref={inboxDrop.ref}
+              className={`flex items-center gap-1 rounded-md px-1 py-1 ${
+                inboxDrop.isOver ? "bg-selected ring-1 ring-accent" : ""
+              }`}
+            >
               <button
                 onClick={() => saveSetting("inbox_collapsed", inboxCollapsed ? "0" : "1")}
                 className="flex h-4 w-4 items-center justify-center text-muted"

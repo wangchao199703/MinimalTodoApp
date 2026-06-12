@@ -124,6 +124,23 @@ export default function App() {
   const calRef = useRef<HTMLElement>(null);
   const prevSchedule = useRef(false);
 
+  // 中央区切换播 IntroScaleFade(对齐旧版 CentralViewAnimate):
+  // 重触发 class 而非 key 重挂,保住 QuickAdd 草稿等局部状态
+  const mainRef = useRef<HTMLElement>(null);
+  const viewKey = view.kind === "group" ? `group:${view.groupId}` : view.kind;
+  const firstView = useRef(true);
+  useEffect(() => {
+    if (firstView.current) {
+      firstView.current = false;
+      return;
+    }
+    const el = mainRef.current;
+    if (!el) return;
+    el.classList.remove("view-in");
+    void el.offsetWidth; // 强制 reflow,重新触发动画
+    el.classList.add("view-in");
+  }, [viewKey]);
+
   useEffect(() => {
     void init();
   }, [init]);
@@ -224,6 +241,7 @@ export default function App() {
         <div className="flex min-h-0 flex-1">
           {/* 待办列:开日历时固定宽度(只由中间分隔条调整),否则占满 */}
           <main
+            ref={mainRef}
             style={calOpen ? { width: taskWidth } : undefined}
             className={`flex flex-col bg-content ${calOpen ? "shrink-0" : "min-w-0 flex-1"}`}
           >

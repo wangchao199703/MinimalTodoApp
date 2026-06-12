@@ -133,8 +133,19 @@ export const ipc = {
     invoke<NoteGroup>("update_note_group", { id, ...fields }),
   deleteNoteGroup: (id: string) => invoke<void>("delete_note_group", { id }),
 
+  /** 导出文本到桌面,返回完整路径 */
+  exportFile: (fileName: string, content: string) =>
+    invoke<string>("export_file", { file_name: fileName, content }),
+
+  /** 便签图片:原始字节走 IPC,扩展名放 header;返回仓库内文件名 */
+  saveNoteImage: (bytes: Uint8Array, ext: string) =>
+    invoke<string>("save_note_image", bytes, { headers: { "x-ext": ext } }),
+  noteImageDir: () => invoke<string>("note_image_dir"),
+
   setAcrylic: (enabled: boolean, dark: boolean) =>
     invoke<void>("set_acrylic", { enabled, dark }),
   setAutostart: (enabled: boolean) => invoke<void>("set_autostart", { enabled }),
   getAutostart: () => invoke<boolean>("get_autostart"),
+  /** 切语言后即时重建托盘菜单 */
+  rebuildTray: (en: boolean) => invoke<void>("rebuild_tray", { en }),
 };

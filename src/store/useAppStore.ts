@@ -63,7 +63,15 @@ interface AppState {
   pushToast: (message: string) => void;
   dismissToast: (id: number) => void;
 
-  addTask: (title: string, extra?: { due_date?: string; priority?: number }) => Promise<void>;
+  addTask: (
+    title: string,
+    extra?: {
+      due_date?: string;
+      priority?: number;
+      reminder_enabled?: boolean;
+      reminder_interval_minutes?: number;
+    },
+  ) => Promise<void>;
   patchTask: (req: UpdateTaskRequest) => Promise<void>;
   toggleComplete: (task: Task) => Promise<void>;
   renameTask: (id: string, title: string) => Promise<void>;
@@ -220,6 +228,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     setLang(language);
     set({ language });
     get().saveSetting("language", language);
+    // 托盘菜单随语言即时重建(对齐旧版)
+    void ipc.rebuildTray(language === "en");
   },
 
   setSortMode: (sortMode) => {

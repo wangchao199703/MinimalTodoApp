@@ -14,7 +14,7 @@ export default function Toasts() {
         {toasts.map((t) => (
           <div
             key={t.id}
-            className="flex items-center gap-2 rounded-lg border border-divider bg-popup px-3 py-2 shadow-lg"
+            className="toast-in flex items-center gap-2 rounded-lg border border-divider bg-popup px-3 py-2 shadow-lg"
           >
             <Bell size={14} className="shrink-0 text-accent" />
             <span className="max-w-64 truncate text-sm text-text-1">{t.message}</span>

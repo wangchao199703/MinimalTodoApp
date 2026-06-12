@@ -75,8 +75,15 @@ export function renderMarkdown(md: string): string {
   return out.join("\n");
 }
 
-/** 从 Markdown 正文派生标题:第一行非空文本去掉标记 */
+/** 从 Markdown 正文派生标题:第一行非空文本去掉标记(图片/HTML 标记行跳过内容) */
 export function deriveTitle(md: string): string {
   const first = md.split(/\r?\n/).find((l) => l.trim() !== "") ?? "";
-  return first.replace(/^#{1,4}\s+/, "").replace(/[*`>]/g, "").trim().slice(0, 60);
+  return first
+    .replace(/^#{1,4}\s+/, "")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/^[-*+]\s+(\[[ xX]\]\s*)?/, "")
+    .replace(/[*`>]/g, "")
+    .trim()
+    .slice(0, 60);
 }

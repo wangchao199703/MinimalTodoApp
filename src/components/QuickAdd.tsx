@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Calendar, Flag, Plus, X } from "lucide-react";
+import { Bell, Calendar, Flag, Plus, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { formatDue } from "../lib/date";
 import { t } from "../lib/i18n";
 import DuePicker from "./DuePicker";
+import ReminderPicker, { formatInterval } from "./ReminderPicker";
 import { PRIORITY_KEY } from "./TaskItem";
 
 const PRIORITY_COLOR: Record<number, string> = {
@@ -18,7 +19,9 @@ export default function QuickAdd() {
   const [text, setText] = useState("");
   const [due, setDueLocal] = useState("");
   const [priority, setPriorityLocal] = useState(2);
+  const [reminder, setReminder] = useState(0);
   const [dueAnchor, setDueAnchor] = useState<HTMLElement | null>(null);
+  const [reminderAnchor, setReminderAnchor] = useState<HTMLElement | null>(null);
 
   if (view.kind === "completed") return null;
 
@@ -28,20 +31,38 @@ export default function QuickAdd() {
     setText("");
     setDueLocal("");
     setPriorityLocal(2);
-    void addTask(title, { due_date: due || undefined, priority });
+    setReminder(0);
+    void addTask(title, {
+      due_date: due || undefined,
+      priority,
+      ...(reminder > 0
+        ? { reminder_enabled: true, reminder_interval_minutes: reminder }
+        : {}),
+    });
   };
 
   return (
     <div className="shrink-0 border-t border-divider bg-titlebar p-2.5">
-      {due && (
+      {(due || reminder > 0) && (
         <div className="mb-1.5 flex items-center gap-1 px-1">
-          <span className="flex items-center gap-1 rounded-full bg-selected px-2 py-0.5 text-xs text-text-1">
-            <Calendar size={10} />
-            {formatDue(due)}
-            <button onClick={() => setDueLocal("")} className="text-muted hover:text-overdue">
-              <X size={10} />
-            </button>
-          </span>
+          {due && (
+            <span className="flex items-center gap-1 rounded-full bg-selected px-2 py-0.5 text-xs text-text-1">
+              <Calendar size={10} />
+              {formatDue(due)}
+              <button onClick={() => setDueLocal("")} className="text-muted hover:text-overdue">
+                <X size={10} />
+              </button>
+            </span>
+          )}
+          {reminder > 0 && (
+            <span className="flex items-center gap-1 rounded-full bg-selected px-2 py-0.5 text-xs text-text-1">
+              <Bell size={10} />
+              {formatInterval(reminder)}
+              <button onClick={() => setReminder(0)} className="text-muted hover:text-overdue">
+                <X size={10} />
+              </button>
+            </span>
+          )}
         </div>
       )}
       <div className="flex items-center gap-2 rounded-lg bg-input px-3 py-2 ring-1 ring-divider focus-within:ring-accent">
@@ -63,6 +84,15 @@ export default function QuickAdd() {
           <Flag size={13} style={{ color: PRIORITY_COLOR[priority] }} />
         </button>
         <button
+          title={reminder > 0 ? t("S.SetAsReminder") : t("S.ChooseReminder")}
+          onClick={(e) => setReminderAnchor(e.currentTarget)}
+          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-card-hover ${
+            reminder > 0 ? "text-accent" : "text-muted hover:text-accent"
+          }`}
+        >
+          <Bell size={13} />
+        </button>
+        <button
           title={t("S.Label.DueTime")}
           onClick={(e) => setDueAnchor(e.currentTarget)}
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:bg-card-hover hover:text-accent"
@@ -78,6 +108,15 @@ export default function QuickAdd() {
           onPick={setDueLocal}
           onClear={() => setDueLocal("")}
           onClose={() => setDueAnchor(null)}
+        />
+      )}
+      {reminderAnchor && (
+        <ReminderPicker
+          anchor={reminderAnchor}
+          current={reminder}
+          onPick={setReminder}
+          onClear={() => setReminder(0)}
+          onClose={() => setReminderAnchor(null)}
         />
       )}
     </div>

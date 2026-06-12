@@ -55,8 +55,8 @@ export function ConfirmHost() {
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[290] bg-black/40" onClick={() => close(false)} />
-      <div className="fixed top-1/2 left-1/2 z-[300] w-80 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-divider bg-popup p-5 shadow-2xl">
+      <div className="backdrop-in fixed inset-0 z-[290] bg-black/40" onClick={() => close(false)} />
+      <div className="modal-in fixed top-1/2 left-1/2 z-[300] w-80 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-divider bg-popup p-5 shadow-2xl">
         <p className="text-sm font-semibold text-text-1">{pending.title}</p>
         <p className="mt-2 text-sm leading-relaxed text-text-2">{pending.message}</p>
         <div className="mt-4 flex justify-end gap-2">

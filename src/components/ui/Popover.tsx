@@ -49,7 +49,8 @@ export function Popover(props: {
       <div className="fixed inset-0" style={{ zIndex: z - 1 }} onClick={props.onClose} onContextMenu={(e) => { e.preventDefault(); props.onClose(); }} />
       <div
         ref={ref}
-        className="fixed rounded-lg border border-divider bg-popup p-1 shadow-lg"
+        // 定位完成后才挂 pop-in,避免动画在 -9999 占位坐标处播掉
+        className={`fixed rounded-lg border border-divider bg-popup p-1 shadow-lg ${pos ? "pop-in" : ""}`}
         style={{ zIndex: z, top: pos?.top ?? -9999, left: pos?.left ?? -9999 }}
       >
         {props.children}

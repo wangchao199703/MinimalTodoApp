@@ -214,9 +214,20 @@ export default function CalendarView() {
     });
   }, [setDue]);
 
+  // 切视图/今天 = IntroScaleFade,翻页 = FadeSlideIn(dx:±24)(对齐旧版 CalendarView 动画)
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const playAnim = (cls: string) => {
+    const el = contentRef.current;
+    if (!el) return;
+    el.classList.remove("view-in", "cal-flip-prev", "cal-flip-next");
+    void el.offsetWidth; // 强制 reflow,重新触发动画
+    el.classList.add(cls);
+  };
+
   const changeMode = (m: CalMode) => {
     setMode(m);
     saveSetting("calendar_view", m);
+    playAnim("view-in");
   };
   const shift = (dir: number) => {
     const d = new Date(anchor);
@@ -224,6 +235,7 @@ export default function CalendarView() {
     else if (mode === "week") d.setDate(d.getDate() + 7 * dir);
     else d.setDate(d.getDate() + dir);
     setAnchor(d);
+    playAnim(dir < 0 ? "cal-flip-prev" : "cal-flip-next");
   };
 
   // 节假日(覆盖当前及相邻年份)
@@ -292,7 +304,10 @@ export default function CalendarView() {
           <ChevronLeft size={16} />
         </button>
         <button
-          onClick={() => setAnchor(new Date())}
+          onClick={() => {
+            setAnchor(new Date());
+            playAnim("view-in");
+          }}
           className="rounded px-2 py-1 text-xs text-text-2 hover:bg-card-hover"
         >
           {t("S.X.Today")}
@@ -311,35 +326,37 @@ export default function CalendarView() {
         </span>
       </div>
 
-      {mode === "month" && (
-        <MonthView anchor={anchor} dueByDay={dueByDay} holidays={holidays} todayKey={todayKey} weekdays={weekdays} />
-      )}
-      {mode === "week" && (
-        <div className="flex min-h-0 flex-1 gap-1">
-          {Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(mondayOf(anchor));
-            d.setDate(d.getDate() + i);
-            const key = toDueText(d, false);
-            return (
-              <WeekColumn
-                key={key}
-                date={d}
-                today={key === todayKey}
-                holiday={holidays.get(key)}
-                tasks={dueByDay.get(key) ?? []}
-              />
-            );
-          })}
-        </div>
-      )}
-      {mode === "day" && (
-        <DayPanel
-          date={anchor}
-          today={toDueText(anchor, false) === todayKey}
-          holiday={holidays.get(toDueText(anchor, false))}
-          tasks={dueByDay.get(toDueText(anchor, false)) ?? []}
-        />
-      )}
+      <div ref={contentRef} className="flex min-h-0 flex-1 flex-col">
+        {mode === "month" && (
+          <MonthView anchor={anchor} dueByDay={dueByDay} holidays={holidays} todayKey={todayKey} weekdays={weekdays} />
+        )}
+        {mode === "week" && (
+          <div className="flex min-h-0 flex-1 gap-1">
+            {Array.from({ length: 7 }, (_, i) => {
+              const d = new Date(mondayOf(anchor));
+              d.setDate(d.getDate() + i);
+              const key = toDueText(d, false);
+              return (
+                <WeekColumn
+                  key={key}
+                  date={d}
+                  today={key === todayKey}
+                  holiday={holidays.get(key)}
+                  tasks={dueByDay.get(key) ?? []}
+                />
+              );
+            })}
+          </div>
+        )}
+        {mode === "day" && (
+          <DayPanel
+            date={anchor}
+            today={toDueText(anchor, false) === todayKey}
+            holiday={holidays.get(toDueText(anchor, false))}
+            tasks={dueByDay.get(toDueText(anchor, false)) ?? []}
+          />
+        )}
+      </div>
     </div>
   );
 }

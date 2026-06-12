@@ -25,7 +25,11 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$HOME/AppData/Roaming/MinimalTodoApp/note-images/**"]
+      }
     }
   },
   "bundle": {

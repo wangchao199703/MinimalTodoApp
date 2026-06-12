@@ -11,9 +11,9 @@ export default function Modal(props: {
 }) {
   return (
     <Portal>
-      <div className="fixed inset-0 z-[290] bg-black/40" onClick={props.onClose} />
+      <div className="backdrop-in fixed inset-0 z-[290] bg-black/40" onClick={props.onClose} />
       <div
-        className="fixed top-1/2 left-1/2 z-[300] flex max-h-[85vh] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-divider bg-popup shadow-2xl"
+        className="modal-in fixed top-1/2 left-1/2 z-[300] flex max-h-[85vh] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-divider bg-popup shadow-2xl"
         style={{ width: props.width ?? 420 }}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-divider px-4 py-2.5">

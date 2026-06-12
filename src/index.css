@@ -624,6 +624,74 @@ body {
     cal-slide 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
 }
 
+/* ===== 旧版 Anim 体系移植(AnimationHelper.cs):
+   Fast 120ms / Base 200ms CubicEase.EaseOut(淡入淡出)
+   Emphasis 280ms BackEase 弹簧(位移/缩放,轻微过冲;Opacity 不用弹簧) ===== */
+@keyframes anim-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes anim-scale {
+  from { transform: scale(0.96); }
+  to { transform: scale(1); }
+}
+/* 中央区视图切换 / 日历切视图 = IntroScaleFade(缩放 0.96→1 弹簧 + 淡入) */
+.view-in {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    anim-scale 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+/* 模态框进场 = Anim.Intro。注意:Tailwind v4 的 -translate-x-1/2 走独立
+   translate 属性,keyframes 只能动 transform:scale,否则平移叠加双倍偏移 */
+.modal-in {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    anim-scale 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+/* 模态遮罩淡入 */
+.backdrop-in {
+  animation: anim-fade 0.15s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+/* 弹层/右键菜单:Fast 档淡入 + 轻微下滑 */
+@keyframes pop-slide {
+  from { transform: translateY(-4px); }
+  to { transform: translateY(0); }
+}
+.pop-in {
+  animation:
+    anim-fade 0.12s cubic-bezier(0.33, 1, 0.68, 1) both,
+    pop-slide 0.15s cubic-bezier(0.33, 1, 0.68, 1) both;
+}
+/* 日历翻页 = FadeSlideIn(dx:±24),内容沿翻页方向弹性滑入 */
+@keyframes flip-from-left {
+  from { transform: translateX(-24px); }
+  to { transform: translateX(0); }
+}
+@keyframes flip-from-right {
+  from { transform: translateX(24px); }
+  to { transform: translateX(0); }
+}
+.cal-flip-prev {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    flip-from-left 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+.cal-flip-next {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    flip-from-right 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+/* 提醒气泡进场:淡入 + 上方滑落(对齐旧版 ToastWindow 进场) */
+@keyframes toast-slide {
+  from { transform: translateY(-10px); }
+  to { transform: translateY(0); }
+}
+.toast-in {
+  animation:
+    anim-fade 0.2s cubic-bezier(0.33, 1, 0.68, 1) both,
+    toast-slide 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
+}
+
 /* 便签 Markdown 预览样式 */
 .md-body .md-h1 { font-size: 1.4em; font-weight: 700; margin: 0.4em 0; }
 .md-body .md-h2 { font-size: 1.25em; font-weight: 700; margin: 0.4em 0; }
@@ -655,3 +723,79 @@ body {
   color: var(--secondary-text);
 }
 .md-body .md-link { color: var(--accent); text-decoration: underline; }
+
+/* ===== 便签所见即所得编辑器(tiptap):输入 md 语法实时渲染 ===== */
+.note-editor .note-prose {
+  min-height: 100%;
+  padding: 0.75rem 1rem 2rem;
+  outline: none;
+  color: var(--primary-text);
+  font-size: 0.875rem;
+  caret-color: var(--accent);
+  word-break: break-word;
+}
+.note-prose h1 { font-size: 1.4em; font-weight: 700; margin: 0.4em 0; }
+.note-prose h2 { font-size: 1.25em; font-weight: 700; margin: 0.4em 0; }
+.note-prose h3 { font-size: 1.1em; font-weight: 600; margin: 0.3em 0; }
+.note-prose h4 { font-size: 1em; font-weight: 600; margin: 0.3em 0; }
+.note-prose p { margin: 0.15em 0; }
+.note-prose ul:not([data-type="taskList"]) {
+  margin: 0.2em 0;
+  padding-left: 1.4em;
+  list-style: disc;
+}
+.note-prose ol { margin: 0.2em 0; padding-left: 1.4em; list-style: decimal; }
+.note-prose code {
+  background: var(--input-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+}
+.note-prose pre {
+  background: var(--input-bg);
+  border-radius: 8px;
+  padding: 0.6em 0.8em;
+  margin: 0.4em 0;
+  font-family: Consolas, monospace;
+  font-size: 0.9em;
+  overflow-x: auto;
+}
+.note-prose pre code { background: transparent; padding: 0; }
+.note-prose blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.7em;
+  margin: 0.3em 0;
+  color: var(--secondary-text);
+}
+.note-prose a { color: var(--accent); text-decoration: underline; }
+.note-prose hr { border: none; border-top: 1px solid var(--divider); margin: 0.6em 0; }
+.note-prose img {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 0.3em 0;
+}
+.note-prose img.ProseMirror-selectednode { outline: 2px solid var(--accent); }
+/* 任务列表:复选框行(对齐旧版可勾选任务项) */
+.note-prose ul[data-type="taskList"] {
+  margin: 0.2em 0;
+  padding-left: 0.1em;
+  list-style: none;
+}
+.note-prose ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45em;
+}
+.note-prose ul[data-type="taskList"] li > label {
+  flex-shrink: 0;
+  margin-top: 0.25em;
+}
+.note-prose ul[data-type="taskList"] li > label input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.note-prose ul[data-type="taskList"] li[data-checked="true"] > div {
+  color: var(--muted-text);
+  text-decoration: line-through;
+}

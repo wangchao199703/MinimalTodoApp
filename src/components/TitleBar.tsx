@@ -5,6 +5,8 @@ import {
   CalendarDays,
   Check,
   CircleDot,
+  CircleHelp,
+  FileUp,
   Cloud,
   Clover,
   Coffee,
@@ -42,6 +44,8 @@ import { checkForUpdate, type UpdateInfo } from "../lib/updater";
 import { Popover, MenuItem } from "./ui/Popover";
 import SettingsDialog from "./dialogs/SettingsDialog";
 import UpdateDialog from "./dialogs/UpdateDialog";
+import HelpDialog from "./dialogs/HelpDialog";
+import ImportExportDialog from "./dialogs/ImportExportDialog";
 
 /** 三个家族,排序:浅色 → 深色 → 渐变玻璃(分组间插分隔线) */
 const THEME_OPTIONS: { key: Theme; icon: typeof Sun; divider?: boolean }[] = [
@@ -83,6 +87,8 @@ export default function TitleBar() {
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [ioOpen, setIoOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
 
   const manualCheck = () => {
@@ -185,6 +191,24 @@ export default function TitleBar() {
             </MenuItem>
             <MenuItem
               onClick={() => {
+                setIoOpen(true);
+                setMenuAnchor(null);
+              }}
+            >
+              <FileUp size={13} />
+              {t("S.ImportExport")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setHelpOpen(true);
+                setMenuAnchor(null);
+              }}
+            >
+              <CircleHelp size={13} />
+              {t("S.Help.Title")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
                 manualCheck();
                 setMenuAnchor(null);
               }}
@@ -247,6 +271,8 @@ export default function TitleBar() {
         </Popover>
       )}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
+      {ioOpen && <ImportExportDialog onClose={() => setIoOpen(false)} />}
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
     </header>
   );

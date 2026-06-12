@@ -23,6 +23,7 @@ import type { Task } from "../lib/tauri-ipc";
 import { Popover, MenuItem } from "./ui/Popover";
 import { confirm } from "./ui/ConfirmDialog";
 import DuePicker from "./DuePicker";
+import { formatInterval } from "./ReminderPicker";
 import TaskEditDialog from "./dialogs/TaskEditDialog";
 
 const PRIORITY_COLOR: Record<number, string> = {
@@ -187,7 +188,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
             {task.reminder_enabled && (
               <span className="flex items-center gap-0.5 text-accent">
                 <Bell size={10} />
-                {task.reminder_interval_minutes}分
+                {formatInterval(task.reminder_interval_minutes)}
               </span>
             )}
             {totalChildren > 0 && (

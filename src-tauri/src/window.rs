@@ -46,8 +46,22 @@ fn write_setting(app: &AppHandle, key: &str, value: &str) {
 
 // ============ 系统托盘 ============
 
+/// 切语言后即时重建托盘菜单与提示(对齐旧版 LanguageChanged 重建)
+#[tauri::command]
+pub fn rebuild_tray(app: AppHandle, en: bool) -> Result<(), String> {
+    let Some(tray) = app.tray_by_id("main") else { return Ok(()) };
+    let show_label = if en { "Show window" } else { "显示主界面" };
+    let quit_label = if en { "Exit" } else { "退出" };
+    let show = MenuItem::with_id(&app, "show", show_label, true, None::<&str>).map_err(err)?;
+    let quit = MenuItem::with_id(&app, "quit", quit_label, true, None::<&str>).map_err(err)?;
+    let menu = Menu::with_items(&app, &[&show, &quit]).map_err(err)?;
+    tray.set_menu(Some(menu)).map_err(err)?;
+    tray.set_tooltip(Some(if en { "Todo" } else { "待办" })).map_err(err)?;
+    Ok(())
+}
+
 pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    // 托盘菜单按启动时语言构建(对齐旧版:切语言后重启生效)
+    // 托盘菜单按启动时语言构建,切语言时经 rebuild_tray 即时重建
     let en = read_setting(app, "language").as_deref() == Some("en");
     let show_label = if en { "Show window" } else { "显示主界面" };
     let quit_label = if en { "Exit" } else { "退出" };
