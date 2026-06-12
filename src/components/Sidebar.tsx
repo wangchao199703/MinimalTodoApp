@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { CheckCircle2, Inbox, Plus, Tag, X } from "lucide-react";
+import { CheckCircle2, Inbox, Kanban, LayoutGrid, Plus, Tag, X } from "lucide-react";
 import { useAppStore, type View } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
@@ -147,6 +147,18 @@ export default function Sidebar() {
           count={uncompleted.length}
           active={activeKey === "all"}
           onClick={() => setView({ kind: "all" })}
+        />
+        <NavRow
+          icon={<LayoutGrid size={14} className="shrink-0" />}
+          label="四象限"
+          active={activeKey === "quadrant"}
+          onClick={() => setView({ kind: "quadrant" })}
+        />
+        <NavRow
+          icon={<Kanban size={14} className="shrink-0" />}
+          label="标签看板"
+          active={activeKey === "tagboard"}
+          onClick={() => setView({ kind: "tagboard" })}
         />
         <NavRow
           icon={<CheckCircle2 size={14} className="shrink-0" />}

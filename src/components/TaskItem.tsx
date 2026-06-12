@@ -1,16 +1,61 @@
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import {
+  Bell,
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  CornerDownRight,
+  CornerUpLeft,
+  Pin,
+  PinOff,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
+import { childStats } from "../lib/sort";
+import { dueState, countdownText, formatDue } from "../lib/date";
 import type { Task } from "../lib/tauri-ipc";
+import { Popover, MenuItem } from "./ui/Popover";
+import DuePicker from "./DuePicker";
 
-export default function TaskItem({ task }: { task: Task }) {
+const PRIORITY_COLOR: Record<number, string> = {
+  1: "var(--success-text)",
+  2: "var(--warning-text)",
+  3: "var(--overdue-text)",
+};
+
+export const PRIORITY_LABEL: Record<number, string> = { 1: "低", 2: "中", 3: "高" };
+
+const DUE_CLASS: Record<string, string> = {
+  overdue: "text-overdue",
+  today: "text-warning",
+  soon: "text-warning",
+  normal: "text-text-2",
+};
+
+export default function TaskItem({ task, now }: { task: Task; now: Date }) {
+  const tasks = useAppStore((s) => s.tasks);
   const toggleComplete = useAppStore((s) => s.toggleComplete);
   const renameTask = useAppStore((s) => s.renameTask);
   const removeTask = useAppStore((s) => s.removeTask);
+  const togglePin = useAppStore((s) => s.togglePin);
+  const setPriority = useAppStore((s) => s.setPriority);
+  const setDue = useAppStore((s) => s.setDue);
+  const toggleReminder = useAppStore((s) => s.toggleReminder);
+  const toggleCollapse = useAppStore((s) => s.toggleCollapse);
+  const indentTask = useAppStore((s) => s.indentTask);
+  const outdentTask = useAppStore((s) => s.outdentTask);
+
   const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("task", task.id);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.title);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [dueAnchor, setDueAnchor] = useState<HTMLElement | null>(null);
+
+  const [doneChildren, totalChildren] = childStats(tasks, task.id);
+  const ds = dueState(task.due_date, task.is_completed, now);
 
   const commit = () => {
     setEditing(false);
@@ -22,7 +67,12 @@ export default function TaskItem({ task }: { task: Task }) {
   return (
     <div
       ref={ref}
-      className={`group relative flex items-center gap-2.5 rounded-lg bg-card px-3 py-2.5 transition-colors hover:bg-card-hover ${
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setMenu({ x: e.clientX, y: e.clientY });
+      }}
+      style={{ marginLeft: task.indent_level * 18 }}
+      className={`group relative flex items-center gap-2 rounded-lg bg-card px-3 py-2 transition-colors hover:bg-card-hover ${
         isDragging ? "dragging" : ""
       }`}
     >
@@ -34,47 +84,92 @@ export default function TaskItem({ task }: { task: Task }) {
         />
       )}
 
+      {totalChildren > 0 ? (
+        <button
+          title={task.is_collapsed ? "展开子任务" : "折叠子任务"}
+          onClick={() => void toggleCollapse(task)}
+          className="-ml-1 flex h-4 w-4 shrink-0 items-center justify-center text-muted hover:text-text-1"
+        >
+          {task.is_collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+        </button>
+      ) : (
+        task.indent_level === 0 && <span className="-ml-1 w-4 shrink-0" />
+      )}
+
       <button
         title={task.is_completed ? "取消完成" : "完成"}
         onClick={() => void toggleComplete(task)}
-        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-          task.is_completed
-            ? "border-accent bg-accent text-on-accent"
-            : "border-muted hover:border-accent"
-        }`}
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
+        style={{
+          borderColor: task.is_completed ? "var(--accent)" : PRIORITY_COLOR[task.priority],
+          background: task.is_completed ? "var(--accent)" : "transparent",
+          color: "var(--accent-text)",
+        }}
       >
         {task.is_completed && <Check size={10} strokeWidth={3} />}
       </button>
 
-      {editing ? (
-        <input
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") {
+      <div className="flex min-w-0 flex-1 flex-col">
+        {editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commit();
+              if (e.key === "Escape") {
+                setDraft(task.title);
+                setEditing(false);
+              }
+            }}
+            className="min-w-0 bg-transparent text-sm text-text-1 outline-none"
+          />
+        ) : (
+          <span
+            onDoubleClick={() => {
               setDraft(task.title);
-              setEditing(false);
-            }
-          }}
-          className="min-w-0 flex-1 bg-transparent text-sm text-text-1 outline-none"
-        />
-      ) : (
-        <span
-          onDoubleClick={() => {
-            setDraft(task.title);
-            setEditing(true);
-          }}
-          className={`min-w-0 flex-1 truncate text-sm ${
-            task.is_completed ? "text-muted line-through" : "text-text-1"
-          }`}
-        >
-          {task.title}
-        </span>
-      )}
+              setEditing(true);
+            }}
+            className={`truncate text-sm ${
+              task.is_completed ? "text-muted line-through" : "text-text-1"
+            }`}
+          >
+            {task.title}
+          </span>
+        )}
 
+        {(task.due_date || task.reminder_enabled || totalChildren > 0) && !editing && (
+          <span className="mt-0.5 flex items-center gap-2 text-xs">
+            {task.due_date && !task.is_completed && (
+              <span title={formatDue(task.due_date)} className={DUE_CLASS[ds] ?? "text-text-2"}>
+                {countdownText(task.due_date, now)}
+              </span>
+            )}
+            {task.reminder_enabled && (
+              <span className="flex items-center gap-0.5 text-accent">
+                <Bell size={10} />
+                {task.reminder_interval_minutes}分
+              </span>
+            )}
+            {totalChildren > 0 && (
+              <span className="text-muted">
+                {doneChildren}/{totalChildren}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+
+      {task.is_pinned && <Pin size={12} className="shrink-0 text-accent" />}
+
+      <button
+        title="截止时间"
+        onClick={(e) => setDueAnchor(e.currentTarget)}
+        className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:text-accent group-hover:flex"
+      >
+        <Calendar size={13} />
+      </button>
       <button
         title="删除"
         onClick={() => void removeTask(task.id)}
@@ -82,6 +177,94 @@ export default function TaskItem({ task }: { task: Task }) {
       >
         <X size={13} />
       </button>
+
+      {dueAnchor && (
+        <DuePicker
+          anchor={dueAnchor}
+          current={task.due_date}
+          onPick={(due) => void setDue(task.id, due)}
+          onClear={() => void setDue(task.id, "")}
+          onClose={() => setDueAnchor(null)}
+        />
+      )}
+
+      {menu && (
+        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
+          <div className="w-44">
+            <MenuItem
+              onClick={() => {
+                void togglePin(task);
+                setMenu(null);
+              }}
+            >
+              {task.is_pinned ? <PinOff size={13} /> : <Pin size={13} />}
+              {task.is_pinned ? "取消置顶" : "置顶"}
+            </MenuItem>
+
+            <div className="my-1 h-px bg-divider" />
+            <div className="px-2.5 py-1 text-xs text-muted">优先级</div>
+            {[3, 2, 1].map((p) => (
+              <MenuItem
+                key={p}
+                onClick={() => {
+                  void setPriority(task.id, p);
+                  setMenu(null);
+                }}
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ background: PRIORITY_COLOR[p] }}
+                />
+                {PRIORITY_LABEL[p]}
+                {task.priority === p && <Check size={12} className="ml-auto text-accent" />}
+              </MenuItem>
+            ))}
+
+            <div className="my-1 h-px bg-divider" />
+            <MenuItem
+              onClick={() => {
+                void toggleReminder(task);
+                setMenu(null);
+              }}
+            >
+              <Bell size={13} />
+              {task.reminder_enabled ? "关闭周期提醒" : "周期提醒(30分)"}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                void indentTask(task);
+                setMenu(null);
+              }}
+            >
+              <CornerDownRight size={13} />
+              变为子任务
+            </MenuItem>
+            {task.parent_id && (
+              <MenuItem
+                onClick={() => {
+                  void outdentTask(task);
+                  setMenu(null);
+                }}
+              >
+                <CornerUpLeft size={13} />
+                提升一级
+              </MenuItem>
+            )}
+
+            <div className="my-1 h-px bg-divider" />
+            <MenuItem
+              danger
+              onClick={() => {
+                void removeTask(task.id);
+                setMenu(null);
+              }}
+            >
+              <Trash2 size={13} />
+              删除{totalChildren > 0 ? "(含子任务)" : ""}
+            </MenuItem>
+          </div>
+        </Popover>
+      )}
     </div>
   );
 }

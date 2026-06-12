@@ -1,13 +1,22 @@
 import { create } from "zustand";
-import { ipc, type Group, type Task } from "../lib/tauri-ipc";
+import { ipc, type Group, type Task, type UpdateTaskRequest } from "../lib/tauri-ipc";
+import { sortTree, descendantIds, type SortMode } from "../lib/sort";
+import { nowText } from "../lib/date";
 
 /** 视图分发:取代路由。内置视图 + 任意标签视图,可枚举即不需要 Router */
 export type View =
   | { kind: "all" }
   | { kind: "completed" }
+  | { kind: "quadrant" }
+  | { kind: "tagboard" }
   | { kind: "group"; groupId: string };
 
 export type ThemeName = "Light" | "Dark";
+
+export interface Toast {
+  id: number;
+  message: string;
+}
 
 interface AppState {
   loaded: boolean;
@@ -16,15 +25,29 @@ interface AppState {
   settings: Record<string, string>;
   view: View;
   theme: ThemeName;
+  sortMode: SortMode;
+  toasts: Toast[];
 
   init: () => Promise<void>;
   setView: (v: View) => void;
   setTheme: (t: ThemeName) => Promise<void>;
+  setSortMode: (m: SortMode) => void;
+  saveSetting: (key: string, value: string) => void;
+  pushToast: (message: string) => void;
+  dismissToast: (id: number) => void;
 
-  addTask: (title: string) => Promise<void>;
+  addTask: (title: string, extra?: { due_date?: string; priority?: number }) => Promise<void>;
+  patchTask: (req: UpdateTaskRequest) => Promise<void>;
   toggleComplete: (task: Task) => Promise<void>;
   renameTask: (id: string, title: string) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
+  togglePin: (task: Task) => Promise<void>;
+  setPriority: (id: string, priority: number) => Promise<void>;
+  setDue: (id: string, due: string) => Promise<void>;
+  toggleReminder: (task: Task, intervalMinutes?: number) => Promise<void>;
+  toggleCollapse: (task: Task) => Promise<void>;
+  indentTask: (task: Task) => Promise<void>;
+  outdentTask: (task: Task) => Promise<void>;
   /** ids 为新的全局任务顺序(order_index 重排) */
   reorderTasks: (ids: string[]) => Promise<void>;
 
@@ -38,10 +61,11 @@ function applyThemeToDom(theme: ThemeName) {
   document.documentElement.dataset.theme = theme.toLowerCase();
 }
 
-/** 用返回的任务对象替换本地副本 */
 function replaceTask(tasks: Task[], next: Task): Task[] {
   return tasks.map((t) => (t.id === next.id ? next : t));
 }
+
+let toastSeq = 0;
 
 export const useAppStore = create<AppState>((set, get) => ({
   loaded: false,
@@ -50,6 +74,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: {},
   view: { kind: "all" },
   theme: "Light",
+  sortMode: "custom",
+  toasts: [],
 
   init: async () => {
     const [tasks, groups, settings] = await Promise.all([
@@ -60,21 +86,26 @@ export const useAppStore = create<AppState>((set, get) => ({
     const theme: ThemeName = settings["theme"] === "Dark" ? "Dark" : "Light";
     applyThemeToDom(theme);
 
+    const validSort: SortMode[] = ["custom", "due", "priority", "completed", "created", "title"];
+    const sortMode = validSort.includes(settings["sort"] as SortMode)
+      ? (settings["sort"] as SortMode)
+      : "custom";
+
     // 恢复上次选中的视图(被删除的标签则回退到全部)
     let view: View = { kind: "all" };
-    const savedGroup = settings["selected_group_id"];
-    if (savedGroup === "completed") view = { kind: "completed" };
-    else if (savedGroup && groups.some((g) => g.id === savedGroup))
-      view = { kind: "group", groupId: savedGroup };
+    const saved = settings["selected_group_id"];
+    if (saved === "completed" || saved === "quadrant" || saved === "tagboard")
+      view = { kind: saved };
+    else if (saved && groups.some((g) => g.id === saved))
+      view = { kind: "group", groupId: saved };
 
-    set({ tasks, groups, settings, theme, view, loaded: true });
+    set({ tasks, groups, settings, theme, view, sortMode, loaded: true });
   },
 
   setView: (view) => {
     set({ view });
-    const key =
-      view.kind === "group" ? view.groupId : view.kind === "completed" ? "completed" : "";
-    void ipc.setSetting("selected_group_id", key);
+    const key = view.kind === "group" ? view.groupId : view.kind === "all" ? "" : view.kind;
+    get().saveSetting("selected_group_id", key);
   },
 
   setTheme: async (theme) => {
@@ -83,45 +114,141 @@ export const useAppStore = create<AppState>((set, get) => ({
     await ipc.setSetting("theme", theme);
   },
 
-  addTask: async (title) => {
+  setSortMode: (sortMode) => {
+    set({ sortMode });
+    get().saveSetting("sort", sortMode);
+  },
+
+  saveSetting: (key, value) => {
+    set((s) => ({ settings: { ...s.settings, [key]: value } }));
+    void ipc.setSetting(key, value);
+  },
+
+  pushToast: (message) => {
+    const id = ++toastSeq;
+    set((s) => ({ toasts: [...s.toasts, { id, message }] }));
+    setTimeout(() => get().dismissToast(id), 6000);
+  },
+
+  dismissToast: (id) => {
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+  },
+
+  addTask: async (title, extra) => {
     const { view } = get();
     const group_id = view.kind === "group" ? view.groupId : undefined;
-    const task = await ipc.createTask({ title, group_id });
+    const task = await ipc.createTask({ title, group_id, ...extra });
     // 新任务排在最前(order_index 为全局最小)
     set((s) => ({ tasks: [task, ...s.tasks] }));
   },
 
-  toggleComplete: async (task) => {
-    const next = await ipc.updateTask({
-      id: task.id,
-      is_completed: !task.is_completed,
-      original_group_id: !task.is_completed ? (task.group_id ?? "") : undefined,
-    });
+  patchTask: async (req) => {
+    const next = await ipc.updateTask(req);
     set((s) => ({ tasks: replaceTask(s.tasks, next) }));
   },
 
+  toggleComplete: async (task) => {
+    const completing = !task.is_completed;
+    const next = await ipc.updateTask({
+      id: task.id,
+      is_completed: completing,
+      original_group_id: completing ? (task.group_id ?? "") : undefined,
+    });
+    let tasks = replaceTask(get().tasks, next);
+    if (completing) {
+      // 整族完成:父任务勾选时全部子孙一并完成(对齐旧版)
+      for (const cid of descendantIds(tasks, task.id)) {
+        const child = tasks.find((t) => t.id === cid);
+        if (child && !child.is_completed) {
+          const done = await ipc.updateTask({
+            id: cid,
+            is_completed: true,
+            original_group_id: child.group_id ?? "",
+          });
+          tasks = replaceTask(tasks, done);
+        }
+      }
+    }
+    set({ tasks });
+  },
+
   renameTask: async (id, title) => {
-    const next = await ipc.updateTask({ id, title });
-    set((s) => ({ tasks: replaceTask(s.tasks, next) }));
+    await get().patchTask({ id, title });
   },
 
   removeTask: async (id) => {
     await ipc.deleteTask(id);
-    // 后端按外键级联删除子孙,本地同步移除整族
     set((s) => {
-      const doomed = new Set<string>([id]);
-      let grew = true;
-      while (grew) {
-        grew = false;
-        for (const t of s.tasks) {
-          if (t.parent_id && doomed.has(t.parent_id) && !doomed.has(t.id)) {
-            doomed.add(t.id);
-            grew = true;
-          }
-        }
-      }
+      const doomed = new Set([id, ...descendantIds(s.tasks, id)]);
       return { tasks: s.tasks.filter((t) => !doomed.has(t.id)) };
     });
+  },
+
+  togglePin: async (task) => {
+    await get().patchTask({ id: task.id, is_pinned: !task.is_pinned });
+  },
+
+  setPriority: async (id, priority) => {
+    // 改优先级会让自动派生的象限变化,清掉手动覆盖(对齐旧版)
+    await get().patchTask({ id, priority, quadrant_override: 0 });
+  },
+
+  setDue: async (id, due) => {
+    await get().patchTask({ id, due_date: due, quadrant_override: 0 });
+  },
+
+  toggleReminder: async (task, intervalMinutes) => {
+    await get().patchTask({
+      id: task.id,
+      reminder_enabled: !task.reminder_enabled,
+      reminder_interval_minutes: intervalMinutes ?? task.reminder_interval_minutes,
+      last_reminded_at: nowText(),
+    });
+  },
+
+  toggleCollapse: async (task) => {
+    await get().patchTask({ id: task.id, is_collapsed: !task.is_collapsed });
+  },
+
+  indentTask: async (task) => {
+    if (task.indent_level >= 6) return;
+    const s = get();
+    // 在自定义顺序里向上找同级任务作为新父级
+    const flat = sortTree(
+      s.tasks.filter((t) => !t.is_completed),
+      "custom",
+    );
+    const idx = flat.findIndex((t) => t.id === task.id);
+    let parent: Task | null = null;
+    for (let i = idx - 1; i >= 0; i--) {
+      if (flat[i].indent_level === task.indent_level) {
+        parent = flat[i];
+        break;
+      }
+      if (flat[i].indent_level < task.indent_level) break;
+    }
+    if (!parent) return;
+    await s.patchTask({ id: task.id, parent_id: parent.id, indent_level: task.indent_level + 1 });
+    // 子孙层级同步 +1
+    for (const cid of descendantIds(s.tasks, task.id)) {
+      const c = get().tasks.find((t) => t.id === cid);
+      if (c) await get().patchTask({ id: cid, indent_level: c.indent_level + 1 });
+    }
+  },
+
+  outdentTask: async (task) => {
+    if (!task.parent_id) return;
+    const s = get();
+    const parent = s.tasks.find((t) => t.id === task.parent_id);
+    await s.patchTask({
+      id: task.id,
+      parent_id: parent?.parent_id ?? "",
+      indent_level: Math.max(0, task.indent_level - 1),
+    });
+    for (const cid of descendantIds(s.tasks, task.id)) {
+      const c = get().tasks.find((t) => t.id === cid);
+      if (c) await get().patchTask({ id: cid, indent_level: Math.max(0, c.indent_level - 1) });
+    }
   },
 
   reorderTasks: async (ids) => {
@@ -165,16 +292,33 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 }));
 
-/** 当前视图下可见的任务(已按 order_index 排序,置顶逻辑 M2 接入) */
-export function selectVisibleTasks(s: Pick<AppState, "tasks" | "view">): Task[] {
-  switch (s.view.kind) {
-    case "all":
-      return s.tasks.filter((t) => !t.is_completed);
-    case "completed":
-      return s.tasks.filter((t) => t.is_completed);
-    case "group": {
-      const id = s.view.groupId;
-      return s.tasks.filter((t) => !t.is_completed && t.group_id === id);
-    }
+/**
+ * 当前视图下可见的任务(树形展平,折叠已隐藏)。
+ * 标签视图按「根任务的标签」过滤,子任务始终跟随父任务显示。
+ */
+export function selectVisibleTasks(
+  s: Pick<AppState, "tasks" | "view" | "sortMode">,
+): Task[] {
+  if (s.view.kind === "completed") {
+    return s.tasks
+      .filter((t) => t.is_completed)
+      .sort((a, b) => a.order_index - b.order_index);
   }
+
+  const uncompleted = s.tasks.filter((t) => !t.is_completed);
+  const flat = sortTree(uncompleted, s.sortMode);
+  if (s.view.kind !== "group") return flat;
+
+  const groupId = s.view.groupId;
+  const byId = new Map(uncompleted.map((t) => [t.id, t]));
+  const rootOf = (t: Task): Task => {
+    let cur = t;
+    while (cur.parent_id) {
+      const p = byId.get(cur.parent_id);
+      if (!p) break;
+      cur = p;
+    }
+    return cur;
+  };
+  return flat.filter((t) => rootOf(t).group_id === groupId);
 }
