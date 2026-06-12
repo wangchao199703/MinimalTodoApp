@@ -95,7 +95,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         setMenu({ x: e.clientX, y: e.clientY });
       }}
       style={{ marginLeft: task.indent_level * 18 }}
-      className={`group relative flex items-center gap-2 rounded-lg bg-card px-3 py-2 transition-colors hover:bg-card-hover ${
+      className={`group relative flex items-center gap-2 rounded-lg border border-divider bg-card px-3 py-2 transition-colors hover:bg-card-hover ${
         isDragging ? "dragging" : ""
       } ${completing ? "completing" : ""}`}
     >

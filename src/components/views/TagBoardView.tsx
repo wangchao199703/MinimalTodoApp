@@ -53,7 +53,9 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
 
   return (
     <div
-      className={`relative flex flex-col rounded-xl bg-card p-2 ${isDragging ? "dragging" : ""}`}
+      className={`relative flex flex-col rounded-xl border border-divider bg-card p-2.5 ${
+        isDragging ? "dragging" : ""
+      }`}
     >
       {closestEdge && (
         <div
@@ -62,10 +64,20 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
           }`}
         />
       )}
-      <div ref={ref} className="mb-1.5 flex cursor-grab items-center gap-1.5 px-1">
-        <Tag size={12} style={{ color: col.color }} />
-        <span className="truncate text-xs font-medium text-text-2">{col.name}</span>
-        <span className="ml-auto text-xs text-muted">{tasks.length}</span>
+      {/* 头部:标签色淡底徽章 + 名称 + 彩色计数(对齐旧版容器头) */}
+      <div ref={ref} className="mb-2 flex cursor-grab items-center gap-2 px-0.5">
+        <span
+          className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md"
+          style={{ background: `color-mix(in srgb, ${col.color} 12%, transparent)` }}
+        >
+          <Tag size={13} style={{ color: col.color }} />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text-1">
+          {col.name}
+        </span>
+        <span className="text-[13px] font-semibold" style={{ color: col.color }}>
+          {tasks.length}
+        </span>
       </div>
       <div ref={bodyRef} className="flex min-h-6 flex-col">
         <div ref={listRef} className="flex flex-col gap-1.5">

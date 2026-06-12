@@ -11,12 +11,22 @@ import { reorderIds } from "../../lib/dnd";
 import TaskItem from "../TaskItem";
 import { useNowTick } from "../TaskList";
 import { useRef } from "react";
+import { Archive, CalendarClock, Flame, Users } from "lucide-react";
 import type { Task } from "../../lib/tauri-ipc";
 
 import { t } from "../../lib/i18n";
 
+/** 象限图标(对齐旧版头部徽章的角色) */
+const QUADRANT_ICONS: Record<Quadrant, typeof Flame> = {
+  1: Flame,
+  2: CalendarClock,
+  3: Users,
+  4: Archive,
+};
+
 function Cell({ q, tasks, now }: { q: Quadrant; tasks: Task[]; now: Date }) {
   const meta = QUADRANT_META[q];
+  const Icon = QUADRANT_ICONS[q];
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
 
@@ -32,12 +42,29 @@ function Cell({ q, tasks, now }: { q: Quadrant; tasks: Task[]; now: Date }) {
   }, [q]);
 
   return (
-    <div ref={bodyRef} className="flex min-h-0 flex-col rounded-xl bg-card p-2">
-      <div className="mb-1.5 flex items-center gap-1.5 px-1">
-        <span className="h-2 w-2 rounded-full" style={{ background: meta.color }} />
-        <span className="text-xs font-medium text-text-2">{t(meta.titleKey)}</span>
-        <span className="text-[10px] text-muted">{t(meta.descKey)}</span>
-        <span className="ml-auto text-xs text-muted">{tasks.length}</span>
+    <div
+      ref={bodyRef}
+      className="flex min-h-0 flex-col rounded-xl border border-divider bg-card p-2.5"
+    >
+      {/* 头部:彩色淡底图标徽章 + 标题/描述 + 彩色计数(对齐旧版) */}
+      <div className="mb-2 flex shrink-0 items-center gap-2 px-0.5">
+        <span
+          className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md"
+          style={{ background: `color-mix(in srgb, ${meta.color} 12%, transparent)` }}
+        >
+          <Icon size={14} style={{ color: meta.color }} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[13px] leading-tight font-semibold text-text-1">
+            {t(meta.titleKey)}
+          </span>
+          <span className="block truncate text-[11px] leading-tight text-muted">
+            {t(meta.descKey)}
+          </span>
+        </span>
+        <span className="text-[13px] font-semibold" style={{ color: meta.color }}>
+          {tasks.length}
+        </span>
       </div>
       <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
         {tasks.map((t) => (
