@@ -2,7 +2,18 @@ import { useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { CheckCircle2, Inbox, Kanban, LayoutGrid, NotebookPen, Plus, Tag, X } from "lucide-react";
+import {
+  CheckCircle2,
+  Inbox,
+  Kanban,
+  LayoutGrid,
+  NotebookPen,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Plus,
+  Tag,
+  X,
+} from "lucide-react";
 import { useAppStore, type View } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
@@ -18,8 +29,25 @@ function NavRow(props: {
   label: string;
   count?: number;
   active: boolean;
+  collapsed: boolean;
   onClick: () => void;
 }) {
+  if (props.collapsed) {
+    // 折叠态:只剩图标,选中项用色块高亮
+    return (
+      <button
+        title={props.label}
+        onClick={props.onClick}
+        className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+          props.active
+            ? "bg-sidebar-selected text-sidebar-selected-fg"
+            : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+        }`}
+      >
+        {props.icon}
+      </button>
+    );
+  }
   return (
     <button
       onClick={props.onClick}
@@ -38,7 +66,17 @@ function NavRow(props: {
   );
 }
 
-function GroupRow({ group, count, active }: { group: Group; count: number; active: boolean }) {
+function GroupRow({
+  group,
+  count,
+  active,
+  collapsed,
+}: {
+  group: Group;
+  count: number;
+  active: boolean;
+  collapsed: boolean;
+}) {
   const setView = useAppStore((s) => s.setView);
   const renameGroup = useAppStore((s) => s.renameGroup);
   const removeGroup = useAppStore((s) => s.removeGroup);
@@ -52,6 +90,30 @@ function GroupRow({ group, count, active }: { group: Group; count: number; activ
     if (name && name !== group.name) void renameGroup(group.id, name);
     else setDraft(group.name);
   };
+
+  if (collapsed) {
+    // 折叠态:只剩彩色标签图标,选中项色块高亮
+    return (
+      <div ref={ref} className={`relative ${isDragging ? "dragging" : ""}`}>
+        {closestEdge && (
+          <div
+            className={`absolute inset-x-1 h-0.5 rounded bg-accent ${
+              closestEdge === "top" ? "-top-px" : "-bottom-px"
+            }`}
+          />
+        )}
+        <button
+          title={group.name}
+          onClick={() => setView({ kind: "group", groupId: group.id })}
+          className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+            active ? "bg-sidebar-selected" : "hover:bg-sidebar-hover"
+          }`}
+        >
+          <Tag size={15} style={{ color: group.color }} />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div ref={ref} className={`group relative ${isDragging ? "dragging" : ""}`}>
@@ -167,21 +229,26 @@ export default function Sidebar() {
   }
   const activeKey = viewKey(view);
 
+  const collapsed = settings["sidebar_collapsed"] === "1";
+  const toggleCollapsed = () => saveSetting("sidebar_collapsed", collapsed ? "0" : "1");
+
   return (
     <aside
-      style={{ width }}
+      style={{ width: collapsed ? 48 : width }}
       className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar"
     >
-      <div
-        onMouseDown={startResize}
-        className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
-      />
+      {!collapsed && (
+        <div
+          onMouseDown={startResize}
+          className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
+        />
+      )}
       {/* 侧栏顶部:应用名 + 窗口拖动热区(侧栏整列直通顶部,对齐 todo-flow) */}
       <div
         data-tauri-drag-region
         className="flex h-9 shrink-0 items-center px-3 text-xs font-semibold text-sidebar-strong"
       >
-        {t("S.AppName")}
+        {!collapsed && t("S.AppName")}
       </div>
       <nav className="flex flex-col gap-0.5 p-2 pt-0">
         <NavRow
@@ -189,44 +256,53 @@ export default function Sidebar() {
           label={t("S.Group.AllUncompleted")}
           count={uncompleted.length}
           active={activeKey === "all"}
+          collapsed={collapsed}
           onClick={() => setView({ kind: "all" })}
         />
         <NavRow
           icon={<LayoutGrid size={14} className="shrink-0" />}
           label={t("S.Group.Quadrant")}
           active={activeKey === "quadrant"}
+          collapsed={collapsed}
           onClick={() => setView({ kind: "quadrant" })}
         />
         <NavRow
           icon={<Kanban size={14} className="shrink-0" />}
           label={t("S.Group.TagBoard")}
           active={activeKey === "tagboard"}
+          collapsed={collapsed}
           onClick={() => setView({ kind: "tagboard" })}
         />
         <NavRow
           icon={<NotebookPen size={14} className="shrink-0" />}
           label={t("S.X.Notes")}
           active={activeKey === "notes"}
+          collapsed={collapsed}
           onClick={() => setView({ kind: "notes" })}
         />
         <NavRow
           icon={<CheckCircle2 size={14} className="shrink-0" />}
           label={t("S.Group.Completed")}
           active={activeKey === "completed"}
+          collapsed={collapsed}
           onClick={() => setView({ kind: "completed" })}
         />
       </nav>
 
-      <div className="flex items-center justify-between px-3 pt-2 pb-1">
-        <span className="text-xs font-medium text-sidebar-muted">{t("S.Tag.Label")}</span>
-        <button
-          title={t("S.Tag.New")}
-          onClick={() => void addGroup(t("S.X.NewTagName"))}
-          className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-        >
-          <Plus size={13} />
-        </button>
-      </div>
+      {collapsed ? (
+        <div className="mx-2 my-1 h-px shrink-0 bg-sidebar-border" />
+      ) : (
+        <div className="flex items-center justify-between px-3 pt-2 pb-1">
+          <span className="text-xs font-medium text-sidebar-muted">{t("S.Tag.Label")}</span>
+          <button
+            title={t("S.Tag.New")}
+            onClick={() => void addGroup(t("S.X.NewTagName"))}
+            className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+          >
+            <Plus size={13} />
+          </button>
+        </div>
+      )}
 
       <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-0">
         {groups.map((g) => (
@@ -235,8 +311,20 @@ export default function Sidebar() {
             group={g}
             count={countByGroup.get(g.id) ?? 0}
             active={activeKey === `group:${g.id}`}
+            collapsed={collapsed}
           />
         ))}
+      </div>
+
+      {/* 底部:折叠/展开开关 */}
+      <div className="shrink-0 p-2">
+        <button
+          title={collapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+          onClick={toggleCollapsed}
+          className="flex h-8 w-full items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+        >
+          {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
+        </button>
       </div>
     </aside>
   );
