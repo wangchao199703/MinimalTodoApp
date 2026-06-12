@@ -1,47 +1,158 @@
 @import "tailwindcss";
 
-/* 主题 = 18 个颜色变量(对齐旧版 ThemeManager.ColorKeys + PopupBg)。
-   M4 会移植全部 46 套内置主题;M1 先内置 Light/Dark 两套。 */
+/* ============================================================
+   主题(对齐 todo-flow):light = :root 基线,.dark/.glass/.warm/.lumina
+   为根节点 class,system 由 JS 解析为明/暗。色值取自 todo-flow index.css。
+   ============================================================ */
 :root {
-  --window-bg: #f3f4f6;
-  --titlebar-bg: #ffffff;
-  --sidebar-bg: #f9fafb;
-  --content-bg: #f3f4f6;
-  --card-bg: #ffffff;
-  --card-hover-bg: #f3f4f6;
-  --input-bg: #ffffff;
-  --primary-text: #111827;
-  --secondary-text: #6b7280;
-  --muted-text: #9ca3af;
-  --accent: #3b82f6;
-  --accent-text: #ffffff;
-  --divider: #e5e7eb;
-  --selected-item-bg: #e0eaff;
-  --overdue-text: #ef4444;
-  --warning-text: #f59e0b;
-  --success-text: #10b981;
-  --popup-bg: #ffffff;
+  /* Light —— 柔和薰衣草白底 + 紫色主色 + 深靛蓝侧栏 */
+  --window-bg: hsl(240 20% 97%);
+  --titlebar-bg: hsl(240 20% 97%);
+  --content-bg: hsl(240 20% 97%);
+  --card-bg: hsl(0 0% 100%);
+  --card-hover-bg: hsl(220 14% 94%);
+  --input-bg: hsl(220 14% 92%);
+  --primary-text: hsl(220 30% 12%);
+  --secondary-text: hsl(220 8% 45%);
+  --muted-text: hsl(220 8% 60%);
+  --accent: hsl(245 82% 68%);
+  --accent-text: hsl(0 0% 100%);
+  --divider: hsl(220 14% 90%);
+  --selected-item-bg: hsl(245 82% 68% / 0.10);
+  --overdue-text: hsl(0 70% 50%);
+  --warning-text: #d9820b;
+  --success-text: #16a34a;
+  --popup-bg: hsl(0 0% 100%);
+
+  /* 侧栏独立配色(todo-flow 标志性深靛蓝侧栏) */
+  --sidebar-bg: hsl(235 32% 14%);
+  --sidebar-fg: hsl(235 8% 76%);
+  --sidebar-fg-strong: hsl(0 0% 100%);
+  --sidebar-muted: hsl(235 8% 55%);
+  --sidebar-hover-bg: hsl(0 0% 100% / 0.06);
+  --sidebar-selected-bg: hsl(245 82% 68% / 0.15);
+  --sidebar-selected-fg: hsl(0 0% 100%);
+  --sidebar-border: hsl(0 0% 100% / 0.06);
 }
 
-[data-theme="dark"] {
-  --window-bg: #16161e;
-  --titlebar-bg: #1b1b25;
-  --sidebar-bg: #1b1b25;
-  --content-bg: #16161e;
-  --card-bg: #232330;
-  --card-hover-bg: #2a2a3a;
-  --input-bg: #232330;
-  --primary-text: rgba(255, 255, 255, 0.92);
-  --secondary-text: #9ca3af;
-  --muted-text: #6b7280;
-  --accent: #60a5fa;
-  --accent-text: #ffffff;
-  --divider: rgba(255, 255, 255, 0.08);
-  --selected-item-bg: rgba(96, 165, 250, 0.16);
-  --overdue-text: #f87171;
-  --warning-text: #fbbf24;
-  --success-text: #34d399;
-  --popup-bg: #232330;
+.dark {
+  /* Dark —— 深海军蓝 */
+  --window-bg: hsl(230 20% 8%);
+  --titlebar-bg: hsl(230 20% 8%);
+  --content-bg: hsl(230 20% 8%);
+  --card-bg: hsl(230 18% 13%);
+  --card-hover-bg: hsl(230 15% 18%);
+  --input-bg: hsl(230 15% 20%);
+  --primary-text: hsl(220 20% 94%);
+  --secondary-text: hsl(220 12% 60%);
+  --muted-text: hsl(220 12% 45%);
+  --accent: hsl(245 82% 70%);
+  --accent-text: hsl(0 0% 100%);
+  --divider: hsl(230 15% 18%);
+  --selected-item-bg: hsl(245 82% 68% / 0.14);
+  --overdue-text: hsl(0 65% 60%);
+  --warning-text: #f0a741;
+  --success-text: #4ade80;
+  --popup-bg: hsl(230 18% 15%);
+
+  --sidebar-bg: hsl(230 25% 10%);
+  --sidebar-fg: hsl(235 8% 76%);
+  --sidebar-fg-strong: hsl(0 0% 100%);
+  --sidebar-muted: hsl(235 8% 52%);
+  --sidebar-hover-bg: hsl(0 0% 100% / 0.06);
+  --sidebar-selected-bg: hsl(245 82% 68% / 0.15);
+  --sidebar-selected-fg: hsl(0 0% 100%);
+  --sidebar-border: hsl(0 0% 100% / 0.06);
+}
+
+.glass {
+  /* Glass —— 深底玻璃拟态,窗口透明 + 原生亚克力,卡片半透明 */
+  --window-bg: hsl(240 30% 8% / 0.55);
+  --titlebar-bg: hsl(240 30% 8% / 0.35);
+  --content-bg: hsl(240 30% 8% / 0);
+  --card-bg: hsl(240 24% 12% / 0.5);
+  --card-hover-bg: hsl(240 15% 18% / 0.6);
+  --input-bg: hsl(0 0% 100% / 0.08);
+  --primary-text: hsl(210 40% 98%);
+  --secondary-text: hsl(215 20% 65%);
+  --muted-text: hsl(215 20% 52%);
+  --accent: hsl(244 88% 75%);
+  --accent-text: hsl(0 0% 100%);
+  --divider: hsl(0 0% 100% / 0.07);
+  --selected-item-bg: hsl(244 88% 71% / 0.15);
+  --overdue-text: hsl(0 70% 62%);
+  --warning-text: #f0a741;
+  --success-text: #4ade80;
+  --popup-bg: hsl(240 30% 12% / 0.92);
+
+  --sidebar-bg: hsl(240 30% 8% / 0.75);
+  --sidebar-fg: hsl(240 6% 78%);
+  --sidebar-fg-strong: hsl(0 0% 100%);
+  --sidebar-muted: hsl(240 6% 56%);
+  --sidebar-hover-bg: hsl(0 0% 100% / 0.06);
+  --sidebar-selected-bg: hsl(244 88% 71% / 0.15);
+  --sidebar-selected-fg: hsl(0 0% 100%);
+  --sidebar-border: hsl(0 0% 100% / 0.06);
+}
+
+.warm {
+  /* Warm —— 炭黑底 + 哑光金 */
+  --window-bg: hsl(30 8% 8%);
+  --titlebar-bg: hsl(30 8% 8%);
+  --content-bg: hsl(30 8% 8%);
+  --card-bg: hsl(30 8% 10%);
+  --card-hover-bg: hsl(30 8% 14%);
+  --input-bg: hsl(30 8% 14%);
+  --primary-text: hsl(42 30% 88%);
+  --secondary-text: hsl(42 15% 58%);
+  --muted-text: hsl(42 15% 44%);
+  --accent: hsl(44 55% 54%);
+  --accent-text: hsl(0 0% 100%);
+  --divider: hsl(42 10% 16%);
+  --selected-item-bg: hsl(44 55% 54% / 0.12);
+  --overdue-text: hsl(0 65% 55%);
+  --warning-text: #f0a741;
+  --success-text: #4ade80;
+  --popup-bg: hsl(30 8% 12%);
+
+  --sidebar-bg: hsl(30 8% 6%);
+  --sidebar-fg: hsl(42 15% 68%);
+  --sidebar-fg-strong: hsl(42 30% 88%);
+  --sidebar-muted: hsl(42 15% 48%);
+  --sidebar-hover-bg: hsl(0 0% 100% / 0.05);
+  --sidebar-selected-bg: hsl(44 55% 54% / 0.12);
+  --sidebar-selected-fg: hsl(44 55% 54%);
+  --sidebar-border: hsl(42 10% 14%);
+}
+
+.lumina {
+  /* Lumina —— 米白底 + 灰蓝主色,弥散阴影 */
+  --window-bg: hsl(40 10% 97%);
+  --titlebar-bg: hsl(40 10% 97%);
+  --content-bg: hsl(40 10% 97%);
+  --card-bg: hsl(0 0% 100%);
+  --card-hover-bg: hsl(40 8% 94%);
+  --input-bg: hsl(40 5% 95%);
+  --primary-text: hsl(215 15% 14%);
+  --secondary-text: hsl(215 8% 46%);
+  --muted-text: hsl(215 8% 60%);
+  --accent: hsl(214 18% 52%);
+  --accent-text: hsl(0 0% 100%);
+  --divider: hsl(40 6% 89%);
+  --selected-item-bg: hsl(214 18% 52% / 0.1);
+  --overdue-text: hsl(0 55% 50%);
+  --warning-text: #d9820b;
+  --success-text: #16a34a;
+  --popup-bg: hsl(0 0% 100%);
+
+  --sidebar-bg: hsl(40 10% 94%);
+  --sidebar-fg: hsl(215 10% 32%);
+  --sidebar-fg-strong: hsl(215 15% 14%);
+  --sidebar-muted: hsl(215 8% 52%);
+  --sidebar-hover-bg: hsl(215 15% 14% / 0.05);
+  --sidebar-selected-bg: hsl(214 18% 52% / 0.1);
+  --sidebar-selected-fg: hsl(214 18% 40%);
+  --sidebar-border: hsl(40 6% 88%);
 }
 
 /* 把颜色变量注册为 Tailwind 语义色(bg-card、text-text-1 等) */
@@ -49,6 +160,13 @@
   --color-window: var(--window-bg);
   --color-titlebar: var(--titlebar-bg);
   --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-fg: var(--sidebar-fg);
+  --color-sidebar-strong: var(--sidebar-fg-strong);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-hover: var(--sidebar-hover-bg);
+  --color-sidebar-selected: var(--sidebar-selected-bg);
+  --color-sidebar-selected-fg: var(--sidebar-selected-fg);
+  --color-sidebar-border: var(--sidebar-border);
   --color-content: var(--content-bg);
   --color-card: var(--card-bg);
   --color-card-hover: var(--card-hover-bg);
@@ -80,6 +198,13 @@ body {
   line-height: var(--app-line-height, 1.55);
   background: var(--window-bg);
   color: var(--primary-text);
+}
+
+/* Glass 主题:卡片与弹层加背板模糊(窗口透明,亚克力透出桌面) */
+.glass .bg-card,
+.glass .bg-popup {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 /* 完成任务时的滑出动画(对齐旧版「向左滑出+淡出」) */

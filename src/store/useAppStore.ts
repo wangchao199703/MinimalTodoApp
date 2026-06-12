@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import {
   ipc,
-  type CustomTheme,
   type Group,
   type Note,
   type NoteGroup,
@@ -11,22 +10,8 @@ import {
 } from "../lib/tauri-ipc";
 import { sortTree, descendantIds, type SortMode } from "../lib/sort";
 import { nowText } from "../lib/date";
-import {
-  applyThemeColors,
-  isDarkColors,
-  resolveTheme,
-  themeGroup,
-  type ThemeMeta,
-} from "../lib/themes";
+import { applyTheme, migrateThemeKey, type Theme } from "../lib/themes";
 import { setLang, type Lang } from "../lib/i18n";
-
-/** 应用主题颜色 + 透明系主题联动原生亚克力 */
-function applyThemeFull(key: string, customs: ThemeMeta[]) {
-  const colors = resolveTheme(key, customs);
-  applyThemeColors(colors);
-  const transparent = themeGroup(key) === "Transparent";
-  void ipc.setAcrylic(transparent, isDarkColors(colors)).catch(() => {});
-}
 
 /** 视图分发:取代路由。内置视图 + 任意标签视图,可枚举即不需要 Router */
 export type View =
@@ -42,38 +27,14 @@ export interface Toast {
   message: string;
 }
 
-function customMetas(customs: CustomTheme[]): ThemeMeta[] {
-  return customs.map((c) => ({
-    key: c.key,
-    group: "Custom",
-    colors: c.colors,
-    custom: true,
-    display: c.display,
-  }));
-}
-
-function parseList(json: string | undefined): string[] {
-  try {
-    const v = JSON.parse(json ?? "[]");
-    return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
 interface AppState {
   loaded: boolean;
   tasks: Task[];
   groups: Group[];
   settings: Record<string, string>;
   view: View;
-  /** 当前主题键(内置或自定义) */
-  theme: string;
+  theme: Theme;
   language: Lang;
-  customThemes: CustomTheme[];
-  favoriteThemes: string[];
-  /** 最近使用顺序,队首 = 最近 */
-  themeUsage: string[];
   sortMode: SortMode;
   toasts: Toast[];
   notes: Note[];
@@ -92,11 +53,8 @@ interface AppState {
   removeNoteGroup: (id: string) => Promise<void>;
   setScheduleOpen: (open: boolean) => void;
   setView: (v: View) => void;
-  setTheme: (key: string) => void;
+  setTheme: (key: Theme) => void;
   setLanguage: (lang: Lang) => void;
-  toggleFavoriteTheme: (key: string) => void;
-  saveCustomTheme: (theme: CustomTheme) => Promise<void>;
-  deleteCustomTheme: (key: string) => Promise<void>;
   setSortMode: (m: SortMode) => void;
   saveSetting: (key: string, value: string) => void;
   pushToast: (message: string) => void;
@@ -135,11 +93,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   groups: [],
   settings: {},
   view: { kind: "all" },
-  theme: "Light",
+  theme: "light",
   language: "zh-CN",
-  customThemes: [],
-  favoriteThemes: [],
-  themeUsage: [],
   sortMode: "custom",
   toasts: [],
   notes: [],
@@ -148,11 +103,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   scheduleOpen: false,
 
   init: async () => {
-    const [tasks, groups, settings, customThemes, notes, noteGroups] = await Promise.all([
+    const [tasks, groups, settings, notes, noteGroups] = await Promise.all([
       ipc.getTasks(),
       ipc.getGroups(),
       ipc.getSettings(),
-      ipc.getCustomThemes(),
       ipc.getNotes(),
       ipc.getNoteGroups(),
     ]);
@@ -160,11 +114,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     const language: Lang = settings["language"] === "en" ? "en" : "zh-CN";
     setLang(language);
 
-    const theme = settings["theme"] || "Light";
-    applyThemeFull(theme, customMetas(customThemes));
-
-    const favoriteThemes = parseList(settings["favorite_theme_keys"]);
-    const themeUsage = parseList(settings["theme_usage_order"]);
+    // 旧版主题键(102 套时代)自动迁移到六主题
+    const theme = migrateThemeKey(settings["theme"]);
+    if (settings["theme"] !== theme) void ipc.setSetting("theme", theme);
+    applyTheme(theme);
 
     const validSort: SortMode[] = ["custom", "due", "priority", "completed", "created", "title"];
     const sortMode = validSort.includes(settings["sort"] as SortMode)
@@ -185,9 +138,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       settings,
       theme,
       language,
-      customThemes,
-      favoriteThemes,
-      themeUsage,
       view,
       sortMode,
       notes,
@@ -254,50 +204,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setTheme: (key) => {
-    const s = get();
-    applyThemeFull(key, customMetas(s.customThemes));
-    // 最近使用:队首 = 最近,去重,截断
-    const themeUsage = [key, ...s.themeUsage.filter((k) => k !== key)].slice(0, 24);
-    set({ theme: key, themeUsage });
-    s.saveSetting("theme", key);
-    s.saveSetting("theme_usage_order", JSON.stringify(themeUsage));
+    applyTheme(key);
+    set({ theme: key });
+    get().saveSetting("theme", key);
   },
 
   setLanguage: (language) => {
     setLang(language);
     set({ language });
     get().saveSetting("language", language);
-  },
-
-  toggleFavoriteTheme: (key) => {
-    const s = get();
-    const favoriteThemes = s.favoriteThemes.includes(key)
-      ? s.favoriteThemes.filter((k) => k !== key)
-      : [...s.favoriteThemes, key];
-    set({ favoriteThemes });
-    s.saveSetting("favorite_theme_keys", JSON.stringify(favoriteThemes));
-  },
-
-  saveCustomTheme: async (theme) => {
-    await ipc.saveCustomTheme(theme);
-    set((s) => ({
-      customThemes: [...s.customThemes.filter((c) => c.key !== theme.key), theme],
-    }));
-    // 正在使用的主题被编辑后立即重新应用
-    const s = get();
-    if (s.theme === theme.key) {
-      applyThemeFull(theme.key, customMetas(s.customThemes));
-    }
-  },
-
-  deleteCustomTheme: async (key) => {
-    await ipc.deleteCustomTheme(key);
-    set((s) => ({
-      customThemes: s.customThemes.filter((c) => c.key !== key),
-      favoriteThemes: s.favoriteThemes.filter((k) => k !== key),
-    }));
-    const s = get();
-    if (s.theme === key) s.setTheme("Light");
   },
 
   setSortMode: (sortMode) => {

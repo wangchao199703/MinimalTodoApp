@@ -3,22 +3,38 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   CalendarDays,
   Check,
+  Flame,
+  Lightbulb,
   Menu,
   Minus,
+  Monitor,
+  Moon,
   Palette,
   Pin,
   RefreshCw,
   Settings,
+  Sparkles,
   Square,
+  Sun,
   X,
 } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
+import { THEME_LABELS, type Theme } from "../lib/themes";
 import { checkForUpdate, type UpdateInfo } from "../lib/updater";
 import { Popover, MenuItem } from "./ui/Popover";
-import ThemePicker from "./dialogs/ThemePicker";
 import SettingsDialog from "./dialogs/SettingsDialog";
 import UpdateDialog from "./dialogs/UpdateDialog";
+
+/** 六主题(对齐 todo-flow 的顺序与图标) */
+const THEME_OPTIONS: { key: Theme; icon: typeof Sun }[] = [
+  { key: "lumina", icon: Lightbulb },
+  { key: "light", icon: Sun },
+  { key: "dark", icon: Moon },
+  { key: "warm", icon: Flame },
+  { key: "glass", icon: Sparkles },
+  { key: "system", icon: Monitor },
+];
 
 const win = getCurrentWindow();
 
@@ -28,8 +44,10 @@ export default function TitleBar() {
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
   const pushToast = useAppStore((s) => s.pushToast);
+  const theme = useAppStore((s) => s.theme);
+  const setTheme = useAppStore((s) => s.setTheme);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
 
@@ -84,11 +102,14 @@ export default function TitleBar() {
           <Pin size={13} fill={onTop ? "currentColor" : "none"} />
         </button>
         <button
-          title={t("S.MenuTheme")}
-          onClick={() => setPickerOpen(true)}
+          title={`${t("S.MenuTheme")}: ${THEME_LABELS[theme]}`}
+          onClick={(e) => setThemeAnchor(e.currentTarget)}
           className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
         >
-          <Palette size={14} />
+          {(() => {
+            const Icon = THEME_OPTIONS.find((o) => o.key === theme)?.icon ?? Palette;
+            return <Icon size={14} />;
+          })()}
         </button>
         <button
           title={t("S.X.Minimize")}
@@ -127,15 +148,6 @@ export default function TitleBar() {
             </MenuItem>
             <MenuItem
               onClick={() => {
-                setPickerOpen(true);
-                setMenuAnchor(null);
-              }}
-            >
-              <Palette size={13} />
-              {t("S.MenuTheme")}
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
                 manualCheck();
                 setMenuAnchor(null);
               }}
@@ -167,7 +179,25 @@ export default function TitleBar() {
         </Popover>
       )}
 
-      {pickerOpen && <ThemePicker onClose={() => setPickerOpen(false)} />}
+      {themeAnchor && (
+        <Popover anchor={themeAnchor} onClose={() => setThemeAnchor(null)}>
+          <div className="w-36">
+            {THEME_OPTIONS.map(({ key, icon: Icon }) => (
+              <MenuItem
+                key={key}
+                onClick={() => {
+                  setTheme(key);
+                  setThemeAnchor(null);
+                }}
+              >
+                <Icon size={13} />
+                {THEME_LABELS[key]}
+                {theme === key && <Check size={12} className="ml-auto text-accent" />}
+              </MenuItem>
+            ))}
+          </div>
+        </Popover>
+      )}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
     </header>

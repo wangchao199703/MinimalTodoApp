@@ -106,17 +106,7 @@ export interface UpdateNoteRequest {
   group_id?: string;
 }
 
-export interface CustomTheme {
-  key: string;
-  display: string;
-  colors: Record<string, string>;
-}
-
 export const ipc = {
-  getCustomThemes: () => invoke<CustomTheme[]>("get_custom_themes"),
-  saveCustomTheme: (theme: CustomTheme) => invoke<void>("save_custom_theme", { theme }),
-  deleteCustomTheme: (key: string) => invoke<void>("delete_custom_theme", { key }),
-
   getGroups: () => invoke<Group[]>("get_groups"),
   createGroup: (name: string) => invoke<Group>("create_group", { name }),
   updateGroup: (req: UpdateGroupRequest) => invoke<Group>("update_group", { req }),

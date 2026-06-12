@@ -24,13 +24,15 @@ function NavRow(props: {
     <button
       onClick={props.onClick}
       className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
-        props.active ? "bg-selected text-text-1" : "text-text-2 hover:bg-card-hover"
+        props.active
+          ? "bg-sidebar-selected text-sidebar-selected-fg"
+          : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
       }`}
     >
       {props.icon}
       <span className="min-w-0 flex-1 truncate">{props.label}</span>
       {props.count !== undefined && props.count > 0 && (
-        <span className="text-xs text-muted">{props.count}</span>
+        <span className="text-xs text-sidebar-muted">{props.count}</span>
       )}
     </button>
   );
@@ -73,7 +75,7 @@ function GroupRow({ group, count, active }: { group: Group; count: number; activ
               setEditing(false);
             }
           }}
-          className="w-full rounded-md border border-accent bg-input px-2 py-1.5 text-sm text-text-1 outline-none"
+          className="w-full rounded-md border border-accent bg-sidebar-hover px-2 py-1.5 text-sm text-sidebar-strong outline-none"
         />
       ) : (
         <div
@@ -83,19 +85,21 @@ function GroupRow({ group, count, active }: { group: Group; count: number; activ
             setEditing(true);
           }}
           className={`flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-            active ? "bg-selected text-text-1" : "text-text-2 hover:bg-card-hover"
+            active
+              ? "bg-sidebar-selected text-sidebar-selected-fg"
+              : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
           }`}
         >
           <Tag size={14} className="shrink-0" style={{ color: group.color }} />
           <span className="min-w-0 flex-1 truncate">{group.name}</span>
-          {count > 0 && <span className="text-xs text-muted">{count}</span>}
+          {count > 0 && <span className="text-xs text-sidebar-muted">{count}</span>}
           <button
             title={t("S.Tag.Delete")}
             onClick={(e) => {
               e.stopPropagation();
               void removeGroup(group.id);
             }}
-            className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:bg-card-hover hover:text-overdue group-hover:flex"
+            className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-overdue group-hover:flex"
           >
             <X size={12} />
           </button>
@@ -166,7 +170,7 @@ export default function Sidebar() {
   return (
     <aside
       style={{ width }}
-      className="relative flex shrink-0 flex-col border-r border-divider bg-sidebar"
+      className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar"
     >
       <div
         onMouseDown={startResize}
@@ -207,11 +211,11 @@ export default function Sidebar() {
       </nav>
 
       <div className="flex items-center justify-between px-3 pt-2 pb-1">
-        <span className="text-xs font-medium text-muted">{t("S.Tag.Label")}</span>
+        <span className="text-xs font-medium text-sidebar-muted">{t("S.Tag.Label")}</span>
         <button
           title={t("S.Tag.New")}
           onClick={() => void addGroup(t("S.X.NewTagName"))}
-          className="flex h-5 w-5 items-center justify-center rounded text-muted hover:bg-card-hover hover:text-text-1"
+          className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
         >
           <Plus size={13} />
         </button>
