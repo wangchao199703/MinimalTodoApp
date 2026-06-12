@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/quickadd.tsx","./src/components/sidebar.tsx","./src/components/taskitem.tsx","./src/components/tasklist.tsx","./src/components/titlebar.tsx","./src/hooks/usesortableitem.ts","./src/lib/dnd.ts","./src/lib/tauri-ipc.ts","./src/store/useappstore.ts"],"version":"5.9.3"}

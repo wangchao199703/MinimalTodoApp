@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* 主题 = 18 个颜色变量(对齐旧版 ThemeManager.ColorKeys + PopupBg)。
+   M4 会移植全部 46 套内置主题;M1 先内置 Light/Dark 两套。 */
+:root {
+  --window-bg: #f3f4f6;
+  --titlebar-bg: #ffffff;
+  --sidebar-bg: #f9fafb;
+  --content-bg: #f3f4f6;
+  --card-bg: #ffffff;
+  --card-hover-bg: #f3f4f6;
+  --input-bg: #ffffff;
+  --primary-text: #111827;
+  --secondary-text: #6b7280;
+  --muted-text: #9ca3af;
+  --accent: #3b82f6;
+  --accent-text: #ffffff;
+  --divider: #e5e7eb;
+  --selected-item-bg: #e0eaff;
+  --overdue-text: #ef4444;
+  --warning-text: #f59e0b;
+  --success-text: #10b981;
+  --popup-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --window-bg: #16161e;
+  --titlebar-bg: #1b1b25;
+  --sidebar-bg: #1b1b25;
+  --content-bg: #16161e;
+  --card-bg: #232330;
+  --card-hover-bg: #2a2a3a;
+  --input-bg: #232330;
+  --primary-text: rgba(255, 255, 255, 0.92);
+  --secondary-text: #9ca3af;
+  --muted-text: #6b7280;
+  --accent: #60a5fa;
+  --accent-text: #ffffff;
+  --divider: rgba(255, 255, 255, 0.08);
+  --selected-item-bg: rgba(96, 165, 250, 0.16);
+  --overdue-text: #f87171;
+  --warning-text: #fbbf24;
+  --success-text: #34d399;
+  --popup-bg: #232330;
+}
+
+/* 把颜色变量注册为 Tailwind 语义色(bg-card、text-text-1 等) */
+@theme inline {
+  --color-window: var(--window-bg);
+  --color-titlebar: var(--titlebar-bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-content: var(--content-bg);
+  --color-card: var(--card-bg);
+  --color-card-hover: var(--card-hover-bg);
+  --color-input: var(--input-bg);
+  --color-text-1: var(--primary-text);
+  --color-text-2: var(--secondary-text);
+  --color-muted: var(--muted-text);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--accent-text);
+  --color-divider: var(--divider);
+  --color-selected: var(--selected-item-bg);
+  --color-overdue: var(--overdue-text);
+  --color-warning: var(--warning-text);
+  --color-success: var(--success-text);
+  --color-popup: var(--popup-bg);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+body {
+  font-family: "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
+  background: var(--window-bg);
+  color: var(--primary-text);
+}
+
+/* 任务项拖拽时的视觉反馈 */
+.dragging {
+  opacity: 0.4;
+}

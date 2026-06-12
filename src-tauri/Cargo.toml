@@ -1,0 +1,41 @@
+[package]
+name = "minimal-todo"
+version = "2.0.0"
+edition = "2021"
+description = "极简 Windows 本地待办(Tauri v2 重写版)"
+authors = ["wangchao199703"]
+
+[lib]
+name = "minimal_todo_lib"
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+# 发布配置:压体积优先(对齐参考项目验证过的组合)
+[profile.release]
+strip = "symbols"
+lto = true
+codegen-units = 1
+opt-level = 2
+
+# 快速迭代用的近发布配置:tauri build -- --profile dev-release
+[profile.dev-release]
+inherits = "release"
+lto = false
+codegen-units = 8
+opt-level = 1
+debug = false
+strip = "symbols"
