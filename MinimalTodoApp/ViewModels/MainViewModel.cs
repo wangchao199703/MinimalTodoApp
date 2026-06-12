@@ -585,8 +585,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>内置“标签看板”视图分组(派生视图，不存任务).</summary>
     public TodoGroup? TagBoardGroup => Groups.FirstOrDefault(g => g.IsTagBoardGroup);
 
-    /// <summary>所有“普通标签”(排除全部内置视图分组)，按 OrderIndex 顺序.</summary>
-    public IEnumerable<TodoGroup> NormalTagGroups => Groups.Where(g => !g.IsSpecialGroup);
+    /// <summary>所有“普通标签”(排除全部内置视图分组)，按 OrderIndex 顺序(看板列拖动只改 OrderIndex,故这里据此排序).</summary>
+    public IEnumerable<TodoGroup> NormalTagGroups => Groups.Where(g => !g.IsSpecialGroup).OrderBy(g => g.OrderIndex);
 
     /// <summary>取某任务所属的标签(普通分组);找不到=无标签返回 null.</summary>
     public TodoGroup? TagOf(TodoItem item) =>
@@ -595,8 +595,8 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     /// <summary>第一个可作为新任务归属的普通标签.</summary>
     private TodoGroup? FirstNormalGroup => Groups.FirstOrDefault(g => !g.IsSpecialGroup);
 
-    /// <summary>右键「移动到标签」子菜单的候选标签(排除全部内置视图分组).</summary>
-    public IEnumerable<TodoGroup> MoveTargetGroups => Groups.Where(g => !g.IsSpecialGroup);
+    /// <summary>右键「移动到标签」子菜单的候选标签(排除全部内置视图分组)，按 OrderIndex 顺序.</summary>
+    public IEnumerable<TodoGroup> MoveTargetGroups => Groups.Where(g => !g.IsSpecialGroup).OrderBy(g => g.OrderIndex);
 
     public string DataFilePath => _dataService.FilePath;
 
@@ -2164,9 +2164,10 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     }
 
     /// <summary>
-    /// 看板列拖动结束:按列的新视觉顺序重排 Groups 里的普通标签(特殊视图分组的位置不动)，
-    /// 并按 Groups 现序全量重发 OrderIndex(唯一、无撞车);「无标签」列的位置单独记入
-    /// UntaggedColumnIndex。保存后看板/标签选择器/「移动到标签」顺序保持一致。
+    /// 看板列拖动结束:按列的新视觉顺序持久化标签顺序。
+    /// **只改各标签的 OrderIndex,绝不改动 Groups 集合的结构**——用 `Groups[i]=x` 这种替换会让
+    /// 侧栏那个带过滤的 CollectionView 错乱、把标签泄漏到「所有待办」下面。看板/标签选择器/「移动到标签」
+    /// 都改用 OrderIndex 排序(见 NormalTagGroups),故无需重排集合本身。「无标签」列位置记入 UntaggedColumnIndex。
     /// </summary>
     public void CommitTagColumnOrder()
     {
@@ -2182,28 +2183,19 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             changed = true;
         }
 
-        // 普通标签的相对顺序
-        var newOrder = TagColumns.Where(c => c.Tag != null).Select(c => c.Tag!).ToList();
-        var slots = new List<int>();
-        for (int i = 0; i < Groups.Count; i++)
-            if (!Groups[i].IsSpecialGroup) slots.Add(i);
-        if (slots.Count == newOrder.Count)   // 防御:列与标签数量不符时只动无标签位置
+        // 期望的完整顺序:沿用 Groups 现有结构,把"普通标签槽位"依次填入看板列的新顺序,特殊分组保持原位;
+        // 仅据此重发 OrderIndex(不动集合,不触发 Replace)。
+        var newTagOrder = TagColumns.Where(c => c.Tag != null).Select(c => c.Tag!).ToList();
+        if (newTagOrder.Count == Groups.Count(g => !g.IsSpecialGroup))
         {
-            bool groupsChanged = false;
-            for (int i = 0; i < slots.Count; i++)
+            int t = 0, order = 0;
+            foreach (var g in Groups)
             {
-                if (!ReferenceEquals(Groups[slots[i]], newOrder[i]))
-                {
-                    Groups[slots[i]] = newOrder[i];
-                    groupsChanged = true;
-                }
+                var target = g.IsSpecialGroup ? g : newTagOrder[t++];
+                if (target.OrderIndex != order) { target.OrderIndex = order; changed = true; }
+                order++;
             }
-            if (groupsChanged)
-            {
-                for (int i = 0; i < Groups.Count; i++) Groups[i].OrderIndex = i;
-                OnPropertyChanged(nameof(TagOptions));
-                changed = true;
-            }
+            if (changed) OnPropertyChanged(nameof(TagOptions));
         }
 
         if (changed) SaveData();

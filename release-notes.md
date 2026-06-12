@@ -7,6 +7,7 @@ A fix-up release polishing the new Tags view, plus a "Reinstall current version"
 - **Fixed: clicking the same note did nothing** — after switching from a to-do view, clicking the *same* note again wouldn't reopen the notes view (you had to click several times). Switching views now clears the inbox selection so re-clicking works first time. (A long-standing bug from v1.2.1/v1.2.2.)
 - **Fixed: extra groups after restart** — leftover "orphan" groups (named like a built-in view, e.g. the old "Tag Board") are now cleaned up automatically on launch; their tasks move to Untagged, and each built-in view keeps a single entry.
 - **Fixed: duplicate tags** — creating a tag with a name that already exists now reuses it instead of making another container.
+- **Fixed: tags leaking into the sidebar** — dragging a tag container to reorder it no longer makes tags appear as rows under "All to-dos".
 - **Fixed: empty Untagged container** — the "Untagged" container is hidden when there are no untagged tasks.
 - **Roomier wrapped text** — multi-line task titles in the Tags/Matrix cards now have more line spacing.
 - **New: Reinstall current version** — Settings → About now has a "Reinstall current version" button that re-downloads and installs the same version (to repair a broken or sluggish install).
@@ -21,6 +22,7 @@ Download `MinimalTodoApp-v1.2.3-win-x64.exe` and just double-click — no .NET r
 - **修复·点同一篇便签无反应** —— 从待办视图点「同一篇」便签切不回便签视图、要点好几次。切换视图时现在会清掉收集箱的选中项，再点同一篇即可立刻切过去（v1.2.1/v1.2.2 都存在的老问题）。
 - **修复·重启后多出分组** —— 历史遗留的「孤儿」分组（名字撞上内置视图、如旧「标签看板」）现在启动时自动清理，其下任务并入「无标签」，每个内置视图只保留一个入口。
 - **修复·重复标签** —— 新建一个已存在的同名标签时直接复用，不再多出一个容器。
+- **修复·标签泄漏到侧栏** —— 拖动标签容器重新排序后，标签不再作为分组出现在「所有待办」下面。
 - **修复·空「无标签」容器** —— 没有无标签任务时不再显示空的「无标签」容器。
 - **换行更舒展** —— 标签/四象限卡片里多行任务标题的行距加大。
 - **新增·重新安装当前版本** —— 设置→关于新增「重新安装当前版本」按钮，按当前版本号重新下载并安装同版本（修复损坏或异常卡顿的安装）。
