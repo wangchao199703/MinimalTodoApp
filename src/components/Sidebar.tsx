@@ -5,6 +5,8 @@ import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/clo
 import {
   CheckCircle2,
   ChevronRight,
+  FilePlus2,
+  FolderPlus,
   Inbox,
   Kanban,
   LayoutGrid,
@@ -28,6 +30,7 @@ import { confirm } from "./ui/ConfirmDialog";
 import TagIcon from "./ui/TagIcon";
 import TagColorDialog from "./dialogs/TagColorDialog";
 import IconPickerDialog from "./dialogs/IconPickerDialog";
+import NotesTree from "./NotesTree";
 
 function viewKey(v: View): string {
   return v.kind === "group" ? `group:${v.groupId}` : v.kind;
@@ -264,7 +267,10 @@ export default function Sidebar() {
   const setView = useAppStore((s) => s.setView);
   const groups = useAppStore((s) => s.groups);
   const tasks = useAppStore((s) => s.tasks);
+  const notes = useAppStore((s) => s.notes);
   const addGroup = useAppStore((s) => s.addGroup);
+  const addNote = useAppStore((s) => s.addNote);
+  const addNoteGroup = useAppStore((s) => s.addNoteGroup);
   const reorderGroups = useAppStore((s) => s.reorderGroups);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
@@ -323,6 +329,10 @@ export default function Sidebar() {
   // 「标签」分组二级折叠,默认折叠(未设置即折叠)
   const tagsCollapsed = settings["tags_section_collapsed"] !== "0";
   const toggleTags = () => saveSetting("tags_section_collapsed", tagsCollapsed ? "0" : "1");
+
+  // 「便签」节二级折叠,默认折叠(与标签节一致)
+  const notesCollapsed = settings["notes_section_collapsed"] !== "0";
+  const toggleNotes = () => saveSetting("notes_section_collapsed", notesCollapsed ? "0" : "1");
 
   return (
     <aside
@@ -430,13 +440,73 @@ export default function Sidebar() {
             </div>
           ))}
 
-        <NavRow
-          icon={<NotebookPen size={14} className="shrink-0" />}
-          label={t("S.X.Notes")}
-          active={activeKey === "notes"}
-          collapsed={collapsed}
-          onClick={() => setView({ kind: "notes" })}
-        />
+        {/* 「便签」:与标签行同款——本体 NavRow 版式,悬停淡入 折叠箭头/新建便签/新建分组;
+            展开时下方渲染便签树(收集箱/分组/便签,原第二侧边栏迁入) */}
+        {collapsed ? (
+          <NavRow
+            icon={<NotebookPen size={14} className="shrink-0" />}
+            label={t("S.X.Notes")}
+            active={activeKey === "notes"}
+            collapsed
+            onClick={() => setView({ kind: "notes" })}
+          />
+        ) : (
+          <div className="group/notes relative flex items-center">
+            <button
+              onClick={() => setView({ kind: "notes" })}
+              className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+                activeKey === "notes"
+                  ? "bg-sidebar-selected text-sidebar-selected-fg"
+                  : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+              }`}
+            >
+              <NotebookPen size={14} className="shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-left">{t("S.X.Notes")}</span>
+              {notes.length > 0 && (
+                <span className="text-xs text-sidebar-muted transition-opacity duration-150 group-hover/notes:opacity-0">
+                  {notes.length}
+                </span>
+              )}
+            </button>
+            <span className="pointer-events-none absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/notes:pointer-events-auto group-hover/notes:opacity-100">
+              <button
+                title={notesCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+                onClick={toggleNotes}
+                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <ChevronRight
+                  size={12}
+                  className={`transition-transform duration-150 ${notesCollapsed ? "" : "rotate-90"}`}
+                />
+              </button>
+              <button
+                title={t("S.X.NewNote")}
+                onClick={() => {
+                  void addNote();
+                  setView({ kind: "notes" });
+                  if (notesCollapsed) saveSetting("notes_section_collapsed", "0"); // 新建后自动展开
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <FilePlus2 size={12} />
+              </button>
+              <button
+                title={t("S.X.NewNoteGroup")}
+                onClick={() => {
+                  void addNoteGroup(t("S.X.NewNoteGroup"));
+                  if (notesCollapsed) saveSetting("notes_section_collapsed", "0");
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <FolderPlus size={12} />
+              </button>
+            </span>
+          </div>
+        )}
+
+        {/* 便签树:仅展开态侧栏 + 便签节展开时渲染 */}
+        {!collapsed && !notesCollapsed && <NotesTree />}
+
         <NavRow
           icon={<CheckCircle2 size={14} className="shrink-0" />}
           label={t("S.Group.Completed")}
