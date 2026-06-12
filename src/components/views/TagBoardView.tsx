@@ -131,10 +131,13 @@ export default function TagBoardView() {
     byCol.get(key)?.push(task);
   }
 
+  // 空标签不上看板(含空的「无标签」卡)
+  const visibleCols = cols.filter((c) => (byCol.get(colKey(c.id))?.length ?? 0) > 0);
+
   // 瀑布流分配:按顺序把每张卡片放进当前最短的列(高度按任务数估算)
   const lanes: Column[][] = Array.from({ length: colCount }, () => []);
   const laneHeights = new Array(colCount).fill(0);
-  for (const c of cols) {
+  for (const c of visibleCols) {
     const shortest = laneHeights.indexOf(Math.min(...laneHeights));
     lanes[shortest].push(c);
     laneHeights[shortest] += 56 + (byCol.get(colKey(c.id))?.length ?? 0) * 48;
