@@ -2,9 +2,13 @@ mod commands;
 mod database;
 mod import;
 mod models;
+mod updater;
 mod window;
 
 pub fn run() {
+    // 更新换壳后回收旧 exe(无 --updated-from 参数时为空操作)
+    updater::cleanup_after_update();
+
     let conn = database::init().expect("数据库初始化失败");
 
     // 首启迁移:旧版 data.json → SQLite(失败不阻塞启动,从空库开始)
@@ -57,6 +61,7 @@ pub fn run() {
             window::set_acrylic,
             window::set_autostart,
             window::get_autostart,
+            updater::apply_update,
         ])
         .run(tauri::generate_context!())
         .expect("应用启动失败");

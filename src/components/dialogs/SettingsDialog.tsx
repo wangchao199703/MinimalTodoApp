@@ -102,6 +102,12 @@ export default function SettingsDialog({ onClose }: { onClose: () => void }) {
         onChange={setFlag("reminder_sound_enabled")}
       />
       <Toggle
+        label={t("S.Settings.AutoUpdate")}
+        desc={t("S.Settings.AutoUpdateDesc")}
+        checked={flag("auto_update_enabled", true)}
+        onChange={setFlag("auto_update_enabled")}
+      />
+      <Toggle
         label={t("S.Settings.Holidays")}
         desc={t("S.Settings.HolidaysDesc")}
         checked={flag("show_holidays", true)}

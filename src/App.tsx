@@ -14,6 +14,29 @@ import QuadrantView from "./components/views/QuadrantView";
 import TagBoardView from "./components/views/TagBoardView";
 import NotesView from "./components/views/NotesView";
 import Toasts from "./components/ui/Toasts";
+import UpdateDialog from "./components/dialogs/UpdateDialog";
+import { checkForUpdate, type UpdateInfo } from "./lib/updater";
+import { useState } from "react";
+
+/** 自动更新检查:启动 4 秒后 + 每 12 小时(对齐旧版节奏) */
+function useUpdateCheck(loaded: boolean) {
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  useEffect(() => {
+    if (!loaded) return;
+    const check = () => {
+      void checkForUpdate(false).then((info) => {
+        if (info) setUpdateInfo(info);
+      });
+    };
+    const initial = setTimeout(check, 4000);
+    const interval = setInterval(check, 12 * 3600 * 1000);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(interval);
+    };
+  }, [loaded]);
+  return { updateInfo, setUpdateInfo };
+}
 
 /** 周期提醒轮询:每 30 秒检查一次(对齐旧版) */
 function useReminderLoop() {
@@ -63,6 +86,7 @@ export default function App() {
   }, [loaded]);
 
   useReminderLoop();
+  const { updateInfo, setUpdateInfo } = useUpdateCheck(loaded);
 
   if (!loaded) return null;
 
@@ -89,6 +113,7 @@ export default function App() {
         {scheduleOpen && view.kind !== "notes" && <SchedulePanel />}
       </div>
       <Toasts />
+      {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
     </div>
   );
 }

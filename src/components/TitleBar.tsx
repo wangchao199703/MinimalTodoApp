@@ -1,11 +1,24 @@
 import { useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { CalendarDays, Check, Menu, Minus, Palette, Pin, Settings, Square, X } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  Menu,
+  Minus,
+  Palette,
+  Pin,
+  RefreshCw,
+  Settings,
+  Square,
+  X,
+} from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
+import { checkForUpdate, type UpdateInfo } from "../lib/updater";
 import { Popover, MenuItem } from "./ui/Popover";
 import ThemePicker from "./dialogs/ThemePicker";
 import SettingsDialog from "./dialogs/SettingsDialog";
+import UpdateDialog from "./dialogs/UpdateDialog";
 
 const win = getCurrentWindow();
 
@@ -14,9 +27,18 @@ export default function TitleBar() {
   const setLanguage = useAppStore((s) => s.setLanguage);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
+  const pushToast = useAppStore((s) => s.pushToast);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+
+  const manualCheck = () => {
+    pushToast(t("S.Update.Checking"));
+    void checkForUpdate(true).then((info) => {
+      if (info) setUpdateInfo(info);
+    });
+  };
 
   const scheduleOpen = useAppStore((s) => s.scheduleOpen);
   const setScheduleOpen = useAppStore((s) => s.setScheduleOpen);
@@ -112,6 +134,15 @@ export default function TitleBar() {
               <Palette size={13} />
               {t("S.MenuTheme")}
             </MenuItem>
+            <MenuItem
+              onClick={() => {
+                manualCheck();
+                setMenuAnchor(null);
+              }}
+            >
+              <RefreshCw size={13} />
+              {t("S.Settings.CheckUpdate")}
+            </MenuItem>
             <div className="my-1 h-px bg-divider" />
             <div className="px-2.5 py-1 text-xs text-muted">{t("S.MenuLanguage")}</div>
             <MenuItem
@@ -138,6 +169,7 @@ export default function TitleBar() {
 
       {pickerOpen && <ThemePicker onClose={() => setPickerOpen(false)} />}
       {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
     </header>
   );
 }

@@ -1,0 +1,75 @@
+import { useState } from "react";
+import { useAppStore } from "../../store/useAppStore";
+import { downloadAndApply, type UpdateInfo } from "../../lib/updater";
+import { t, f } from "../../lib/i18n";
+import Modal from "../ui/Modal";
+
+export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => void }) {
+  const saveSetting = useAppStore((s) => s.saveSetting);
+  const pushToast = useAppStore((s) => s.pushToast);
+  const [progress, setProgress] = useState<number | null>(null);
+
+  const start = async () => {
+    setProgress(0);
+    try {
+      await downloadAndApply(props.info, setProgress);
+      // 成功后应用会退出重启,走不到这里
+    } catch {
+      setProgress(null);
+      pushToast(t("S.Update.DownloadFailed"));
+    }
+  };
+
+  return (
+    <Modal title={t("S.Update.Title")} onClose={props.onClose} width={400}>
+      <p className="text-sm font-medium text-text-1">
+        {f("S.Update.NewVersion", props.info.version, props.info.currentVersion)}
+      </p>
+
+      {props.info.notes && (
+        <>
+          <p className="mt-2 mb-1 text-xs font-medium text-muted">{t("S.Update.WhatsNew")}</p>
+          <div className="max-h-44 overflow-y-auto rounded-md bg-input p-2 text-xs whitespace-pre-wrap text-text-2 select-text">
+            {props.info.notes}
+          </div>
+        </>
+      )}
+
+      {progress !== null ? (
+        <div className="mt-3">
+          <p className="mb-1 text-xs text-text-2">{t("S.Update.Downloading")}</p>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-divider">
+            <div
+              className="h-full rounded-full bg-accent transition-all"
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex justify-end gap-2">
+          <button
+            onClick={() => {
+              saveSetting("ignored_update_version", props.info.version);
+              props.onClose();
+            }}
+            className="rounded-md px-2.5 py-1.5 text-xs text-muted hover:bg-card-hover"
+          >
+            {t("S.Update.SkipThis")}
+          </button>
+          <button
+            onClick={props.onClose}
+            className="rounded-md px-2.5 py-1.5 text-xs text-text-2 hover:bg-card-hover"
+          >
+            {t("S.Update.Ignore")}
+          </button>
+          <button
+            onClick={() => void start()}
+            className="rounded-md bg-accent px-3 py-1.5 text-xs text-on-accent hover:opacity-90"
+          >
+            {t("S.Update.Now")}
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+}
