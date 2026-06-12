@@ -74,12 +74,34 @@ public static class UpdateService
         using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
         var root = doc.RootElement;
 
-        string tag = root.TryGetProperty("tag_name", out var t) ? (t.GetString() ?? "") : "";
-        var latest = ParseVersion(tag);
-        if (latest == null) return null;
+        var info = ParseRelease(root);
+        if (info == null) return null;
 
         // 仅按 主.次.修订 三段比较，忽略 build 段差异
-        if (Normalize(latest) <= Normalize(CurrentVersion)) return null;   // 已是最新
+        if (Normalize(info.Version) <= Normalize(CurrentVersion)) return null;   // 已是最新
+        return info;
+    }
+
+    /// <summary>
+    /// 按 tag 拉取指定版本的 Release(用于「重新安装当前版本」：重新下载并安装同一版本，修复损坏/卡顿)。
+    /// 不做版本比较;返回该 Release 的可下载 win-x64 资产，无资产/解析失败返回 null，网络/HTTP 错误抛异常。
+    /// </summary>
+    public static async Task<UpdateInfo?> FetchReleaseByTagAsync(string tag, CancellationToken ct = default)
+    {
+        var url = "https://api.github.com/repos/" + RepoSlug + "/releases/tags/" + Uri.EscapeDataString(tag);
+        using var resp = await Http.GetAsync(url, ct);
+        resp.EnsureSuccessStatusCode();
+        await using var stream = await resp.Content.ReadAsStreamAsync(ct);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+        return ParseRelease(doc.RootElement);
+    }
+
+    /// <summary>从一个 Release JSON 解析出 <see cref="UpdateInfo"/>(tag/说明/win-x64 资产);tag 不可解析或无资产返回 null.</summary>
+    private static UpdateInfo? ParseRelease(JsonElement root)
+    {
+        string tag = root.TryGetProperty("tag_name", out var t) ? (t.GetString() ?? "") : "";
+        var ver = ParseVersion(tag);
+        if (ver == null) return null;
 
         string notes = root.TryGetProperty("body", out var b) ? (b.GetString() ?? "") : "";
 
@@ -100,7 +122,7 @@ public static class UpdateService
         }
         if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(assetName)) return null;
 
-        return new UpdateInfo(latest, tag, notes, url, assetName);
+        return new UpdateInfo(ver, tag, notes, url, assetName);
     }
 
     /// <summary>把 "v1.2.3" / "1.2.3" 解析为 Version；失败返回 null.</summary>

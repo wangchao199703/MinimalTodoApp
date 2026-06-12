@@ -157,6 +157,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         EnsureCompletedGroup();
         EnsureQuadrantGroup();
         EnsureTagBoardGroup();
+        HealViewGroups();            // 自愈历史脏数据:去重视图分组 + 清理与视图分组同名的孤儿普通分组
         AssignDefaultGroupIcons();   // 旧数据(无图标)按类型/名称补默认图标
         InitDefaultGroupIconsOnce(); // 首次启动:强制标准分组用默认图标(修正旧的随手选)
         MigrateCompletedItems();
@@ -1472,6 +1473,9 @@ public partial class MainViewModel : ObservableObject, IDropTarget
     public TodoGroup CreateTag(string name, string? glyph = null)
     {
         string nm = string.IsNullOrWhiteSpace(name) ? Loc.T("S.Group.NewName") : name.Trim();
+        // 同名标签直接复用,避免重复「新建」产生多个同名标签容器
+        var existing = NormalTagGroups.FirstOrDefault(t => string.Equals(t.Name, nm, StringComparison.CurrentCultureIgnoreCase));
+        if (existing != null) return existing;
         var g = new TodoGroup
         {
             Name = nm,
@@ -1836,6 +1840,35 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         Groups.Add(g);
     }
 
+    /// <summary>
+    /// 自愈历史脏数据(避免标签看板冒出"标签看板/四象限"这类伪标签容器、侧栏多出分组):
+    /// ① 每种内置视图分组(所有待办/已完成/四象限/标签)只保留一个,多余的视图分组(不存任务)删除;
+    /// ② 清理"孤儿"——不是视图分组、但名字撞上视图分组保留名的普通分组(历史迁移遗留),
+    ///    其下任务先转为「无标签」(GroupId=Empty)再删,任务不丢。
+    /// </summary>
+    private void HealViewGroups()
+    {
+        void DedupeFlag(Func<TodoGroup, bool> hasFlag)
+        {
+            var flagged = Groups.Where(hasFlag).ToList();
+            for (int i = 1; i < flagged.Count; i++) Groups.Remove(flagged[i]);
+        }
+        DedupeFlag(g => g.IsAllUncompletedGroup);
+        DedupeFlag(g => g.IsCompletedGroup);
+        DedupeFlag(g => g.IsQuadrantGroup);
+        DedupeFlag(g => g.IsTagBoardGroup);
+
+        // 这些是内置视图分组用过的默认名,普通标签不会(也不应)叫这些 —— 同名且非视图分组的即历史孤儿。
+        // 不含"标签"(它是标签看板视图分组的当前默认名,避免误删用户真叫「标签」的标签)。
+        var reserved = new HashSet<string> { "所有待办", "已完成", "四象限", "标签看板" };
+        foreach (var orphan in Groups.Where(g => !g.IsSpecialGroup && reserved.Contains(g.Name)).ToList())
+        {
+            foreach (var it in _allItems.Where(i => i.GroupId == orphan.Id).ToList())
+                it.GroupId = Guid.Empty;
+            Groups.Remove(orphan);
+        }
+    }
+
     /// <summary>旧数据迁移:把优先级为 None 的任务统一升级为 Medium(不再保留“无优先级”选项).</summary>
     private void MigrateNonePriority()
     {
@@ -2083,15 +2116,18 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             TagColumns.Add(col);
         }
 
-        // 「无标签」列:GroupId 不指向任何普通标签的未完成顶层任务;
-        // 位置按持久化的 UntaggedColumnIndex 还原(-1 或越界=末位)
+        // 「无标签」列:GroupId 不指向任何普通标签的未完成顶层任务。
+        // 仅当确有无标签任务时才显示(为空不占一个空容器);位置按持久化的 UntaggedColumnIndex 还原(-1 或越界=末位)。
         var tagIds = NormalTagGroups.Select(g => g.Id).ToHashSet();
-        var untaggedCol = new TagColumnVm(this, null);
-        foreach (var it in pending.Where(i => !tagIds.Contains(i.GroupId)))
-            untaggedCol.Items.Add(it);
-        int idx = _data.UntaggedColumnIndex;
-        if (idx >= 0 && idx <= TagColumns.Count) TagColumns.Insert(idx, untaggedCol);
-        else TagColumns.Add(untaggedCol);
+        var untagged = pending.Where(i => !tagIds.Contains(i.GroupId)).ToList();
+        if (untagged.Count > 0)
+        {
+            var untaggedCol = new TagColumnVm(this, null);
+            foreach (var it in untagged) untaggedCol.Items.Add(it);
+            int idx = _data.UntaggedColumnIndex;
+            if (idx >= 0 && idx <= TagColumns.Count) TagColumns.Insert(idx, untaggedCol);
+            else TagColumns.Add(untaggedCol);
+        }
     }
 
     /// <summary>

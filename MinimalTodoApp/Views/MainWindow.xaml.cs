@@ -1150,6 +1150,11 @@ public partial class MainWindow : Window
     {
         if (Vm == null) return;
         if (Vm.NotesVm?.SelectedNote != null) Vm.NotesVm.SelectedNote = null;  // → IsNotesViewOpen=false
+        // 清掉收集箱各 ListBox 的残留选中:便签是 OneWay+SelectionChanged 驱动,
+        // 离开便签视图后这些 ListBox 仍记着上次选中那篇;不清的话再点「同一篇」便签
+        // 不触发 SelectionChanged → 切不回便签视图(表现为点便签无反应、要点好几次别的便签才行)。
+        foreach (var lb in FindVisualChildren<System.Windows.Controls.ListBox>(InboxTree))
+            if (lb.SelectedItem != null) lb.SelectedItem = null;
         Vm.SelectedGroup = g;
         // GroupList 仅含「所有待办」一项;其它视图入口(已完成/四象限/标签看板)为独立按钮,置 null 由各自高亮.
         GroupList.SelectedItem = g.IsAllUncompletedGroup ? g : null;

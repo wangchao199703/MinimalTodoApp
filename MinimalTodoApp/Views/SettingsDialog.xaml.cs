@@ -192,6 +192,34 @@ public partial class SettingsDialog : Window
         }
     }
 
+    /// <summary>重新安装当前版本:按当前版本号拉取同版本 Release，复用更新对话框重新下载并安装(修复损坏/卡顿).</summary>
+    private async void Reinstall_Click(object sender, RoutedEventArgs e)
+    {
+        ReinstallButton.IsEnabled = false;
+        StatusText.Text = Loc.T("S.Update.Checking");
+        try
+        {
+            var tag = "v" + UpdateService.CurrentVersion.ToString(3);
+            var info = await UpdateService.FetchReleaseByTagAsync(tag);
+            if (info == null)
+            {
+                StatusText.Text = Loc.T("S.Update.NoAsset");
+                return;
+            }
+            StatusText.Text = "";
+            var dlg = new UpdateDialog(info, reinstall: true) { Owner = Owner ?? this };
+            dlg.ShowDialog();
+        }
+        catch
+        {
+            StatusText.Text = Loc.T("S.Update.CheckFailed");
+        }
+        finally
+        {
+            ReinstallButton.IsEnabled = true;
+        }
+    }
+
     /// <summary>
     /// 手动下载更新:在默认浏览器打开 GitHub 最新发布页面(releases/latest)，
     /// 并提示用户手动下载最新的 exe 安装.适合自动更新被网络/限流/权限阻断时的兜底手段.

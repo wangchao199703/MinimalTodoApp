@@ -457,6 +457,24 @@
                                     Click="ManualDownload_Click" />
                         </Grid>
 
+                        <!-- 重新安装当前版本:重新下载并安装相同版本(修复损坏/卡顿) -->
+                        <Grid Margin="0,14,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="{DynamicResource S.Settings.Reinstall}" FontSize="14"
+                                           Foreground="{DynamicResource PrimaryText}" />
+                                <TextBlock Text="{DynamicResource S.Settings.ReinstallDesc}" FontSize="11"
+                                           Margin="0,2,0,0" TextWrapping="Wrap" Foreground="{DynamicResource MutedText}" />
+                            </StackPanel>
+                            <Button x:Name="ReinstallButton" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0"
+                                    Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                    Padding="12,6" Content="{DynamicResource S.Settings.ReinstallBtn}"
+                                    Click="Reinstall_Click" />
+                        </Grid>
+
                         <Border Height="1" Background="{DynamicResource Divider}" Margin="0,16,0,16" />
 
                         <!-- 支持开发者:邀请点 Star 支持项目，点击打开 GitHub 仓库 -->

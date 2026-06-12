@@ -34,13 +34,15 @@ public partial class UpdateDialog : Window
     /// <summary>用户最终选择，供调用方决定是否写入“忽略此版本”.</summary>
     public UpdateChoice Choice { get; private set; } = UpdateChoice.Ignored;
 
-    public UpdateDialog(UpdateInfo info)
+    public UpdateDialog(UpdateInfo info, bool reinstall = false)
     {
         InitializeComponent();
         _info = info;
 
-        VersionText.Text = Loc.F("S.Update.NewVersion",
-            info.Version.ToString(3), UpdateService.CurrentVersion.ToString(3));
+        // 重新安装态:标题改为「重新安装当前版本 vX」，与「发现新版本」区分
+        VersionText.Text = reinstall
+            ? Loc.F("S.Update.Reinstall", info.Version.ToString(3))
+            : Loc.F("S.Update.NewVersion", info.Version.ToString(3), UpdateService.CurrentVersion.ToString(3));
 
         // 发布说明:按当前界面语言只取对应语种分节，并把 Markdown 渲染为可读文本(去掉 # / ** / 列表记号等)
         bool chinese = LanguageManager.Current != LanguageManager.English;

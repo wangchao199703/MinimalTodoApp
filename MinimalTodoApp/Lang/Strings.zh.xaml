@@ -355,10 +355,15 @@
     <sys:String x:Key="S.Settings.ManualDownloadDesc">在浏览器中打开最新发布页面，手动下载最新的 exe 安装</sys:String>
     <sys:String x:Key="S.Settings.ManualDownloadBtn">前往下载</sys:String>
     <sys:String x:Key="S.Settings.ManualDownloadHint">已在浏览器打开最新发布页面，请下载最新的 exe 并运行安装.</sys:String>
+    <sys:String x:Key="S.Settings.Reinstall">重新安装当前版本</sys:String>
+    <sys:String x:Key="S.Settings.ReinstallDesc">重新下载并安装当前版本（可修复损坏或异常卡顿的安装）</sys:String>
+    <sys:String x:Key="S.Settings.ReinstallBtn">重新安装</sys:String>
 
     <!-- ============ 自动更新对话框 ============ -->
     <sys:String x:Key="S.Update.Title">发现新版本</sys:String>
     <sys:String x:Key="S.Update.NewVersion">发现新版本 {0}（当前 {1}）</sys:String>
+    <sys:String x:Key="S.Update.Reinstall">重新安装当前版本 {0}</sys:String>
+    <sys:String x:Key="S.Update.NoAsset">该版本暂无可下载的安装包.</sys:String>
     <sys:String x:Key="S.Update.WhatsNew">更新内容</sys:String>
     <sys:String x:Key="S.Update.Now">立即更新</sys:String>
     <sys:String x:Key="S.Update.Ignore">忽略</sys:String>

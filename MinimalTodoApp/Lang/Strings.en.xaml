@@ -355,10 +355,15 @@
     <sys:String x:Key="S.Settings.ManualDownloadDesc">Open the latest release page in your browser to manually download and install the latest exe</sys:String>
     <sys:String x:Key="S.Settings.ManualDownloadBtn">Open download</sys:String>
     <sys:String x:Key="S.Settings.ManualDownloadHint">The latest release page is now open in your browser. Please download and run the latest exe.</sys:String>
+    <sys:String x:Key="S.Settings.Reinstall">Reinstall current version</sys:String>
+    <sys:String x:Key="S.Settings.ReinstallDesc">Re-download and install the current version (repairs a broken or sluggish install)</sys:String>
+    <sys:String x:Key="S.Settings.ReinstallBtn">Reinstall</sys:String>
 
     <!-- ============ Auto-update dialog ============ -->
     <sys:String x:Key="S.Update.Title">Update available</sys:String>
     <sys:String x:Key="S.Update.NewVersion">New version {0} available (current {1})</sys:String>
+    <sys:String x:Key="S.Update.Reinstall">Reinstall current version {0}</sys:String>
+    <sys:String x:Key="S.Update.NoAsset">No installable package is available for this version.</sys:String>
     <sys:String x:Key="S.Update.WhatsNew">What's new</sys:String>
     <sys:String x:Key="S.Update.Now">Update now</sys:String>
     <sys:String x:Key="S.Update.Ignore">Ignore</sys:String>

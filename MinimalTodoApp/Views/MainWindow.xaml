@@ -38,6 +38,7 @@
                               IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
                     <StackPanel Grid.Column="1">
                         <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="13"
+                                   LineHeight="20" LineStackingStrategy="BlockLineHeight"
                                    Foreground="{DynamicResource PrimaryText}" />
                         <TextBlock Text="{Binding DueCountdownText}" FontSize="11" Margin="0,2,0,0"
                                    Foreground="{DynamicResource MutedText}"
