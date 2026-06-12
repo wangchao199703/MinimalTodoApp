@@ -1,18 +1,28 @@
 import { useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Check, Menu, Minus, Palette, Square, X } from "lucide-react";
+import { Check, Menu, Minus, Palette, Pin, Settings, Square, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
 import { Popover, MenuItem } from "./ui/Popover";
 import ThemePicker from "./dialogs/ThemePicker";
+import SettingsDialog from "./dialogs/SettingsDialog";
 
 const win = getCurrentWindow();
 
 export default function TitleBar() {
   const language = useAppStore((s) => s.language);
   const setLanguage = useAppStore((s) => s.setLanguage);
+  const settings = useAppStore((s) => s.settings);
+  const saveSetting = useAppStore((s) => s.saveSetting);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const onTop = settings["always_on_top"] === "1";
+  const toggleOnTop = () => {
+    void win.setAlwaysOnTop(!onTop);
+    saveSetting("always_on_top", onTop ? "0" : "1");
+  };
 
   return (
     <header
@@ -31,6 +41,15 @@ export default function TitleBar() {
       </span>
 
       <div className="ml-auto flex items-center gap-0.5">
+        <button
+          title={t("S.AlwaysOnTop")}
+          onClick={toggleOnTop}
+          className={`flex h-7 w-7 items-center justify-center rounded hover:bg-card-hover ${
+            onTop ? "text-accent" : "text-text-2"
+          }`}
+        >
+          <Pin size={13} fill={onTop ? "currentColor" : "none"} />
+        </button>
         <button
           title={t("S.MenuTheme")}
           onClick={() => setPickerOpen(true)}
@@ -66,6 +85,15 @@ export default function TitleBar() {
           <div className="w-44">
             <MenuItem
               onClick={() => {
+                setSettingsOpen(true);
+                setMenuAnchor(null);
+              }}
+            >
+              <Settings size={13} />
+              {t("S.MenuSettings")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
                 setPickerOpen(true);
                 setMenuAnchor(null);
               }}
@@ -98,6 +126,7 @@ export default function TitleBar() {
       )}
 
       {pickerOpen && <ThemePicker onClose={() => setPickerOpen(false)} />}
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
     </header>
   );
 }

@@ -75,9 +75,22 @@ body,
 }
 
 body {
-  font-family: "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif;
+  font-family: var(--app-font, "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif);
+  font-size: var(--app-font-size, 14px);
+  line-height: var(--app-line-height, 1.55);
   background: var(--window-bg);
   color: var(--primary-text);
+}
+
+/* 完成任务时的滑出动画(对齐旧版「向左滑出+淡出」) */
+@keyframes task-complete-out {
+  to {
+    transform: translateX(-48px);
+    opacity: 0;
+  }
+}
+.completing {
+  animation: task-complete-out 0.45s ease-in forwards;
 }
 
 /* 任务项拖拽时的视觉反馈 */

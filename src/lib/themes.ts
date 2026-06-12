@@ -200,6 +200,16 @@ export function builtinThemes(): ThemeMeta[] {
   return list;
 }
 
+/** 内置主题的风格分组;自定义/未知主题返回 null */
+export function themeGroup(key: string): string | null {
+  return builtinThemes().find((m) => m.key === key)?.group ?? null;
+}
+
+/** 深色主题判定:正文文字偏亮即认为是深色底 */
+export function isDarkColors(colors: ThemeColors): boolean {
+  return lum(colors["PrimaryText"] ?? "#000000") > 0.5;
+}
+
 export function themeDisplay(meta: ThemeMeta): string {
   return meta.custom ? (meta.display ?? meta.key) : t("S.Theme." + meta.key);
 }

@@ -112,7 +112,31 @@ export default function Sidebar() {
   const tasks = useAppStore((s) => s.tasks);
   const addGroup = useAppStore((s) => s.addGroup);
   const reorderGroups = useAppStore((s) => s.reorderGroups);
+  const settings = useAppStore((s) => s.settings);
+  const saveSetting = useAppStore((s) => s.saveSetting);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
+
+  // 侧栏宽度可拖动并持久化(对齐旧版 SidebarWidth)
+  const [width, setWidth] = useState(() =>
+    Math.min(320, Math.max(110, Number(settings["sidebar_width"]) || 160)),
+  );
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = width;
+    let w = startW;
+    const move = (ev: MouseEvent) => {
+      w = Math.min(320, Math.max(110, startW + ev.clientX - startX));
+      setWidth(w);
+    };
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      saveSetting("sidebar_width", String(w));
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
 
   // 标签列表拖拽重排
   useEffect(() => {
@@ -140,7 +164,14 @@ export default function Sidebar() {
   const activeKey = viewKey(view);
 
   return (
-    <aside className="flex w-40 shrink-0 flex-col border-r border-divider bg-sidebar">
+    <aside
+      style={{ width }}
+      className="relative flex shrink-0 flex-col border-r border-divider bg-sidebar"
+    >
+      <div
+        onMouseDown={startResize}
+        className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
+      />
       <nav className="flex flex-col gap-0.5 p-2">
         <NavRow
           icon={<Inbox size={14} className="shrink-0" />}

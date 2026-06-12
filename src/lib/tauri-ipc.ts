@@ -100,4 +100,9 @@ export const ipc = {
 
   getSettings: () => invoke<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) => invoke<void>("set_setting", { key, value }),
+
+  setAcrylic: (enabled: boolean, dark: boolean) =>
+    invoke<void>("set_acrylic", { enabled, dark }),
+  setAutostart: (enabled: boolean) => invoke<void>("set_autostart", { enabled }),
+  getAutostart: () => invoke<boolean>("get_autostart"),
 };

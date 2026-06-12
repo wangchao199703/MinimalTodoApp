@@ -34,6 +34,8 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.Complete": "完成",
     "S.X.Uncomplete": "取消完成",
     "S.X.SortBy": "排序方式",
+    "S.X.QuadrantHighOnly": "四象限「重要」仅含高优先级",
+    "S.X.QuadrantSoon": "四象限「紧急」纳入 3 天内到期",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -64,6 +66,8 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.Complete": "Complete",
     "S.X.Uncomplete": "Uncomplete",
     "S.X.SortBy": "Sort by",
+    "S.X.QuadrantHighOnly": 'Matrix "important" = high priority only',
+    "S.X.QuadrantSoon": 'Matrix "urgent" includes due within 3 days',
   },
 };
 

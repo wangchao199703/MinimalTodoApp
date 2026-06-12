@@ -16,6 +16,7 @@ import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { childStats } from "../lib/sort";
 import { dueState, countdownText, formatDue } from "../lib/date";
+import { fireworksAt, playCelebration } from "../lib/effects";
 import { t } from "../lib/i18n";
 import type { Task } from "../lib/tauri-ipc";
 import { Popover, MenuItem } from "./ui/Popover";
@@ -58,6 +59,23 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const [draft, setDraft] = useState(task.title);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [dueAnchor, setDueAnchor] = useState<HTMLElement | null>(null);
+  const [completing, setCompleting] = useState(false);
+
+  // 完成:烟花 + 音效(按设置)→ 滑出动画 → 落库
+  const completeWithEffects = (e: React.MouseEvent) => {
+    if (task.is_completed) {
+      void toggleComplete(task);
+      return;
+    }
+    const s = useAppStore.getState().settings;
+    if ((s["effects_enabled"] ?? "1") === "1") fireworksAt(e.clientX, e.clientY);
+    if (s["sound_enabled"] === "1") playCelebration();
+    setCompleting(true);
+    setTimeout(() => {
+      setCompleting(false);
+      void toggleComplete(task);
+    }, 380);
+  };
 
   const [doneChildren, totalChildren] = childStats(tasks, task.id);
   const ds = dueState(task.due_date, task.is_completed, now);
@@ -79,7 +97,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       style={{ marginLeft: task.indent_level * 18 }}
       className={`group relative flex items-center gap-2 rounded-lg bg-card px-3 py-2 transition-colors hover:bg-card-hover ${
         isDragging ? "dragging" : ""
-      }`}
+      } ${completing ? "completing" : ""}`}
     >
       {closestEdge && (
         <div
@@ -103,7 +121,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
 
       <button
         title={task.is_completed ? t("S.X.Uncomplete") : t("S.X.Complete")}
-        onClick={() => void toggleComplete(task)}
+        onClick={completeWithEffects}
         className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
         style={{
           borderColor: task.is_completed ? "var(--accent)" : PRIORITY_COLOR[task.priority],

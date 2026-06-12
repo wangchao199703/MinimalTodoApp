@@ -8,8 +8,22 @@ import {
 } from "../lib/tauri-ipc";
 import { sortTree, descendantIds, type SortMode } from "../lib/sort";
 import { nowText } from "../lib/date";
-import { applyThemeColors, resolveTheme, type ThemeMeta } from "../lib/themes";
+import {
+  applyThemeColors,
+  isDarkColors,
+  resolveTheme,
+  themeGroup,
+  type ThemeMeta,
+} from "../lib/themes";
 import { setLang, type Lang } from "../lib/i18n";
+
+/** 应用主题颜色 + 透明系主题联动原生亚克力 */
+function applyThemeFull(key: string, customs: ThemeMeta[]) {
+  const colors = resolveTheme(key, customs);
+  applyThemeColors(colors);
+  const transparent = themeGroup(key) === "Transparent";
+  void ipc.setAcrylic(transparent, isDarkColors(colors)).catch(() => {});
+}
 
 /** 视图分发:取代路由。内置视图 + 任意标签视图,可枚举即不需要 Router */
 export type View =
@@ -124,7 +138,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     setLang(language);
 
     const theme = settings["theme"] || "Light";
-    applyThemeColors(resolveTheme(theme, customMetas(customThemes)));
+    applyThemeFull(theme, customMetas(customThemes));
 
     const favoriteThemes = parseList(settings["favorite_theme_keys"]);
     const themeUsage = parseList(settings["theme_usage_order"]);
@@ -165,7 +179,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setTheme: (key) => {
     const s = get();
-    applyThemeColors(resolveTheme(key, customMetas(s.customThemes)));
+    applyThemeFull(key, customMetas(s.customThemes));
     // 最近使用:队首 = 最近,去重,截断
     const themeUsage = [key, ...s.themeUsage.filter((k) => k !== key)].slice(0, 24);
     set({ theme: key, themeUsage });
@@ -196,7 +210,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // 正在使用的主题被编辑后立即重新应用
     const s = get();
     if (s.theme === theme.key) {
-      applyThemeColors(resolveTheme(theme.key, customMetas(s.customThemes)));
+      applyThemeFull(theme.key, customMetas(s.customThemes));
     }
   },
 

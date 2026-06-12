@@ -1,6 +1,9 @@
 import { useEffect } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useAppStore } from "./store/useAppStore";
 import { parseDue, nowText } from "./lib/date";
+import { applyFontSettings } from "./lib/font";
+import { playReminderDing } from "./lib/effects";
 import { f } from "./lib/i18n";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
@@ -21,6 +24,9 @@ function useReminderLoop() {
         const base = t.last_reminded_at ?? t.created_at;
         if (now - parseDue(base).getTime() >= t.reminder_interval_minutes * 60000) {
           pushToast(f("S.Fmt.ReminderToastTitle", t.title));
+          if ((useAppStore.getState().settings["reminder_sound_enabled"] ?? "1") === "1") {
+            playReminderDing();
+          }
           void patchTask({ id: t.id, last_reminded_at: nowText() });
         }
       }
@@ -40,6 +46,18 @@ export default function App() {
   useEffect(() => {
     void init();
   }, [init]);
+
+  // 启动后套用持久化的窗口置顶与字体设置
+  useEffect(() => {
+    if (!loaded) return;
+    const s = useAppStore.getState().settings;
+    if (s["always_on_top"] === "1") void getCurrentWindow().setAlwaysOnTop(true);
+    applyFontSettings(
+      s["font_family"] || "Microsoft YaHei UI",
+      Number(s["font_size"] || "14"),
+      Number(s["line_spacing"] || "1.1"),
+    );
+  }, [loaded]);
 
   useReminderLoop();
 
