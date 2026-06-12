@@ -114,16 +114,55 @@ const SNAP_PX: i32 = 21;
 const REVEAL_PX: i32 = 4;
 /// 显示态下「鼠标在窗口外」判定缓冲(旧版 HideBufferPx=40 DIP)
 const HIDE_BUFFER_PX: i32 = 60;
-/// 鼠标连续离开 N 个 tick(约 450ms)才再次收起(旧版 OutsideTickThreshold)
-const OUTSIDE_TICKS: i32 = 3;
+/// 探针节拍(对齐旧版 DispatcherTimer 90ms)
+const TICK_MS: u64 = 90;
+/// 鼠标连续离开 N 个 tick(90ms×5≈450ms)才再次收起(旧版 OutsideTickThreshold)
+const OUTSIDE_TICKS: i32 = 5;
+/// 滑入/滑出动画时长(对齐旧版 DoubleAnimation 220ms)
+const SLIDE_MS: u64 = 220;
 
 struct DockState {
     edge: AtomicI32,
     hidden: AtomicBool,
-    /// 程序自己 set_position 引发的 Moved 事件要忽略
+    /// 程序自己 set_position 引发的 Moved 事件要忽略(含滑动动画全程)
     moving: AtomicBool,
     /// 刚贴边(拖拽中/启动恢复),等左键松开后立即对齐收起(对齐旧版 DockTo→HideToEdge)
     pending: AtomicBool,
+}
+
+/// 旧版 CubicEase EaseInOut(收起用)
+fn ease_in_out(t: f64) -> f64 {
+    if t < 0.5 { 4.0 * t * t * t } else { 1.0 - (-2.0 * t + 2.0).powi(3) / 2.0 }
+}
+
+/// 旧版 CubicEase EaseOut(唤出用)
+fn ease_out(t: f64) -> f64 {
+    1.0 - (1.0 - t).powi(3)
+}
+
+/// 把窗口从 from 平滑滑到 to(阻塞探针线程 ≈220ms,等效旧版"动画期间探针不响应")
+fn slide_window(
+    win: &WebviewWindow,
+    state: &DockState,
+    from: PhysicalPosition<i32>,
+    to: PhysicalPosition<i32>,
+    ease: fn(f64) -> f64,
+) {
+    state.moving.store(true, Ordering::SeqCst);
+    let start = std::time::Instant::now();
+    loop {
+        let t = start.elapsed().as_millis() as f64 / SLIDE_MS as f64;
+        if t >= 1.0 {
+            break;
+        }
+        let k = ease(t);
+        let x = from.x + ((to.x - from.x) as f64 * k).round() as i32;
+        let y = from.y + ((to.y - from.y) as f64 * k).round() as i32;
+        let _ = win.set_position(PhysicalPosition::new(x, y));
+        std::thread::sleep(std::time::Duration::from_millis(12));
+    }
+    let _ = win.set_position(to);
+    state.moving.store(false, Ordering::SeqCst);
 }
 
 // 左键是否按下(判定拖拽是否结束;user32 直链,免新增依赖)
@@ -147,6 +186,8 @@ pub fn setup_dock(app: &AppHandle) {
         // (setup 时 current_monitor 常不可用,不能在此直接定位)
         pending: AtomicBool::new(saved_edge != EDGE_NONE),
     });
+    // 启动恢复的首次收起不播动画(对齐旧版 HideToEdge(animate:false))
+    let boot_restore = Arc::new(AtomicBool::new(saved_edge != EDGE_NONE));
 
     // 用户拖动窗口 → 检测是否贴近屏幕上/左/右边缘(对齐旧版 TryDockAfterDrag 阈值)
     {
@@ -182,7 +223,8 @@ pub fn setup_dock(app: &AppHandle) {
         });
     }
 
-    // 轮询线程:对齐旧版探针定时器(收起/唤出/再收起)
+    // 轮询线程:对齐旧版探针定时器(收起/唤出/再收起);滑动动画在本线程内
+    // 阻塞执行,天然等效旧版"动画期间探针不响应"
     {
         let app = app.clone();
         let state = state.clone();
@@ -190,7 +232,7 @@ pub fn setup_dock(app: &AppHandle) {
             // 显示态下鼠标连续在窗口外的 tick 数(再收起需达到 OUTSIDE_TICKS)
             let mut outside_ticks: i32 = 0;
             loop {
-                std::thread::sleep(std::time::Duration::from_millis(150));
+                std::thread::sleep(std::time::Duration::from_millis(TICK_MS));
                 let edge = state.edge.load(Ordering::SeqCst);
                 if edge == EDGE_NONE {
                     outside_ticks = 0;
@@ -211,25 +253,31 @@ pub fn setup_dock(app: &AppHandle) {
                 let ms = mon.size();
                 let hidden = state.hidden.load(Ordering::SeqCst);
 
-                let hide_to = |x: i32, y: i32| {
+                // 从 (x,y) 向贴附边滑出隐藏(旧版 HideToEdge:220ms CubicEase EaseInOut)
+                let hide_to = |x: i32, y: i32, animate: bool| {
                     let target = match edge {
                         EDGE_TOP => PhysicalPosition::new(x, mp.y - h + REVEAL_PX),
                         EDGE_LEFT => PhysicalPosition::new(mp.x - w + REVEAL_PX, y),
                         _ => PhysicalPosition::new(mp.x + ms.width as i32 - REVEAL_PX, y),
                     };
-                    state.moving.store(true, Ordering::SeqCst);
-                    let _ = win.set_position(target);
-                    state.moving.store(false, Ordering::SeqCst);
+                    if animate {
+                        slide_window(&win, &state, PhysicalPosition::new(x, y), target, ease_in_out);
+                    } else {
+                        state.moving.store(true, Ordering::SeqCst);
+                        let _ = win.set_position(target);
+                        state.moving.store(false, Ordering::SeqCst);
+                    }
                     state.hidden.store(true, Ordering::SeqCst);
                 };
 
                 if !hidden && state.pending.load(Ordering::SeqCst) {
-                    // 刚贴边:等左键松开(拖拽结束)→ 先对齐到边的完整可见位置,再立即收起
-                    // (旧版 DockTo:不等鼠标离开窗口)
+                    // 刚贴边:等左键松开(拖拽结束)→ 先对齐到边的完整可见位置,再滑出收起
+                    // (旧版 DockTo:不等鼠标离开窗口;启动恢复不播动画)
                     if lbutton_down() {
                         continue;
                     }
                     state.pending.store(false, Ordering::SeqCst);
+                    let animate = !boot_restore.swap(false, Ordering::SeqCst);
                     let (ax, ay) = match edge {
                         EDGE_TOP => (
                             pos.x.clamp(mp.x, mp.x + ms.width as i32 - w),
@@ -238,7 +286,11 @@ pub fn setup_dock(app: &AppHandle) {
                         EDGE_LEFT => (mp.x, pos.y.max(mp.y)),
                         _ => (mp.x + ms.width as i32 - w, pos.y.max(mp.y)),
                     };
-                    hide_to(ax, ay);
+                    // 先瞬时对齐到边的完整可见位置(旧版 DockTo 先归位再动画,避免斜向飞跃)
+                    state.moving.store(true, Ordering::SeqCst);
+                    let _ = win.set_position(PhysicalPosition::new(ax, ay));
+                    state.moving.store(false, Ordering::SeqCst);
+                    hide_to(ax, ay, animate);
                     outside_ticks = 0;
                 } else if !hidden {
                     // 显示态(唤出后):鼠标带缓冲连续离开窗口若干拍才再次收起(旧版探针)
@@ -251,12 +303,13 @@ pub fn setup_dock(app: &AppHandle) {
                     } else {
                         outside_ticks += 1;
                         if outside_ticks >= OUTSIDE_TICKS {
-                            hide_to(pos.x, pos.y);
+                            hide_to(pos.x, pos.y, true);
                             outside_ticks = 0;
                         }
                     }
                 } else {
                     // 收起态:鼠标顶到屏幕边缘且在窗口投影范围内 → 滑出唤醒
+                    // (旧版 ShowFromEdge:220ms CubicEase EaseOut)
                     let at_edge = match edge {
                         EDGE_TOP => cy <= mp.y + 2 && cx >= pos.x && cx <= pos.x + w,
                         EDGE_LEFT => cx <= mp.x + 2 && cy >= pos.y && cy <= pos.y + h,
@@ -268,9 +321,7 @@ pub fn setup_dock(app: &AppHandle) {
                             EDGE_LEFT => PhysicalPosition::new(mp.x, pos.y),
                             _ => PhysicalPosition::new(mp.x + ms.width as i32 - w, pos.y),
                         };
-                        state.moving.store(true, Ordering::SeqCst);
-                        let _ = win.set_position(target);
-                        state.moving.store(false, Ordering::SeqCst);
+                        slide_window(&win, &state, PhysicalPosition::new(pos.x, pos.y), target, ease_out);
                         state.hidden.store(false, Ordering::SeqCst);
                         let _ = win.set_focus();
                         outside_ticks = 0;
