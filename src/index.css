@@ -24,15 +24,64 @@
   --success-text: #16a34a;
   --popup-bg: hsl(0 0% 100%);
 
-  /* 侧栏独立配色(todo-flow 标志性深靛蓝侧栏) */
-  --sidebar-bg: hsl(235 32% 14%);
-  --sidebar-fg: hsl(235 8% 76%);
-  --sidebar-fg-strong: hsl(0 0% 100%);
-  --sidebar-muted: hsl(235 8% 55%);
-  --sidebar-hover-bg: hsl(0 0% 100% / 0.06);
-  --sidebar-selected-bg: hsl(245 82% 68% / 0.15);
-  --sidebar-selected-fg: hsl(0 0% 100%);
-  --sidebar-border: hsl(0 0% 100% / 0.06);
+  /* 侧栏独立配色(浅色系 = 白色侧栏) */
+  --sidebar-bg: hsl(0 0% 100%);
+  --sidebar-fg: hsl(220 10% 40%);
+  --sidebar-fg-strong: hsl(220 30% 12%);
+  --sidebar-muted: hsl(220 8% 62%);
+  --sidebar-hover-bg: hsl(220 14% 94%);
+  --sidebar-selected-bg: hsl(245 82% 68% / 0.12);
+  --sidebar-selected-fg: hsl(245 82% 52%);
+  --sidebar-border: hsl(220 14% 90%);
+}
+
+/* ============ 浅色系变体(基于 :root,只覆盖色调与强调色) ============ */
+.light-lavender {
+  --window-bg: hsl(252 45% 96%);
+  --titlebar-bg: hsl(252 45% 96%);
+  --content-bg: hsl(252 45% 96%);
+  --card-hover-bg: hsl(252 30% 92%);
+  --input-bg: hsl(252 30% 92%);
+  --divider: hsl(252 24% 88%);
+  --accent: hsl(258 75% 62%);
+  --selected-item-bg: hsl(258 75% 62% / 0.12);
+  --sidebar-bg: hsl(252 50% 99%);
+  --sidebar-hover-bg: hsl(252 30% 93%);
+  --sidebar-selected-bg: hsl(258 75% 62% / 0.12);
+  --sidebar-selected-fg: hsl(258 70% 50%);
+  --sidebar-border: hsl(252 24% 89%);
+}
+
+.light-mint {
+  --window-bg: hsl(152 32% 96%);
+  --titlebar-bg: hsl(152 32% 96%);
+  --content-bg: hsl(152 32% 96%);
+  --card-hover-bg: hsl(152 24% 92%);
+  --input-bg: hsl(152 24% 92%);
+  --divider: hsl(152 18% 87%);
+  --accent: hsl(161 70% 36%);
+  --selected-item-bg: hsl(161 70% 36% / 0.12);
+  --sidebar-bg: hsl(150 40% 99%);
+  --sidebar-hover-bg: hsl(152 24% 93%);
+  --sidebar-selected-bg: hsl(161 70% 36% / 0.12);
+  --sidebar-selected-fg: hsl(161 75% 28%);
+  --sidebar-border: hsl(152 18% 88%);
+}
+
+.light-sand {
+  --window-bg: hsl(40 38% 95%);
+  --titlebar-bg: hsl(40 38% 95%);
+  --content-bg: hsl(40 38% 95%);
+  --card-hover-bg: hsl(40 30% 91%);
+  --input-bg: hsl(40 30% 91%);
+  --divider: hsl(40 24% 86%);
+  --accent: hsl(28 80% 46%);
+  --selected-item-bg: hsl(28 80% 46% / 0.12);
+  --sidebar-bg: hsl(42 50% 98%);
+  --sidebar-hover-bg: hsl(40 30% 92%);
+  --sidebar-selected-bg: hsl(28 80% 46% / 0.12);
+  --sidebar-selected-fg: hsl(28 85% 38%);
+  --sidebar-border: hsl(40 24% 87%);
 }
 
 .dark {
@@ -63,6 +112,60 @@
   --sidebar-selected-bg: hsl(245 82% 68% / 0.15);
   --sidebar-selected-fg: hsl(0 0% 100%);
   --sidebar-border: hsl(0 0% 100% / 0.06);
+}
+
+/* ============ 深色系变体(基于 .dark,只覆盖色调与强调色) ============ */
+.dark-midnight {
+  --window-bg: hsl(0 0% 7%);
+  --titlebar-bg: hsl(0 0% 7%);
+  --content-bg: hsl(0 0% 7%);
+  --card-bg: hsl(0 0% 11%);
+  --card-hover-bg: hsl(0 0% 15%);
+  --input-bg: hsl(0 0% 15%);
+  --divider: hsl(0 0% 16%);
+  --popup-bg: hsl(0 0% 12%);
+  --accent: hsl(217 91% 65%);
+  --selected-item-bg: hsl(217 91% 60% / 0.15);
+  --sidebar-bg: hsl(0 0% 5%);
+  --sidebar-selected-bg: hsl(217 91% 60% / 0.15);
+}
+
+.dark-mocha {
+  --window-bg: hsl(24 14% 8%);
+  --titlebar-bg: hsl(24 14% 8%);
+  --content-bg: hsl(24 14% 8%);
+  --card-bg: hsl(24 12% 12%);
+  --card-hover-bg: hsl(24 12% 16%);
+  --input-bg: hsl(24 12% 16%);
+  --divider: hsl(24 10% 17%);
+  --popup-bg: hsl(24 12% 13%);
+  --primary-text: hsl(36 25% 90%);
+  --secondary-text: hsl(36 14% 62%);
+  --muted-text: hsl(36 12% 46%);
+  --accent: hsl(36 60% 55%);
+  --selected-item-bg: hsl(36 60% 55% / 0.14);
+  --sidebar-bg: hsl(24 16% 6%);
+  --sidebar-fg: hsl(36 14% 70%);
+  --sidebar-fg-strong: hsl(36 25% 90%);
+  --sidebar-muted: hsl(36 12% 50%);
+  --sidebar-selected-bg: hsl(36 60% 55% / 0.14);
+  --sidebar-selected-fg: hsl(36 60% 60%);
+}
+
+.dark-emerald {
+  --window-bg: hsl(165 18% 7%);
+  --titlebar-bg: hsl(165 18% 7%);
+  --content-bg: hsl(165 18% 7%);
+  --card-bg: hsl(165 14% 11%);
+  --card-hover-bg: hsl(165 14% 15%);
+  --input-bg: hsl(165 14% 15%);
+  --divider: hsl(165 12% 15%);
+  --popup-bg: hsl(165 14% 12%);
+  --accent: hsl(158 64% 52%);
+  --selected-item-bg: hsl(158 64% 48% / 0.15);
+  --sidebar-bg: hsl(165 20% 5%);
+  --sidebar-selected-bg: hsl(158 64% 48% / 0.15);
+  --sidebar-selected-fg: hsl(158 64% 62%);
 }
 
 .glassy {

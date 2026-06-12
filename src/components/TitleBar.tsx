@@ -3,15 +3,21 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   CalendarDays,
   Check,
+  Coffee,
+  Flower2,
+  Gem,
   Leaf,
   Menu,
   Minus,
   Moon,
+  MoonStar,
   Palette,
   Pin,
   RefreshCw,
   Settings,
+  Shell,
   Sparkles,
+  Sprout,
   Square,
   Sun,
   Sunset,
@@ -26,14 +32,20 @@ import { Popover, MenuItem } from "./ui/Popover";
 import SettingsDialog from "./dialogs/SettingsDialog";
 import UpdateDialog from "./dialogs/UpdateDialog";
 
-/** 玻璃系四色 + 经典浅色/深色 */
-const THEME_OPTIONS: { key: Theme; icon: typeof Sun }[] = [
+/** 三个家族:玻璃 4 / 浅色 4 / 深色 4(分组间插分隔线) */
+const THEME_OPTIONS: { key: Theme; icon: typeof Sun; divider?: boolean }[] = [
   { key: "glass", icon: Sparkles },
   { key: "glass-ocean", icon: Waves },
   { key: "glass-forest", icon: Leaf },
   { key: "glass-sunset", icon: Sunset },
-  { key: "light", icon: Sun },
-  { key: "dark", icon: Moon },
+  { key: "light", icon: Sun, divider: true },
+  { key: "light-lavender", icon: Flower2 },
+  { key: "light-mint", icon: Sprout },
+  { key: "light-sand", icon: Shell },
+  { key: "dark", icon: Moon, divider: true },
+  { key: "dark-midnight", icon: MoonStar },
+  { key: "dark-mocha", icon: Coffee },
+  { key: "dark-emerald", icon: Gem },
 ];
 
 const win = getCurrentWindow();
@@ -179,18 +191,20 @@ export default function TitleBar() {
       {themeAnchor && (
         <Popover anchor={themeAnchor} onClose={() => setThemeAnchor(null)}>
           <div className="w-36">
-            {THEME_OPTIONS.map(({ key, icon: Icon }) => (
-              <MenuItem
-                key={key}
-                onClick={() => {
-                  setTheme(key);
-                  setThemeAnchor(null);
-                }}
-              >
-                <Icon size={13} />
-                {THEME_LABELS[key]}
-                {theme === key && <Check size={12} className="ml-auto text-accent" />}
-              </MenuItem>
+            {THEME_OPTIONS.map(({ key, icon: Icon, divider }) => (
+              <div key={key}>
+                {divider && <div className="my-1 h-px bg-divider" />}
+                <MenuItem
+                  onClick={() => {
+                    setTheme(key);
+                    setThemeAnchor(null);
+                  }}
+                >
+                  <Icon size={13} />
+                  {THEME_LABELS[key]}
+                  {theme === key && <Check size={12} className="ml-auto text-accent" />}
+                </MenuItem>
+              </div>
             ))}
           </div>
         </Popover>
