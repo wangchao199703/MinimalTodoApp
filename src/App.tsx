@@ -15,6 +15,7 @@ import TagBoardView from "./components/views/TagBoardView";
 import NotesView from "./components/views/NotesView";
 import CalendarView from "./components/views/CalendarView";
 import Toasts from "./components/ui/Toasts";
+import { ConfirmHost } from "./components/ui/ConfirmDialog";
 import UpdateDialog from "./components/dialogs/UpdateDialog";
 import { checkForUpdate, type UpdateInfo } from "./lib/updater";
 import { useState } from "react";
@@ -255,6 +256,7 @@ export default function App() {
         </div>
       </div>
       <Toasts />
+      <ConfirmHost />
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
       <ResizeBorders />
     </div>

@@ -15,6 +15,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { renderMarkdown, deriveTitle } from "../../lib/markdown";
 import { t } from "../../lib/i18n";
 import type { Note, NoteGroup } from "../../lib/tauri-ipc";
+import { confirm } from "../ui/ConfirmDialog";
 
 function displayTitle(n: Note): string {
   return n.custom_title || n.title || t("S.X.UntitledNote");
@@ -35,7 +36,10 @@ function NoteRow({ note, active }: { note: Note; active: boolean }) {
         title={t("S.X.Delete")}
         onClick={(e) => {
           e.stopPropagation();
-          void removeNote(note.id);
+          void (async () => {
+            if (await confirm({ title: t("S.Note.Delete"), message: t("S.Note.DeleteConfirm") }))
+              void removeNote(note.id);
+          })();
         }}
         className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:text-overdue group-hover:flex"
       >
@@ -97,7 +101,17 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
         </button>
         <button
           title={t("S.X.Delete")}
-          onClick={() => void removeNoteGroup(group.id)}
+          onClick={() => {
+            void (async () => {
+              if (
+                await confirm({
+                  title: t("S.Note.DeleteGroup"),
+                  message: t("S.Note.GroupDeleteConfirm"),
+                })
+              )
+                void removeNoteGroup(group.id);
+            })();
+          }}
           className="hidden h-5 w-5 items-center justify-center rounded text-muted hover:text-overdue group-hover:flex"
         >
           <Trash2 size={12} />

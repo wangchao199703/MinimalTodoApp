@@ -58,6 +58,10 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.DayFmt": "{0}月{1}日",
     "S.X.InheritGlobal": "继承全局",
     "S.X.Inherit": "继承",
+    "S.X.ConfirmDeleteTask": "确定删除该任务？此操作不可撤销。",
+    "S.X.ConfirmDeleteTaskTree": "确定删除该任务及其全部子任务？此操作不可撤销。",
+    "S.X.ConfirmDeleteTag": "确定删除标签「{0}」？其下任务将变为无标签。",
+    "S.X.ConfirmClearCompleted": "确定清空全部已完成任务？此操作不可撤销。",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -112,6 +116,10 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.DayFmt": "{0}/{1}",
     "S.X.InheritGlobal": "Inherit global",
     "S.X.Inherit": "Inherit",
+    "S.X.ConfirmDeleteTask": "Delete this task? This cannot be undone.",
+    "S.X.ConfirmDeleteTaskTree": "Delete this task and all its subtasks? This cannot be undone.",
+    "S.X.ConfirmDeleteTag": 'Delete tag "{0}"? Its tasks will become untagged.',
+    "S.X.ConfirmClearCompleted": "Clear all completed tasks? This cannot be undone.",
   },
 };
 

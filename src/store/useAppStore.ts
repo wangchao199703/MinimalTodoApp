@@ -5,6 +5,7 @@ import {
   type Note,
   type NoteGroup,
   type Task,
+  type UpdateGroupRequest,
   type UpdateNoteRequest,
   type UpdateTaskRequest,
 } from "../lib/tauri-ipc";
@@ -76,9 +77,12 @@ interface AppState {
   outdentTask: (task: Task) => Promise<void>;
   /** ids 为新的全局任务顺序(order_index 重排) */
   reorderTasks: (ids: string[]) => Promise<void>;
+  /** 清空全部已完成任务(对齐旧版「清空已完成」) */
+  clearCompleted: () => Promise<void>;
 
   addGroup: (name: string) => Promise<void>;
   renameGroup: (id: string, name: string) => Promise<void>;
+  patchGroup: (req: UpdateGroupRequest) => Promise<void>;
   removeGroup: (id: string) => Promise<void>;
   reorderGroups: (ids: string[]) => Promise<void>;
 }
@@ -365,14 +369,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     await ipc.reorderTasks(ids);
   },
 
+  clearCompleted: async () => {
+    const doomed = get().tasks.filter((t) => t.is_completed);
+    for (const t of doomed) await ipc.deleteTask(t.id);
+    set((s) => ({ tasks: s.tasks.filter((t) => !t.is_completed) }));
+  },
+
   addGroup: async (name) => {
     const group = await ipc.createGroup(name);
     set((s) => ({ groups: [...s.groups, group] }));
   },
 
   renameGroup: async (id, name) => {
-    const next = await ipc.updateGroup({ id, name });
-    set((s) => ({ groups: s.groups.map((g) => (g.id === id ? next : g)) }));
+    await get().patchGroup({ id, name });
+  },
+
+  patchGroup: async (req) => {
+    const next = await ipc.updateGroup(req);
+    set((s) => ({ groups: s.groups.map((g) => (g.id === req.id ? next : g)) }));
   },
 
   removeGroup: async (id) => {

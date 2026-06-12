@@ -5,14 +5,19 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { Tag } from "lucide-react";
+import { Palette, Pencil, Shapes, Trash2 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { useSortableItem } from "../../hooks/useSortableItem";
 import { reorderIds } from "../../lib/dnd";
 import TaskItem from "../TaskItem";
 import { useNowTick } from "../TaskList";
-import { t } from "../../lib/i18n";
+import { f, t } from "../../lib/i18n";
 import type { Task } from "../../lib/tauri-ipc";
+import { Popover, MenuItem } from "../ui/Popover";
+import { confirm } from "../ui/ConfirmDialog";
+import TagIcon from "../ui/TagIcon";
+import TagColorDialog from "../dialogs/TagColorDialog";
+import IconPickerDialog from "../dialogs/IconPickerDialog";
 
 interface Column {
   /** null = 无标签列 */
@@ -40,6 +45,35 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
 
+  // 真实标签(非「无标签」列)的右键菜单与外观编辑(对齐旧版标签容器右键)
+  const group = useAppStore((s) => s.groups.find((g) => g.id === col.id));
+  const renameGroup = useAppStore((s) => s.renameGroup);
+  const removeGroup = useAppStore((s) => s.removeGroup);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [colorOpen, setColorOpen] = useState(false);
+  const [iconOpen, setIconOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(col.name);
+
+  const commitRename = () => {
+    setEditing(false);
+    const name = draft.trim();
+    if (group && name && name !== group.name) void renameGroup(group.id, name);
+    else setDraft(col.name);
+  };
+
+  const confirmDelete = async () => {
+    if (!group) return;
+    if (
+      await confirm({
+        title: t("S.Tag.Delete"),
+        message: f("S.X.ConfirmDeleteTag", group.name),
+      })
+    ) {
+      void removeGroup(group.id);
+    }
+  };
+
   // 卡片空白区作为跨列释放目标
   useEffect(() => {
     const el = bodyRef.current;
@@ -64,17 +98,42 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
           }`}
         />
       )}
-      {/* 头部:标签色淡底徽章 + 名称 + 彩色计数(对齐旧版容器头) */}
-      <div ref={ref} className="mb-2 flex cursor-grab items-center gap-2 px-0.5">
+      {/* 头部:标签色淡底徽章 + 名称 + 彩色计数(对齐旧版容器头);真实标签可右键编辑 */}
+      <div
+        ref={ref}
+        onContextMenu={(e) => {
+          if (!group) return;
+          e.preventDefault();
+          setMenu({ x: e.clientX, y: e.clientY });
+        }}
+        className="mb-2 flex cursor-grab items-center gap-2 px-0.5"
+      >
         <span
           className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md"
           style={{ background: `color-mix(in srgb, ${col.color} 12%, transparent)` }}
         >
-          <Tag size={13} style={{ color: col.color }} />
+          <TagIcon icon={group?.icon ?? ""} color={col.color} size={13} />
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text-1">
-          {col.name}
-        </span>
+        {editing ? (
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitRename();
+              if (e.key === "Escape") {
+                setDraft(col.name);
+                setEditing(false);
+              }
+            }}
+            className="min-w-0 flex-1 rounded border border-accent bg-input px-1 py-0.5 text-[13px] font-semibold text-text-1 outline-none"
+          />
+        ) : (
+          <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-text-1">
+            {col.name}
+          </span>
+        )}
         <span className="text-[13px] font-semibold" style={{ color: col.color }}>
           {tasks.length}
         </span>
@@ -86,6 +145,54 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
           ))}
         </div>
       </div>
+
+      {menu && group && (
+        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
+          <div className="w-36">
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setDraft(group.name);
+                setEditing(true);
+              }}
+            >
+              <Pencil size={13} />
+              {t("S.Tag.Rename")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setColorOpen(true);
+              }}
+            >
+              <Palette size={13} />
+              {t("S.Group.ChangeColor")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setIconOpen(true);
+              }}
+            >
+              <Shapes size={13} />
+              {t("S.Group.ChangeIcon")}
+            </MenuItem>
+            <div className="my-1 h-px bg-divider" />
+            <MenuItem
+              danger
+              onClick={() => {
+                setMenu(null);
+                void confirmDelete();
+              }}
+            >
+              <Trash2 size={13} />
+              {t("S.Tag.Delete")}
+            </MenuItem>
+          </div>
+        </Popover>
+      )}
+      {colorOpen && group && <TagColorDialog group={group} onClose={() => setColorOpen(false)} />}
+      {iconOpen && group && <IconPickerDialog group={group} onClose={() => setIconOpen(false)} />}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CornerDownRight,
   CornerUpLeft,
+  Pencil,
   Pin,
   PinOff,
   Trash2,
@@ -20,7 +21,9 @@ import { fireworksAt, playCelebration } from "../lib/effects";
 import { t } from "../lib/i18n";
 import type { Task } from "../lib/tauri-ipc";
 import { Popover, MenuItem } from "./ui/Popover";
+import { confirm } from "./ui/ConfirmDialog";
 import DuePicker from "./DuePicker";
+import TaskEditDialog from "./dialogs/TaskEditDialog";
 
 const PRIORITY_COLOR: Record<number, string> = {
   1: "var(--success-text)",
@@ -60,6 +63,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [dueAnchor, setDueAnchor] = useState<HTMLElement | null>(null);
   const [completing, setCompleting] = useState(false);
+  const [editDialog, setEditDialog] = useState(false);
 
   // 完成:烟花 + 音效(按设置)→ 滑出动画 → 落库
   const completeWithEffects = (e: React.MouseEvent) => {
@@ -85,6 +89,17 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
     const title = draft.trim();
     if (title && title !== task.title) void renameTask(task.id, title);
     else setDraft(task.title);
+  };
+
+  const confirmDelete = async () => {
+    if (
+      await confirm({
+        title: totalChildren > 0 ? t("S.X.DeleteWithChildren") : t("S.X.Delete"),
+        message: totalChildren > 0 ? t("S.X.ConfirmDeleteTaskTree") : t("S.X.ConfirmDeleteTask"),
+      })
+    ) {
+      void removeTask(task.id);
+    }
   };
 
   return (
@@ -195,7 +210,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       </button>
       <button
         title={t("S.X.Delete")}
-        onClick={() => void removeTask(task.id)}
+        onClick={() => void confirmDelete()}
         className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:text-overdue group-hover:flex"
       >
         <X size={13} />
@@ -214,6 +229,15 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       {menu && (
         <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
           <div className="w-44">
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setEditDialog(true);
+              }}
+            >
+              <Pencil size={13} />
+              {t("S.X.Edit")}
+            </MenuItem>
             <MenuItem
               onClick={() => {
                 void togglePin(task);
@@ -278,8 +302,8 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
             <MenuItem
               danger
               onClick={() => {
-                void removeTask(task.id);
                 setMenu(null);
+                void confirmDelete();
               }}
             >
               <Trash2 size={13} />
@@ -288,6 +312,8 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
           </div>
         </Popover>
       )}
+
+      {editDialog && <TaskEditDialog task={task} onClose={() => setEditDialog(false)} />}
     </div>
   );
 }

@@ -10,17 +10,25 @@ import {
   Kanban,
   LayoutGrid,
   NotebookPen,
+  Palette,
   PanelLeftClose,
   PanelLeftOpen,
+  Pencil,
   Plus,
-  Tag,
+  Shapes,
+  Trash2,
   X,
 } from "lucide-react";
 import { useAppStore, type View } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
-import { t } from "../lib/i18n";
+import { f, t } from "../lib/i18n";
 import type { Group } from "../lib/tauri-ipc";
+import { Popover, MenuItem } from "./ui/Popover";
+import { confirm } from "./ui/ConfirmDialog";
+import TagIcon from "./ui/TagIcon";
+import TagColorDialog from "./dialogs/TagColorDialog";
+import IconPickerDialog from "./dialogs/IconPickerDialog";
 
 function viewKey(v: View): string {
   return v.kind === "group" ? `group:${v.groupId}` : v.kind;
@@ -85,12 +93,87 @@ function GroupRow({
   const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("group", group.id);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(group.name);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [colorOpen, setColorOpen] = useState(false);
+  const [iconOpen, setIconOpen] = useState(false);
 
   const commit = () => {
     setEditing(false);
     const name = draft.trim();
     if (name && name !== group.name) void renameGroup(group.id, name);
     else setDraft(group.name);
+  };
+
+  const confirmDelete = async () => {
+    if (
+      await confirm({
+        title: t("S.Tag.Delete"),
+        message: f("S.X.ConfirmDeleteTag", group.name),
+      })
+    ) {
+      void removeGroup(group.id);
+    }
+  };
+
+  // 右键菜单 + 颜色/图标对话框:折叠/展开两种形态共用
+  const overlays = (
+    <>
+      {menu && (
+        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
+          <div className="w-36">
+            {/* 折叠态没有内联编辑框,不提供重命名 */}
+            {!collapsed && (
+              <MenuItem
+                onClick={() => {
+                  setMenu(null);
+                  setDraft(group.name);
+                  setEditing(true);
+                }}
+              >
+                <Pencil size={13} />
+                {t("S.Tag.Rename")}
+              </MenuItem>
+            )}
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setColorOpen(true);
+              }}
+            >
+              <Palette size={13} />
+              {t("S.Group.ChangeColor")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setIconOpen(true);
+              }}
+            >
+              <Shapes size={13} />
+              {t("S.Group.ChangeIcon")}
+            </MenuItem>
+            <div className="my-1 h-px bg-divider" />
+            <MenuItem
+              danger
+              onClick={() => {
+                setMenu(null);
+                void confirmDelete();
+              }}
+            >
+              <Trash2 size={13} />
+              {t("S.Tag.Delete")}
+            </MenuItem>
+          </div>
+        </Popover>
+      )}
+      {colorOpen && <TagColorDialog group={group} onClose={() => setColorOpen(false)} />}
+      {iconOpen && <IconPickerDialog group={group} onClose={() => setIconOpen(false)} />}
+    </>
+  );
+
+  const onContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setMenu({ x: e.clientX, y: e.clientY });
   };
 
   if (collapsed) {
@@ -107,12 +190,14 @@ function GroupRow({
         <button
           title={group.name}
           onClick={() => setView({ kind: "group", groupId: group.id })}
+          onContextMenu={onContextMenu}
           className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
             active ? "bg-sidebar-selected" : "hover:bg-sidebar-hover"
           }`}
         >
-          <Tag size={15} style={{ color: group.color }} />
+          <TagIcon icon={group.icon} color={group.color} size={15} />
         </button>
+        {overlays}
       </div>
     );
   }
@@ -148,20 +233,21 @@ function GroupRow({
             setDraft(group.name);
             setEditing(true);
           }}
+          onContextMenu={onContextMenu}
           className={`flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
             active
               ? "bg-sidebar-selected text-sidebar-selected-fg"
               : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
           }`}
         >
-          <Tag size={14} className="shrink-0" style={{ color: group.color }} />
+          <TagIcon icon={group.icon} color={group.color} size={14} />
           <span className="min-w-0 flex-1 truncate">{group.name}</span>
           {count > 0 && <span className="text-xs text-sidebar-muted">{count}</span>}
           <button
             title={t("S.Tag.Delete")}
             onClick={(e) => {
               e.stopPropagation();
-              void removeGroup(group.id);
+              void confirmDelete();
             }}
             className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-overdue group-hover:flex"
           >
@@ -169,6 +255,7 @@ function GroupRow({
           </button>
         </div>
       )}
+      {overlays}
     </div>
   );
 }
