@@ -165,9 +165,11 @@ export default function CalendarView() {
     );
   }
 
-  // 周一开头的 6x7 网格
+  // 周一开头网格;行数按当月实际需要(5 或 6 行),不展示纯属下月的多余行
   const firstWeekday = (month.getDay() + 6) % 7;
-  const cells: Date[] = Array.from({ length: 42 }, (_, i) => {
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const rows = Math.ceil((firstWeekday + daysInMonth) / 7);
+  const cells: Date[] = Array.from({ length: rows * 7 }, (_, i) => {
     const d = new Date(month);
     d.setDate(1 - firstWeekday + i);
     return d;
@@ -214,7 +216,10 @@ export default function CalendarView() {
         ))}
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-1">
+      <div
+        className="grid min-h-0 flex-1 grid-cols-7 gap-1"
+        style={{ gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))` }}
+      >
         {cells.map((d) => {
           const key = toDueText(d, false);
           return (

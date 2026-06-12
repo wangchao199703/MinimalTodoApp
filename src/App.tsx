@@ -12,7 +12,7 @@ import QuickAdd from "./components/QuickAdd";
 import QuadrantView from "./components/views/QuadrantView";
 import TagBoardView from "./components/views/TagBoardView";
 import NotesView from "./components/views/NotesView";
-import CalendarView from "./components/views/CalendarView";
+import CalendarPanel from "./components/CalendarPanel";
 import Toasts from "./components/ui/Toasts";
 import UpdateDialog from "./components/dialogs/UpdateDialog";
 import { checkForUpdate, type UpdateInfo } from "./lib/updater";
@@ -170,12 +170,8 @@ export default function App() {
               </>
             )}
           </main>
-          {/* 日历作为右侧并排面板:主列表仍可见,可把待办拖进日历某天设截止 */}
-          {scheduleOpen && view.kind !== "notes" && (
-            <aside className="flex w-[480px] shrink-0 flex-col border-l border-divider bg-content">
-              <CalendarView />
-            </aside>
-          )}
+          {/* 日历作为右侧并排面板:主列表仍可见,可把待办拖进日历某天设截止;分隔条可拖动调宽 */}
+          {scheduleOpen && view.kind !== "notes" && <CalendarPanel />}
         </div>
       </div>
       <Toasts />
