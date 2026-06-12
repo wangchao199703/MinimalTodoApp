@@ -1760,7 +1760,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         _data.Groups.Add(new TodoGroup
         {
-            Name = "标签看板",
+            Name = "标签",
             OrderIndex = defaults.Length + 3,
             Color = "#0EA5E9",
             Icon = GroupIcons.TagBoard,
@@ -1827,7 +1827,7 @@ public partial class MainViewModel : ObservableObject, IDropTarget
 
         var g = new TodoGroup
         {
-            Name = "标签看板",
+            Name = "标签",
             OrderIndex = Groups.Count,
             Color = "#0EA5E9",
             Icon = GroupIcons.TagBoard,
@@ -2083,12 +2083,15 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             TagColumns.Add(col);
         }
 
-        // 「无标签」列:GroupId 不指向任何普通标签的未完成顶层任务
+        // 「无标签」列:GroupId 不指向任何普通标签的未完成顶层任务;
+        // 位置按持久化的 UntaggedColumnIndex 还原(-1 或越界=末位)
         var tagIds = NormalTagGroups.Select(g => g.Id).ToHashSet();
         var untaggedCol = new TagColumnVm(this, null);
         foreach (var it in pending.Where(i => !tagIds.Contains(i.GroupId)))
             untaggedCol.Items.Add(it);
-        TagColumns.Add(untaggedCol);
+        int idx = _data.UntaggedColumnIndex;
+        if (idx >= 0 && idx <= TagColumns.Count) TagColumns.Insert(idx, untaggedCol);
+        else TagColumns.Add(untaggedCol);
     }
 
     /// <summary>
@@ -2110,6 +2113,64 @@ public partial class MainViewModel : ObservableObject, IDropTarget
         item.GroupId = col.Tag?.Id ?? Guid.Empty;
         RefreshTagBoard();
         SaveData();
+    }
+
+    /// <summary>
+    /// 看板列拖动中实时跟手:把列(含「无标签」列)移到 newIndex。只动 TagColumns
+    /// (ObservableCollection.Move 不重建容器),不写盘;拖动结束由 CommitTagColumnOrder 持久化。
+    /// </summary>
+    public void MoveTagColumn(TagColumnVm col, int newIndex)
+    {
+        int old = TagColumns.IndexOf(col);
+        newIndex = Math.Clamp(newIndex, 0, Math.Max(0, TagColumns.Count - 1));
+        if (old < 0 || newIndex == old) return;
+        TagColumns.Move(old, newIndex);
+    }
+
+    /// <summary>
+    /// 看板列拖动结束:按列的新视觉顺序重排 Groups 里的普通标签(特殊视图分组的位置不动)，
+    /// 并按 Groups 现序全量重发 OrderIndex(唯一、无撞车);「无标签」列的位置单独记入
+    /// UntaggedColumnIndex。保存后看板/标签选择器/「移动到标签」顺序保持一致。
+    /// </summary>
+    public void CommitTagColumnOrder()
+    {
+        bool changed = false;
+
+        // 「无标签」列位置
+        int untaggedIdx = -1;
+        for (int i = 0; i < TagColumns.Count; i++)
+            if (TagColumns[i].Tag == null) { untaggedIdx = i; break; }
+        if (_data.UntaggedColumnIndex != untaggedIdx)
+        {
+            _data.UntaggedColumnIndex = untaggedIdx;
+            changed = true;
+        }
+
+        // 普通标签的相对顺序
+        var newOrder = TagColumns.Where(c => c.Tag != null).Select(c => c.Tag!).ToList();
+        var slots = new List<int>();
+        for (int i = 0; i < Groups.Count; i++)
+            if (!Groups[i].IsSpecialGroup) slots.Add(i);
+        if (slots.Count == newOrder.Count)   // 防御:列与标签数量不符时只动无标签位置
+        {
+            bool groupsChanged = false;
+            for (int i = 0; i < slots.Count; i++)
+            {
+                if (!ReferenceEquals(Groups[slots[i]], newOrder[i]))
+                {
+                    Groups[slots[i]] = newOrder[i];
+                    groupsChanged = true;
+                }
+            }
+            if (groupsChanged)
+            {
+                for (int i = 0; i < Groups.Count; i++) Groups[i].OrderIndex = i;
+                OnPropertyChanged(nameof(TagOptions));
+                changed = true;
+            }
+        }
+
+        if (changed) SaveData();
     }
 
     /// <summary>四象限「重要」判定:默认高+中为重要;设置为「仅高」时只有高优先级算重要.</summary>
@@ -2327,7 +2388,12 @@ public partial class MainViewModel : ObservableObject, IDropTarget
             or nameof(TodoItem.HasDueDate)
             or nameof(TodoItem.HasPriority)
             or nameof(TodoItem.HasChildren)
-            or nameof(TodoItem.IsEditing))
+            or nameof(TodoItem.IsEditing)
+            // 标签 chip 运行时字段([JsonIgnore],由 RefreshItems 维护):不持久化,变化无需保存
+            or nameof(TodoItem.TagName)
+            or nameof(TodoItem.TagIcon)
+            or nameof(TodoItem.TagColor)
+            or nameof(TodoItem.HasTag))
             return;
 
         // 手动改优先级/截止日期:清空四象限手动覆盖,回归自动归类;并刷新象限视图

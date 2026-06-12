@@ -31,6 +31,7 @@
     <sys:String x:Key="S.Group.AllUncompleted">All To-dos</sys:String>
     <sys:String x:Key="S.Group.Completed">Done</sys:String>
     <sys:String x:Key="S.Group.Quadrant">Matrix</sys:String>
+    <sys:String x:Key="S.Group.TagBoard">Tags</sys:String>
     <sys:String x:Key="S.NewGroup">New Group</sys:String>
     <sys:String x:Key="S.Help">Help</sys:String>
     <sys:String x:Key="S.ImportExport">Import / Export</sys:String>
@@ -568,5 +569,14 @@
     <sys:String x:Key="S.Settings.QuadrantImportantDesc">By default both "High" and "Medium" count as important; turn off to treat only "High" as important.</sys:String>
     <sys:String x:Key="S.Settings.QuadrantUrgent">Matrix: count "due within 3 days" as urgent</sys:String>
     <sys:String x:Key="S.Settings.QuadrantUrgentDesc">By default only "overdue or due today" is urgent; turn on to also treat "due within 3 days" as urgent.</sys:String>
+
+    <!-- ============ Tags / Tag board (v1.2.2) ============ -->
+    <sys:String x:Key="S.Tag.Untagged">Untagged</sys:String>
+    <sys:String x:Key="S.Tag.New">Add</sys:String>
+    <sys:String x:Key="S.Tag.Label">Tag</sys:String>
+    <sys:String x:Key="S.Tag.AddPlaceholder">Add a task…</sys:String>
+    <sys:String x:Key="S.Tag.Rename">Rename</sys:String>
+    <sys:String x:Key="S.Tag.ChangeIcon">Change icon</sys:String>
+    <sys:String x:Key="S.Tag.Delete">Delete tag</sys:String>
 
 </ResourceDictionary>

@@ -943,6 +943,91 @@ public partial class MainWindow : Window
         if (sender is MenuItem { DataContext: TagColumnVm { Tag: { } g } }) Vm?.DeleteGroupCommand.Execute(g);
     }
 
+    // ===== 标签看板:容器整体拖动重排 =====
+    // 按住容器表头/边缘空白拖动整列;任务卡片(内层 ListBox)/输入框/按钮处按下不触发,
+    // 它们各自有拖拽/编辑行为。拖动中实时跟手(TagColumns.Move 不重建容器),松手才写盘。
+
+    private TagColumnVm? _dragColumn;     // 按下时记录的候选列(越过阈值才真正进入拖动)
+    private Point _dragColumnStart;
+    private bool _columnDragging;
+
+    private void TagColumn_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Border b || b.DataContext is not TagColumnVm col) return;
+        // 从交互控件(卡片列表/输入框/按钮/勾选框/滚动条)按下的不当作容器拖动
+        for (var d = e.OriginalSource as DependencyObject; d != null && !ReferenceEquals(d, b); d = ParentOf(d))
+            if (d is ListBox or System.Windows.Controls.Primitives.TextBoxBase or Button or CheckBox
+                or System.Windows.Controls.Primitives.ScrollBar) return;
+        _dragColumn = col;
+        _dragColumnStart = e.GetPosition(TagBoardItems);
+        _columnDragging = false;
+        // 不立即捕获鼠标:等越过系统拖动阈值再进入拖动,避免干扰单击/右键菜单
+    }
+
+    private void TagBoardItems_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_dragColumn == null) return;
+        if (e.LeftButton != MouseButtonState.Pressed) { EndColumnDrag(); return; }
+
+        var pos = e.GetPosition(TagBoardItems);
+        if (!_columnDragging)
+        {
+            if (Math.Abs(pos.X - _dragColumnStart.X) < SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(pos.Y - _dragColumnStart.Y) < SystemParameters.MinimumVerticalDragDistance) return;
+            _columnDragging = true;
+            TagBoardItems.CaptureMouse();
+            TagBoardItems.Cursor = Cursors.SizeAll;
+            SetColumnOpacity(_dragColumn, 0.55);
+        }
+
+        int target = ColumnIndexAt(pos);
+        if (target >= 0) Vm?.MoveTagColumn(_dragColumn, target);
+    }
+
+    private void TagBoardItems_MouseUp(object sender, MouseButtonEventArgs e) => EndColumnDrag();
+
+    private void TagBoardItems_LostCapture(object sender, MouseEventArgs e) => EndColumnDrag();
+
+    private void EndColumnDrag()
+    {
+        var col = _dragColumn;
+        _dragColumn = null;
+        if (col == null) return;
+        if (_columnDragging)
+        {
+            _columnDragging = false;
+            SetColumnOpacity(col, 1.0);
+            TagBoardItems.Cursor = null;
+            if (TagBoardItems.IsMouseCaptured) TagBoardItems.ReleaseMouseCapture();
+            Vm?.CommitTagColumnOrder();
+        }
+    }
+
+    /// <summary>鼠标(TagBoardItems 坐标系)当前落在第几列上;不在任何列上返回 -1。</summary>
+    private int ColumnIndexAt(Point pos)
+    {
+        for (int i = 0; i < TagBoardItems.Items.Count; i++)
+        {
+            if (TagBoardItems.ItemContainerGenerator.ContainerFromIndex(i) is not FrameworkElement fe
+                || !fe.IsVisible) continue;
+            var topLeft = fe.TranslatePoint(new Point(0, 0), TagBoardItems);
+            if (new Rect(topLeft, new Size(fe.ActualWidth, fe.ActualHeight)).Contains(pos)) return i;
+        }
+        return -1;
+    }
+
+    private void SetColumnOpacity(TagColumnVm col, double opacity)
+    {
+        if (TagBoardItems.ItemContainerGenerator.ContainerFromItem(col) is UIElement el)
+            el.Opacity = opacity;
+    }
+
+    /// <summary>视觉树向上走一级;命中 ContentElement(如 Run)时退回逻辑树,避免 VisualTreeHelper 抛异常。</summary>
+    private static DependencyObject? ParentOf(DependencyObject d) =>
+        d is Visual or System.Windows.Media.Media3D.Visual3D
+            ? VisualTreeHelper.GetParent(d)
+            : LogicalTreeHelper.GetParent(d);
+
     // ===== 新建待办·标签选择器 =====
 
     private void OpenTagPicker_Click(object sender, RoutedEventArgs e) => NewTaskTagPopup.IsOpen = true;
@@ -970,13 +1055,91 @@ public partial class MainWindow : Window
         if (e.Key == Key.Enter) { TagCreate_Click(sender, e); e.Handled = true; }
     }
 
+    // 新建标签时手动选定的图标(未选则按名称推断默认)。二者最多其一非空。
+    private string? _newTagGlyph;
+    private string? _newTagImage;
+
+    /// <summary>新建标签行的「默认图标」按钮:打开图标选择器(仅选择模式),把结果暂存并更新预览。</summary>
+    private void NewTagPickIcon_Click(object sender, RoutedEventArgs e)
+    {
+        // 选择器是模态窗口,会抢焦点导致 StaysOpen=False 的浮层关闭;临时置 StaysOpen 保住浮层。
+        bool prev = NewTaskTagPopup.StaysOpen;
+        NewTaskTagPopup.StaysOpen = true;
+        try
+        {
+            var dlg = new IconPickerDialog { Owner = this };   // 默认构造 = 仅选择模式
+            if (dlg.ShowDialog() == true) ApplyNewTagIcon(dlg.ResultGlyph, dlg.ResultImage);
+        }
+        finally
+        {
+            NewTaskTagPopup.StaysOpen = prev;
+            NewTaskTagPopup.IsOpen = true;
+        }
+    }
+
+    private void ApplyNewTagIcon(string? glyph, string? image)
+    {
+        if (!string.IsNullOrEmpty(image))
+        {
+            _newTagImage = image; _newTagGlyph = null;
+            var bmp = LoadIconBitmap(image);
+            NewTagIconButton.Content = bmp != null
+                ? new Image { Source = bmp, Width = 16, Height = 16, Stretch = Stretch.UniformToFill }
+                : MakeGlyphPreview(GroupIcons.Folder);
+        }
+        else if (!string.IsNullOrEmpty(glyph))
+        {
+            _newTagGlyph = glyph; _newTagImage = null;
+            NewTagIconButton.Content = MakeGlyphPreview(glyph);
+        }
+    }
+
+    /// <summary>用户未手动选图标时,预览随名称推断的默认字形(与 CreateTag 一致)。</summary>
+    private void NewTagNameBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_newTagGlyph != null || _newTagImage != null) return;
+        if (NewTagIconButton?.Content is TextBlock tb) tb.Text = GroupIcons.IconForName(NewTagNameBox.Text);
+    }
+
+    private TextBlock MakeGlyphPreview(string glyph) => new()
+    {
+        Text = glyph,
+        FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
+        FontSize = 13,
+        Foreground = (Brush)FindResource("PrimaryText"),
+    };
+
+    private void ResetNewTagIcon()
+    {
+        _newTagGlyph = null; _newTagImage = null;
+        NewTagIconButton.Content = MakeGlyphPreview(GroupIcons.Folder);
+    }
+
+    private static BitmapImage? LoadIconBitmap(string path)
+    {
+        try
+        {
+            var bmp = new BitmapImage();
+            bmp.BeginInit();
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            bmp.DecodePixelWidth = 32;
+            bmp.UriSource = new Uri(path);
+            bmp.EndInit();
+            bmp.Freeze();
+            return bmp;
+        }
+        catch { return null; }
+    }
+
     private void TagCreate_Click(object sender, RoutedEventArgs e)
     {
         if (Vm == null) return;
         var name = NewTagNameBox.Text?.Trim();
         if (string.IsNullOrWhiteSpace(name)) return;
-        var g = Vm.CreateTag(name);
+        var g = Vm.CreateTag(name, _newTagGlyph);
+        if (!string.IsNullOrEmpty(_newTagImage)) Vm.SetGroupIconImage(g, _newTagImage);
         NewTagNameBox.Text = string.Empty;
+        ResetNewTagIcon();
         Vm.NewTaskTagId = g.Id;
         NewTaskTagPopup.IsOpen = false;
     }

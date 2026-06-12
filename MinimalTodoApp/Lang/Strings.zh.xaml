@@ -31,6 +31,7 @@
     <sys:String x:Key="S.Group.AllUncompleted">所有待办</sys:String>
     <sys:String x:Key="S.Group.Completed">已完成</sys:String>
     <sys:String x:Key="S.Group.Quadrant">四象限</sys:String>
+    <sys:String x:Key="S.Group.TagBoard">标签</sys:String>
     <sys:String x:Key="S.NewGroup">新建分组</sys:String>
     <sys:String x:Key="S.Help">使用说明</sys:String>
     <sys:String x:Key="S.ImportExport">导入导出</sys:String>
@@ -568,5 +569,14 @@
     <sys:String x:Key="S.Settings.QuadrantImportantDesc">默认「高」和「中」均视为重要；关闭后仅「高」优先级算重要。</sys:String>
     <sys:String x:Key="S.Settings.QuadrantUrgent">四象限·紧急含「3 天内到期」</sys:String>
     <sys:String x:Key="S.Settings.QuadrantUrgentDesc">默认仅「已逾期或今天到期」算紧急；开启后「3 天内到期」也算紧急。</sys:String>
+
+    <!-- ============ 标签 / 标签看板(v1.2.2) ============ -->
+    <sys:String x:Key="S.Tag.Untagged">无标签</sys:String>
+    <sys:String x:Key="S.Tag.New">新建</sys:String>
+    <sys:String x:Key="S.Tag.Label">标签</sys:String>
+    <sys:String x:Key="S.Tag.AddPlaceholder">添加待办…</sys:String>
+    <sys:String x:Key="S.Tag.Rename">重命名</sys:String>
+    <sys:String x:Key="S.Tag.ChangeIcon">更改图标</sys:String>
+    <sys:String x:Key="S.Tag.Delete">删除标签</sys:String>
 
 </ResourceDictionary>

@@ -22,6 +22,54 @@
     </shell:WindowChrome.WindowChrome>
 
     <Window.Resources>
+        <!-- 象限卡片:勾选框 + 标题 + 倒计时;勾选直接走既有完成流程。
+             放 Window 级:四象限(QuadrantArea)与标签看板(TagBoardArea)两个视图共用——
+             若放在某视图局部 Grid.Resources,另一视图模板实例化时 StaticResource 解析失败,
+             XamlParseException 会被布局重试无限触发(全局异常兜底反复写 crash.log,表现为卡死)。 -->
+        <DataTemplate x:Key="QuadrantCardTemplate">
+            <Border Background="{DynamicResource CardBg}" CornerRadius="6" Margin="0,0,0,4"
+                    BorderBrush="{DynamicResource Divider}" BorderThickness="1" Padding="8,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <CheckBox Grid.Column="0" VerticalAlignment="Top" Margin="0,1,8,0"
+                              IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="13"
+                                   Foreground="{DynamicResource PrimaryText}" />
+                        <TextBlock Text="{Binding DueCountdownText}" FontSize="11" Margin="0,2,0,0"
+                                   Foreground="{DynamicResource MutedText}"
+                                   Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </DataTemplate>
+        <!-- 象限/标签容器内 ListBox:透明无边框、卡片自绘选中、禁横向滚动 -->
+        <Style x:Key="QuadrantListBox" TargetType="ListBox" BasedOn="{StaticResource FlatListBox}">
+            <Setter Property="ItemTemplate" Value="{StaticResource QuadrantCardTemplate}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <ContentPresenter />
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- 收集箱便签项模板(未分组列表与各分组列表共用):图标 + 标题;右键删除 -->
         <DataTemplate x:Key="NoteItemTemplate">
             <Grid Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
@@ -301,6 +349,7 @@
                             <ListBox x:Name="GroupList" Margin="0" Style="{StaticResource FlatListBox}"
                                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                      ItemsSource="{Binding SidebarGroups}"
+                                     IsSynchronizedWithCurrentItem="False"
                                      SelectedItem="{Binding SelectedGroup, Mode=OneWay}"
                                      SelectionChanged="GroupList_SelectionChanged"
                                      dd:DragDrop.IsDragSource="True"
@@ -513,6 +562,75 @@
                                 </Grid>
                             </Button>
 
+                            <!-- 标签看板:顶层独立成行(在「已完成」与「四象限」之间);点击切到标签看板视图 -->
+                            <Button x:Name="TagBoardRow" Margin="0,2,0,0" Height="32"
+                                    HorizontalContentAlignment="Stretch" Click="TagBoard_Click"
+                                    ToolTip="{Binding TagBoardGroup.DisplayName}">
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Cursor" Value="Hand" />
+                                        <Setter Property="Focusable" Value="False" />
+                                        <Setter Property="Padding" Value="10,0" />
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+                                                    <Grid>
+                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
+                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
+                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
+                                                            <ContentPresenter VerticalAlignment="Center"
+                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
+                                                        </Border>
+                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
+                                                                Background="{DynamicResource Accent}"
+                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
+                                                    </Grid>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
+                                                        </Trigger>
+                                                        <DataTrigger Binding="{Binding TagBoardGroup.IsHighlighted}" Value="True">
+                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
+                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
+                                                <Setter Property="Padding" Value="6,0" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Grid>
+                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="14" />
+                                            <ColumnDefinition Width="20" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="{Binding TagBoardGroup.Icon}"
+                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding TagBoardGroup.DisplayName}" Margin="6,0,0,0"
+                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                   Foreground="{DynamicResource PrimaryText}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding TagBoardGroup.ItemCount}" Margin="4,0"
+                                                   VerticalAlignment="Center" FontSize="11"
+                                                   Foreground="{DynamicResource MutedText}" />
+                                    </Grid>
+                                    <TextBlock Text="{Binding TagBoardGroup.Icon}"
+                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource PrimaryText}"
+                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
+                                </Grid>
+                            </Button>
+
                             <!-- 四象限:顶层独立成行(与「已完成」同级,不缩进);点击切到四象限视图,色块绑 QuadrantGroup.IsHighlighted -->
                             <Button x:Name="QuadrantRow" Margin="0,2,0,0" Height="32"
                                     HorizontalContentAlignment="Stretch" Click="Quadrant_Click"
@@ -577,75 +695,6 @@
                                     </Grid>
                                     <!-- 折叠态(窄条):仅图标居中 -->
                                     <TextBlock Text="{Binding QuadrantGroup.Icon}"
-                                               FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                               Foreground="{DynamicResource PrimaryText}"
-                                               Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}}" />
-                                </Grid>
-                            </Button>
-
-                            <!-- 标签看板:顶层独立成行(与「已完成」「四象限」同级);点击切到标签看板视图 -->
-                            <Button x:Name="TagBoardRow" Margin="0,2,0,0" Height="32"
-                                    HorizontalContentAlignment="Stretch" Click="TagBoard_Click"
-                                    ToolTip="{Binding TagBoardGroup.DisplayName}">
-                                <Button.Style>
-                                    <Style TargetType="Button">
-                                        <Setter Property="Cursor" Value="Hand" />
-                                        <Setter Property="Focusable" Value="False" />
-                                        <Setter Property="Padding" Value="10,0" />
-                                        <Setter Property="Template">
-                                            <Setter.Value>
-                                                <ControlTemplate TargetType="Button">
-                                                    <Grid>
-                                                        <Border x:Name="sel" Background="Transparent" CornerRadius="8" />
-                                                        <Border x:Name="hover" Background="{DynamicResource CardHoverBg}" CornerRadius="8" Opacity="0" />
-                                                        <Border Padding="{TemplateBinding Padding}" Background="Transparent">
-                                                            <ContentPresenter VerticalAlignment="Center"
-                                                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" />
-                                                        </Border>
-                                                        <Border x:Name="ind" Width="3" Height="16" CornerRadius="1.5"
-                                                                Background="{DynamicResource Accent}"
-                                                                HorizontalAlignment="Left" VerticalAlignment="Center" Opacity="0" />
-                                                    </Grid>
-                                                    <ControlTemplate.Triggers>
-                                                        <Trigger Property="IsMouseOver" Value="True">
-                                                            <Setter TargetName="hover" Property="Opacity" Value="1" />
-                                                        </Trigger>
-                                                        <DataTrigger Binding="{Binding TagBoardGroup.IsHighlighted}" Value="True">
-                                                            <Setter TargetName="sel" Property="Background" Value="{DynamicResource SelectedItemBg}" />
-                                                            <Setter TargetName="ind" Property="Opacity" Value="1" />
-                                                        </DataTrigger>
-                                                    </ControlTemplate.Triggers>
-                                                </ControlTemplate>
-                                            </Setter.Value>
-                                        </Setter>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SidebarCollapsed}" Value="True">
-                                                <Setter Property="Padding" Value="6,0" />
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <Grid>
-                                    <Grid Visibility="{Binding SidebarCollapsed, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="14" />
-                                            <ColumnDefinition Width="20" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="1" Text="{Binding TagBoardGroup.Icon}"
-                                                   FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
-                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                   Foreground="{DynamicResource PrimaryText}" />
-                                        <TextBlock Grid.Column="2" Text="{Binding TagBoardGroup.DisplayName}" Margin="6,0,0,0"
-                                                   VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"
-                                                   Foreground="{DynamicResource PrimaryText}" />
-                                        <TextBlock Grid.Column="3" Text="{Binding TagBoardGroup.ItemCount}" Margin="4,0"
-                                                   VerticalAlignment="Center" FontSize="11"
-                                                   Foreground="{DynamicResource MutedText}" />
-                                    </Grid>
-                                    <TextBlock Text="{Binding TagBoardGroup.Icon}"
                                                FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="15"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"
                                                Foreground="{DynamicResource PrimaryText}"
@@ -1290,52 +1339,6 @@
                         <!-- 同一象限内可拖动重排(不改优先级/截止日期)，跨象限无落点。 -->
                         <Grid x:Name="QuadrantArea" Grid.Row="1"
                               Visibility="{Binding IsQuadrantSelected, Converter={StaticResource BoolToVis}}">
-                            <Grid.Resources>
-                                <!-- 象限卡片:勾选框 + 标题 + 倒计时;勾选直接走既有完成流程 -->
-                                <DataTemplate x:Key="QuadrantCardTemplate">
-                                    <Border Background="{DynamicResource CardBg}" CornerRadius="6" Margin="0,0,0,4"
-                                            BorderBrush="{DynamicResource Divider}" BorderThickness="1" Padding="8,6">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="*" />
-                                            </Grid.ColumnDefinitions>
-                                            <CheckBox Grid.Column="0" VerticalAlignment="Top" Margin="0,1,8,0"
-                                                      IsChecked="{Binding IsCompleted, Mode=TwoWay}" />
-                                            <StackPanel Grid.Column="1">
-                                                <TextBlock Text="{Binding Title}" TextWrapping="Wrap" FontSize="13"
-                                                           Foreground="{DynamicResource PrimaryText}" />
-                                                <TextBlock Text="{Binding DueCountdownText}" FontSize="11" Margin="0,2,0,0"
-                                                           Foreground="{DynamicResource MutedText}"
-                                                           Visibility="{Binding HasDueDate, Converter={StaticResource BoolToVis}}" />
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                </DataTemplate>
-                                <!-- 象限内 ListBox:透明无边框、卡片自绘选中、禁横向滚动 -->
-                                <Style x:Key="QuadrantListBox" TargetType="ListBox" BasedOn="{StaticResource FlatListBox}">
-                                    <Setter Property="ItemTemplate" Value="{StaticResource QuadrantCardTemplate}" />
-                                    <Setter Property="Background" Value="Transparent" />
-                                    <Setter Property="BorderThickness" Value="0" />
-                                    <Setter Property="Padding" Value="0" />
-                                    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
-                                    <Setter Property="ItemContainerStyle">
-                                        <Setter.Value>
-                                            <Style TargetType="ListBoxItem">
-                                                <Setter Property="Padding" Value="0" />
-                                                <Setter Property="Margin" Value="0" />
-                                                <Setter Property="Template">
-                                                    <Setter.Value>
-                                                        <ControlTemplate TargetType="ListBoxItem">
-                                                            <ContentPresenter />
-                                                        </ControlTemplate>
-                                                    </Setter.Value>
-                                                </Setter>
-                                            </Style>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Style>
-                            </Grid.Resources>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="*" />
@@ -1482,17 +1485,24 @@
                         <ScrollViewer x:Name="TagBoardArea" Grid.Row="1" VerticalScrollBarVisibility="Auto"
                                       HorizontalScrollBarVisibility="Disabled" Padding="0,0,4,0"
                                       Visibility="{Binding IsTagBoardSelected, Converter={StaticResource BoolToVis}}">
-                            <ItemsControl x:Name="TagBoardItems" ItemsSource="{Binding TagColumns}">
+                            <ItemsControl x:Name="TagBoardItems" ItemsSource="{Binding TagColumns}"
+                                          MouseMove="TagBoardItems_MouseMove"
+                                          MouseLeftButtonUp="TagBoardItems_MouseUp"
+                                          LostMouseCapture="TagBoardItems_LostCapture">
                                 <ItemsControl.ItemsPanel>
                                     <ItemsPanelTemplate>
-                                        <WrapPanel ItemWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ItemsControl}, Converter={StaticResource HalfWidth}}" />
+                                        <!-- 瀑布流:容器定宽(默认窗宽正好两列),每个容器落到当前最矮一列、纵向贴齐 -->
+                                        <v:MasonryPanel ColumnWidth="220" />
                                     </ItemsPanelTemplate>
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <!-- 标签容器:复用四象限容器外观 -->
+                                        <!-- 标签容器:复用四象限容器外观。Top 对齐=高度只随自身内容(不被同行更高容器拉伸);
+                                             按住表头/容器空白可整体拖动重排(卡片/输入框/按钮处按下不触发,见 TagColumn_MouseDown) -->
                                         <Border Margin="0,0,8,8" Background="{DynamicResource CardBg}" CornerRadius="10"
-                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1">
+                                                BorderBrush="{DynamicResource Divider}" BorderThickness="1"
+                                                VerticalAlignment="Top"
+                                                MouseLeftButtonDown="TagColumn_MouseDown">
                                             <Border.ContextMenu>
                                                 <ContextMenu>
                                                     <MenuItem Header="{DynamicResource S.Tag.Rename}" Click="TagRename_Click"
@@ -1525,14 +1535,17 @@
                                                         </Grid>
                                                     </Border>
                                                     <Grid Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                        <!-- 「无标签」列 Tag=null,两个 Visibility 绑定都会解析失败:
+                                                             必须用 FallbackValue 显式回退(标题显示/编辑框隐藏),
+                                                             否则编辑框按默认值 Visible 错误显示并盖住标题 -->
                                                         <TextBlock Text="{Binding DisplayName}" FontSize="13" FontWeight="SemiBold"
                                                                    TextTrimming="CharacterEllipsis"
                                                                    Foreground="{DynamicResource PrimaryText}"
-                                                                   Visibility="{Binding Tag.IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}" />
+                                                                   Visibility="{Binding Tag.IsEditing, Converter={StaticResource BoolToVis}, ConverterParameter=Invert, FallbackValue=Visible}" />
                                                         <TextBox DataContext="{Binding Tag}" Style="{StaticResource FlatTextBox}"
                                                                  Padding="2,1" FontSize="13"
                                                                  Text="{Binding Name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                 Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}}"
+                                                                 Visibility="{Binding IsEditing, Converter={StaticResource BoolToVis}, FallbackValue=Collapsed}"
                                                                  IsVisibleChanged="GroupNameEdit_IsVisibleChanged"
                                                                  LostKeyboardFocus="GroupNameEdit_LostFocus"
                                                                  KeyDown="GroupNameEdit_KeyDown" />
@@ -1557,8 +1570,12 @@
                                                 </Grid>
 
                                                 <!-- 任务列表(高随内容,不内部滚动);跨容器拖动改标签 -->
+                                                <!-- 容器按内容撑高(外层 TagBoardArea 统一滚动):必须关掉项滚动+虚拟化,
+                                                     否则虚拟化 ListBox 在 WrapPanel 给的"无限高度"下无法解算视口→无限重排卡死 -->
                                                 <ListBox Style="{StaticResource QuadrantListBox}" ItemsSource="{Binding Items}"
                                                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                         ScrollViewer.CanContentScroll="False"
+                                                         VirtualizingPanel.IsVirtualizing="False"
                                                          dd:DragDrop.IsDragSource="True" dd:DragDrop.IsDropTarget="True"
                                                          dd:DragDrop.DropHandler="{Binding DataContext.TagDropHandler, RelativeSource={RelativeSource AncestorType=Window}}"
                                                          dd:DragDrop.UseDefaultDragAdorner="True"
@@ -1910,15 +1927,23 @@
                                                         </ItemsControl>
                                                     </ScrollViewer>
                                                     <Border Background="{DynamicResource Divider}" Height="1" Margin="0,4" />
-                                                    <!-- 新建标签:输入名称 + 加号(默认图标,可在看板右键改) -->
+                                                    <!-- 新建标签:默认图标(可点击修改) + 输入名称 + 新建 -->
                                                     <Grid>
                                                         <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto" />
                                                             <ColumnDefinition Width="*" />
                                                             <ColumnDefinition Width="Auto" />
                                                         </Grid.ColumnDefinitions>
-                                                        <TextBox x:Name="NewTagNameBox" Grid.Column="0" Style="{StaticResource FlatTextBox}"
-                                                                 Padding="6,3" FontSize="12" KeyDown="NewTagNameBox_KeyDown" />
-                                                        <Button Grid.Column="1" Content="{DynamicResource S.Tag.New}" Click="TagCreate_Click"
+                                                        <Button x:Name="NewTagIconButton" Grid.Column="0" Click="NewTagPickIcon_Click"
+                                                                Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
+                                                                Padding="7,3" Margin="0,0,4,0" ToolTip="{DynamicResource S.Tag.ChangeIcon}">
+                                                            <TextBlock Text="&#xE8B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                                                       FontSize="13" Foreground="{DynamicResource PrimaryText}" />
+                                                        </Button>
+                                                        <TextBox x:Name="NewTagNameBox" Grid.Column="1" Style="{StaticResource FlatTextBox}"
+                                                                 Padding="6,3" FontSize="12" KeyDown="NewTagNameBox_KeyDown"
+                                                                 TextChanged="NewTagNameBox_TextChanged" />
+                                                        <Button Grid.Column="2" Content="{DynamicResource S.Tag.New}" Click="TagCreate_Click"
                                                                 Style="{StaticResource GhostButton}" Background="{DynamicResource InputBg}"
                                                                 Margin="4,0,0,0" Padding="8,3" FontSize="12" />
                                                     </Grid>

@@ -37,6 +37,9 @@ public class AppData
     /// <summary>上次选中的分组 Id(null 表示“全部任务”).</summary>
     public Guid? SelectedGroupId { get; set; }
 
+    /// <summary>标签看板「无标签」列的位置(列序索引);-1=末位(默认,兼容旧数据).</summary>
+    public int UntaggedColumnIndex { get; set; } = -1;
+
     /// <summary>上次使用的排序方式.</summary>
     public SortMode Sort { get; set; } = SortMode.Custom;
 

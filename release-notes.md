@@ -1,3 +1,35 @@
+## MinimalTodoApp v1.2.2
+
+### English
+
+Groups become **Tags**: the custom groups are reworked into a single-tag-per-task model with a brand-new **Tags** view. Still a single self-contained exe, no .NET runtime needed.
+
+- **Groups → Tags** — the sidebar now keeps only five built-in entries: **All to-dos / Done / Tags / Matrix / Inbox**. The Tags entry sits between Done and Matrix; per-group rows and folding are gone.
+- **Tags view (masonry)** — each tag gets its own container (reusing the matrix card look): fixed width, height that grows with its contents, columns packed tightly with no gaps. Two columns fit a normal window; widen it and columns are added automatically. Add a task right inside a container, and completing a card plays the slide-away animation.
+- **Drag containers to reorder** — grab a container's header/edge to move the whole column (the "Untagged" container too); the order is saved.
+- **Drag tasks across containers** — drop a task onto another tag's container to change its tag; drag within a container to reorder.
+- **Pick a tag when adding a task** — choose Untagged (default), an existing tag (with a ✕ to delete it — its tasks move to Untagged), or type a name to create one. New tags get a default icon you can click to change (built-in glyphs or your own image).
+- **Tag chips in the list** — every task in "All to-dos" shows its tag as a small chip.
+- Your data carries over: existing custom groups become tags, no tasks are lost, and previously ungrouped tasks land in the Untagged column.
+
+Download `MinimalTodoApp-v1.2.2-win-x64.exe` and just double-click — no .NET runtime required (self-contained single file).
+
+### 简体中文
+
+把「分组」重构为「标签」：原自定义分组改为「一个任务最多一个标签」的模型，并新增「标签」视图。仍是自包含单文件 exe，无需安装 .NET 运行时。
+
+- **分组 → 标签** —— 侧栏现在只保留五个内置入口：**所有待办 / 已完成 / 标签 / 四象限 / 收集箱**。「标签」入口位于「已完成」与「四象限」之间；普通分组行与折叠功能移除。
+- **「标签」视图（瀑布流）** —— 每个标签一个容器（复用四象限卡片外观）：宽度固定、高度随内容自适应、同列紧凑贴齐不留空隙。常规窗宽可放两列，窗口拉宽自动增列。容器内可直接「+ 添加」待办，勾选完成有卡片消失动画。
+- **拖动容器重排** —— 按住容器表头/边缘可整体拖动重排（「无标签」容器也能拖），顺序自动保存。
+- **任务跨容器拖动** —— 把任务拖到另一个标签的容器=改标签；同容器内拖动=重排。
+- **新建待办选标签** —— 可选「无标签」（默认）/已有标签（右上角 ✕ 可删，删除后其任务转无标签）/输入名「新建」标签。新建标签自带默认图标，点击即可更改（内置字形或自定义图片）。
+- **列表标签 chip** —— 「所有待办」列表里每条任务显示其标签小 chip。
+- 数据完全兼容：原有自定义分组变为标签、任务不丢失，原先未分组的任务归入「无标签」容器。
+
+下载 `MinimalTodoApp-v1.2.2-win-x64.exe` 双击即可运行，无需安装 .NET 运行时（自包含单文件）。
+
+---
+
 ## MinimalTodoApp v1.2.1
 
 ### English
