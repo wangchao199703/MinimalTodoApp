@@ -176,7 +176,14 @@ export default function Sidebar() {
         onMouseDown={startResize}
         className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
       />
-      <nav className="flex flex-col gap-0.5 p-2">
+      {/* 侧栏顶部:应用名 + 窗口拖动热区(侧栏整列直通顶部,对齐 todo-flow) */}
+      <div
+        data-tauri-drag-region
+        className="flex h-9 shrink-0 items-center px-3 text-xs font-semibold text-sidebar-strong"
+      >
+        {t("S.AppName")}
+      </div>
+      <nav className="flex flex-col gap-0.5 p-2 pt-0">
         <NavRow
           icon={<Inbox size={14} className="shrink-0" />}
           label={t("S.Group.AllUncompleted")}

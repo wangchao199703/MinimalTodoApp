@@ -61,6 +61,40 @@ function useReminderLoop() {
   }, []);
 }
 
+/** Glass/Warm 主题的应用内渐变底(对齐 todo-flow App.tsx 的背景层) */
+function ThemeBackdrop({ theme }: { theme: string }) {
+  if (theme === "glass") {
+    return (
+      <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, #1a1a2e 0%, #16213e 30%, #0f3460 60%, #1a1a2e 100%)",
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at 20% 50%, rgba(124,114,246,0.15) 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(167,139,250,0.1) 0%, transparent 50%), radial-gradient(ellipse at 50% 80%, rgba(99,102,241,0.08) 0%, transparent 50%)",
+          }}
+        />
+      </div>
+    );
+  }
+  if (theme === "warm") {
+    return (
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 -z-10"
+        style={{ background: "linear-gradient(135deg, #161514 0%, #1c1a17 40%, #22201c 100%)" }}
+      />
+    );
+  }
+  return null;
+}
+
 /** 视图分发中心:无路由,所有视图由 store 的 view 状态条件渲染 */
 export default function App() {
   const loaded = useAppStore((s) => s.loaded);
@@ -68,6 +102,7 @@ export default function App() {
   const view = useAppStore((s) => s.view);
   const language = useAppStore((s) => s.language);
   const scheduleOpen = useAppStore((s) => s.scheduleOpen);
+  const theme = useAppStore((s) => s.theme);
 
   useEffect(() => {
     void init();
@@ -91,26 +126,30 @@ export default function App() {
   if (!loaded) return null;
 
   return (
-    // key=language:切换语言时整树重建,所有 t() 文案即时刷新
-    <div key={language} className="flex h-full flex-col bg-window">
-      <TitleBar />
-      <div className="flex min-h-0 flex-1">
-        <Sidebar />
-        <main className="flex min-w-0 flex-1 flex-col bg-content">
-          {view.kind === "quadrant" ? (
-            <QuadrantView />
-          ) : view.kind === "tagboard" ? (
-            <TagBoardView />
-          ) : view.kind === "notes" ? (
-            <NotesView />
-          ) : (
-            <>
-              <TaskList />
-              <QuickAdd />
-            </>
-          )}
-        </main>
-        {scheduleOpen && view.kind !== "notes" && <SchedulePanel />}
+    // key=language:切换语言时整树重建,所有 t() 文案即时刷新。
+    // 布局对齐 todo-flow:侧栏整列直通窗口顶部,标题栏只覆盖右侧内容区。
+    <div key={language} className="flex h-full bg-window">
+      <ThemeBackdrop theme={theme} />
+      <Sidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TitleBar />
+        <div className="flex min-h-0 flex-1">
+          <main className="flex min-w-0 flex-1 flex-col bg-content">
+            {view.kind === "quadrant" ? (
+              <QuadrantView />
+            ) : view.kind === "tagboard" ? (
+              <TagBoardView />
+            ) : view.kind === "notes" ? (
+              <NotesView />
+            ) : (
+              <>
+                <TaskList />
+                <QuickAdd />
+              </>
+            )}
+          </main>
+          {scheduleOpen && view.kind !== "notes" && <SchedulePanel />}
+        </div>
       </div>
       <Toasts />
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}

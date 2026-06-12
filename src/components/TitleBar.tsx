@@ -78,9 +78,6 @@ export default function TitleBar() {
       >
         <Menu size={14} />
       </button>
-      <span data-tauri-drag-region className="ml-1 text-xs font-medium text-text-2">
-        {t("S.AppName")}
-      </span>
 
       <div className="ml-auto flex items-center gap-0.5">
         <button

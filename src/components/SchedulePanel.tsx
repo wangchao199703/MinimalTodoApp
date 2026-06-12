@@ -118,7 +118,7 @@ export default function SchedulePanel() {
   const dayTasks = dueByDay.get(selectedDay) ?? [];
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-divider bg-sidebar">
+    <aside className="flex w-72 shrink-0 flex-col border-l border-divider bg-content">
       <div className="flex shrink-0 items-center px-3 pt-3 pb-1">
         <span className="text-sm font-semibold text-text-1">
           {f("S.X.MonthFmt", month.getFullYear(), month.getMonth() + 1)}

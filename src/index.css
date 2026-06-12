@@ -66,13 +66,13 @@
 }
 
 .glass {
-  /* Glass —— 深底玻璃拟态,窗口透明 + 原生亚克力,卡片半透明 */
-  --window-bg: hsl(240 30% 8% / 0.55);
-  --titlebar-bg: hsl(240 30% 8% / 0.35);
-  --content-bg: hsl(240 30% 8% / 0);
-  --card-bg: hsl(240 24% 12% / 0.5);
-  --card-hover-bg: hsl(240 15% 18% / 0.6);
-  --input-bg: hsl(0 0% 100% / 0.08);
+  /* Glass —— 应用内深蓝渐变底(ThemeBackdrop)+ 白色半透明玻璃卡片(对齐 todo-flow) */
+  --window-bg: transparent;
+  --titlebar-bg: rgba(10, 10, 30, 0.55);
+  --content-bg: transparent;
+  --card-bg: rgba(255, 255, 255, 0.04);
+  --card-hover-bg: rgba(255, 255, 255, 0.08);
+  --input-bg: rgba(255, 255, 255, 0.06);
   --primary-text: hsl(210 40% 98%);
   --secondary-text: hsl(215 20% 65%);
   --muted-text: hsl(215 20% 52%);
@@ -83,9 +83,9 @@
   --overdue-text: hsl(0 70% 62%);
   --warning-text: #f0a741;
   --success-text: #4ade80;
-  --popup-bg: hsl(240 30% 12% / 0.92);
+  --popup-bg: rgba(26, 26, 46, 0.92);
 
-  --sidebar-bg: hsl(240 30% 8% / 0.75);
+  --sidebar-bg: rgba(10, 10, 30, 0.6);
   --sidebar-fg: hsl(240 6% 78%);
   --sidebar-fg-strong: hsl(0 0% 100%);
   --sidebar-muted: hsl(240 6% 56%);
@@ -96,10 +96,10 @@
 }
 
 .warm {
-  /* Warm —— 炭黑底 + 哑光金 */
-  --window-bg: hsl(30 8% 8%);
-  --titlebar-bg: hsl(30 8% 8%);
-  --content-bg: hsl(30 8% 8%);
+  /* Warm —— 炭黑渐变底(ThemeBackdrop 透出)+ 哑光金 */
+  --window-bg: transparent;
+  --titlebar-bg: transparent;
+  --content-bg: transparent;
   --card-bg: hsl(30 8% 10%);
   --card-hover-bg: hsl(30 8% 14%);
   --input-bg: hsl(30 8% 14%);
@@ -200,11 +200,23 @@ body {
   color: var(--primary-text);
 }
 
-/* Glass 主题:卡片与弹层加背板模糊(窗口透明,亚克力透出桌面) */
+/* Glass 主题:玻璃面板背板模糊(模糊对象是应用内渐变背景,对齐 todo-flow) */
 .glass .bg-card,
-.glass .bg-popup {
+.glass .bg-input {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+.glass .bg-popup {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.glass .bg-sidebar {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.glass .bg-titlebar {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 /* 完成任务时的滑出动画(对齐旧版「向左滑出+淡出」) */

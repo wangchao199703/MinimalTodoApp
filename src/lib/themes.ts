@@ -1,6 +1,6 @@
 // 主题系统(对齐 todo-flow):6 套主题,CSS class 切换,变量定义在 index.css。
 // light = :root 基线;dark/glass/warm/lumina 为根节点 class;system 跟随系统明暗。
-import { ipc } from "./tauri-ipc";
+// glass/warm 的渐变底由 App 内 ThemeBackdrop 绘制(不透窗、不用亚克力)。
 
 export const VALID_THEMES = ["lumina", "light", "dark", "warm", "glass", "system"] as const;
 export type Theme = (typeof VALID_THEMES)[number];
@@ -58,9 +58,6 @@ export function applyTheme(theme: Theme) {
     };
     mq.addEventListener("change", mqHandler);
   }
-
-  // Glass 主题启用原生亚克力(窗口本身透明,毛玻璃透出桌面)
-  void ipc.setAcrylic(theme === "glass", true).catch(() => {});
 }
 
 /** 旧版主题键迁移:同名直接用,其余(旧 102 套)按名称含 dark 与否回退明/暗 */
