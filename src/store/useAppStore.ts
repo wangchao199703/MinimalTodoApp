@@ -41,6 +41,8 @@ interface AppState {
   noteGroups: NoteGroup[];
   selectedNoteId: string | null;
   scheduleOpen: boolean;
+  /** 打开日历瞬间锁定的待办列宽度(点击时同步读取,确保待办不缩) */
+  lockedTaskWidth: number;
 
   init: () => Promise<void>;
   selectNote: (id: string | null) => void;
@@ -101,6 +103,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   noteGroups: [],
   selectedNoteId: null,
   scheduleOpen: false,
+  lockedTaskWidth: 420,
 
   init: async () => {
     const [tasks, groups, settings, notes, noteGroups] = await Promise.all([

@@ -108,7 +108,14 @@ export default function TitleBar() {
       <div className="ml-auto flex items-center gap-0.5">
         <button
           title={t("S.X.Calendar")}
-          onClick={() => setScheduleOpen(!scheduleOpen)}
+          onClick={() => {
+            // 打开前同步读取待办列当前宽度并锁定(此刻 main 仍是全宽,日历尚未渲染)
+            if (!scheduleOpen) {
+              const w = (document.querySelector("main") as HTMLElement | null)?.offsetWidth;
+              if (w) useAppStore.setState({ lockedTaskWidth: w });
+            }
+            setScheduleOpen(!scheduleOpen);
+          }}
           className={`flex h-7 w-7 items-center justify-center rounded hover:bg-card-hover ${
             scheduleOpen ? "text-accent" : "text-text-2"
           }`}

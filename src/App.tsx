@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useEffect, useRef } from "react";
+import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useAppStore } from "./store/useAppStore";
 import { parseDue, nowText } from "./lib/date";
 import { applyFontSettings } from "./lib/font";
@@ -7,12 +7,13 @@ import { playReminderDing } from "./lib/effects";
 import { f } from "./lib/i18n";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
+import ResizeBorders from "./components/ResizeBorders";
 import TaskList from "./components/TaskList";
 import QuickAdd from "./components/QuickAdd";
 import QuadrantView from "./components/views/QuadrantView";
 import TagBoardView from "./components/views/TagBoardView";
 import NotesView from "./components/views/NotesView";
-import CalendarPanel from "./components/CalendarPanel";
+import CalendarView from "./components/views/CalendarView";
 import Toasts from "./components/ui/Toasts";
 import UpdateDialog from "./components/dialogs/UpdateDialog";
 import { checkForUpdate, type UpdateInfo } from "./lib/updater";
@@ -114,10 +115,51 @@ export default function App() {
   const language = useAppStore((s) => s.language);
   const theme = useAppStore((s) => s.theme);
   const scheduleOpen = useAppStore((s) => s.scheduleOpen);
+  const saveSetting = useAppStore((s) => s.saveSetting);
+
+  // 待办列固定宽度(对齐旧版 TaskColumn):日历是弹性列吸收窗口变化,
+  // 故拖窗口边缘只改日历、待办不动;待办宽度只由中间分隔条调整。
+  const [taskWidth, setTaskWidth] = useState(420);
+  const calRef = useRef<HTMLElement>(null);
+  const prevSchedule = useRef(false);
 
   useEffect(() => {
     void init();
   }, [init]);
+
+  // 打开日历=窗口右扩出日历、待办固定不变;关闭=缩回窗口、待办恢复弹性(对齐旧版 OpenSchedule)
+  useEffect(() => {
+    if (!loaded) return;
+    const was = prevSchedule.current;
+    prevSchedule.current = scheduleOpen;
+    if (was === scheduleOpen) return;
+
+    const win = getCurrentWindow();
+    void (async () => {
+      const maximized = await win.isMaximized();
+      const size = await win.innerSize();
+      const sf = await win.scaleFactor();
+      const lw = size.width / sf;
+      const lh = size.height / sf;
+      const calW = Math.min(900, Math.max(280, Number(useAppStore.getState().settings["schedule_width"]) || 360));
+
+      if (scheduleOpen) {
+        // 待办锁定为点击瞬间(打开前)的宽度,确保打开后待办不缩
+        const locked = useAppStore.getState().lockedTaskWidth;
+        if (maximized) {
+          setTaskWidth(Math.max(280, locked - calW)); // 最大化无法扩窗:从待办匀出日历
+        } else {
+          setTaskWidth(locked);
+          await win.setSize(new LogicalSize(lw + calW, lh)); // 窗口右扩出日历,待办不变
+        }
+      } else {
+        // 关闭:记录日历当前宽度,缩回窗口,待办恢复弹性
+        const cw = calRef.current?.offsetWidth ?? calW;
+        saveSetting("schedule_width", String(Math.round(cw)));
+        if (!maximized) await win.setSize(new LogicalSize(Math.max(360, lw - cw), lh));
+      }
+    })();
+  }, [scheduleOpen, loaded, saveSetting]);
 
   // 禁用 WebView2 默认右键菜单(返回/刷新/打印…),输入框保留系统菜单
   useEffect(() => {
@@ -147,6 +189,27 @@ export default function App() {
 
   if (!loaded) return null;
 
+  // 中间分隔条:拖动只改待办列宽度(向右拖变宽),日历弹性自适应
+  const startTaskResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = taskWidth;
+    let w = startW;
+    const move = (ev: MouseEvent) => {
+      w = Math.min(900, Math.max(280, startW + (ev.clientX - startX)));
+      setTaskWidth(w);
+    };
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      saveSetting("task_width", String(Math.round(w)));
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  const calOpen = scheduleOpen && view.kind !== "notes";
+
   return (
     // key=language:切换语言时整树重建,所有 t() 文案即时刷新。
     // 布局对齐 todo-flow:侧栏整列直通窗口顶部,标题栏只覆盖右侧内容区。
@@ -156,7 +219,11 @@ export default function App() {
       <div className="flex min-w-0 flex-1 flex-col">
         <TitleBar />
         <div className="flex min-h-0 flex-1">
-          <main className="flex min-w-0 flex-1 flex-col bg-content">
+          {/* 待办列:开日历时固定宽度(只由中间分隔条调整),否则占满 */}
+          <main
+            style={calOpen ? { width: taskWidth } : undefined}
+            className={`flex flex-col bg-content ${calOpen ? "shrink-0" : "min-w-0 flex-1"}`}
+          >
             {view.kind === "quadrant" ? (
               <QuadrantView />
             ) : view.kind === "tagboard" ? (
@@ -170,12 +237,24 @@ export default function App() {
               </>
             )}
           </main>
-          {/* 日历作为右侧并排面板:主列表仍可见,可把待办拖进日历某天设截止;分隔条可拖动调宽 */}
-          {scheduleOpen && view.kind !== "notes" && <CalendarPanel />}
+          {/* 日历:弹性列(吸收窗口宽度变化 → 拖窗口边缘只改日历、待办不动);
+              中间分隔条:拖动才改待办宽度。可把待办拖进日历某天设截止。 */}
+          {calOpen && (
+            <>
+              <div
+                onMouseDown={startTaskResize}
+                className="w-1 shrink-0 cursor-col-resize bg-divider hover:bg-accent/40"
+              />
+              <aside ref={calRef} className="flex min-w-0 flex-1 flex-col bg-content">
+                <CalendarView />
+              </aside>
+            </>
+          )}
         </div>
       </div>
       <Toasts />
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
+      <ResizeBorders />
     </div>
   );
 }
