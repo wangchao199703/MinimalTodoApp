@@ -4,7 +4,6 @@ import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/ad
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import {
   CheckCircle2,
-  ChevronDown,
   ChevronRight,
   Inbox,
   Kanban,
@@ -365,7 +364,8 @@ export default function Sidebar() {
           onClick={() => setView({ kind: "quadrant" })}
         />
 
-        {/* 「标签」(标签看板):点文字进视图,点箭头折叠/展开下属标签;标签为其二级项 */}
+        {/* 「标签」(标签看板):行本体与 NavRow 同版式(图标/文字对齐);
+            折叠箭头与新建按钮平时隐藏,悬停淡入(盖住计数位置),箭头展开态旋转 90° */}
         {collapsed ? (
           <NavRow
             icon={<Kanban size={14} className="shrink-0" />}
@@ -375,17 +375,10 @@ export default function Sidebar() {
             onClick={() => setView({ kind: "tagboard" })}
           />
         ) : (
-          <div className="flex items-center gap-0.5">
-            <button
-              title={tagsCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
-              onClick={toggleTags}
-              className="flex h-7 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-sidebar-strong"
-            >
-              {tagsCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-            </button>
+          <div className="group/tags relative flex items-center">
             <button
               onClick={() => setView({ kind: "tagboard" })}
-              className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm ${
+              className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
                 activeKey === "tagboard"
                   ? "bg-sidebar-selected text-sidebar-selected-fg"
                   : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
@@ -394,19 +387,33 @@ export default function Sidebar() {
               <Kanban size={14} className="shrink-0" />
               <span className="min-w-0 flex-1 truncate text-left">{t("S.Group.TagBoard")}</span>
               {groups.length > 0 && (
-                <span className="text-xs text-sidebar-muted">{groups.length}</span>
+                <span className="text-xs text-sidebar-muted transition-opacity duration-150 group-hover/tags:opacity-0">
+                  {groups.length}
+                </span>
               )}
             </button>
-            <button
-              title={t("S.Tag.New")}
-              onClick={() => {
-                void addGroup(t("S.X.NewTagName"));
-                if (tagsCollapsed) saveSetting("tags_section_collapsed", "0"); // 新建后自动展开
-              }}
-              className="flex h-7 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-            >
-              <Plus size={13} />
-            </button>
+            <span className="pointer-events-none absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/tags:pointer-events-auto group-hover/tags:opacity-100">
+              <button
+                title={tagsCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+                onClick={toggleTags}
+                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <ChevronRight
+                  size={12}
+                  className={`transition-transform duration-150 ${tagsCollapsed ? "" : "rotate-90"}`}
+                />
+              </button>
+              <button
+                title={t("S.Tag.New")}
+                onClick={() => {
+                  void addGroup(t("S.X.NewTagName"));
+                  if (tagsCollapsed) saveSetting("tags_section_collapsed", "0"); // 新建后自动展开
+                }}
+                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <Plus size={13} />
+              </button>
+            </span>
           </div>
         )}
 
