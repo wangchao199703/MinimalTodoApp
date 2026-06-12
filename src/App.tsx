@@ -119,6 +119,17 @@ export default function App() {
     void init();
   }, [init]);
 
+  // 禁用 WebView2 默认右键菜单(返回/刷新/打印…),输入框保留系统菜单
+  useEffect(() => {
+    const block = (e: MouseEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("input, textarea, [contenteditable='true']")) return;
+      e.preventDefault();
+    };
+    document.addEventListener("contextmenu", block);
+    return () => document.removeEventListener("contextmenu", block);
+  }, []);
+
   // 启动后套用持久化的窗口置顶与字体设置
   useEffect(() => {
     if (!loaded) return;

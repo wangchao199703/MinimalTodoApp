@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
   dropTargetForElements,
@@ -22,12 +22,16 @@ interface Column {
 }
 
 const UNTAGGED_KEY = "__untagged__";
+/** 瀑布流目标列宽(对齐旧版 MasonryPanel.ColumnWidth 思路,自适应列数) */
+const MASONRY_COL_W = 248;
+const GAP = 12;
 
 function colKey(id: string | null): string {
   return id ?? UNTAGGED_KEY;
 }
 
-function BoardColumn({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date }) {
+/** 单个标签卡片:高度随内容自适应(瀑布流单元) */
+function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date }) {
   const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>(
     "tagcol",
     colKey(col.id),
@@ -36,7 +40,7 @@ function BoardColumn({ col, tasks, now }: { col: Column; tasks: Task[]; now: Dat
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
 
-  // 列空白区作为跨列释放目标
+  // 卡片空白区作为跨列释放目标
   useEffect(() => {
     const el = bodyRef.current;
     if (!el) return;
@@ -49,9 +53,7 @@ function BoardColumn({ col, tasks, now }: { col: Column; tasks: Task[]; now: Dat
 
   return (
     <div
-      className={`relative flex w-56 shrink-0 flex-col rounded-xl bg-card p-2 ${
-        isDragging ? "dragging" : ""
-      }`}
+      className={`relative flex flex-col rounded-xl bg-card p-2 ${isDragging ? "dragging" : ""}`}
     >
       {closestEdge && (
         <div
@@ -65,10 +67,10 @@ function BoardColumn({ col, tasks, now }: { col: Column; tasks: Task[]; now: Dat
         <span className="truncate text-xs font-medium text-text-2">{col.name}</span>
         <span className="ml-auto text-xs text-muted">{tasks.length}</span>
       </div>
-      <div ref={bodyRef} className="flex min-h-0 flex-1 flex-col">
-        <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
-          {tasks.map((t) => (
-            <TaskItem key={t.id} task={t} now={now} />
+      <div ref={bodyRef} className="flex min-h-6 flex-col">
+        <div ref={listRef} className="flex flex-col gap-1.5">
+          {tasks.map((task) => (
+            <TaskItem key={task.id} task={task} now={now} />
           ))}
         </div>
       </div>
@@ -86,6 +88,20 @@ export default function TagBoardView() {
   const saveSetting = useAppStore((s) => s.saveSetting);
   const now = useNowTick();
 
+  // 容器宽度自适应列数(对齐旧版 MasonryPanel:floor(width / colW),至少 1 列)
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [colCount, setColCount] = useState(2);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth - 24; // 去掉左右 padding
+      setColCount(Math.max(1, Math.floor((w + GAP) / (MASONRY_COL_W + GAP))));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // 列 = 各标签 + 「无标签」;无标签列位置可拖动调整并持久化(-1 = 末位)
   const untaggedCol: Column = { id: null, name: t("S.Tag.Untagged"), color: "var(--muted-text)" };
   const cols: Column[] = groups.map((g) => ({ id: g.id, name: g.name, color: g.color }));
@@ -94,13 +110,22 @@ export default function TagBoardView() {
   else cols.push(untaggedCol);
 
   const tops = tasks
-    .filter((t) => !t.is_completed && !t.parent_id)
+    .filter((task) => !task.is_completed && !task.parent_id)
     .sort((a, b) => a.order_index - b.order_index);
   const byCol = new Map<string, Task[]>();
   for (const c of cols) byCol.set(colKey(c.id), []);
-  for (const t of tops) {
-    const key = t.group_id && byCol.has(t.group_id) ? t.group_id : UNTAGGED_KEY;
-    byCol.get(key)?.push(t);
+  for (const task of tops) {
+    const key = task.group_id && byCol.has(task.group_id) ? task.group_id : UNTAGGED_KEY;
+    byCol.get(key)?.push(task);
+  }
+
+  // 瀑布流分配:按顺序把每张卡片放进当前最短的列(高度按任务数估算)
+  const lanes: Column[][] = Array.from({ length: colCount }, () => []);
+  const laneHeights = new Array(colCount).fill(0);
+  for (const c of cols) {
+    const shortest = laneHeights.indexOf(Math.min(...laneHeights));
+    lanes[shortest].push(c);
+    laneHeights[shortest] += 56 + (byCol.get(colKey(c.id))?.length ?? 0) * 48;
   }
 
   useEffect(() => {
@@ -137,23 +162,23 @@ export default function TagBoardView() {
           return;
         }
 
-        // —— 任务拖拽:同列重排 / 跨列改标签 ——
+        // —— 任务拖拽:同卡重排 / 跨卡改标签 ——
         if (source.data.type !== "task") return;
         const sourceId = source.data.id as string;
-        const sourceTask = state.tasks.find((t) => t.id === sourceId);
+        const sourceTask = state.tasks.find((task) => task.id === sourceId);
         if (!sourceTask) return;
 
         if (target.data.type === "task-col") {
-          // 拖到列空白处:改标签
+          // 拖到卡片空白处:改标签
           const colId = target.data.colId as string;
           void patchTask({ id: sourceId, group_id: colId === UNTAGGED_KEY ? "" : colId });
           return;
         }
-        const targetTask = state.tasks.find((t) => t.id === target.data.id);
+        const targetTask = state.tasks.find((task) => task.id === target.data.id);
         if (!targetTask) return;
         const all = [...state.tasks].sort((a, b) => a.order_index - b.order_index);
         const ids = reorderIds(
-          all.map((t) => t.id),
+          all.map((task) => task.id),
           sourceId,
           targetTask.id,
           extractClosestEdge(target.data),
@@ -167,10 +192,16 @@ export default function TagBoardView() {
   }, [reorderTasks, reorderGroups, patchTask, saveSetting]);
 
   return (
-    <div className="flex min-h-0 flex-1 gap-2 overflow-x-auto p-3">
-      {cols.map((c) => (
-        <BoardColumn key={colKey(c.id)} col={c} tasks={byCol.get(colKey(c.id)) ?? []} now={now} />
-      ))}
+    <div ref={containerRef} className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="flex items-start gap-3">
+        {lanes.map((lane, i) => (
+          <div key={i} className="flex min-w-0 flex-1 flex-col gap-3">
+            {lane.map((c) => (
+              <BoardCard key={colKey(c.id)} col={c} tasks={byCol.get(colKey(c.id)) ?? []} now={now} />
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
