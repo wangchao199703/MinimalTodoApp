@@ -72,6 +72,38 @@ pub struct UpdateTaskRequest {
     pub last_reminded_at: Option<String>,
 }
 
+/// 便签(Markdown 正文)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Note {
+    pub id: String,
+    pub title: String,
+    pub custom_title: String,
+    pub content: String,
+    /// None = 收集箱(未分组)
+    pub group_id: Option<String>,
+    pub order_index: i64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NoteGroup {
+    pub id: String,
+    pub name: String,
+    pub order_index: i64,
+    pub is_collapsed: bool,
+}
+
+/// 补丁式更新便签:None=不变;可清空文本字段传空串
+#[derive(Debug, Deserialize)]
+pub struct UpdateNoteRequest {
+    pub id: String,
+    pub title: Option<String>,
+    pub custom_title: Option<String>,
+    pub content: Option<String>,
+    pub group_id: Option<String>,
+}
+
 /// 用户自定义主题:18 个颜色键的字典,缺键由前端用 Light 兜底
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CustomTheme {

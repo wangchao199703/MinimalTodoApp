@@ -9,8 +9,10 @@ import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
 import TaskList from "./components/TaskList";
 import QuickAdd from "./components/QuickAdd";
+import SchedulePanel from "./components/SchedulePanel";
 import QuadrantView from "./components/views/QuadrantView";
 import TagBoardView from "./components/views/TagBoardView";
+import NotesView from "./components/views/NotesView";
 import Toasts from "./components/ui/Toasts";
 
 /** 周期提醒轮询:每 30 秒检查一次(对齐旧版) */
@@ -42,6 +44,7 @@ export default function App() {
   const init = useAppStore((s) => s.init);
   const view = useAppStore((s) => s.view);
   const language = useAppStore((s) => s.language);
+  const scheduleOpen = useAppStore((s) => s.scheduleOpen);
 
   useEffect(() => {
     void init();
@@ -74,6 +77,8 @@ export default function App() {
             <QuadrantView />
           ) : view.kind === "tagboard" ? (
             <TagBoardView />
+          ) : view.kind === "notes" ? (
+            <NotesView />
           ) : (
             <>
               <TaskList />
@@ -81,6 +86,7 @@ export default function App() {
             </>
           )}
         </main>
+        {scheduleOpen && view.kind !== "notes" && <SchedulePanel />}
       </div>
       <Toasts />
     </div>

@@ -3,7 +3,10 @@ import {
   ipc,
   type CustomTheme,
   type Group,
+  type Note,
+  type NoteGroup,
   type Task,
+  type UpdateNoteRequest,
   type UpdateTaskRequest,
 } from "../lib/tauri-ipc";
 import { sortTree, descendantIds, type SortMode } from "../lib/sort";
@@ -31,6 +34,7 @@ export type View =
   | { kind: "completed" }
   | { kind: "quadrant" }
   | { kind: "tagboard" }
+  | { kind: "notes" }
   | { kind: "group"; groupId: string };
 
 export interface Toast {
@@ -72,8 +76,21 @@ interface AppState {
   themeUsage: string[];
   sortMode: SortMode;
   toasts: Toast[];
+  notes: Note[];
+  noteGroups: NoteGroup[];
+  selectedNoteId: string | null;
+  scheduleOpen: boolean;
 
   init: () => Promise<void>;
+  selectNote: (id: string | null) => void;
+  addNote: (groupId?: string) => Promise<void>;
+  patchNote: (req: UpdateNoteRequest) => Promise<void>;
+  removeNote: (id: string) => Promise<void>;
+  addNoteGroup: (name: string) => Promise<void>;
+  renameNoteGroup: (id: string, name: string) => Promise<void>;
+  toggleNoteGroupCollapse: (g: NoteGroup) => Promise<void>;
+  removeNoteGroup: (id: string) => Promise<void>;
+  setScheduleOpen: (open: boolean) => void;
   setView: (v: View) => void;
   setTheme: (key: string) => void;
   setLanguage: (lang: Lang) => void;
@@ -125,13 +142,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   themeUsage: [],
   sortMode: "custom",
   toasts: [],
+  notes: [],
+  noteGroups: [],
+  selectedNoteId: null,
+  scheduleOpen: false,
 
   init: async () => {
-    const [tasks, groups, settings, customThemes] = await Promise.all([
+    const [tasks, groups, settings, customThemes, notes, noteGroups] = await Promise.all([
       ipc.getTasks(),
       ipc.getGroups(),
       ipc.getSettings(),
       ipc.getCustomThemes(),
+      ipc.getNotes(),
+      ipc.getNoteGroups(),
     ]);
 
     const language: Lang = settings["language"] === "en" ? "en" : "zh-CN";
@@ -151,7 +174,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     // 恢复上次选中的视图(被删除的标签则回退到全部)
     let view: View = { kind: "all" };
     const saved = settings["selected_group_id"];
-    if (saved === "completed" || saved === "quadrant" || saved === "tagboard")
+    if (saved === "completed" || saved === "quadrant" || saved === "tagboard" || saved === "notes")
       view = { kind: saved };
     else if (saved && groups.some((g) => g.id === saved))
       view = { kind: "group", groupId: saved };
@@ -167,8 +190,61 @@ export const useAppStore = create<AppState>((set, get) => ({
       themeUsage,
       view,
       sortMode,
+      notes,
+      noteGroups,
+      selectedNoteId: notes[0]?.id ?? null,
+      scheduleOpen: settings["schedule_open"] === "1",
       loaded: true,
     });
+  },
+
+  selectNote: (selectedNoteId) => set({ selectedNoteId }),
+
+  addNote: async (groupId) => {
+    const note = await ipc.createNote(groupId);
+    set((s) => ({ notes: [note, ...s.notes], selectedNoteId: note.id }));
+  },
+
+  patchNote: async (req) => {
+    const next = await ipc.updateNote(req);
+    set((s) => ({ notes: s.notes.map((n) => (n.id === next.id ? next : n)) }));
+  },
+
+  removeNote: async (id) => {
+    await ipc.deleteNote(id);
+    set((s) => ({
+      notes: s.notes.filter((n) => n.id !== id),
+      selectedNoteId: s.selectedNoteId === id ? null : s.selectedNoteId,
+    }));
+  },
+
+  addNoteGroup: async (name) => {
+    const g = await ipc.createNoteGroup(name);
+    set((s) => ({ noteGroups: [...s.noteGroups, g] }));
+  },
+
+  renameNoteGroup: async (id, name) => {
+    const next = await ipc.updateNoteGroup(id, { name });
+    set((s) => ({ noteGroups: s.noteGroups.map((g) => (g.id === id ? next : g)) }));
+  },
+
+  toggleNoteGroupCollapse: async (g) => {
+    const next = await ipc.updateNoteGroup(g.id, { is_collapsed: !g.is_collapsed });
+    set((s) => ({ noteGroups: s.noteGroups.map((x) => (x.id === g.id ? next : x)) }));
+  },
+
+  removeNoteGroup: async (id) => {
+    await ipc.deleteNoteGroup(id);
+    set((s) => ({
+      noteGroups: s.noteGroups.filter((g) => g.id !== id),
+      // 外键已把便签移回收集箱,本地同步
+      notes: s.notes.map((n) => (n.group_id === id ? { ...n, group_id: null } : n)),
+    }));
+  },
+
+  setScheduleOpen: (scheduleOpen) => {
+    set({ scheduleOpen });
+    get().saveSetting("schedule_open", scheduleOpen ? "1" : "0");
   },
 
   setView: (view) => {

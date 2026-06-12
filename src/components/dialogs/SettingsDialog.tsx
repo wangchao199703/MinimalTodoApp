@@ -102,6 +102,12 @@ export default function SettingsDialog({ onClose }: { onClose: () => void }) {
         onChange={setFlag("reminder_sound_enabled")}
       />
       <Toggle
+        label={t("S.Settings.Holidays")}
+        desc={t("S.Settings.HolidaysDesc")}
+        checked={flag("show_holidays", true)}
+        onChange={setFlag("show_holidays")}
+      />
+      <Toggle
         label={t("S.X.QuadrantHighOnly")}
         checked={flag("quadrant_important_high_only", false)}
         onChange={setFlag("quadrant_important_high_only")}

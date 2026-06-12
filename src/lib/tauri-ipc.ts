@@ -75,6 +75,37 @@ export interface UpdateGroupRequest {
   is_collapsed?: boolean;
 }
 
+export interface Note {
+  id: string;
+  /** 从正文派生的标题 */
+  title: string;
+  /** 用户手动命名(优先于派生标题) */
+  custom_title: string;
+  /** Markdown 正文 */
+  content: string;
+  /** null = 收集箱 */
+  group_id: string | null;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteGroup {
+  id: string;
+  name: string;
+  order_index: number;
+  is_collapsed: boolean;
+}
+
+export interface UpdateNoteRequest {
+  id: string;
+  title?: string;
+  custom_title?: string;
+  content?: string;
+  /** "" = 移回收集箱 */
+  group_id?: string;
+}
+
 export interface CustomTheme {
   key: string;
   display: string;
@@ -100,6 +131,17 @@ export const ipc = {
 
   getSettings: () => invoke<Record<string, string>>("get_settings"),
   setSetting: (key: string, value: string) => invoke<void>("set_setting", { key, value }),
+
+  getNotes: () => invoke<Note[]>("get_notes"),
+  createNote: (groupId?: string) => invoke<Note>("create_note", { group_id: groupId }),
+  updateNote: (req: UpdateNoteRequest) => invoke<Note>("update_note", { req }),
+  deleteNote: (id: string) => invoke<void>("delete_note", { id }),
+  reorderNotes: (ids: string[]) => invoke<void>("reorder_notes", { ids }),
+  getNoteGroups: () => invoke<NoteGroup[]>("get_note_groups"),
+  createNoteGroup: (name: string) => invoke<NoteGroup>("create_note_group", { name }),
+  updateNoteGroup: (id: string, fields: { name?: string; is_collapsed?: boolean }) =>
+    invoke<NoteGroup>("update_note_group", { id, ...fields }),
+  deleteNoteGroup: (id: string) => invoke<void>("delete_note_group", { id }),
 
   setAcrylic: (enabled: boolean, dark: boolean) =>
     invoke<void>("set_acrylic", { enabled, dark }),

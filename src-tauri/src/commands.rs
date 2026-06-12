@@ -288,6 +288,160 @@ pub fn reorder_tasks(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
     tx.commit().map_err(err)
 }
 
+// ---------- 便签 ----------
+
+fn row_to_note(row: &Row) -> rusqlite::Result<Note> {
+    Ok(Note {
+        id: row.get("id")?,
+        title: row.get("title")?,
+        custom_title: row.get("custom_title")?,
+        content: row.get("content")?,
+        group_id: row.get("group_id")?,
+        order_index: row.get("order_index")?,
+        created_at: row.get("created_at")?,
+        updated_at: row.get("updated_at")?,
+    })
+}
+
+#[tauri::command]
+pub fn get_notes(db: State<Db>) -> CmdResult<Vec<Note>> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut stmt = conn.prepare("SELECT * FROM notes ORDER BY order_index").map_err(err)?;
+    let rows = stmt.query_map([], row_to_note).map_err(err)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(err)
+}
+
+#[tauri::command]
+pub fn create_note(db: State<Db>, group_id: Option<String>) -> CmdResult<Note> {
+    let conn = db.0.lock().map_err(err)?;
+    let id = uuid::Uuid::new_v4().to_string();
+    let order: i64 = conn
+        .query_row("SELECT COALESCE(MIN(order_index), 1) - 1 FROM notes", [], |r| r.get(0))
+        .map_err(err)?;
+    let now = now_text();
+    conn.execute(
+        "INSERT INTO notes (id, group_id, order_index, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?4)",
+        params![id, group_id, order, now],
+    )
+    .map_err(err)?;
+    conn.query_row("SELECT * FROM notes WHERE id = ?1", params![id], row_to_note)
+        .map_err(err)
+}
+
+#[tauri::command]
+pub fn update_note(db: State<Db>, req: UpdateNoteRequest) -> CmdResult<Note> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut n = conn
+        .query_row("SELECT * FROM notes WHERE id = ?1", params![req.id], row_to_note)
+        .map_err(err)?;
+    if let Some(v) = req.title {
+        n.title = v;
+    }
+    if let Some(v) = req.custom_title {
+        n.custom_title = v;
+    }
+    if let Some(v) = req.content {
+        n.content = v;
+    }
+    if let Some(v) = patch(req.group_id) {
+        n.group_id = v;
+    }
+    n.updated_at = now_text();
+    conn.execute(
+        "UPDATE notes SET title=?2, custom_title=?3, content=?4, group_id=?5, updated_at=?6 WHERE id=?1",
+        params![n.id, n.title, n.custom_title, n.content, n.group_id, n.updated_at],
+    )
+    .map_err(err)?;
+    Ok(n)
+}
+
+#[tauri::command]
+pub fn delete_note(db: State<Db>, id: String) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("DELETE FROM notes WHERE id = ?1", params![id]).map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn reorder_notes(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    let tx = conn.unchecked_transaction().map_err(err)?;
+    for (i, id) in ids.iter().enumerate() {
+        tx.execute("UPDATE notes SET order_index = ?1 WHERE id = ?2", params![i as i64, id])
+            .map_err(err)?;
+    }
+    tx.commit().map_err(err)
+}
+
+fn row_to_note_group(row: &Row) -> rusqlite::Result<NoteGroup> {
+    Ok(NoteGroup {
+        id: row.get("id")?,
+        name: row.get("name")?,
+        order_index: row.get("order_index")?,
+        is_collapsed: row.get("is_collapsed")?,
+    })
+}
+
+#[tauri::command]
+pub fn get_note_groups(db: State<Db>) -> CmdResult<Vec<NoteGroup>> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut stmt = conn
+        .prepare("SELECT * FROM note_groups ORDER BY order_index")
+        .map_err(err)?;
+    let rows = stmt.query_map([], row_to_note_group).map_err(err)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(err)
+}
+
+#[tauri::command]
+pub fn create_note_group(db: State<Db>, name: String) -> CmdResult<NoteGroup> {
+    let conn = db.0.lock().map_err(err)?;
+    let id = uuid::Uuid::new_v4().to_string();
+    let order: i64 = conn
+        .query_row("SELECT COALESCE(MAX(order_index), -1) + 1 FROM note_groups", [], |r| r.get(0))
+        .map_err(err)?;
+    conn.execute(
+        "INSERT INTO note_groups (id, name, order_index) VALUES (?1, ?2, ?3)",
+        params![id, name, order],
+    )
+    .map_err(err)?;
+    conn.query_row("SELECT * FROM note_groups WHERE id = ?1", params![id], row_to_note_group)
+        .map_err(err)
+}
+
+#[tauri::command]
+pub fn update_note_group(
+    db: State<Db>,
+    id: String,
+    name: Option<String>,
+    is_collapsed: Option<bool>,
+) -> CmdResult<NoteGroup> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut g = conn
+        .query_row("SELECT * FROM note_groups WHERE id = ?1", params![id], row_to_note_group)
+        .map_err(err)?;
+    if let Some(v) = name {
+        g.name = v;
+    }
+    if let Some(v) = is_collapsed {
+        g.is_collapsed = v;
+    }
+    conn.execute(
+        "UPDATE note_groups SET name=?2, is_collapsed=?3 WHERE id=?1",
+        params![g.id, g.name, g.is_collapsed],
+    )
+    .map_err(err)?;
+    Ok(g)
+}
+
+#[tauri::command]
+pub fn delete_note_group(db: State<Db>, id: String) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    // 便签的 group_id 外键 ON DELETE SET NULL,自动回到收集箱
+    conn.execute("DELETE FROM note_groups WHERE id = ?1", params![id]).map_err(err)?;
+    Ok(())
+}
+
 // ---------- 自定义主题 ----------
 
 #[tauri::command]

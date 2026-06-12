@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Check, Menu, Minus, Palette, Pin, Settings, Square, X } from "lucide-react";
+import { CalendarDays, Check, Menu, Minus, Palette, Pin, Settings, Square, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
 import { Popover, MenuItem } from "./ui/Popover";
@@ -18,6 +18,8 @@ export default function TitleBar() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const scheduleOpen = useAppStore((s) => s.scheduleOpen);
+  const setScheduleOpen = useAppStore((s) => s.setScheduleOpen);
   const onTop = settings["always_on_top"] === "1";
   const toggleOnTop = () => {
     void win.setAlwaysOnTop(!onTop);
@@ -41,6 +43,15 @@ export default function TitleBar() {
       </span>
 
       <div className="ml-auto flex items-center gap-0.5">
+        <button
+          title={t("S.X.Schedule")}
+          onClick={() => setScheduleOpen(!scheduleOpen)}
+          className={`flex h-7 w-7 items-center justify-center rounded hover:bg-card-hover ${
+            scheduleOpen ? "text-accent" : "text-text-2"
+          }`}
+        >
+          <CalendarDays size={13} />
+        </button>
         <button
           title={t("S.AlwaysOnTop")}
           onClick={toggleOnTop}
