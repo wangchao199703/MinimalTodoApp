@@ -114,6 +114,113 @@
   --sidebar-border: hsl(0 0% 100% / 0.06);
 }
 
+/* —— 以下四套浅色主题移植自旧 WPF 版(原始 hex 一一对应) —— */
+.light-rose {
+  --window-bg: #fff5f7;
+  --titlebar-bg: #fce7ec;
+  --content-bg: #fff5f7;
+  --card-hover-bg: #fce7ec;
+  --input-bg: #fbe4ea;
+  --primary-text: #3d1f2a;
+  --secondary-text: #7a4a58;
+  --muted-text: #bc8e9b;
+  --divider: #f5d2dc;
+  --accent: #e11d74;
+  --selected-item-bg: #fbd6e2;
+  --overdue-text: #d6336c;
+  --warning-text: #c2730a;
+  --success-text: #2f9e44;
+  --sidebar-bg: #fdebf0;
+  --sidebar-fg: #7a4a58;
+  --sidebar-fg-strong: #3d1f2a;
+  --sidebar-muted: #bc8e9b;
+  --sidebar-hover-bg: #fce7ec;
+  --sidebar-selected-bg: #fbd6e2;
+  --sidebar-selected-fg: #e11d74;
+  --sidebar-border: #f5d2dc;
+}
+
+.light-sage {
+  --window-bg: #eef1ec;
+  --titlebar-bg: #e2e7dd;
+  --content-bg: #eef1ec;
+  --card-bg: #f7f9f4;
+  --card-hover-bg: #e2e7dd;
+  --input-bg: #e2e7dd;
+  --primary-text: #313a30;
+  --secondary-text: #5c685a;
+  --muted-text: #97a294;
+  --divider: #d9e0d3;
+  --accent: #7c9a78;
+  --selected-item-bg: #dee6d7;
+  --overdue-text: #b06b63;
+  --warning-text: #ae8c4c;
+  --success-text: #6e9a6a;
+  --popup-bg: #f7f9f4;
+  --sidebar-bg: #e6ebe1;
+  --sidebar-fg: #5c685a;
+  --sidebar-fg-strong: #313a30;
+  --sidebar-muted: #97a294;
+  --sidebar-hover-bg: #dee6d7;
+  --sidebar-selected-bg: #dee6d7;
+  --sidebar-selected-fg: #56754f;
+  --sidebar-border: #d9e0d3;
+}
+
+.light-haze {
+  --window-bg: #f0f2f5;
+  --titlebar-bg: #e4e8ed;
+  --content-bg: #f0f2f5;
+  --card-bg: #f8fafc;
+  --card-hover-bg: #e4e8ed;
+  --input-bg: #e4e8ed;
+  --primary-text: #2f3640;
+  --secondary-text: #5c6672;
+  --muted-text: #97a1ae;
+  --divider: #dce1e8;
+  --accent: #6e8ca8;
+  --selected-item-bg: #dde5ee;
+  --overdue-text: #b26b6b;
+  --warning-text: #b08a4e;
+  --success-text: #6e9b7a;
+  --popup-bg: #f8fafc;
+  --sidebar-bg: #e8ebf0;
+  --sidebar-fg: #5c6672;
+  --sidebar-fg-strong: #2f3640;
+  --sidebar-muted: #97a1ae;
+  --sidebar-hover-bg: #dde5ee;
+  --sidebar-selected-bg: #dde5ee;
+  --sidebar-selected-fg: #4d6f91;
+  --sidebar-border: #dce1e8;
+}
+
+.light-clay {
+  --window-bg: #f3eeea;
+  --titlebar-bg: #e8dfd8;
+  --content-bg: #f3eeea;
+  --card-bg: #faf6f2;
+  --card-hover-bg: #e8dfd8;
+  --input-bg: #e8dfd8;
+  --primary-text: #3b332e;
+  --secondary-text: #6e635b;
+  --muted-text: #a89b90;
+  --divider: #e0d5cc;
+  --accent: #b08968;
+  --selected-item-bg: #e9ddd2;
+  --overdue-text: #b66a5e;
+  --warning-text: #b5894c;
+  --success-text: #7e9a6e;
+  --popup-bg: #faf6f2;
+  --sidebar-bg: #ece4dd;
+  --sidebar-fg: #6e635b;
+  --sidebar-fg-strong: #3b332e;
+  --sidebar-muted: #a89b90;
+  --sidebar-hover-bg: #e9ddd2;
+  --sidebar-selected-bg: #e9ddd2;
+  --sidebar-selected-fg: #93684a;
+  --sidebar-border: #e0d5cc;
+}
+
 /* ============ 深色系变体(基于 .dark,只覆盖色调与强调色) ============ */
 .dark-midnight {
   --window-bg: hsl(0 0% 7%);

@@ -3,7 +3,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   CalendarDays,
   Check,
+  Cloud,
+  Clover,
   Coffee,
+  Flower,
   Flower2,
   Gem,
   Leaf,
@@ -11,6 +14,7 @@ import {
   Minus,
   Moon,
   MoonStar,
+  Mountain,
   Palette,
   Pin,
   RefreshCw,
@@ -42,6 +46,10 @@ const THEME_OPTIONS: { key: Theme; icon: typeof Sun; divider?: boolean }[] = [
   { key: "light-lavender", icon: Flower2 },
   { key: "light-mint", icon: Sprout },
   { key: "light-sand", icon: Shell },
+  { key: "light-rose", icon: Flower },
+  { key: "light-sage", icon: Clover },
+  { key: "light-haze", icon: Cloud },
+  { key: "light-clay", icon: Mountain },
   { key: "dark", icon: Moon, divider: true },
   { key: "dark-midnight", icon: MoonStar },
   { key: "dark-mocha", icon: Coffee },
@@ -83,14 +91,6 @@ export default function TitleBar() {
       data-tauri-drag-region
       className="flex h-9 shrink-0 items-center border-b border-divider bg-titlebar px-2"
     >
-      <button
-        title={t("S.Tip.Menu")}
-        onClick={(e) => setMenuAnchor(e.currentTarget)}
-        className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
-      >
-        <Menu size={14} />
-      </button>
-
       <div className="ml-auto flex items-center gap-0.5">
         <button
           title={t("S.X.Schedule")}
@@ -119,6 +119,13 @@ export default function TitleBar() {
             const Icon = THEME_OPTIONS.find((o) => o.key === theme)?.icon ?? Palette;
             return <Icon size={14} />;
           })()}
+        </button>
+        <button
+          title={t("S.Tip.Menu")}
+          onClick={(e) => setMenuAnchor(e.currentTarget)}
+          className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
+        >
+          <Menu size={14} />
         </button>
         <button
           title={t("S.X.Minimize")}

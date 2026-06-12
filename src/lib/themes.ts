@@ -3,7 +3,17 @@
 // 玻璃系共用 .glassy 面板体系,渐变底在 App.tsx 的 BACKDROPS。
 
 export const GLASS_THEMES = ["glass", "glass-ocean", "glass-forest", "glass-sunset"] as const;
-export const LIGHT_THEMES = ["light", "light-lavender", "light-mint", "light-sand"] as const;
+export const LIGHT_THEMES = [
+  "light",
+  "light-lavender",
+  "light-mint",
+  "light-sand",
+  // 以下四套移植自旧 WPF 版同名主题(legacy/MinimalTodoApp/Themes/*.xaml 原始色值)
+  "light-rose",
+  "light-sage",
+  "light-haze",
+  "light-clay",
+] as const;
 export const DARK_THEMES = ["dark", "dark-midnight", "dark-mocha", "dark-emerald"] as const;
 
 export const VALID_THEMES = [...GLASS_THEMES, ...LIGHT_THEMES, ...DARK_THEMES] as const;
@@ -18,6 +28,10 @@ export const THEME_LABELS: Record<Theme, string> = {
   "light-lavender": "Lavender",
   "light-mint": "Mint",
   "light-sand": "Sand",
+  "light-rose": "Rose",
+  "light-sage": "Sage",
+  "light-haze": "Haze",
+  "light-clay": "Clay",
   dark: "Dark",
   "dark-midnight": "Midnight",
   "dark-mocha": "Mocha",
