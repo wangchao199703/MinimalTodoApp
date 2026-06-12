@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
+  Anchor,
   CalendarDays,
   Check,
   Cloud,
@@ -9,6 +10,7 @@ import {
   Flower,
   Flower2,
   Gem,
+  Layers,
   Leaf,
   Menu,
   Minus,
@@ -20,29 +22,28 @@ import {
   RefreshCw,
   Settings,
   Shell,
+  Snowflake,
   Sparkles,
   Sprout,
   Square,
   Sun,
   Sunset,
+  TreePine,
+  Triangle,
   Waves,
   X,
 } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
-import { THEME_LABELS, type Theme } from "../lib/themes";
+import { THEME_LABELS, THEME_PREVIEW, type Theme } from "../lib/themes";
 import { checkForUpdate, type UpdateInfo } from "../lib/updater";
 import { Popover, MenuItem } from "./ui/Popover";
 import SettingsDialog from "./dialogs/SettingsDialog";
 import UpdateDialog from "./dialogs/UpdateDialog";
 
-/** 三个家族:玻璃 4 / 浅色 4 / 深色 4(分组间插分隔线) */
+/** 三个家族,排序:浅色 → 深色 → 渐变玻璃(分组间插分隔线) */
 const THEME_OPTIONS: { key: Theme; icon: typeof Sun; divider?: boolean }[] = [
-  { key: "glass", icon: Sparkles },
-  { key: "glass-ocean", icon: Waves },
-  { key: "glass-forest", icon: Leaf },
-  { key: "glass-sunset", icon: Sunset },
-  { key: "light", icon: Sun, divider: true },
+  { key: "light", icon: Sun },
   { key: "light-lavender", icon: Flower2 },
   { key: "light-mint", icon: Sprout },
   { key: "light-sand", icon: Shell },
@@ -50,10 +51,19 @@ const THEME_OPTIONS: { key: Theme; icon: typeof Sun; divider?: boolean }[] = [
   { key: "light-sage", icon: Clover },
   { key: "light-haze", icon: Cloud },
   { key: "light-clay", icon: Mountain },
+  { key: "light-meadow", icon: TreePine },
   { key: "dark", icon: Moon, divider: true },
   { key: "dark-midnight", icon: MoonStar },
   { key: "dark-mocha", icon: Coffee },
   { key: "dark-emerald", icon: Gem },
+  { key: "dark-nord", icon: Snowflake },
+  { key: "dark-slate", icon: Layers },
+  { key: "dark-graphite", icon: Triangle },
+  { key: "dark-teal", icon: Anchor },
+  { key: "glass", icon: Sparkles, divider: true },
+  { key: "glass-ocean", icon: Waves },
+  { key: "glass-forest", icon: Leaf },
+  { key: "glass-sunset", icon: Sunset },
 ];
 
 const win = getCurrentWindow();
@@ -197,7 +207,7 @@ export default function TitleBar() {
 
       {themeAnchor && (
         <Popover anchor={themeAnchor} onClose={() => setThemeAnchor(null)}>
-          <div className="w-36">
+          <div className="max-h-[70vh] w-44 overflow-y-auto">
             {THEME_OPTIONS.map(({ key, icon: Icon, divider }) => (
               <div key={key}>
                 {divider && <div className="my-1 h-px bg-divider" />}
@@ -209,7 +219,16 @@ export default function TitleBar() {
                 >
                   <Icon size={13} />
                   {THEME_LABELS[key]}
-                  {theme === key && <Check size={12} className="ml-auto text-accent" />}
+                  <span className="ml-auto flex items-center gap-1.5">
+                    {theme === key && <Check size={12} className="text-accent" />}
+                    {/* 色系预览:底色 | 强调色 */}
+                    <span
+                      className="h-3.5 w-7 shrink-0 rounded-full ring-1 ring-divider"
+                      style={{
+                        background: `linear-gradient(115deg, ${THEME_PREVIEW[key].bg} 55%, ${THEME_PREVIEW[key].accent} 55%)`,
+                      }}
+                    />
+                  </span>
                 </MenuItem>
               </div>
             ))}

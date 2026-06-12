@@ -221,6 +221,32 @@
   --sidebar-border: #e0d5cc;
 }
 
+.light-meadow {
+  /* 旧版 Forest:春芽黄绿 */
+  --window-bg: #f4f6f0;
+  --titlebar-bg: #e6ebdd;
+  --content-bg: #f4f6f0;
+  --card-hover-bg: #e6ebdd;
+  --input-bg: #e6ebdd;
+  --primary-text: #26331f;
+  --secondary-text: #4f6041;
+  --muted-text: #8b9a7d;
+  --divider: #d6dec7;
+  --accent: #4d7c2f;
+  --selected-item-bg: #dce7c8;
+  --overdue-text: #c2410c;
+  --warning-text: #b45309;
+  --success-text: #3f7a1e;
+  --sidebar-bg: #eaefe0;
+  --sidebar-fg: #4f6041;
+  --sidebar-fg-strong: #26331f;
+  --sidebar-muted: #8b9a7d;
+  --sidebar-hover-bg: #dce7c8;
+  --sidebar-selected-bg: #dce7c8;
+  --sidebar-selected-fg: #3f6a25;
+  --sidebar-border: #d6dec7;
+}
+
 /* ============ 深色系变体(基于 .dark,只覆盖色调与强调色) ============ */
 .dark-midnight {
   --window-bg: hsl(0 0% 7%);
@@ -338,6 +364,120 @@
   --titlebar-bg: rgba(30, 12, 24, 0.55);
   --sidebar-bg: rgba(30, 12, 24, 0.6);
   --popup-bg: rgba(46, 22, 36, 0.92);
+}
+
+/* —— 以下四套深色主题移植自旧 WPF 版(原始 hex 一一对应) —— */
+.dark-nord {
+  --window-bg: #2e3440;
+  --titlebar-bg: #272c36;
+  --content-bg: #2e3440;
+  --card-bg: #3b4252;
+  --card-hover-bg: #434c5e;
+  --input-bg: #3b4252;
+  --primary-text: #eceff4;
+  --secondary-text: #d8dee9;
+  --muted-text: #7b8494;
+  --divider: #434c5e;
+  --accent: #88c0d0;
+  --accent-text: #2e3440;
+  --selected-item-bg: #434c5e;
+  --overdue-text: #bf616a;
+  --warning-text: #ebcb8b;
+  --success-text: #a3be8c;
+  --popup-bg: #3b4252;
+  --sidebar-bg: #272c36;
+  --sidebar-fg: #d8dee9;
+  --sidebar-fg-strong: #eceff4;
+  --sidebar-muted: #7b8494;
+  --sidebar-hover-bg: #3b4252;
+  --sidebar-selected-bg: #434c5e;
+  --sidebar-selected-fg: #88c0d0;
+  --sidebar-border: #434c5e;
+}
+
+.dark-slate {
+  --window-bg: #282d33;
+  --titlebar-bg: #20242a;
+  --content-bg: #282d33;
+  --card-bg: #30363d;
+  --card-hover-bg: #3a424b;
+  --input-bg: #30363d;
+  --primary-text: #dde3ea;
+  --secondary-text: #aeb6c0;
+  --muted-text: #79828d;
+  --divider: #3a424b;
+  --accent: #8aa0b6;
+  --accent-text: #1b1f24;
+  --selected-item-bg: #38414c;
+  --overdue-text: #c77f79;
+  --warning-text: #c6a567;
+  --success-text: #8bae8a;
+  --popup-bg: #30363d;
+  --sidebar-bg: #20242a;
+  --sidebar-fg: #aeb6c0;
+  --sidebar-fg-strong: #dde3ea;
+  --sidebar-muted: #79828d;
+  --sidebar-hover-bg: #30363d;
+  --sidebar-selected-bg: #38414c;
+  --sidebar-selected-fg: #8aa0b6;
+  --sidebar-border: #3a424b;
+}
+
+.dark-graphite {
+  --window-bg: #2a2c2e;
+  --titlebar-bg: #232527;
+  --content-bg: #2a2c2e;
+  --card-bg: #323538;
+  --card-hover-bg: #3b3e42;
+  --input-bg: #323538;
+  --primary-text: #e4e6e8;
+  --secondary-text: #b4b8bd;
+  --muted-text: #7e848b;
+  --divider: #3b3e42;
+  --accent: #8fa1ae;
+  --accent-text: #1f2123;
+  --selected-item-bg: #3a4047;
+  --overdue-text: #c77f79;
+  --warning-text: #c7a668;
+  --success-text: #8fb089;
+  --popup-bg: #323538;
+  --sidebar-bg: #232527;
+  --sidebar-fg: #b4b8bd;
+  --sidebar-fg-strong: #e4e6e8;
+  --sidebar-muted: #7e848b;
+  --sidebar-hover-bg: #323538;
+  --sidebar-selected-bg: #3a4047;
+  --sidebar-selected-fg: #8fa1ae;
+  --sidebar-border: #3b3e42;
+}
+
+.dark-teal {
+  /* 旧版 Ocean:深海青 */
+  --window-bg: #0f2027;
+  --titlebar-bg: #0a171c;
+  --content-bg: #0f2027;
+  --card-bg: #173540;
+  --card-hover-bg: #1e454f;
+  --input-bg: #173540;
+  --primary-text: #e0f2f1;
+  --secondary-text: #a7c5c9;
+  --muted-text: #5e7c82;
+  --divider: #1e454f;
+  --accent: #2dd4bf;
+  --accent-text: #06231f;
+  --selected-item-bg: #1c4d52;
+  --overdue-text: #ff7b72;
+  --warning-text: #f2c14e;
+  --success-text: #5eead4;
+  --popup-bg: #173540;
+  --sidebar-bg: #0b1a20;
+  --sidebar-fg: #a7c5c9;
+  --sidebar-fg-strong: #e0f2f1;
+  --sidebar-muted: #5e7c82;
+  --sidebar-hover-bg: #173540;
+  --sidebar-selected-bg: #1c4d52;
+  --sidebar-selected-fg: #2dd4bf;
+  --sidebar-border: #1e454f;
 }
 
 /* 把颜色变量注册为 Tailwind 语义色(bg-card、text-text-1 等) */
