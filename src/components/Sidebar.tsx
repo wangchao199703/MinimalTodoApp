@@ -256,7 +256,12 @@ export default function Sidebar() {
       >
         {!collapsed && t("S.AppName")}
       </div>
-      <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-0">
+      <div
+        ref={listRef}
+        className={`flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto pt-0 ${
+          collapsed ? "p-1" : "p-2"
+        }`}
+      >
         <NavRow
           icon={<Inbox size={14} className="shrink-0" />}
           label={t("S.Group.AllUncompleted")}
@@ -318,8 +323,8 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* 标签:展开侧栏时作为二级项缩进;图标态始终显示图标 */}
-        {(collapsed || !tagsCollapsed) &&
+        {/* 标签:作为二级项缩进展示;折叠状态(tags_section_collapsed)在图标态同样生效 */}
+        {!tagsCollapsed &&
           groups.map((g) => (
             <div key={g.id} className={collapsed ? "" : "pl-4"}>
               <GroupRow
@@ -347,15 +352,21 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* 底部:折叠/展开开关 */}
-      <div className="shrink-0 p-2">
-        <button
-          title={collapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+      {/* 底部:折叠/展开开关(与上方导航行同款:图标 + 文字,折叠态只剩图标) */}
+      <div className={`shrink-0 ${collapsed ? "p-1" : "p-2"}`}>
+        <NavRow
+          icon={
+            collapsed ? (
+              <PanelLeftOpen size={14} className="shrink-0" />
+            ) : (
+              <PanelLeftClose size={14} className="shrink-0" />
+            )
+          }
+          label={collapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+          active={false}
+          collapsed={collapsed}
           onClick={toggleCollapsed}
-          className="flex h-8 w-full items-center justify-center rounded-md text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-        >
-          {collapsed ? <PanelLeftOpen size={15} /> : <PanelLeftClose size={15} />}
-        </button>
+        />
       </div>
     </aside>
   );
