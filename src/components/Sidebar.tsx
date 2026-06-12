@@ -4,6 +4,8 @@ import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/ad
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import {
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Inbox,
   Kanban,
   LayoutGrid,
@@ -232,6 +234,10 @@ export default function Sidebar() {
   const collapsed = settings["sidebar_collapsed"] === "1";
   const toggleCollapsed = () => saveSetting("sidebar_collapsed", collapsed ? "0" : "1");
 
+  // 「标签」分组二级折叠,默认折叠(未设置即折叠)
+  const tagsCollapsed = settings["tags_section_collapsed"] !== "0";
+  const toggleTags = () => saveSetting("tags_section_collapsed", tagsCollapsed ? "0" : "1");
+
   return (
     <aside
       style={{ width: collapsed ? 48 : width }}
@@ -250,7 +256,7 @@ export default function Sidebar() {
       >
         {!collapsed && t("S.AppName")}
       </div>
-      <nav className="flex flex-col gap-0.5 p-2 pt-0">
+      <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-0">
         <NavRow
           icon={<Inbox size={14} className="shrink-0" />}
           label={t("S.Group.AllUncompleted")}
@@ -266,13 +272,65 @@ export default function Sidebar() {
           collapsed={collapsed}
           onClick={() => setView({ kind: "quadrant" })}
         />
-        <NavRow
-          icon={<Kanban size={14} className="shrink-0" />}
-          label={t("S.Group.TagBoard")}
-          active={activeKey === "tagboard"}
-          collapsed={collapsed}
-          onClick={() => setView({ kind: "tagboard" })}
-        />
+
+        {/* 「标签」(标签看板):点文字进视图,点箭头折叠/展开下属标签;标签为其二级项 */}
+        {collapsed ? (
+          <NavRow
+            icon={<Kanban size={14} className="shrink-0" />}
+            label={t("S.Group.TagBoard")}
+            active={activeKey === "tagboard"}
+            collapsed
+            onClick={() => setView({ kind: "tagboard" })}
+          />
+        ) : (
+          <div className="flex items-center gap-0.5">
+            <button
+              title={tagsCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
+              onClick={toggleTags}
+              className="flex h-7 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-sidebar-strong"
+            >
+              {tagsCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+            </button>
+            <button
+              onClick={() => setView({ kind: "tagboard" })}
+              className={`flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm ${
+                activeKey === "tagboard"
+                  ? "bg-sidebar-selected text-sidebar-selected-fg"
+                  : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+              }`}
+            >
+              <Kanban size={14} className="shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-left">{t("S.Group.TagBoard")}</span>
+              {groups.length > 0 && (
+                <span className="text-xs text-sidebar-muted">{groups.length}</span>
+              )}
+            </button>
+            <button
+              title={t("S.Tag.New")}
+              onClick={() => {
+                void addGroup(t("S.X.NewTagName"));
+                if (tagsCollapsed) saveSetting("tags_section_collapsed", "0"); // 新建后自动展开
+              }}
+              className="flex h-7 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+            >
+              <Plus size={13} />
+            </button>
+          </div>
+        )}
+
+        {/* 标签:展开侧栏时作为二级项缩进;图标态始终显示图标 */}
+        {(collapsed || !tagsCollapsed) &&
+          groups.map((g) => (
+            <div key={g.id} className={collapsed ? "" : "pl-4"}>
+              <GroupRow
+                group={g}
+                count={countByGroup.get(g.id) ?? 0}
+                active={activeKey === `group:${g.id}`}
+                collapsed={collapsed}
+              />
+            </div>
+          ))}
+
         <NavRow
           icon={<NotebookPen size={14} className="shrink-0" />}
           label={t("S.X.Notes")}
@@ -287,33 +345,6 @@ export default function Sidebar() {
           collapsed={collapsed}
           onClick={() => setView({ kind: "completed" })}
         />
-      </nav>
-
-      {collapsed ? (
-        <div className="mx-2 my-1 h-px shrink-0 bg-sidebar-border" />
-      ) : (
-        <div className="flex items-center justify-between px-3 pt-2 pb-1">
-          <span className="text-xs font-medium text-sidebar-muted">{t("S.Tag.Label")}</span>
-          <button
-            title={t("S.Tag.New")}
-            onClick={() => void addGroup(t("S.X.NewTagName"))}
-            className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-          >
-            <Plus size={13} />
-          </button>
-        </div>
-      )}
-
-      <div ref={listRef} className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-0">
-        {groups.map((g) => (
-          <GroupRow
-            key={g.id}
-            group={g}
-            count={countByGroup.get(g.id) ?? 0}
-            active={activeKey === `group:${g.id}`}
-            collapsed={collapsed}
-          />
-        ))}
       </div>
 
       {/* 底部:折叠/展开开关 */}
