@@ -117,7 +117,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   groups: [],
   settings: {},
   view: { kind: "all" },
-  theme: "light",
+  theme: "light-classic",
   language: "zh-CN",
   sortMode: "custom",
   toasts: [],

@@ -1,6 +1,6 @@
-// 主题系统:三个家族 —— Glass 玻璃拟态(4)/ 浅色系(4)/ 深色系(4)。
-// 基线:light = :root,dark = .dark;其余变体 class 只覆盖少量 token;
-// 玻璃系共用 .glassy 面板体系,渐变底在 App.tsx 的 BACKDROPS。
+// 主题系统:两个家族 —— Glass 玻璃拟态(6)/ 精选纯色(浅 2 + 深 2)。
+// 基线::root(浅)与 .dark(深)是 CSS 底座,各主题为变体 class(class 名 = 主题键)叠在其上;
+// 玻璃系共用 .glassy 面板体系,渐变底在 App.tsx 的 BACKDROPS。默认 light-classic。
 
 export const GLASS_THEMES = [
   "glass",
@@ -11,37 +11,24 @@ export const GLASS_THEMES = [
   "glass-dark", // Noir:中性深黑玻璃
 ] as const;
 export const LIGHT_THEMES = [
-  "light",
-  "light-lavender",
-  "light-mint",
-  "light-sand",
-  // 以下移植自旧 WPF 版主题(legacy/MinimalTodoApp/Themes/*.xaml 原始色值)
-  "light-rose",
-  "light-sage",
-  "light-haze",
-  "light-clay",
-  "light-meadow", // 旧版 Forest(改名避免与玻璃 Forest 撞名)
-  // 经典护眼配色(业界公认的耐看配色,原始色值)
-  "light-solarized",
-  "light-paper",
+  "light-classic", // Classic:纯白克莱因蓝
+  "light-grove", // Grove:暖绿灰护眼浅色
+  "light-notion", // Notion:高级暖灰
+  "light-things", // Things:macOS 冷白通透
+  "light-ticktick", // TickTick:柔和靛蓝
 ] as const;
 export const DARK_THEMES = [
-  "dark",
-  "dark-midnight",
-  "dark-mocha",
-  "dark-emerald",
-  // 以下移植自旧 WPF 版
-  "dark-nord",
-  "dark-slate",
-  "dark-graphite",
-  "dark-teal", // 旧版 Ocean(改名避免与玻璃 Ocean 撞名)
-  // 经典护眼配色
-  "dark-solarized",
-  "dark-gruvbox",
+  "dark-onyx", // Onyx:近黑高对比
+  "dark-dusk", // Dusk:现代蓝调深色
+  "dark-oled", // OLED:纯黑赛博青
+  "dark-linear", // Linear:紫灰深底紫罗兰
 ] as const;
 
 export const VALID_THEMES = [...GLASS_THEMES, ...LIGHT_THEMES, ...DARK_THEMES] as const;
 export type Theme = (typeof VALID_THEMES)[number];
+
+/** 默认主题 */
+export const DEFAULT_THEME: Theme = "light-classic";
 
 export const THEME_LABELS: Record<Theme, string> = {
   glass: "Glass",
@@ -50,52 +37,28 @@ export const THEME_LABELS: Record<Theme, string> = {
   "glass-sunset": "Sunset",
   "glass-light": "Frost",
   "glass-dark": "Noir",
-  light: "Light",
-  "light-lavender": "Lavender",
-  "light-mint": "Mint",
-  "light-sand": "Sand",
-  "light-rose": "Rose",
-  "light-sage": "Sage",
-  "light-haze": "Haze",
-  "light-clay": "Clay",
-  "light-meadow": "Meadow",
-  "light-solarized": "Solarized",
-  "light-paper": "Paper",
-  dark: "Dark",
-  "dark-midnight": "Midnight",
-  "dark-mocha": "Mocha",
-  "dark-emerald": "Emerald",
-  "dark-nord": "Nord",
-  "dark-slate": "Slate",
-  "dark-graphite": "Graphite",
-  "dark-teal": "Teal",
-  "dark-solarized": "Solarized",
-  "dark-gruvbox": "Gruvbox",
+  "light-classic": "Classic",
+  "light-grove": "Grove",
+  "light-notion": "Notion",
+  "light-things": "Things",
+  "light-ticktick": "TickTick",
+  "dark-onyx": "Onyx",
+  "dark-dusk": "Dusk",
+  "dark-oled": "OLED",
+  "dark-linear": "Linear",
 };
 
 /** 菜单色板预览:底色 | 强调色(对角分割小药丸) */
 export const THEME_PREVIEW: Record<Theme, { bg: string; accent: string }> = {
-  light: { bg: "#f5f5fa", accent: "#7765f4" },
-  "light-lavender": { bg: "#f3f0fb", accent: "#8b5ce8" },
-  "light-mint": { bg: "#f2faf6", accent: "#1c9c75" },
-  "light-sand": { bg: "#f7f2e8", accent: "#d36b17" },
-  "light-rose": { bg: "#fff5f7", accent: "#e11d74" },
-  "light-sage": { bg: "#eef1ec", accent: "#7c9a78" },
-  "light-haze": { bg: "#f0f2f5", accent: "#6e8ca8" },
-  "light-clay": { bg: "#f3eeea", accent: "#b08968" },
-  "light-meadow": { bg: "#f4f6f0", accent: "#4d7c2f" },
-  "light-solarized": { bg: "#fdf6e3", accent: "#268bd2" },
-  "light-paper": { bg: "#f3ead4", accent: "#2c7a6f" },
-  dark: { bg: "#101117", accent: "#8170f7" },
-  "dark-midnight": { bg: "#121212", accent: "#5598f8" },
-  "dark-mocha": { bg: "#171311", accent: "#d1a047" },
-  "dark-emerald": { bg: "#0f1513", accent: "#34d399" },
-  "dark-nord": { bg: "#2e3440", accent: "#88c0d0" },
-  "dark-slate": { bg: "#282d33", accent: "#8aa0b6" },
-  "dark-graphite": { bg: "#2a2c2e", accent: "#8fa1ae" },
-  "dark-teal": { bg: "#0f2027", accent: "#2dd4bf" },
-  "dark-solarized": { bg: "#002b36", accent: "#268bd2" },
-  "dark-gruvbox": { bg: "#282828", accent: "#fe8019" },
+  "light-classic": { bg: "#f3f4f6", accent: "#2563eb" },
+  "light-grove": { bg: "#ebece5", accent: "#4d7c0f" },
+  "light-notion": { bg: "#f7f6f3", accent: "#2383e2" },
+  "light-things": { bg: "#f4f5f5", accent: "#1183fe" },
+  "light-ticktick": { bg: "#f8f9fa", accent: "#5c7cfa" },
+  "dark-onyx": { bg: "#121212", accent: "#60a5fa" },
+  "dark-dusk": { bg: "#0f172a", accent: "#38bdf8" },
+  "dark-oled": { bg: "#000000", accent: "#06b6d4" },
+  "dark-linear": { bg: "#151618", accent: "#5e6ad2" },
   glass: { bg: "#16213e", accent: "#7c72f6" },
   "glass-ocean": { bg: "#15323e", accent: "#38bdf8" },
   "glass-forest": { bg: "#123026", accent: "#34d399" },
@@ -116,16 +79,15 @@ export function applyTheme(theme: Theme) {
 
   root.classList.toggle("dark", dark);
   root.classList.toggle("glassy", glassy);
-  // 变体 class:除两个基线(light/dark)外,class 名即主题键
+  // 变体 class:class 名即主题键(叠在 :root / .dark 基线之上)
   for (const k of VALID_THEMES) {
-    if (k === "light" || k === "dark") continue;
     root.classList.toggle(k, theme === k);
   }
   root.style.colorScheme = dark ? "dark" : "light";
 }
 
-/** 旧主题键迁移:仍有效的保留,其余(含未设置)一律回到默认 light */
+/** 旧主题键迁移:仍有效的保留,其余(含未设置/已删除的旧主题)一律回到默认 */
 export function migrateThemeKey(saved: string | undefined): Theme {
-  const v = (saved ?? "light").toLowerCase();
-  return (VALID_THEMES as readonly string[]).includes(v) ? (v as Theme) : "light";
+  const v = (saved ?? DEFAULT_THEME).toLowerCase();
+  return (VALID_THEMES as readonly string[]).includes(v) ? (v as Theme) : DEFAULT_THEME;
 }
