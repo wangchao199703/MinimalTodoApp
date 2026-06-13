@@ -63,6 +63,7 @@ pub fn run() {
             commands::delete_custom_theme,
             commands::get_settings,
             commands::set_setting,
+            commands::reset_settings,
             commands::note_image_dir,
             commands::save_note_image,
             commands::group_icon_dir,
@@ -72,6 +73,7 @@ pub fn run() {
             window::set_acrylic,
             window::set_autostart,
             window::get_autostart,
+            window::open_settings_window,
             window::rebuild_tray,
             updater::apply_update,
         ])

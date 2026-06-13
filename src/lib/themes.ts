@@ -124,8 +124,8 @@ export function applyTheme(theme: Theme) {
   root.style.colorScheme = dark ? "dark" : "light";
 }
 
-/** 旧主题键迁移:仍有效的保留,其余一律回到 glass */
+/** 旧主题键迁移:仍有效的保留,其余(含未设置)一律回到默认 light */
 export function migrateThemeKey(saved: string | undefined): Theme {
-  const v = (saved ?? "glass").toLowerCase();
-  return (VALID_THEMES as readonly string[]).includes(v) ? (v as Theme) : "glass";
+  const v = (saved ?? "light").toLowerCase();
+  return (VALID_THEMES as readonly string[]).includes(v) ? (v as Theme) : "light";
 }

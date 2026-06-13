@@ -524,6 +524,19 @@ pub fn set_setting(db: State<Db>, key: String, value: String) -> CmdResult<()> {
     Ok(())
 }
 
+/// 恢复默认设置:删除全部设置项,使其回落到代码默认值。
+/// 刻意保留:language(用户要求不重置)、imported_at(删了会在下次启动误触发旧数据重导入)。
+#[tauri::command]
+pub fn reset_settings(db: State<Db>) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute(
+        "DELETE FROM settings WHERE key NOT IN ('language', 'imported_at')",
+        [],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
 // ---------- 导入导出 ----------
 
 /// 把文本写到桌面(无桌面则用户目录),返回完整路径(导出 Markdown 用,免引入 dialog 插件)

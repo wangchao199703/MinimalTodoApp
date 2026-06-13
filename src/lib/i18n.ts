@@ -63,6 +63,11 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ConfirmDeleteTag": "确定删除标签「{0}」？其下任务将变为无标签。",
     "S.X.ConfirmClearCompleted": "确定清空全部已完成任务？此操作不可撤销。",
     "S.X.NoteGroupDeleteConfirm": "确定删除该分组？组内便签将移入其他分组，不会被删除。",
+    "S.X.ResetDefaults": "恢复默认设置",
+    "S.X.ResetDefaultsDesc": "将除语言外的所有设置恢复为默认值。",
+    "S.X.ResetDefaultsConfirm": "确定将除语言外的所有设置恢复为默认值？此操作不可撤销。",
+    "S.X.NoteInheritSizeSpacing": "字号·行距继承全局",
+    "S.X.NoteInheritSizeSpacingDesc": "关闭后可单独设置便签的字号与行距。",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -123,6 +128,12 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ConfirmClearCompleted": "Clear all completed tasks? This cannot be undone.",
     "S.X.NoteGroupDeleteConfirm":
       "Delete this group? Its notes move to another group and are not deleted.",
+    "S.X.ResetDefaults": "Restore defaults",
+    "S.X.ResetDefaultsDesc": "Reset all settings except language to their defaults.",
+    "S.X.ResetDefaultsConfirm":
+      "Restore all settings except language to defaults? This cannot be undone.",
+    "S.X.NoteInheritSizeSpacing": "Inherit global size & spacing",
+    "S.X.NoteInheritSizeSpacingDesc": "Turn off to set note size and line spacing separately.",
   },
 };
 

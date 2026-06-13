@@ -42,11 +42,11 @@ import {
   X,
 } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
+import { ipc } from "../lib/tauri-ipc";
 import { t } from "../lib/i18n";
 import { THEME_LABELS, THEME_PREVIEW, type Theme } from "../lib/themes";
 import { checkForUpdate, type UpdateInfo } from "../lib/updater";
 import { Popover, MenuItem } from "./ui/Popover";
-import SettingsDialog from "./dialogs/SettingsDialog";
 import UpdateDialog from "./dialogs/UpdateDialog";
 import HelpDialog from "./dialogs/HelpDialog";
 import ImportExportDialog from "./dialogs/ImportExportDialog";
@@ -94,7 +94,6 @@ export default function TitleBar() {
   const setTheme = useAppStore((s) => s.setTheme);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [ioOpen, setIoOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
@@ -190,7 +189,7 @@ export default function TitleBar() {
           <div className="w-44">
             <MenuItem
               onClick={() => {
-                setSettingsOpen(true);
+                void ipc.openSettingsWindow();
                 setMenuAnchor(null);
               }}
             >
@@ -278,7 +277,6 @@ export default function TitleBar() {
           </div>
         </Popover>
       )}
-      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
       {ioOpen && <ImportExportDialog onClose={() => setIoOpen(false)} />}
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}

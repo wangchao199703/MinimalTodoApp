@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "主窗口默认权限:自绘标题栏所需的窗口操作",
-  "windows": ["main"],
+  "description": "主窗口 + 独立设置窗口默认权限:自绘标题栏所需的窗口操作 + 跨窗口事件",
+  "windows": ["main", "settings"],
   "permissions": [
     "core:default",
     "core:window:allow-minimize",

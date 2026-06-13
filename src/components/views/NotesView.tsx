@@ -43,11 +43,12 @@ function Editor({ note }: { note: Note }) {
   const noteFont = settings["note_font_family"] || "";
   const noteSize = Number(settings["note_font_size"] || "0");
   const noteSpacing = Number(settings["note_line_spacing"] || "0");
-  const style: React.CSSProperties = {
-    fontFamily: noteFont ? `"${noteFont}", var(--app-font)` : undefined,
-    fontSize: noteSize > 0 ? noteSize : undefined,
-    lineHeight: noteSpacing > 0 ? noteSpacing * 1.4 : undefined,
-  };
+  // 经 CSS 变量下发到 .note-prose 自身(见 index.css),空/0 则回退默认/全局
+  const style = {
+    "--note-font-family": noteFont ? `"${noteFont}", var(--app-font)` : undefined,
+    "--note-font-size": noteSize > 0 ? `${noteSize}px` : undefined,
+    "--note-line-height": noteSpacing > 0 ? String(noteSpacing * 1.4) : undefined,
+  } as React.CSSProperties;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col">

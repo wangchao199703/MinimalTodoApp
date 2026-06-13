@@ -683,7 +683,8 @@ body,
 
 body {
   font-family: var(--app-font, "Microsoft YaHei UI", "Segoe UI", system-ui, sans-serif);
-  font-size: var(--app-font-size, 14px);
+  /* 字号随根 rem 缩放(全局字号见 applyFontSettings 设置 html font-size) */
+  font-size: 1rem;
   line-height: var(--app-line-height, 1.55);
   background: var(--window-bg);
   color: var(--primary-text);
@@ -874,7 +875,12 @@ body {
   padding: 0.75rem 1rem 2rem;
   outline: none;
   color: var(--primary-text);
-  font-size: 0.875rem;
+  /* 便签字体/字号/行距:由 NotesView 在 .note-editor 上设 --note-* 变量,
+     直接落在 .note-prose 自身(否则 prose 的 font-size 会盖掉父级继承值);
+     未设时回退默认字号 / 全局行距 / 继承全局字体 */
+  font-family: var(--note-font-family, inherit);
+  font-size: var(--note-font-size, 0.875rem);
+  line-height: var(--note-line-height, var(--app-line-height, 1.55));
   caret-color: var(--accent);
   word-break: break-word;
 }

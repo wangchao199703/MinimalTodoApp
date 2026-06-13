@@ -11,8 +11,11 @@ import {
 } from "../lib/tauri-ipc";
 import { sortTree, descendantIds, type SortMode } from "../lib/sort";
 import { nowText } from "../lib/date";
+import { emit, listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { applyTheme, migrateThemeKey, type Theme } from "../lib/themes";
 import { setLang, type Lang } from "../lib/i18n";
+import { applyFontSettings } from "../lib/font";
 import { ensureGroupIconDir } from "../components/ui/TagIcon";
 
 /** 视图分发:取代路由。内置视图 + 任意标签视图,可枚举即不需要 Router */
@@ -47,6 +50,12 @@ interface AppState {
   lockedTaskWidth: number;
 
   init: () => Promise<void>;
+  /** 独立设置窗口的轻量引导:只加载 settings + 套用主题/语言/字体 */
+  initSettingsWindow: () => Promise<void>;
+  /** 应用来自其他窗口的设置变更(不再持久化/广播,避免回环) */
+  applyRemoteSetting: (key: string, value: string) => void;
+  /** 恢复默认设置(保留语言);广播给所有窗口重载 */
+  resetSettings: () => Promise<void>;
   selectNote: (id: string | null) => void;
   addNote: (groupId?: string) => Promise<void>;
   patchNote: (req: UpdateNoteRequest) => Promise<void>;
@@ -136,6 +145,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     const theme = migrateThemeKey(settings["theme"]);
     if (settings["theme"] !== theme) void ipc.setSetting("theme", theme);
     applyTheme(theme);
+    applyFontSettings(
+      settings["font_family"] || "Microsoft YaHei UI",
+      Number(settings["font_size"] || "14"),
+      Number(settings["line_spacing"] || "1.1"),
+    );
 
     const validSort: SortMode[] = ["custom", "due", "priority", "completed", "created", "title"];
     const sortMode = validSort.includes(settings["sort"] as SortMode)
@@ -164,6 +178,53 @@ export const useAppStore = create<AppState>((set, get) => ({
       scheduleOpen: settings["schedule_open"] === "1",
       loaded: true,
     });
+  },
+
+  initSettingsWindow: async () => {
+    const settings = await ipc.getSettings();
+    const language: Lang = settings["language"] === "en" ? "en" : "zh-CN";
+    setLang(language);
+    const theme = migrateThemeKey(settings["theme"]);
+    applyTheme(theme);
+    applyFontSettings(
+      settings["font_family"] || "Microsoft YaHei UI",
+      Number(settings["font_size"] || "14"),
+      Number(settings["line_spacing"] || "1.1"),
+    );
+    set({ settings, theme, language, loaded: true });
+  },
+
+  applyRemoteSetting: (key, value) => {
+    const cur = get();
+    if (cur.settings[key] === value) return; // 与本地一致(含自身广播回环)→ 跳过
+    const settings = { ...cur.settings, [key]: value };
+    const patch: Partial<AppState> = { settings };
+    if (key === "theme") {
+      const th = migrateThemeKey(value);
+      applyTheme(th);
+      patch.theme = th;
+    } else if (key === "language") {
+      const lang: Lang = value === "en" ? "en" : "zh-CN";
+      setLang(lang);
+      patch.language = lang;
+    } else if (key === "schedule_open") {
+      patch.scheduleOpen = value === "1";
+    }
+    set(patch);
+    if (key === "font_family" || key === "font_size" || key === "line_spacing") {
+      applyFontSettings(
+        settings["font_family"] || "Microsoft YaHei UI",
+        Number(settings["font_size"] || "14"),
+        Number(settings["line_spacing"] || "1.1"),
+      );
+    }
+  },
+
+  resetSettings: async () => {
+    await ipc.resetSettings(); // 清空设置表(保留 language / imported_at)
+    void ipc.setAutostart(false).catch(() => {}); // 自启存于系统,单独复位为默认(关)
+    // 广播给所有窗口(含自身):各自重载,套用默认主题/字体/行距/侧栏等
+    void emit("settings-reset");
   },
 
   selectNote: (selectedNoteId) => set({ selectedNoteId }),
@@ -243,6 +304,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   saveSetting: (key, value) => {
     set((s) => ({ settings: { ...s.settings, [key]: value } }));
     void ipc.setSetting(key, value);
+    // 广播给其他窗口(主窗口 ↔ 独立设置窗口)实时同步
+    void emit("settings-changed", { key, value });
   },
 
   pushToast: (message) => {
@@ -422,6 +485,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     await ipc.reorderGroups(ids);
   },
 }));
+
+/**
+ * 跨窗口设置同步:在模块层(每个窗口的 JS 仅加载一次)注册一次 settings-changed 监听,
+ * 不放进 React effect——避免 StrictMode/HMR/组件重挂导致监听丢失或重复,
+ * 这是「设置窗口改了主窗口不实时刷新」的根因。主窗口与设置窗口都调用一次即可。
+ */
+let settingsSyncSetup = false;
+export function setupSettingsSync(): void {
+  if (settingsSyncSetup) return;
+  settingsSyncSetup = true;
+  void listen<{ key: string; value: string }>("settings-changed", (e) => {
+    useAppStore.getState().applyRemoteSetting(e.payload.key, e.payload.value);
+  });
+  // 恢复默认后:每个窗口各自重载(主窗口全量 init,设置窗口轻量 init)
+  void listen("settings-reset", () => {
+    if (getCurrentWindow().label === "settings") {
+      void useAppStore.getState().initSettingsWindow();
+    } else {
+      void useAppStore.getState().init();
+    }
+  });
+}
 
 /**
  * 当前视图下可见的任务(树形展平,折叠已隐藏)。

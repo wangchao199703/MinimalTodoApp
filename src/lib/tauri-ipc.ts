@@ -154,4 +154,8 @@ export const ipc = {
   getAutostart: () => invoke<boolean>("get_autostart"),
   /** 切语言后即时重建托盘菜单 */
   rebuildTray: (en: boolean) => invoke<void>("rebuild_tray", { en }),
+  /** 打开/聚焦独立的设置窗口(可拖出主窗口) */
+  openSettingsWindow: () => invoke<void>("open_settings_window"),
+  /** 恢复默认设置(保留语言) */
+  resetSettings: () => invoke<void>("reset_settings"),
 };

@@ -116,6 +116,38 @@ pub fn get_autostart(app: AppHandle) -> Result<bool, String> {
     app.autolaunch().is_enabled().map_err(err)
 }
 
+// ============ 独立设置窗口(可拖出主窗口) ============
+
+/// 打开/聚焦「设置」独立原生窗口:自绘无边框、不透明、可拖到屏幕任意位置(含主窗口外)。
+/// 加载同一前端但带 ?window=settings 标记,由 main.tsx 路由到 SettingsWindow。
+/// 注意必须是 async:同步命令在主线程执行,而 WebviewWindowBuilder::build()
+/// 在 Windows 需要主线程消息循环来完成 webview 创建——主线程被命令阻塞会死锁。
+/// async 命令跑在异步运行时线程上,build() 把建窗代理回(此时空闲的)主线程,避免卡死。
+#[tauri::command]
+pub async fn open_settings_window(app: AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("settings") {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        return Ok(());
+    }
+    // 加载同一前端,前端按窗口 label("settings")路由到 SettingsWindow
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        "settings",
+        tauri::WebviewUrl::App("index.html".into()),
+    )
+    .title("设置")
+    .inner_size(600.0, 540.0)
+    .min_inner_size(460.0, 420.0)
+    .decorations(false)
+    .resizable(true)
+    .center()
+    .build()
+    .map_err(err)?;
+    Ok(())
+}
+
 // ============ 贴边自动隐藏 ============
 
 const EDGE_NONE: i32 = 0;
