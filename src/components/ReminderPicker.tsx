@@ -10,7 +10,8 @@ export function formatInterval(minutes: number): string {
   return `${minutes}${t("S.X.U.Min")}`;
 }
 
-const QUICK_MINUTES = [15, 30, 60, 120, 1440, 10080];
+// 对齐旧版新任务快捷提醒的 12 档(1m~4w)
+const QUICK_MINUTES = [1, 10, 30, 60, 120, 300, 1440, 2880, 7200, 10080, 20160, 40320];
 
 /** 周期提醒选择:快捷档 + 自定义值×单位 + 清除(对齐旧版新任务快捷提醒) */
 export default function ReminderPicker(props: {

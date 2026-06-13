@@ -23,6 +23,7 @@
 - **后端测试套件(首次)**:`commands.rs` 每个命令体抽成可测的 `*_impl(conn, …)` 核心函数(命令壳只加锁转调,逻辑/SQL 未改);新增 `#[cfg(test)]` 覆盖标签/任务/便签/便签分组/自定义主题/设置的 CRUD、迁移幂等与建表、三态补丁(due/group/parent)、四象限覆盖清零、父删级联子、收集箱自愈、设置重置保留 language/imported_at,以及纯函数(safe_file_name/safe_ext/is_supported_image)。`database.rs` 加 DB 层测试。无功能行为改动。
 - **旧数据迁移测试**:`import.rs` 抽出纯逻辑 `import_into(conn, &old)`,新增测试覆盖 ISO 日期转换、Nil/空 GUID 过滤、内置视图分组跳过与 order 压实、优先级 0→Medium、GroupId 回退 OriginalGroupId、悬空 parent 丢弃、sort 索引→模式名、selected_group_id→视图映射、便签导入、标量布尔与 imported_at。**`cargo test` 累计 36 项全过**。无功能行为改动。
 - **功能审计**:对照 legacy WPF 全面核对,确认任务/便签/提醒/四象限/置顶/缩进/日历/排序/导入导出已达功能对齐;唯一明显缺口为**主题管理(自定义主题编辑器 + 主题收藏)**——属近期刻意精简范围,留待确认,未实现。
+- **新建待办交互对齐 WPF**:① 截止快捷项补「2周 / 4周」;② 周期提醒快捷项对齐 WPF 的 12 档;③ 新建输入栏新增**标签选择器**(可直接把新任务建进某标签);④ 新增**父级选择器**(直接建为子待办,标签跟随父、缩进+1)。`addTask` 扩展支持 `group_id`/`parent_id`。
 
 > 以上未递增版本号(仍 2.0.0)、未发版。发版时再统一递增三处版本号 + 写 `release-notes.md` + 跑 `release.ps1`。
 

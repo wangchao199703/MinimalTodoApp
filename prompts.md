@@ -303,4 +303,12 @@
 - **第 1 轮:后端 cargo 测试套件 + 命令可测化重构**。把 `commands.rs` 每个命令体抽成 `*_impl(conn, …)` 核心函数(命令壳只加锁转调,逻辑/SQL 一字未改);新增 `#[cfg(test)]` 覆盖标签/任务/便签/便签分组/自定义主题/设置 CRUD + 迁移幂等 + 三态补丁 + 收集箱自愈 + 纯函数(safe_file_name/safe_ext)。`database.rs` 加 `migrate_for_test` 辅助与 DB 层测试。**25 个测试全过、零警告**。`03a9e1f`
 - **第 2 轮:旧数据迁移 `import.rs` 可测化 + 测试**。把纯导入逻辑抽成 `import_into(conn, &old)`(`maybe_import` 只管前置检查/读文件/解析);新增测试覆盖 `to_due_text`(ISO 带时区/小数秒/naive,时区无关断言)、`valid_id`(空/Nil GUID)、端到端:跳过 4 个内置视图分组并压实 order、优先级 0→Medium、GroupId 指向内置视图回退 OriginalGroupId、空 GUID→无标签、悬空 parent_id 丢弃、sort 索引→模式名、selected_group_id→视图键映射、便签/便签分组导入、布尔标量与 imported_at。**累计 36 个测试全过**。`9774cd2`
 - **第 3 轮:纯逻辑核对 + 验证收尾**。再核对前端高风险纯逻辑 `sort.ts`(6 排序 + 置顶优先 + 树展平折叠)、`quadrant.ts`(两开关 + 覆盖优先 + Q1–Q4 派生)均与 WPF 一致。`npm run build`(tsc 严格)通过、`cargo test` 36 项全过、dev 重编运行;更新 `handoff.md` 记进度/测试现状/主题编辑器待确认决策。`(本轮)`
-- **功能差距审计结论**:数据模型/命令、提醒引擎(App.tsx useReminderLoop)、完成/提醒音效(effects.ts)、四象限/置顶/缩进/完成级联子孙/清空已完成/日历/排序/导入导出 均已对齐 WPF。**唯一明显缺口=主题管理(自定义主题编辑器 + 主题收藏 FavoriteThemeKeys)**:后端 custom_theme 命令俱全但前端无 UI、i18n 有 Favorite 键无实现。因该领域是用户近期**刻意精简为 15 套**的范围、且高度视觉化无法无人值守校验,**判定为待用户确认的跳过项,未擅自实现**(见 handoff)。
+- **功能差距审计结论**:数据模型/命令、提醒引擎(App.tsx useReminderLoop)、完成/提醒音效(effects.ts)、四象限/置顶/缩进/完成级联子孙/清空已完成/日历/排序/导入导出 均已对齐 WPF。**唯一明显缺口=主题管理(自定义主题编辑器 + 主题收藏 FavoriteThemeKeys)**:后端 custom_theme 命令俱全但前端无 UI、i18n 有 Favorite 键无实现。因该领域是用户近期**刻意精简为 15 套**的范围、且高度视觉化无法无人值守校验,**判定为待用户确认的跳过项,未擅自实现**(见 handoff)。`9774cd2`/`c3b88f3`
+
+**提示词:** 保持现状(主题编辑器不做),你继续检查其他功能点,比如新建待办的时候的弹窗。(审计后选择对齐:补齐截止快捷项 2周/4周、提醒快捷项对齐 WPF、新建时可选标签、新建时可选父级)
+- **新建待办交互审计**:`TaskEditDialog`(双击编辑)字段与 WPF 完全一致;新建仍是内联栏(WPF 亦然)。发现 4 处差异并按用户选择全部对齐:
+  - DuePicker 快捷项补 **2周(20160)/4周(40320)**(`lib/date.ts quickTimes`)。
+  - ReminderPicker 快捷项改为 WPF 的 12 档 `[1,10,30,60,120,300,1440,2880,7200,10080,20160,40320]`。
+  - QuickAdd 加**标签选择器**(Tag 钮→Popover 列「无标签」+各标签),新建可直接归入某标签(补回全宽看板后失去的能力)。
+  - QuickAdd 加**父级选择器**(ListTree 钮→Popover 列未完成任务带缩进),直接建为子待办;选了父级则隐藏标签钮、标签跟随父。
+  - store `addTask` 扩展接受 `group_id`/`parent_id`:有父级则标签跟随父、缩进 = 父+1(封顶 6),对齐旧版 `AddTask`。i18n 双语加 `S.X.NewTaskTag/NewTaskParent/NewTaskAsChildOf`。`npm run build` 通过。`(本轮)`

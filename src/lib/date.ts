@@ -72,7 +72,7 @@ export interface QuickTime {
   minutes: number;
 }
 
-/** 快捷时间选项(对齐旧版 5m~1w),label 按当前语言生成 */
+/** 快捷时间选项(对齐旧版 5m~4w),label 按当前语言生成 */
 export function quickTimes(): QuickTime[] {
   const u = (k: string) => t("S.X.U." + k);
   return [
@@ -86,6 +86,8 @@ export function quickTimes(): QuickTime[] {
     { label: `2${u("Day")}`, minutes: 2880 },
     { label: `5${u("Day")}`, minutes: 7200 },
     { label: `1${u("Week")}`, minutes: 10080 },
+    { label: `2${u("Week")}`, minutes: 20160 },
+    { label: `4${u("Week")}`, minutes: 40320 },
   ];
 }
 

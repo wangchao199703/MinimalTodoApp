@@ -64,6 +64,7 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
 ## 七、当前 UI 结构速记
 
+- 新建待办 `QuickAdd.tsx`(内联输入栏):标题 + 优先级 + **标签选择器**(Tag 钮)+ **父级选择器**(ListTree 钮,建为子待办、标签跟随父)+ 提醒 + 截止;`addTask` 支持 `group_id`/`parent_id`。编辑用 `TaskEditDialog`(双击)。快捷时间:截止到 4周、提醒 12 档(对齐 WPF)。
 - 主侧栏 `Sidebar.tsx`:5 个内置导航项(所有待办/四象限/**标签**/便签/已完成,可拖排序),右键改色,底部折叠开关。
 - `tagboard` 视图(`App.tsx` dispatch):`<TagBoardView/>` **全宽**(无第二侧栏)。
 - `notes` 视图:`NotesView`(第二侧栏便签树 + 编辑区,可调宽/收起;收起为图标列,镜像分组折叠态)。

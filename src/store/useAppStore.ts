@@ -80,6 +80,10 @@ interface AppState {
       priority?: number;
       reminder_enabled?: boolean;
       reminder_interval_minutes?: number;
+      /** 显式指定标签(新建栏标签选择器);省略时回退当前标签视图 */
+      group_id?: string;
+      /** 指定父待办则建为子待办:标签跟随父、缩进 = 父+1(对齐旧版 AddTask) */
+      parent_id?: string;
     },
   ) => Promise<void>;
   patchTask: (req: UpdateTaskRequest) => Promise<void>;
@@ -317,10 +321,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addTask: async (title, extra) => {
-    const { view } = get();
-    const group_id = view.kind === "group" ? view.groupId : undefined;
-    const task = await ipc.createTask({ title, group_id, ...extra });
-    // 新任务排在最前(order_index 为全局最小)
+    const { view, tasks } = get();
+    const { group_id: tagId, parent_id, ...rest } = extra ?? {};
+    // 标签:显式选择 > 当前标签视图(旧路径,标签看板全宽后已不触发)> 无
+    let group_id = tagId ?? (view.kind === "group" ? view.groupId : undefined);
+    let indent_level: number | undefined;
+    if (parent_id) {
+      // 建为子待办:跟随父的标签,缩进 = 父 + 1(封顶 6),对齐旧版 AddTask
+      const parent = tasks.find((t) => t.id === parent_id);
+      if (parent) {
+        group_id = parent.group_id ?? undefined;
+        indent_level = Math.min(parent.indent_level + 1, 6);
+      }
+    }
+    const task = await ipc.createTask({ title, group_id, parent_id, indent_level, ...rest });
+    // 新任务排在最前(order_index 为全局最小);子待办由 sortTree 按 parent_id 归位到父下
     set((s) => ({ tasks: [task, ...s.tasks] }));
   },
 
