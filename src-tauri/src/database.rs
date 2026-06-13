@@ -89,6 +89,12 @@ fn create_inbox_group(conn: &Connection) -> rusqlite::Result<String> {
     Ok(id)
 }
 
+/// 测试辅助:在传入的(通常是内存)连接上跑全部迁移,供 commands/database 单测建库。
+#[cfg(test)]
+pub(crate) fn migrate_for_test(conn: &Connection) -> rusqlite::Result<()> {
+    migrate(conn)
+}
+
 /// 版本化迁移:user_version 记录当前模式版本,只向前追加
 fn migrate(conn: &Connection) -> rusqlite::Result<()> {
     let version: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0))?;
@@ -191,4 +197,85 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::params;
+
+    fn mem_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        migrate(&conn).unwrap();
+        conn
+    }
+
+    #[test]
+    fn migrate_is_idempotent() {
+        let conn = mem_db();
+        // 再跑一次不应报错(版本已是 3,各分支跳过)
+        migrate(&conn).unwrap();
+        let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
+        assert_eq!(v, 3);
+    }
+
+    #[test]
+    fn default_note_group_creates_inbox_once() {
+        let conn = mem_db();
+        let id1 = default_note_group_id(&conn).unwrap();
+        // 第二次调用复用同一个收集箱,不重复新建
+        let id2 = default_note_group_id(&conn).unwrap();
+        assert_eq!(id1, id2);
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM note_groups", [], |r| r.get(0)).unwrap();
+        assert_eq!(n, 1);
+    }
+
+    #[test]
+    fn ensure_notes_grouped_prefers_named_inbox_on_migration() {
+        let conn = mem_db();
+        // 造一个已有的普通分组 + 一条无分组的孤儿便签(模拟老数据虚拟收集箱)
+        conn.execute(
+            "INSERT INTO note_groups (id, name, order_index) VALUES ('g1', '工作', 0)",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO notes (id, group_id, order_index, created_at, updated_at)
+             VALUES ('n1', NULL, 0, '2026-01-01 00:00', '2026-01-01 00:00')",
+            [],
+        )
+        .unwrap();
+
+        ensure_notes_grouped(&conn, true).unwrap();
+
+        // 孤儿便签应进了新建的「收集箱」,而不是混入既有的「工作」
+        let gid: String =
+            conn.query_row("SELECT group_id FROM notes WHERE id='n1'", [], |r| r.get(0)).unwrap();
+        let name: String =
+            conn.query_row("SELECT name FROM note_groups WHERE id=?1", params![gid], |r| r.get(0))
+                .unwrap();
+        assert!(matches!(name.as_str(), "收集箱" | "Inbox"));
+        assert_ne!(gid, "g1");
+    }
+
+    #[test]
+    fn ensure_notes_grouped_noop_when_no_orphans() {
+        let conn = mem_db();
+        conn.execute(
+            "INSERT INTO note_groups (id, name, order_index) VALUES ('g1', '工作', 0)",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO notes (id, group_id, order_index, created_at, updated_at)
+             VALUES ('n1', 'g1', 0, '2026-01-01 00:00', '2026-01-01 00:00')",
+            [],
+        )
+        .unwrap();
+        ensure_notes_grouped(&conn, false).unwrap();
+        // 没有孤儿便签:不应新建收集箱
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM note_groups", [], |r| r.get(0)).unwrap();
+        assert_eq!(n, 1);
+    }
 }

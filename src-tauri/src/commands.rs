@@ -63,10 +63,17 @@ fn get_task_by_id(conn: &Connection, id: &str) -> CmdResult<Task> {
 }
 
 // ---------- 标签(分组) ----------
+//
+// 约定:每个命令拆成「`#[tauri::command]` 壳(加锁) + `*_impl(conn, …)` 核心」两层,
+// 核心函数只依赖 `&Connection`,便于在 `#[cfg(test)]` 里用内存库直接单测。
 
 #[tauri::command]
 pub fn get_groups(db: State<Db>) -> CmdResult<Vec<Group>> {
     let conn = db.0.lock().map_err(err)?;
+    get_groups_impl(&conn)
+}
+
+pub(crate) fn get_groups_impl(conn: &Connection) -> CmdResult<Vec<Group>> {
     let mut stmt = conn
         .prepare("SELECT * FROM groups ORDER BY order_index")
         .map_err(err)?;
@@ -77,6 +84,10 @@ pub fn get_groups(db: State<Db>) -> CmdResult<Vec<Group>> {
 #[tauri::command]
 pub fn create_group(db: State<Db>, name: String) -> CmdResult<Group> {
     let conn = db.0.lock().map_err(err)?;
+    create_group_impl(&conn, name)
+}
+
+pub(crate) fn create_group_impl(conn: &Connection, name: String) -> CmdResult<Group> {
     let id = uuid::Uuid::new_v4().to_string();
     let order: i64 = conn
         .query_row("SELECT COALESCE(MAX(order_index), -1) + 1 FROM groups", [], |r| r.get(0))
@@ -94,6 +105,10 @@ pub fn create_group(db: State<Db>, name: String) -> CmdResult<Group> {
 #[tauri::command]
 pub fn update_group(db: State<Db>, req: UpdateGroupRequest) -> CmdResult<Group> {
     let conn = db.0.lock().map_err(err)?;
+    update_group_impl(&conn, req)
+}
+
+pub(crate) fn update_group_impl(conn: &Connection, req: UpdateGroupRequest) -> CmdResult<Group> {
     let mut g = conn
         .query_row("SELECT * FROM groups WHERE id = ?1", params![req.id], row_to_group)
         .map_err(err)?;
@@ -123,6 +138,10 @@ pub fn update_group(db: State<Db>, req: UpdateGroupRequest) -> CmdResult<Group> 
 #[tauri::command]
 pub fn delete_group(db: State<Db>, id: String) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    delete_group_impl(&conn, id)
+}
+
+pub(crate) fn delete_group_impl(conn: &Connection, id: String) -> CmdResult<()> {
     // 任务的 group_id 外键 ON DELETE SET NULL,任务自动变为「无标签」
     conn.execute("DELETE FROM groups WHERE id = ?1", params![id])
         .map_err(err)?;
@@ -132,6 +151,10 @@ pub fn delete_group(db: State<Db>, id: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn reorder_groups(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    reorder_groups_impl(&conn, ids)
+}
+
+pub(crate) fn reorder_groups_impl(conn: &Connection, ids: Vec<String>) -> CmdResult<()> {
     let tx = conn.unchecked_transaction().map_err(err)?;
     for (i, id) in ids.iter().enumerate() {
         tx.execute(
@@ -148,6 +171,10 @@ pub fn reorder_groups(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
 #[tauri::command]
 pub fn get_tasks(db: State<Db>) -> CmdResult<Vec<Task>> {
     let conn = db.0.lock().map_err(err)?;
+    get_tasks_impl(&conn)
+}
+
+pub(crate) fn get_tasks_impl(conn: &Connection) -> CmdResult<Vec<Task>> {
     let mut stmt = conn
         .prepare("SELECT * FROM tasks ORDER BY order_index")
         .map_err(err)?;
@@ -158,6 +185,10 @@ pub fn get_tasks(db: State<Db>) -> CmdResult<Vec<Task>> {
 #[tauri::command]
 pub fn create_task(db: State<Db>, req: CreateTaskRequest) -> CmdResult<Task> {
     let conn = db.0.lock().map_err(err)?;
+    create_task_impl(&conn, req)
+}
+
+pub(crate) fn create_task_impl(conn: &Connection, req: CreateTaskRequest) -> CmdResult<Task> {
     let id = uuid::Uuid::new_v4().to_string();
     // 顶层新任务排最前;子任务追加到末尾(对齐旧版直觉)
     let order: i64 = if req.parent_id.is_some() {
@@ -186,13 +217,17 @@ pub fn create_task(db: State<Db>, req: CreateTaskRequest) -> CmdResult<Task> {
         ],
     )
     .map_err(err)?;
-    get_task_by_id(&conn, &id)
+    get_task_by_id(conn, &id)
 }
 
 #[tauri::command]
 pub fn update_task(db: State<Db>, req: UpdateTaskRequest) -> CmdResult<Task> {
     let conn = db.0.lock().map_err(err)?;
-    let mut t = get_task_by_id(&conn, &req.id)?;
+    update_task_impl(&conn, req)
+}
+
+pub(crate) fn update_task_impl(conn: &Connection, req: UpdateTaskRequest) -> CmdResult<Task> {
+    let mut t = get_task_by_id(conn, &req.id)?;
 
     if let Some(v) = req.title {
         t.title = v;
@@ -269,6 +304,10 @@ pub fn update_task(db: State<Db>, req: UpdateTaskRequest) -> CmdResult<Task> {
 #[tauri::command]
 pub fn delete_task(db: State<Db>, id: String) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    delete_task_impl(&conn, id)
+}
+
+pub(crate) fn delete_task_impl(conn: &Connection, id: String) -> CmdResult<()> {
     // parent_id 外键 ON DELETE CASCADE,子孙任务随之删除
     conn.execute("DELETE FROM tasks WHERE id = ?1", params![id])
         .map_err(err)?;
@@ -278,6 +317,10 @@ pub fn delete_task(db: State<Db>, id: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn reorder_tasks(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    reorder_tasks_impl(&conn, ids)
+}
+
+pub(crate) fn reorder_tasks_impl(conn: &Connection, ids: Vec<String>) -> CmdResult<()> {
     let tx = conn.unchecked_transaction().map_err(err)?;
     for (i, id) in ids.iter().enumerate() {
         tx.execute(
@@ -307,6 +350,10 @@ fn row_to_note(row: &Row) -> rusqlite::Result<Note> {
 #[tauri::command]
 pub fn get_notes(db: State<Db>) -> CmdResult<Vec<Note>> {
     let conn = db.0.lock().map_err(err)?;
+    get_notes_impl(&conn)
+}
+
+pub(crate) fn get_notes_impl(conn: &Connection) -> CmdResult<Vec<Note>> {
     let mut stmt = conn.prepare("SELECT * FROM notes ORDER BY order_index").map_err(err)?;
     let rows = stmt.query_map([], row_to_note).map_err(err)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(err)
@@ -316,10 +363,14 @@ pub fn get_notes(db: State<Db>) -> CmdResult<Vec<Note>> {
 #[tauri::command(rename_all = "snake_case")]
 pub fn create_note(db: State<Db>, group_id: Option<String>) -> CmdResult<Note> {
     let conn = db.0.lock().map_err(err)?;
+    create_note_impl(&conn, group_id)
+}
+
+pub(crate) fn create_note_impl(conn: &Connection, group_id: Option<String>) -> CmdResult<Note> {
     // 便签必须归属某个分组:未指定时落到默认分组(无分组则自动建「收集箱」)
     let gid = match group_id {
         Some(g) if !g.is_empty() => g,
-        _ => crate::database::default_note_group_id(&conn).map_err(err)?,
+        _ => crate::database::default_note_group_id(conn).map_err(err)?,
     };
     let id = uuid::Uuid::new_v4().to_string();
     let order: i64 = conn
@@ -339,6 +390,10 @@ pub fn create_note(db: State<Db>, group_id: Option<String>) -> CmdResult<Note> {
 #[tauri::command]
 pub fn update_note(db: State<Db>, req: UpdateNoteRequest) -> CmdResult<Note> {
     let conn = db.0.lock().map_err(err)?;
+    update_note_impl(&conn, req)
+}
+
+pub(crate) fn update_note_impl(conn: &Connection, req: UpdateNoteRequest) -> CmdResult<Note> {
     let mut n = conn
         .query_row("SELECT * FROM notes WHERE id = ?1", params![req.id], row_to_note)
         .map_err(err)?;
@@ -355,7 +410,7 @@ pub fn update_note(db: State<Db>, req: UpdateNoteRequest) -> CmdResult<Note> {
         // 空串(原「移回收集箱」语义)→ 默认分组;便签不再有无分组状态
         n.group_id = match v {
             Some(g) => Some(g),
-            None => Some(crate::database::default_note_group_id(&conn).map_err(err)?),
+            None => Some(crate::database::default_note_group_id(conn).map_err(err)?),
         };
     }
     n.updated_at = now_text();
@@ -370,6 +425,10 @@ pub fn update_note(db: State<Db>, req: UpdateNoteRequest) -> CmdResult<Note> {
 #[tauri::command]
 pub fn delete_note(db: State<Db>, id: String) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    delete_note_impl(&conn, id)
+}
+
+pub(crate) fn delete_note_impl(conn: &Connection, id: String) -> CmdResult<()> {
     conn.execute("DELETE FROM notes WHERE id = ?1", params![id]).map_err(err)?;
     Ok(())
 }
@@ -377,6 +436,10 @@ pub fn delete_note(db: State<Db>, id: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn reorder_notes(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    reorder_notes_impl(&conn, ids)
+}
+
+pub(crate) fn reorder_notes_impl(conn: &Connection, ids: Vec<String>) -> CmdResult<()> {
     let tx = conn.unchecked_transaction().map_err(err)?;
     for (i, id) in ids.iter().enumerate() {
         tx.execute("UPDATE notes SET order_index = ?1 WHERE id = ?2", params![i as i64, id])
@@ -397,6 +460,10 @@ fn row_to_note_group(row: &Row) -> rusqlite::Result<NoteGroup> {
 #[tauri::command]
 pub fn get_note_groups(db: State<Db>) -> CmdResult<Vec<NoteGroup>> {
     let conn = db.0.lock().map_err(err)?;
+    get_note_groups_impl(&conn)
+}
+
+pub(crate) fn get_note_groups_impl(conn: &Connection) -> CmdResult<Vec<NoteGroup>> {
     let mut stmt = conn
         .prepare("SELECT * FROM note_groups ORDER BY order_index")
         .map_err(err)?;
@@ -407,6 +474,10 @@ pub fn get_note_groups(db: State<Db>) -> CmdResult<Vec<NoteGroup>> {
 #[tauri::command]
 pub fn create_note_group(db: State<Db>, name: String) -> CmdResult<NoteGroup> {
     let conn = db.0.lock().map_err(err)?;
+    create_note_group_impl(&conn, name)
+}
+
+pub(crate) fn create_note_group_impl(conn: &Connection, name: String) -> CmdResult<NoteGroup> {
     let id = uuid::Uuid::new_v4().to_string();
     let order: i64 = conn
         .query_row("SELECT COALESCE(MAX(order_index), -1) + 1 FROM note_groups", [], |r| r.get(0))
@@ -428,6 +499,15 @@ pub fn update_note_group(
     is_collapsed: Option<bool>,
 ) -> CmdResult<NoteGroup> {
     let conn = db.0.lock().map_err(err)?;
+    update_note_group_impl(&conn, id, name, is_collapsed)
+}
+
+pub(crate) fn update_note_group_impl(
+    conn: &Connection,
+    id: String,
+    name: Option<String>,
+    is_collapsed: Option<bool>,
+) -> CmdResult<NoteGroup> {
     let mut g = conn
         .query_row("SELECT * FROM note_groups WHERE id = ?1", params![id], row_to_note_group)
         .map_err(err)?;
@@ -448,10 +528,14 @@ pub fn update_note_group(
 #[tauri::command]
 pub fn delete_note_group(db: State<Db>, id: String) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    delete_note_group_impl(&conn, id)
+}
+
+pub(crate) fn delete_note_group_impl(conn: &Connection, id: String) -> CmdResult<()> {
     // 外键 ON DELETE SET NULL 先置空,再由自愈逻辑把组内便签归入剩余的第一个分组
     // (一个分组都不剩且有便签时,自动新建「收集箱」承接)
     conn.execute("DELETE FROM note_groups WHERE id = ?1", params![id]).map_err(err)?;
-    crate::database::ensure_notes_grouped(&conn, false).map_err(err)?;
+    crate::database::ensure_notes_grouped(conn, false).map_err(err)?;
     Ok(())
 }
 
@@ -460,6 +544,10 @@ pub fn delete_note_group(db: State<Db>, id: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn get_custom_themes(db: State<Db>) -> CmdResult<Vec<CustomTheme>> {
     let conn = db.0.lock().map_err(err)?;
+    get_custom_themes_impl(&conn)
+}
+
+pub(crate) fn get_custom_themes_impl(conn: &Connection) -> CmdResult<Vec<CustomTheme>> {
     let mut stmt = conn
         .prepare("SELECT key, display, colors_json FROM custom_themes")
         .map_err(err)?;
@@ -480,6 +568,10 @@ pub fn get_custom_themes(db: State<Db>) -> CmdResult<Vec<CustomTheme>> {
 #[tauri::command]
 pub fn save_custom_theme(db: State<Db>, theme: CustomTheme) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    save_custom_theme_impl(&conn, theme)
+}
+
+pub(crate) fn save_custom_theme_impl(conn: &Connection, theme: CustomTheme) -> CmdResult<()> {
     conn.execute(
         "INSERT INTO custom_themes (key, display, colors_json) VALUES (?1, ?2, ?3)
          ON CONFLICT(key) DO UPDATE SET display = excluded.display, colors_json = excluded.colors_json",
@@ -496,6 +588,10 @@ pub fn save_custom_theme(db: State<Db>, theme: CustomTheme) -> CmdResult<()> {
 #[tauri::command]
 pub fn delete_custom_theme(db: State<Db>, key: String) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    delete_custom_theme_impl(&conn, key)
+}
+
+pub(crate) fn delete_custom_theme_impl(conn: &Connection, key: String) -> CmdResult<()> {
     conn.execute("DELETE FROM custom_themes WHERE key = ?1", params![key])
         .map_err(err)?;
     Ok(())
@@ -506,6 +602,10 @@ pub fn delete_custom_theme(db: State<Db>, key: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn get_settings(db: State<Db>) -> CmdResult<HashMap<String, String>> {
     let conn = db.0.lock().map_err(err)?;
+    get_settings_impl(&conn)
+}
+
+pub(crate) fn get_settings_impl(conn: &Connection) -> CmdResult<HashMap<String, String>> {
     let mut stmt = conn.prepare("SELECT key, value FROM settings").map_err(err)?;
     let rows = stmt
         .query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))
@@ -516,6 +616,10 @@ pub fn get_settings(db: State<Db>) -> CmdResult<HashMap<String, String>> {
 #[tauri::command]
 pub fn set_setting(db: State<Db>, key: String, value: String) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    set_setting_impl(&conn, key, value)
+}
+
+pub(crate) fn set_setting_impl(conn: &Connection, key: String, value: String) -> CmdResult<()> {
     conn.execute(
         "INSERT INTO settings (key, value) VALUES (?1, ?2)
          ON CONFLICT(key) DO UPDATE SET value = excluded.value",
@@ -530,6 +634,10 @@ pub fn set_setting(db: State<Db>, key: String, value: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn reset_settings(db: State<Db>) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
+    reset_settings_impl(&conn)
+}
+
+pub(crate) fn reset_settings_impl(conn: &Connection) -> CmdResult<()> {
     conn.execute(
         "DELETE FROM settings WHERE key NOT IN ('language', 'imported_at')",
         [],
@@ -540,17 +648,21 @@ pub fn reset_settings(db: State<Db>) -> CmdResult<()> {
 
 // ---------- 导入导出 ----------
 
+/// 文件名只保留安全字符,防路径穿越(导出 Markdown 用)
+fn safe_file_name(file_name: &str) -> String {
+    file_name
+        .chars()
+        .filter(|c| !matches!(c, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|'))
+        .collect()
+}
+
 /// 把文本写到桌面(无桌面则用户目录),返回完整路径(导出 Markdown 用,免引入 dialog 插件)
 #[tauri::command(rename_all = "snake_case")]
 pub fn export_file(file_name: String, content: String) -> CmdResult<String> {
     let home = std::env::var("USERPROFILE").map_err(err)?;
     let desktop = std::path::Path::new(&home).join("Desktop");
     let dir = if desktop.is_dir() { desktop } else { std::path::PathBuf::from(&home) };
-    // 文件名只保留安全字符,防路径穿越
-    let safe: String = file_name
-        .chars()
-        .filter(|c| !matches!(c, '\\' | '/' | ':' | '*' | '?' | '"' | '<' | '>' | '|'))
-        .collect();
+    let safe = safe_file_name(&file_name);
     let path = dir.join(if safe.is_empty() { "export.md".into() } else { safe });
     std::fs::write(&path, content).map_err(err)?;
     Ok(path.to_string_lossy().into_owned())
@@ -569,22 +681,24 @@ pub fn note_image_dir() -> String {
     note_images_dir().to_string_lossy().into_owned()
 }
 
+/// 从 x-ext header 解析出安全的小写扩展名(只留字母数字,最长 8 位,空则 png)
+fn safe_ext(raw: Option<&str>) -> String {
+    let ext: String = raw
+        .unwrap_or("png")
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .take(8)
+        .collect();
+    if ext.is_empty() { "png".to_string() } else { ext.to_lowercase() }
+}
+
 /// 保存便签图片:invoke 传原始字节,扩展名放 x-ext header,返回仓库内唯一文件名
 #[tauri::command]
 pub fn save_note_image(request: tauri::ipc::Request) -> CmdResult<String> {
     let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
         return Err("expected raw body".into());
     };
-    let ext: String = request
-        .headers()
-        .get("x-ext")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("png")
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .take(8)
-        .collect();
-    let ext = if ext.is_empty() { "png".to_string() } else { ext.to_lowercase() };
+    let ext = safe_ext(request.headers().get("x-ext").and_then(|v| v.to_str().ok()));
     let name = format!("{}.{}", uuid::Uuid::new_v4().simple(), ext);
     std::fs::write(note_images_dir().join(&name), bytes).map_err(err)?;
     Ok(name)
@@ -609,19 +723,16 @@ pub fn save_group_icon(request: tauri::ipc::Request) -> CmdResult<String> {
     let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
         return Err("expected raw body".into());
     };
-    let ext: String = request
-        .headers()
-        .get("x-ext")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("png")
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric())
-        .take(8)
-        .collect();
-    let ext = if ext.is_empty() { "png".to_string() } else { ext.to_lowercase() };
+    let ext = safe_ext(request.headers().get("x-ext").and_then(|v| v.to_str().ok()));
     let name = format!("{}.{}", uuid::Uuid::new_v4().simple(), ext);
     std::fs::write(group_icons_dir().join(&name), bytes).map_err(err)?;
     Ok(name)
+}
+
+/// 已导入图标文件名是否为受支持的图片扩展名(对齐旧版 CustomImages 过滤)
+fn is_supported_image(name: &str) -> bool {
+    let ext = name.rsplit('.').next().unwrap_or("").to_lowercase();
+    matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "ico" | "bmp" | "gif" | "webp")
 }
 
 /// 列出已导入的分组自定义图标文件名(按修改时间倒序,对齐旧版 CustomImages)
@@ -634,8 +745,7 @@ pub fn list_group_icons() -> Vec<String> {
         .flatten()
         .filter_map(|e| {
             let name = e.file_name().to_string_lossy().into_owned();
-            let ext = name.rsplit('.').next().unwrap_or("").to_lowercase();
-            if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "ico" | "bmp" | "gif" | "webp") {
+            if !is_supported_image(&name) {
                 return None;
             }
             let mtime = e.metadata().and_then(|m| m.modified()).ok()?;
@@ -644,4 +754,391 @@ pub fn list_group_icons() -> Vec<String> {
         .collect();
     entries.sort_by(|a, b| b.0.cmp(&a.0));
     entries.into_iter().map(|(_, n)| n).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 建一个迁移到最新版的内存库(与 database::init 同样开启外键),供各命令 *_impl 单测。
+    fn mem_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        crate::database::migrate_for_test(&conn).unwrap();
+        conn
+    }
+
+    fn upd_task(id: &str) -> UpdateTaskRequest {
+        UpdateTaskRequest {
+            id: id.to_string(),
+            title: None,
+            is_completed: None,
+            due_date: None,
+            group_id: None,
+            original_group_id: None,
+            priority: None,
+            indent_level: None,
+            parent_id: None,
+            is_collapsed: None,
+            is_pinned: None,
+            quadrant_override: None,
+            reminder_enabled: None,
+            reminder_interval_minutes: None,
+            last_reminded_at: None,
+        }
+    }
+
+    fn new_task(title: &str) -> CreateTaskRequest {
+        CreateTaskRequest {
+            title: title.to_string(),
+            group_id: None,
+            due_date: None,
+            priority: None,
+            parent_id: None,
+            indent_level: None,
+            reminder_enabled: None,
+            reminder_interval_minutes: None,
+        }
+    }
+
+    // ---- 迁移 / 模式 ----
+
+    #[test]
+    fn migration_sets_version_3_and_creates_tables() {
+        let conn = mem_db();
+        let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
+        assert_eq!(v, 3);
+        // 六张表都在
+        for t in ["groups", "tasks", "note_groups", "notes", "custom_themes", "settings"] {
+            let n: i64 = conn
+                .query_row(
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
+                    params![t],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            assert_eq!(n, 1, "缺表 {t}");
+        }
+    }
+
+    // ---- 标签(分组) ----
+
+    #[test]
+    fn group_crud_and_default_no_color() {
+        let conn = mem_db();
+        let g = create_group_impl(&conn, "工作".into()).unwrap();
+        assert_eq!(g.name, "工作");
+        assert_eq!(g.color, "", "新标签默认无色");
+        assert_eq!(g.order_index, 0);
+
+        // 改名 + 上色
+        let req = UpdateGroupRequest {
+            id: g.id.clone(),
+            name: Some("学习".into()),
+            color: Some("#ff0000".into()),
+            icon: None,
+            icon_image: None,
+            is_collapsed: Some(true),
+        };
+        let g2 = update_group_impl(&conn, req).unwrap();
+        assert_eq!(g2.name, "学习");
+        assert_eq!(g2.color, "#ff0000");
+        assert!(g2.is_collapsed);
+
+        // 列表能读到
+        assert_eq!(get_groups_impl(&conn).unwrap().len(), 1);
+        delete_group_impl(&conn, g.id).unwrap();
+        assert_eq!(get_groups_impl(&conn).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn deleting_group_nulls_task_group_id() {
+        let conn = mem_db();
+        let g = create_group_impl(&conn, "组".into()).unwrap();
+        let mut req = new_task("有标签的任务");
+        req.group_id = Some(g.id.clone());
+        let t = create_task_impl(&conn, req).unwrap();
+        assert_eq!(t.group_id.as_deref(), Some(g.id.as_str()));
+
+        delete_group_impl(&conn, g.id).unwrap();
+        // ON DELETE SET NULL:任务还在,但标签清空
+        let t2 = get_task_by_id(&conn, &t.id).unwrap();
+        assert_eq!(t2.group_id, None);
+    }
+
+    #[test]
+    fn reorder_groups_persists_indices() {
+        let conn = mem_db();
+        let a = create_group_impl(&conn, "A".into()).unwrap();
+        let b = create_group_impl(&conn, "B".into()).unwrap();
+        let c = create_group_impl(&conn, "C".into()).unwrap();
+        reorder_groups_impl(&conn, vec![c.id.clone(), a.id.clone(), b.id.clone()]).unwrap();
+        let names: Vec<String> = get_groups_impl(&conn).unwrap().into_iter().map(|g| g.name).collect();
+        assert_eq!(names, vec!["C", "A", "B"]);
+    }
+
+    // ---- 任务 ----
+
+    #[test]
+    fn create_task_defaults_match_legacy() {
+        let conn = mem_db();
+        let t = create_task_impl(&conn, new_task("写测试")).unwrap();
+        assert_eq!(t.title, "写测试");
+        assert!(!t.is_completed);
+        assert_eq!(t.priority, 2, "默认中优先级");
+        assert_eq!(t.reminder_interval_minutes, 30);
+        assert!(!t.reminder_enabled);
+        assert_eq!(t.indent_level, 0);
+        assert!(!t.created_at.is_empty());
+    }
+
+    #[test]
+    fn top_tasks_prepend_children_append() {
+        let conn = mem_db();
+        let first = create_task_impl(&conn, new_task("first")).unwrap();
+        let second = create_task_impl(&conn, new_task("second")).unwrap();
+        // 顶层新任务排到最前:second 的 order_index 应更小
+        assert!(second.order_index < first.order_index);
+
+        // 子任务追加到末尾
+        let mut childreq = new_task("child");
+        childreq.parent_id = Some(first.id.clone());
+        let child = create_task_impl(&conn, childreq).unwrap();
+        assert!(child.order_index > first.order_index);
+        assert!(child.order_index > second.order_index);
+    }
+
+    #[test]
+    fn update_task_patch_tristate_due_date() {
+        let conn = mem_db();
+        let t = create_task_impl(&conn, new_task("t")).unwrap();
+        assert_eq!(t.due_date, None);
+
+        // Some(非空) = 设置
+        let mut r = upd_task(&t.id);
+        r.due_date = Some("2026-06-13 09:00".into());
+        let t = update_task_impl(&conn, r).unwrap();
+        assert_eq!(t.due_date.as_deref(), Some("2026-06-13 09:00"));
+
+        // None = 不变(只改 title)
+        let mut r = upd_task(&t.id);
+        r.title = Some("改标题".into());
+        let t = update_task_impl(&conn, r).unwrap();
+        assert_eq!(t.due_date.as_deref(), Some("2026-06-13 09:00"));
+        assert_eq!(t.title, "改标题");
+
+        // Some("") = 清空
+        let mut r = upd_task(&t.id);
+        r.due_date = Some("".into());
+        let t = update_task_impl(&conn, r).unwrap();
+        assert_eq!(t.due_date, None);
+    }
+
+    #[test]
+    fn quadrant_override_zero_clears() {
+        let conn = mem_db();
+        let t = create_task_impl(&conn, new_task("q")).unwrap();
+        let mut r = upd_task(&t.id);
+        r.quadrant_override = Some(3);
+        let t = update_task_impl(&conn, r).unwrap();
+        assert_eq!(t.quadrant_override, Some(3));
+
+        let mut r = upd_task(&t.id);
+        r.quadrant_override = Some(0); // 0=清除
+        let t = update_task_impl(&conn, r).unwrap();
+        assert_eq!(t.quadrant_override, None);
+    }
+
+    #[test]
+    fn deleting_parent_cascades_children() {
+        let conn = mem_db();
+        let parent = create_task_impl(&conn, new_task("parent")).unwrap();
+        let mut cr = new_task("child");
+        cr.parent_id = Some(parent.id.clone());
+        let child = create_task_impl(&conn, cr).unwrap();
+
+        delete_task_impl(&conn, parent.id.clone()).unwrap();
+        // ON DELETE CASCADE:子任务也没了
+        assert!(get_task_by_id(&conn, &child.id).is_err());
+        assert_eq!(get_tasks_impl(&conn).unwrap().len(), 0);
+    }
+
+    #[test]
+    fn reorder_tasks_persists() {
+        let conn = mem_db();
+        let a = create_task_impl(&conn, new_task("A")).unwrap();
+        let b = create_task_impl(&conn, new_task("B")).unwrap();
+        reorder_tasks_impl(&conn, vec![a.id.clone(), b.id.clone()]).unwrap();
+        let order: Vec<String> = get_tasks_impl(&conn).unwrap().into_iter().map(|t| t.title).collect();
+        assert_eq!(order, vec!["A", "B"]);
+    }
+
+    // ---- 便签 / 便签分组 ----
+
+    #[test]
+    fn create_note_auto_creates_inbox() {
+        let conn = mem_db();
+        assert_eq!(get_note_groups_impl(&conn).unwrap().len(), 0);
+        let n = create_note_impl(&conn, None).unwrap();
+        // 无分组时自动建「收集箱」并归入
+        assert!(n.group_id.is_some());
+        let groups = get_note_groups_impl(&conn).unwrap();
+        assert_eq!(groups.len(), 1);
+        assert!(matches!(groups[0].name.as_str(), "收集箱" | "Inbox"));
+    }
+
+    #[test]
+    fn update_note_sets_fields_and_touches_updated_at() {
+        let conn = mem_db();
+        let g = create_note_group_impl(&conn, "笔记".into()).unwrap();
+        let n = create_note_impl(&conn, Some(g.id.clone())).unwrap();
+        let req = UpdateNoteRequest {
+            id: n.id.clone(),
+            title: Some("标题".into()),
+            custom_title: Some("自定义".into()),
+            content: Some("正文 **md**".into()),
+            group_id: None,
+        };
+        let n2 = update_note_impl(&conn, req).unwrap();
+        assert_eq!(n2.title, "标题");
+        assert_eq!(n2.custom_title, "自定义");
+        assert_eq!(n2.content, "正文 **md**");
+        assert_eq!(n2.group_id.as_deref(), Some(g.id.as_str()));
+    }
+
+    #[test]
+    fn update_note_empty_group_falls_back_to_default() {
+        let conn = mem_db();
+        let g = create_note_group_impl(&conn, "默认".into()).unwrap();
+        let n = create_note_impl(&conn, Some(g.id.clone())).unwrap();
+        // 传空串 = 清空 → 回落默认分组(便签不允许无分组)
+        let req = UpdateNoteRequest {
+            id: n.id.clone(),
+            title: None,
+            custom_title: None,
+            content: None,
+            group_id: Some("".into()),
+        };
+        let n2 = update_note_impl(&conn, req).unwrap();
+        assert_eq!(n2.group_id.as_deref(), Some(g.id.as_str()));
+    }
+
+    #[test]
+    fn delete_note_group_regroups_orphans() {
+        let conn = mem_db();
+        let g1 = create_note_group_impl(&conn, "一".into()).unwrap();
+        let _g2 = create_note_group_impl(&conn, "二".into()).unwrap();
+        let n = create_note_impl(&conn, Some(g1.id.clone())).unwrap();
+        // 删掉便签所在分组:便签不应丢失,应被并入剩余分组
+        delete_note_group_impl(&conn, g1.id.clone()).unwrap();
+        let n2 = get_notes_impl(&conn).unwrap().into_iter().find(|x| x.id == n.id).unwrap();
+        assert!(n2.group_id.is_some());
+        assert_ne!(n2.group_id.as_deref(), Some(g1.id.as_str()));
+    }
+
+    #[test]
+    fn note_group_update_and_reorder() {
+        let conn = mem_db();
+        let a = create_note_group_impl(&conn, "A".into()).unwrap();
+        let b = create_note_group_impl(&conn, "B".into()).unwrap();
+        update_note_group_impl(&conn, a.id.clone(), Some("AA".into()), Some(true)).unwrap();
+        let groups = get_note_groups_impl(&conn).unwrap();
+        let aa = groups.iter().find(|g| g.id == a.id).unwrap();
+        assert_eq!(aa.name, "AA");
+        assert!(aa.is_collapsed);
+
+        // 便签重排
+        let n1 = create_note_impl(&conn, Some(a.id.clone())).unwrap();
+        let n2 = create_note_impl(&conn, Some(b.id.clone())).unwrap();
+        reorder_notes_impl(&conn, vec![n1.id.clone(), n2.id.clone()]).unwrap();
+        let ids: Vec<String> = get_notes_impl(&conn).unwrap().into_iter().map(|n| n.id).collect();
+        assert_eq!(ids, vec![n1.id, n2.id]);
+    }
+
+    // ---- 自定义主题 ----
+
+    #[test]
+    fn custom_theme_upsert_get_delete() {
+        let conn = mem_db();
+        let mut colors = std::collections::HashMap::new();
+        colors.insert("--bg".to_string(), "#101010".to_string());
+        let theme = CustomTheme {
+            key: "my-theme".into(),
+            display: "我的主题".into(),
+            colors: colors.clone(),
+        };
+        save_custom_theme_impl(&conn, theme).unwrap();
+        let got = get_custom_themes_impl(&conn).unwrap();
+        assert_eq!(got.len(), 1);
+        assert_eq!(got[0].key, "my-theme");
+        assert_eq!(got[0].colors.get("--bg").unwrap(), "#101010");
+
+        // 同 key 再存 = 覆盖(upsert)
+        colors.insert("--bg".to_string(), "#202020".to_string());
+        save_custom_theme_impl(
+            &conn,
+            CustomTheme { key: "my-theme".into(), display: "改名".into(), colors },
+        )
+        .unwrap();
+        let got = get_custom_themes_impl(&conn).unwrap();
+        assert_eq!(got.len(), 1, "upsert 不应新增行");
+        assert_eq!(got[0].display, "改名");
+        assert_eq!(got[0].colors.get("--bg").unwrap(), "#202020");
+
+        delete_custom_theme_impl(&conn, "my-theme".into()).unwrap();
+        assert_eq!(get_custom_themes_impl(&conn).unwrap().len(), 0);
+    }
+
+    // ---- 设置 ----
+
+    #[test]
+    fn settings_upsert_and_reset_preserves_language() {
+        let conn = mem_db();
+        set_setting_impl(&conn, "theme".into(), "dark".into()).unwrap();
+        set_setting_impl(&conn, "language".into(), "en".into()).unwrap();
+        set_setting_impl(&conn, "imported_at".into(), "2026-01-01".into()).unwrap();
+        // upsert:同 key 覆盖
+        set_setting_impl(&conn, "theme".into(), "light".into()).unwrap();
+        assert_eq!(get_settings_impl(&conn).unwrap().get("theme").unwrap(), "light");
+
+        reset_settings_impl(&conn).unwrap();
+        let s = get_settings_impl(&conn).unwrap();
+        assert!(s.get("theme").is_none(), "theme 应被重置");
+        assert_eq!(s.get("language").unwrap(), "en", "language 必须保留");
+        assert_eq!(s.get("imported_at").unwrap(), "2026-01-01", "imported_at 必须保留");
+    }
+
+    // ---- 纯函数 ----
+
+    #[test]
+    fn safe_file_name_strips_path_chars() {
+        assert_eq!(safe_file_name("a/b\\c:d*e?.md"), "abcde.md");
+        assert_eq!(safe_file_name("正常名.md"), "正常名.md");
+        assert_eq!(safe_file_name("///"), "");
+    }
+
+    #[test]
+    fn safe_ext_normalizes() {
+        assert_eq!(safe_ext(Some("PNG")), "png");
+        assert_eq!(safe_ext(Some("jp!g")), "jpg");
+        assert_eq!(safe_ext(None), "png");
+        assert_eq!(safe_ext(Some("")), "png");
+        assert_eq!(safe_ext(Some("verylongextension")), "verylong");
+    }
+
+    #[test]
+    fn is_supported_image_filters() {
+        assert!(is_supported_image("a.png"));
+        assert!(is_supported_image("a.JPG"));
+        assert!(is_supported_image("a.webp"));
+        assert!(!is_supported_image("a.txt"));
+        assert!(!is_supported_image("noext"));
+    }
+
+    #[test]
+    fn patch_tristate() {
+        assert_eq!(patch(None), None);
+        assert_eq!(patch(Some("".into())), Some(None));
+        assert_eq!(patch(Some("x".into())), Some(Some("x".to_string())));
+    }
 }
