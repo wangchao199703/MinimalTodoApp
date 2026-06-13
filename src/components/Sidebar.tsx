@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
@@ -34,6 +34,42 @@ import NotesTree from "./NotesTree";
 
 function viewKey(v: View): string {
   return v.kind === "group" ? `group:${v.groupId}` : v.kind;
+}
+
+/** 可自由拖动排序的五个内置导航项(顺序持久化在 settings.sidebar_order) */
+const NAV_KEYS = ["all", "quadrant", "tagboard", "notes", "completed"] as const;
+type NavKey = (typeof NAV_KEYS)[number];
+
+/** 解析持久化顺序:过滤未知键、去重,缺失的按内置默认顺序补全(向后兼容) */
+function parseNavOrder(raw: string | undefined): NavKey[] {
+  const known = new Set<string>(NAV_KEYS);
+  const seen = new Set<string>();
+  const result: NavKey[] = [];
+  for (const k of (raw ?? "").split(",")) {
+    if (known.has(k) && !seen.has(k)) {
+      result.push(k as NavKey);
+      seen.add(k);
+    }
+  }
+  for (const k of NAV_KEYS) if (!seen.has(k)) result.push(k);
+  return result;
+}
+
+/** 导航项拖拽外壳:整行作为拖拽源 + 释放目标,命中时高亮 closestEdge 指示线 */
+function SortableNav({ navKey, children }: { navKey: NavKey; children: React.ReactNode }) {
+  const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("nav", navKey);
+  return (
+    <div ref={ref} className={`relative ${isDragging ? "dragging" : ""}`}>
+      {closestEdge && (
+        <div
+          className={`absolute inset-x-1 z-10 h-0.5 rounded bg-accent ${
+            closestEdge === "top" ? "-top-px" : "-bottom-px"
+          }`}
+        />
+      )}
+      {children}
+    </div>
+  );
 }
 
 function NavRow(props: {
@@ -316,6 +352,25 @@ export default function Sidebar() {
     });
   }, [reorderGroups]);
 
+  // 内置导航项拖拽重排(顺序落 settings.sidebar_order)
+  useEffect(() => {
+    return monitorForElements({
+      canMonitor: ({ source }) => source.data.type === "nav",
+      onDrop: ({ source, location }) => {
+        const target = location.current.dropTargets[0];
+        if (!target || target.data.type !== "nav") return;
+        const cur = parseNavOrder(useAppStore.getState().settings["sidebar_order"]);
+        const ids = reorderIds(
+          cur,
+          source.data.id as string,
+          target.data.id as string,
+          extractClosestEdge(target.data),
+        );
+        saveSetting("sidebar_order", ids.join(","));
+      },
+    });
+  }, [saveSetting]);
+
   const uncompleted = tasks.filter((t) => !t.is_completed);
   const countByGroup = new Map<string | null, number>();
   for (const t of uncompleted) {
@@ -334,49 +389,46 @@ export default function Sidebar() {
   const notesCollapsed = settings["notes_section_collapsed"] !== "0";
   const toggleNotes = () => saveSetting("notes_section_collapsed", notesCollapsed ? "0" : "1");
 
-  return (
-    <aside
-      style={{ width: collapsed ? 48 : width }}
-      className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar"
-    >
-      {!collapsed && (
-        <div
-          onMouseDown={startResize}
-          className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
-        />
-      )}
-      {/* 侧栏顶部:应用名 + 窗口拖动热区(侧栏整列直通顶部,对齐 todo-flow) */}
-      <div
-        data-tauri-drag-region
-        className="flex h-9 shrink-0 items-center px-3 text-xs font-semibold text-sidebar-strong"
-      >
-        {!collapsed && t("S.AppName")}
-      </div>
-      <div
-        ref={listRef}
-        className={`flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto pt-0 ${
-          collapsed ? "p-1" : "p-2"
-        }`}
-      >
-        <NavRow
-          icon={<Inbox size={14} className="shrink-0" />}
-          label={t("S.Group.AllUncompleted")}
-          count={uncompleted.length}
-          active={activeKey === "all"}
-          collapsed={collapsed}
-          onClick={() => setView({ kind: "all" })}
-        />
-        <NavRow
-          icon={<LayoutGrid size={14} className="shrink-0" />}
-          label={t("S.Group.Quadrant")}
-          active={activeKey === "quadrant"}
-          collapsed={collapsed}
-          onClick={() => setView({ kind: "quadrant" })}
-        />
+  // 内置导航项当前顺序(可拖动)
+  const navOrder = parseNavOrder(settings["sidebar_order"]);
 
-        {/* 「标签」(标签看板):行本体与 NavRow 同版式(图标/文字对齐);
-            折叠箭头与新建按钮平时隐藏,悬停淡入(盖住计数位置),箭头展开态旋转 90° */}
-        {collapsed ? (
+  // 单个导航项的「行本体」(拖拽外壳包裹的部分);标签/便签为带折叠的复合行
+  const navHeader = (key: NavKey) => {
+    switch (key) {
+      case "all":
+        return (
+          <NavRow
+            icon={<Inbox size={14} className="shrink-0" />}
+            label={t("S.Group.AllUncompleted")}
+            count={uncompleted.length}
+            active={activeKey === "all"}
+            collapsed={collapsed}
+            onClick={() => setView({ kind: "all" })}
+          />
+        );
+      case "quadrant":
+        return (
+          <NavRow
+            icon={<LayoutGrid size={14} className="shrink-0" />}
+            label={t("S.Group.Quadrant")}
+            active={activeKey === "quadrant"}
+            collapsed={collapsed}
+            onClick={() => setView({ kind: "quadrant" })}
+          />
+        );
+      case "completed":
+        return (
+          <NavRow
+            icon={<CheckCircle2 size={14} className="shrink-0" />}
+            label={t("S.Group.Completed")}
+            active={activeKey === "completed"}
+            collapsed={collapsed}
+            onClick={() => setView({ kind: "completed" })}
+          />
+        );
+      case "tagboard":
+        // 「标签」(标签看板):行本体与 NavRow 同版式;折叠箭头/新建按钮悬停淡入,箭头展开旋转 90°
+        return collapsed ? (
           <NavRow
             icon={<Kanban size={14} className="shrink-0" />}
             label={t("S.Group.TagBoard")}
@@ -425,24 +477,10 @@ export default function Sidebar() {
               </button>
             </span>
           </div>
-        )}
-
-        {/* 标签:作为二级项缩进展示;折叠状态(tags_section_collapsed)在图标态同样生效 */}
-        {!tagsCollapsed &&
-          groups.map((g) => (
-            <div key={g.id} className={collapsed ? "" : "pl-4"}>
-              <GroupRow
-                group={g}
-                count={countByGroup.get(g.id) ?? 0}
-                active={activeKey === `group:${g.id}`}
-                collapsed={collapsed}
-              />
-            </div>
-          ))}
-
-        {/* 「便签」:与标签行同款——本体 NavRow 版式,悬停淡入 折叠箭头/新建便签/新建分组;
-            展开时下方渲染便签树(收集箱/分组/便签,原第二侧边栏迁入) */}
-        {collapsed ? (
+        );
+      case "notes":
+        // 「便签」:与标签行同款——本体 NavRow 版式,悬停淡入 折叠箭头/新建便签/新建分组
+        return collapsed ? (
           <NavRow
             icon={<NotebookPen size={14} className="shrink-0" />}
             label={t("S.X.Notes")}
@@ -502,18 +540,61 @@ export default function Sidebar() {
               </button>
             </span>
           </div>
-        )}
+        );
+    }
+  };
 
-        {/* 便签树:仅展开态侧栏 + 便签节展开时渲染 */}
-        {!collapsed && !notesCollapsed && <NotesTree />}
+  // 导航项下挂的二级内容(标签→分组列表;便签→便签树),随父项一起移动
+  const navChildren = (key: NavKey) => {
+    if (key === "tagboard")
+      return (
+        !tagsCollapsed &&
+        groups.map((g) => (
+          <div key={g.id} className={collapsed ? "" : "pl-4"}>
+            <GroupRow
+              group={g}
+              count={countByGroup.get(g.id) ?? 0}
+              active={activeKey === `group:${g.id}`}
+              collapsed={collapsed}
+            />
+          </div>
+        ))
+      );
+    if (key === "notes") return !collapsed && !notesCollapsed && <NotesTree />;
+    return null;
+  };
 
-        <NavRow
-          icon={<CheckCircle2 size={14} className="shrink-0" />}
-          label={t("S.Group.Completed")}
-          active={activeKey === "completed"}
-          collapsed={collapsed}
-          onClick={() => setView({ kind: "completed" })}
+  return (
+    <aside
+      style={{ width: collapsed ? 48 : width }}
+      className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar"
+    >
+      {!collapsed && (
+        <div
+          onMouseDown={startResize}
+          className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
         />
+      )}
+      {/* 侧栏顶部:应用名 + 窗口拖动热区(侧栏整列直通顶部,对齐 todo-flow) */}
+      <div
+        data-tauri-drag-region
+        className="flex h-9 shrink-0 items-center px-3 text-xs font-semibold text-sidebar-strong"
+      >
+        {!collapsed && t("S.AppName")}
+      </div>
+      <div
+        ref={listRef}
+        className={`flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto pt-0 ${
+          collapsed ? "p-1" : "p-2"
+        }`}
+      >
+        {/* 五个内置导航项按持久化顺序渲染,可拖动重排;标签/便签的二级内容随父项一起移动 */}
+        {navOrder.map((key) => (
+          <Fragment key={key}>
+            <SortableNav navKey={key}>{navHeader(key)}</SortableNav>
+            {navChildren(key)}
+          </Fragment>
+        ))}
       </div>
 
       {/* 底部:折叠/展开开关(与上方导航行同款:图标 + 文字,折叠态只剩图标) */}
