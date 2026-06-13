@@ -1,36 +1,20 @@
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import {
   CheckCircle2,
-  ChevronRight,
-  FilePlus2,
-  FolderPlus,
   Inbox,
   Kanban,
   LayoutGrid,
   NotebookPen,
-  Palette,
   PanelLeftClose,
   PanelLeftOpen,
-  Pencil,
-  Plus,
-  Shapes,
-  Trash2,
-  X,
 } from "lucide-react";
 import { useAppStore, type View } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
-import { f, t } from "../lib/i18n";
-import type { Group } from "../lib/tauri-ipc";
-import { Popover, MenuItem } from "./ui/Popover";
-import { confirm } from "./ui/ConfirmDialog";
-import TagIcon from "./ui/TagIcon";
-import TagColorDialog from "./dialogs/TagColorDialog";
-import IconPickerDialog from "./dialogs/IconPickerDialog";
-import NotesTree from "./NotesTree";
+import { t } from "../lib/i18n";
 
 function viewKey(v: View): string {
   return v.kind === "group" ? `group:${v.groupId}` : v.kind;
@@ -114,200 +98,12 @@ function NavRow(props: {
   );
 }
 
-function GroupRow({
-  group,
-  count,
-  active,
-  collapsed,
-}: {
-  group: Group;
-  count: number;
-  active: boolean;
-  collapsed: boolean;
-}) {
-  const setView = useAppStore((s) => s.setView);
-  const renameGroup = useAppStore((s) => s.renameGroup);
-  const removeGroup = useAppStore((s) => s.removeGroup);
-  const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("group", group.id);
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(group.name);
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [colorOpen, setColorOpen] = useState(false);
-  const [iconOpen, setIconOpen] = useState(false);
-
-  const commit = () => {
-    setEditing(false);
-    const name = draft.trim();
-    if (name && name !== group.name) void renameGroup(group.id, name);
-    else setDraft(group.name);
-  };
-
-  const confirmDelete = async () => {
-    if (
-      await confirm({
-        title: t("S.Tag.Delete"),
-        message: f("S.X.ConfirmDeleteTag", group.name),
-      })
-    ) {
-      void removeGroup(group.id);
-    }
-  };
-
-  // 右键菜单 + 颜色/图标对话框:折叠/展开两种形态共用
-  const overlays = (
-    <>
-      {menu && (
-        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
-          <div className="w-36">
-            {/* 折叠态没有内联编辑框,不提供重命名 */}
-            {!collapsed && (
-              <MenuItem
-                onClick={() => {
-                  setMenu(null);
-                  setDraft(group.name);
-                  setEditing(true);
-                }}
-              >
-                <Pencil size={13} />
-                {t("S.Tag.Rename")}
-              </MenuItem>
-            )}
-            <MenuItem
-              onClick={() => {
-                setMenu(null);
-                setColorOpen(true);
-              }}
-            >
-              <Palette size={13} />
-              {t("S.Group.ChangeColor")}
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setMenu(null);
-                setIconOpen(true);
-              }}
-            >
-              <Shapes size={13} />
-              {t("S.Group.ChangeIcon")}
-            </MenuItem>
-            <div className="my-1 h-px bg-divider" />
-            <MenuItem
-              danger
-              onClick={() => {
-                setMenu(null);
-                void confirmDelete();
-              }}
-            >
-              <Trash2 size={13} />
-              {t("S.Tag.Delete")}
-            </MenuItem>
-          </div>
-        </Popover>
-      )}
-      {colorOpen && <TagColorDialog group={group} onClose={() => setColorOpen(false)} />}
-      {iconOpen && <IconPickerDialog group={group} onClose={() => setIconOpen(false)} />}
-    </>
-  );
-
-  const onContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setMenu({ x: e.clientX, y: e.clientY });
-  };
-
-  if (collapsed) {
-    // 折叠态:只剩彩色标签图标,选中项色块高亮
-    return (
-      <div ref={ref} className={`relative ${isDragging ? "dragging" : ""}`}>
-        {closestEdge && (
-          <div
-            className={`absolute inset-x-1 h-0.5 rounded bg-accent ${
-              closestEdge === "top" ? "-top-px" : "-bottom-px"
-            }`}
-          />
-        )}
-        <button
-          title={group.name}
-          onClick={() => setView({ kind: "group", groupId: group.id })}
-          onContextMenu={onContextMenu}
-          className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
-            active ? "bg-sidebar-selected" : "hover:bg-sidebar-hover"
-          }`}
-        >
-          <TagIcon icon={group.icon} iconImage={group.icon_image} color={group.color} size={15} />
-        </button>
-        {overlays}
-      </div>
-    );
-  }
-
-  return (
-    <div ref={ref} className={`group relative ${isDragging ? "dragging" : ""}`}>
-      {closestEdge && (
-        <div
-          className={`absolute inset-x-1 h-0.5 rounded bg-accent ${
-            closestEdge === "top" ? "-top-px" : "-bottom-px"
-          }`}
-        />
-      )}
-      {editing ? (
-        <input
-          autoFocus
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={commit}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") {
-              setDraft(group.name);
-              setEditing(false);
-            }
-          }}
-          className="w-full rounded-md border border-accent bg-sidebar-hover px-2 py-1.5 text-sm text-sidebar-strong outline-none"
-        />
-      ) : (
-        <div
-          onClick={() => setView({ kind: "group", groupId: group.id })}
-          onDoubleClick={() => {
-            setDraft(group.name);
-            setEditing(true);
-          }}
-          onContextMenu={onContextMenu}
-          className={`flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-            active
-              ? "bg-sidebar-selected text-sidebar-selected-fg"
-              : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
-          }`}
-        >
-          <TagIcon icon={group.icon} iconImage={group.icon_image} color={group.color} size={14} />
-          <span className="min-w-0 flex-1 truncate">{group.name}</span>
-          {count > 0 && <span className="text-xs text-sidebar-muted">{count}</span>}
-          <button
-            title={t("S.Tag.Delete")}
-            onClick={(e) => {
-              e.stopPropagation();
-              void confirmDelete();
-            }}
-            className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-overdue group-hover:flex"
-          >
-            <X size={12} />
-          </button>
-        </div>
-      )}
-      {overlays}
-    </div>
-  );
-}
-
 export default function Sidebar() {
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
   const groups = useAppStore((s) => s.groups);
   const tasks = useAppStore((s) => s.tasks);
   const notes = useAppStore((s) => s.notes);
-  const addGroup = useAppStore((s) => s.addGroup);
-  const addNote = useAppStore((s) => s.addNote);
-  const addNoteGroup = useAppStore((s) => s.addNoteGroup);
-  const reorderGroups = useAppStore((s) => s.reorderGroups);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
@@ -334,24 +130,6 @@ export default function Sidebar() {
     window.addEventListener("mouseup", up);
   };
 
-  // 标签列表拖拽重排
-  useEffect(() => {
-    return monitorForElements({
-      canMonitor: ({ source }) => source.data.type === "group",
-      onDrop: ({ source, location }) => {
-        const target = location.current.dropTargets[0];
-        if (!target) return;
-        const ids = reorderIds(
-          useAppStore.getState().groups.map((g) => g.id),
-          source.data.id as string,
-          target.data.id as string,
-          extractClosestEdge(target.data),
-        );
-        void reorderGroups(ids);
-      },
-    });
-  }, [reorderGroups]);
-
   // 内置导航项拖拽重排(顺序落 settings.sidebar_order)
   useEffect(() => {
     return monitorForElements({
@@ -372,22 +150,10 @@ export default function Sidebar() {
   }, [saveSetting]);
 
   const uncompleted = tasks.filter((t) => !t.is_completed);
-  const countByGroup = new Map<string | null, number>();
-  for (const t of uncompleted) {
-    countByGroup.set(t.group_id, (countByGroup.get(t.group_id) ?? 0) + 1);
-  }
   const activeKey = viewKey(view);
 
   const collapsed = settings["sidebar_collapsed"] === "1";
   const toggleCollapsed = () => saveSetting("sidebar_collapsed", collapsed ? "0" : "1");
-
-  // 「标签」分组二级折叠,默认折叠(未设置即折叠)
-  const tagsCollapsed = settings["tags_section_collapsed"] !== "0";
-  const toggleTags = () => saveSetting("tags_section_collapsed", tagsCollapsed ? "0" : "1");
-
-  // 「便签」节二级折叠,默认折叠(与标签节一致)
-  const notesCollapsed = settings["notes_section_collapsed"] !== "0";
-  const toggleNotes = () => saveSetting("notes_section_collapsed", notesCollapsed ? "0" : "1");
 
   // 内置导航项当前顺序(可拖动)
   const navOrder = parseNavOrder(settings["sidebar_order"]);
@@ -427,141 +193,30 @@ export default function Sidebar() {
           />
         );
       case "tagboard":
-        // 「标签」(标签看板):行本体与 NavRow 同版式;折叠箭头/新建按钮悬停淡入,箭头展开旋转 90°
-        return collapsed ? (
+        // 「标签」:普通导航行,点击进标签看板;标签列表在看板/标签视图的第二侧边栏里
+        return (
           <NavRow
             icon={<Kanban size={14} className="shrink-0" />}
             label={t("S.Group.TagBoard")}
-            active={activeKey === "tagboard"}
-            collapsed
+            count={groups.length}
+            active={activeKey === "tagboard" || activeKey.startsWith("group:")}
+            collapsed={collapsed}
             onClick={() => setView({ kind: "tagboard" })}
           />
-        ) : (
-          <div className="group/tags relative flex items-center">
-            <button
-              onClick={() => setView({ kind: "tagboard" })}
-              className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-                activeKey === "tagboard"
-                  ? "bg-sidebar-selected text-sidebar-selected-fg"
-                  : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
-              }`}
-            >
-              <Kanban size={14} className="shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-left">{t("S.Group.TagBoard")}</span>
-              {groups.length > 0 && (
-                <span className="text-xs text-sidebar-muted transition-opacity duration-150 group-hover/tags:opacity-0">
-                  {groups.length}
-                </span>
-              )}
-            </button>
-            <span className="pointer-events-none absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/tags:pointer-events-auto group-hover/tags:opacity-100">
-              <button
-                title={tagsCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
-                onClick={toggleTags}
-                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-              >
-                <ChevronRight
-                  size={12}
-                  className={`transition-transform duration-150 ${tagsCollapsed ? "" : "rotate-90"}`}
-                />
-              </button>
-              <button
-                title={t("S.Tag.New")}
-                onClick={() => {
-                  void addGroup(t("S.X.NewTagName"));
-                  if (tagsCollapsed) saveSetting("tags_section_collapsed", "0"); // 新建后自动展开
-                }}
-                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-              >
-                <Plus size={13} />
-              </button>
-            </span>
-          </div>
         );
       case "notes":
-        // 「便签」:与标签行同款——本体 NavRow 版式,悬停淡入 折叠箭头/新建便签/新建分组
-        return collapsed ? (
+        // 「便签」:普通导航行,只切到便签视图;新建/分组在便签视图的第二侧边栏里
+        return (
           <NavRow
             icon={<NotebookPen size={14} className="shrink-0" />}
             label={t("S.X.Notes")}
+            count={notes.length}
             active={activeKey === "notes"}
-            collapsed
+            collapsed={collapsed}
             onClick={() => setView({ kind: "notes" })}
           />
-        ) : (
-          <div className="group/notes relative flex items-center">
-            <button
-              onClick={() => setView({ kind: "notes" })}
-              className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-                activeKey === "notes"
-                  ? "bg-sidebar-selected text-sidebar-selected-fg"
-                  : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
-              }`}
-            >
-              <NotebookPen size={14} className="shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-left">{t("S.X.Notes")}</span>
-              {notes.length > 0 && (
-                <span className="text-xs text-sidebar-muted transition-opacity duration-150 group-hover/notes:opacity-0">
-                  {notes.length}
-                </span>
-              )}
-            </button>
-            <span className="pointer-events-none absolute right-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover/notes:pointer-events-auto group-hover/notes:opacity-100">
-              <button
-                title={notesCollapsed ? t("S.X.ExpandSidebar") : t("S.X.CollapseSidebar")}
-                onClick={toggleNotes}
-                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-              >
-                <ChevronRight
-                  size={12}
-                  className={`transition-transform duration-150 ${notesCollapsed ? "" : "rotate-90"}`}
-                />
-              </button>
-              <button
-                title={t("S.X.NewNote")}
-                onClick={() => {
-                  void addNote();
-                  setView({ kind: "notes" });
-                  if (notesCollapsed) saveSetting("notes_section_collapsed", "0"); // 新建后自动展开
-                }}
-                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-              >
-                <FilePlus2 size={12} />
-              </button>
-              <button
-                title={t("S.X.NewNoteGroup")}
-                onClick={() => {
-                  void addNoteGroup(t("S.X.NewNoteGroup"));
-                  if (notesCollapsed) saveSetting("notes_section_collapsed", "0");
-                }}
-                className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-              >
-                <FolderPlus size={12} />
-              </button>
-            </span>
-          </div>
         );
     }
-  };
-
-  // 导航项下挂的二级内容(标签→分组列表;便签→便签树),随父项一起移动
-  const navChildren = (key: NavKey) => {
-    if (key === "tagboard")
-      return (
-        !tagsCollapsed &&
-        groups.map((g) => (
-          <div key={g.id} className={collapsed ? "" : "pl-4"}>
-            <GroupRow
-              group={g}
-              count={countByGroup.get(g.id) ?? 0}
-              active={activeKey === `group:${g.id}`}
-              collapsed={collapsed}
-            />
-          </div>
-        ))
-      );
-    if (key === "notes") return !collapsed && !notesCollapsed && <NotesTree />;
-    return null;
   };
 
   return (
@@ -588,12 +243,11 @@ export default function Sidebar() {
           collapsed ? "p-1" : "p-2"
         }`}
       >
-        {/* 五个内置导航项按持久化顺序渲染,可拖动重排;标签/便签的二级内容随父项一起移动 */}
+        {/* 五个内置导航项按持久化顺序渲染,可拖动重排(标签/便签的列表已移入各自第二侧边栏) */}
         {navOrder.map((key) => (
-          <Fragment key={key}>
-            <SortableNav navKey={key}>{navHeader(key)}</SortableNav>
-            {navChildren(key)}
-          </Fragment>
+          <SortableNav key={key} navKey={key}>
+            {navHeader(key)}
+          </SortableNav>
         ))}
       </div>
 

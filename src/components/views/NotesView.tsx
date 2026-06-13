@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { FilePlus2, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { deriveTitle } from "../../lib/markdown";
 import { t } from "../../lib/i18n";
 import type { Note } from "../../lib/tauri-ipc";
 import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
+import NotesTree from "../NotesTree";
 
-// 便签视图 = 纯编辑区(列表/分组树已合并进主侧栏的 NotesTree)
+// 便签视图 = 第二侧边栏(便签树 + 新建)+ 右侧编辑区
 
 function Editor({ note }: { note: Note }) {
   const patchNote = useAppStore((s) => s.patchNote);
@@ -82,10 +84,94 @@ function Editor({ note }: { note: Note }) {
 export default function NotesView() {
   const notes = useAppStore((s) => s.notes);
   const selectedNoteId = useAppStore((s) => s.selectedNoteId);
+  const addNote = useAppStore((s) => s.addNote);
+  const addNoteGroup = useAppStore((s) => s.addNoteGroup);
+  const settings = useAppStore((s) => s.settings);
+  const saveSetting = useAppStore((s) => s.saveSetting);
   const selected = notes.find((n) => n.id === selectedNoteId) ?? null;
+
+  // 第二侧边栏宽度可拖动并持久化(默认 224,范围 160–460)
+  const [navWidth, setNavWidth] = useState(() =>
+    Math.min(460, Math.max(160, Number(settings["notes_sidebar_width"]) || 224)),
+  );
+  const startResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = navWidth;
+    let w = startW;
+    const move = (ev: MouseEvent) => {
+      w = Math.min(460, Math.max(160, startW + ev.clientX - startX));
+      setNavWidth(w);
+    };
+    const up = () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+      saveSetting("notes_sidebar_width", String(Math.round(w)));
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  // 第二侧边栏收起:收起后只剩一条窄边 + 展开按钮
+  const collapsed = settings["notes_sidebar_collapsed"] === "1";
+  const toggleCollapsed = () =>
+    saveSetting("notes_sidebar_collapsed", collapsed ? "0" : "1");
 
   return (
     <div className="flex min-h-0 flex-1">
+      {collapsed ? (
+        <aside className="flex w-8 shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar pt-2">
+          <button
+            title={t("S.X.ExpandSidebar")}
+            onClick={toggleCollapsed}
+            className="flex h-7 w-7 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+          >
+            <PanelLeftOpen size={15} />
+          </button>
+        </aside>
+      ) : (
+        /* 第二侧边栏:便签树 + 顶部新建按钮(便签 / 分组),右边缘可拖动改宽 */
+        <aside
+          style={{ width: navWidth }}
+          className="relative flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar"
+        >
+          <div
+            onMouseDown={startResize}
+            className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
+          />
+          <div className="flex h-9 shrink-0 items-center justify-between pr-2 pl-3">
+            <span className="text-xs font-semibold text-sidebar-strong">{t("S.X.Notes")}</span>
+            <div className="flex items-center gap-0.5">
+              <button
+                title={t("S.X.NewNote")}
+                onClick={() => void addNote()}
+                className="flex h-6 w-6 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <FilePlus2 size={14} />
+              </button>
+              <button
+                title={t("S.X.NewNoteGroup")}
+                onClick={() => void addNoteGroup(t("S.X.NewNoteGroup"))}
+                className="flex h-6 w-6 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <FolderPlus size={14} />
+              </button>
+              <button
+                title={t("S.X.CollapseSidebar")}
+                onClick={toggleCollapsed}
+                className="flex h-6 w-6 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <PanelLeftClose size={14} />
+              </button>
+            </div>
+          </div>
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1 pb-2">
+            <NotesTree />
+          </div>
+        </aside>
+      )}
+
+      {/* 右侧编辑区 */}
       {selected ? (
         <Editor note={selected} />
       ) : (

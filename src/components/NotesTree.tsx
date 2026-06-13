@@ -14,8 +14,7 @@ import { ipc, type Note, type NoteGroup } from "../lib/tauri-ipc";
 import { confirm } from "./ui/ConfirmDialog";
 
 /**
- * 主侧栏内的便签树(分组/便签两级):
- * 原便签视图第二侧边栏整体迁入,配色改用 sidebar token。
+ * 便签视图的第二侧边栏树(分组/便签两级),用 sidebar token 配色。
  * 收集箱已实体化为普通分组(初始自带、可删可改名),树里只有真实分组。
  * 点便签 = 选中并跳到便签视图;拖拽重排/拖入分组逻辑原样保留。
  */
@@ -245,7 +244,7 @@ export default function NotesTree() {
   }
 
   return (
-    <div ref={listRef} className="flex flex-col gap-0.5 pl-4">
+    <div ref={listRef} className="flex flex-col gap-0.5 px-1">
       {noteGroups.map((g) => (
         <GroupSection key={g.id} group={g} notes={byGroup.get(g.id) ?? []} />
       ))}
