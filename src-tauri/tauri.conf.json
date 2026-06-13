@@ -28,7 +28,10 @@
       "csp": null,
       "assetProtocol": {
         "enable": true,
-        "scope": ["$HOME/AppData/Roaming/MinimalTodoApp/note-images/**"]
+        "scope": [
+          "$HOME/AppData/Roaming/MinimalTodoApp/note-images/**",
+          "$HOME/AppData/Roaming/MinimalTodoApp/group-icons/**"
+        ]
       }
     }
   },

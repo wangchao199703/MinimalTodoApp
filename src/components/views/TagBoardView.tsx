@@ -112,7 +112,7 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
           className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-md"
           style={{ background: `color-mix(in srgb, ${col.color} 12%, transparent)` }}
         >
-          <TagIcon icon={group?.icon ?? ""} color={col.color} size={13} />
+          <TagIcon icon={group?.icon ?? ""} iconImage={group?.icon_image} color={col.color} size={13} />
         </span>
         {editing ? (
           <input

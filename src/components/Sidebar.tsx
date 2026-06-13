@@ -197,7 +197,7 @@ function GroupRow({
             active ? "bg-sidebar-selected" : "hover:bg-sidebar-hover"
           }`}
         >
-          <TagIcon icon={group.icon} color={group.color} size={15} />
+          <TagIcon icon={group.icon} iconImage={group.icon_image} color={group.color} size={15} />
         </button>
         {overlays}
       </div>
@@ -242,7 +242,7 @@ function GroupRow({
               : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
           }`}
         >
-          <TagIcon icon={group.icon} color={group.color} size={14} />
+          <TagIcon icon={group.icon} iconImage={group.icon_image} color={group.color} size={14} />
           <span className="min-w-0 flex-1 truncate">{group.name}</span>
           {count > 0 && <span className="text-xs text-sidebar-muted">{count}</span>}
           <button

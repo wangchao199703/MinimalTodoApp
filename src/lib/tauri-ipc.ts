@@ -142,6 +142,12 @@ export const ipc = {
     invoke<string>("save_note_image", bytes, { headers: { "x-ext": ext } }),
   noteImageDir: () => invoke<string>("note_image_dir"),
 
+  /** 分组自定义图标:原始字节走 IPC,扩展名放 header;返回仓库内文件名 */
+  saveGroupIcon: (bytes: Uint8Array, ext: string) =>
+    invoke<string>("save_group_icon", bytes, { headers: { "x-ext": ext } }),
+  groupIconDir: () => invoke<string>("group_icon_dir"),
+  listGroupIcons: () => invoke<string[]>("list_group_icons"),
+
   setAcrylic: (enabled: boolean, dark: boolean) =>
     invoke<void>("set_acrylic", { enabled, dark }),
   setAutostart: (enabled: boolean) => invoke<void>("set_autostart", { enabled }),

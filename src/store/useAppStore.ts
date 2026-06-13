@@ -13,6 +13,7 @@ import { sortTree, descendantIds, type SortMode } from "../lib/sort";
 import { nowText } from "../lib/date";
 import { applyTheme, migrateThemeKey, type Theme } from "../lib/themes";
 import { setLang, type Lang } from "../lib/i18n";
+import { ensureGroupIconDir } from "../components/ui/TagIcon";
 
 /** 视图分发:取代路由。内置视图 + 任意标签视图,可枚举即不需要 Router */
 export type View =
@@ -124,6 +125,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       ipc.getSettings(),
       ipc.getNotes(),
       ipc.getNoteGroups(),
+      // 预取分组自定义图标目录,确保侧栏首帧能解析 groupicon:// 图片
+      ensureGroupIconDir(),
     ]);
 
     const language: Lang = settings["language"] === "en" ? "en" : "zh-CN";

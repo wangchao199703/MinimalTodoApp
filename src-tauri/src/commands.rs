@@ -575,3 +575,59 @@ pub fn save_note_image(request: tauri::ipc::Request) -> CmdResult<String> {
     std::fs::write(note_images_dir().join(&name), bytes).map_err(err)?;
     Ok(name)
 }
+
+// ---------- 分组(标签)自定义图标图片(沿用旧版 GroupIcons 目录,icon_image 存文件名) ----------
+
+fn group_icons_dir() -> std::path::PathBuf {
+    let dir = crate::database::data_dir().join("group-icons");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
+#[tauri::command]
+pub fn group_icon_dir() -> String {
+    group_icons_dir().to_string_lossy().into_owned()
+}
+
+/// 保存分组自定义图标:invoke 传原始字节,扩展名放 x-ext header,返回仓库内唯一文件名
+#[tauri::command]
+pub fn save_group_icon(request: tauri::ipc::Request) -> CmdResult<String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("expected raw body".into());
+    };
+    let ext: String = request
+        .headers()
+        .get("x-ext")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("png")
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .take(8)
+        .collect();
+    let ext = if ext.is_empty() { "png".to_string() } else { ext.to_lowercase() };
+    let name = format!("{}.{}", uuid::Uuid::new_v4().simple(), ext);
+    std::fs::write(group_icons_dir().join(&name), bytes).map_err(err)?;
+    Ok(name)
+}
+
+/// 列出已导入的分组自定义图标文件名(按修改时间倒序,对齐旧版 CustomImages)
+#[tauri::command]
+pub fn list_group_icons() -> Vec<String> {
+    let dir = group_icons_dir();
+    let mut entries: Vec<(std::time::SystemTime, String)> = std::fs::read_dir(&dir)
+        .into_iter()
+        .flatten()
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            let ext = name.rsplit('.').next().unwrap_or("").to_lowercase();
+            if !matches!(ext.as_str(), "png" | "jpg" | "jpeg" | "ico" | "bmp" | "gif" | "webp") {
+                return None;
+            }
+            let mtime = e.metadata().and_then(|m| m.modified()).ok()?;
+            Some((mtime, name))
+        })
+        .collect();
+    entries.sort_by(|a, b| b.0.cmp(&a.0));
+    entries.into_iter().map(|(_, n)| n).collect()
+}
