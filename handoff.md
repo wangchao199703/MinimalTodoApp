@@ -23,18 +23,22 @@
 
 工作风格(`CLAUDE.md` 6–9):不替用户假设需求(不清晰就停下讨论)、路径非最短直说并建议更优解、追根因不打补丁、输出说重点。
 
-## 三、⚠️ 当前未提交的工作(本会话积压的一大批 UI 打磨)
+## 三、当前进度(均已本地提交,未 push)
 
-最后提交是 `0b9a598`。其后一连串小轮**尚未提交**,核心是「标签简化 + 侧栏统一打磨 + 右键改色 + 工作流文档化」:
+HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
-- **标签简化**:删除 `src/components/TagSidebar.tsx`(标签第二侧边栏整体移除);主侧栏「标签」改回普通导航行,点击直接进**全宽标签看板**(`views/TagBoardView.tsx` 全宽渲染,无第二侧栏);保留任务-标签归属数据与后端。`App.tsx` 去掉 `group` 分支,`tagboard` 直接全宽。
-- **右键改色**:新增通用 `src/components/dialogs/ColorDialog.tsx`,主侧栏导航项(`nav_color_<key>`)、便签分组(`notegroup_color_<id>`)、标签(`group.color`)统一「默认无色 + 右键菜单『修改颜色』」;`TagColorDialog` 加「无色」清除。
-- **标签颜色清空**:Rust 迁移 **v2**(清历史默认蓝 `#3B82F6`)、**v3**(清空所有标签色),`create_group` 默认色改空串——见 `src-tauri/src/database.rs` / `commands.rs`。
-- **侧栏统一**:一/二侧栏图标统一 14 号、位置对齐;折叠按钮统一置底;折叠态图标默认 `text-sidebar-strong`(不再 hover 才显色);`TaskItem` 待办圆圈左内距缩半(`pl-1.5`)。
-- **便签折叠态镜像树**(`views/NotesView.tsx`):第二侧栏收起为图标列时按分组呈现——展开分组铺开便签 `FileText` 图标,折叠分组只显示一个 `Folder` 分组图标(点击展开)。
-- **文档/工作流**:`优化记录.md` → `git mv` 为 `prompts.md`;`CLAUDE.md` 新增「每轮改动工作流」1–5 +「工作风格」6–9;新建本 `handoff.md`(由旧 `交接文档.md` 重命名而来)。
+- `c63a878` 标签简化为全宽看板 + 侧栏统一打磨 + 右键改色 + 工作流文档化(详见 §四 历史)。
+- `03a9e1f` **后端测试套件(首次)**:`commands.rs` 命令体抽成 `*_impl(conn, …)` 核心函数(壳只加锁转调,逻辑/SQL 未改),便于用内存库单测;新增覆盖标签/任务/便签/便签分组/自定义主题/设置 CRUD + 迁移 + 三态补丁 + 收集箱自愈 + 纯函数。
+- `9774cd2` **旧数据迁移测试**:`import.rs` 抽 `import_into(conn, &old)`,测试 ISO 日期转换/Nil GUID/内置视图分组跳过/优先级 0→Medium/parent 校验/sort 与 selected_group 映射/便签导入等。
 
-`npm run build` 已过,无 TS 错。**接手第一件事:按规则 3 做一次中文本地 commit(把这批一起提交,不 push)。**
+**测试现状**:`cargo test --lib` **36 项全过**(命令 + DB + 迁移导入)。前端 `npm run build`(tsc 严格)通过。无前端单测框架(按用户验收口径:后端 cargo + 构建 + 冲烟)。跑测试:`export PATH="$USERPROFILE/.cargo/bin:$PATH"; cargo test --lib --manifest-path src-tauri/Cargo.toml`。
+
+### ⚠️ 一项待用户确认的功能决策(夜间审计发现)
+
+用户要求「参考 WPF 补全所有功能」。逐项审计结论:**任务/便签/提醒引擎/完成音效/四象限/置顶/缩进/完成级联/日历/排序/导入导出 均已对齐 WPF**。**唯一明显缺口 = 主题管理**:
+- WPF 有「自定义主题编辑器」(ThemeEditorDialog + ColorPicker)与「主题收藏」(FavoriteThemeKeys)。
+- 现版后端 `get/save/delete_custom_theme` 命令俱全、`import.rs` 也迁移 custom_themes 与 favorite_theme_keys,但**前端无 UI、从不调用**;i18n 有 `S.X.Favorite` 键无实现。
+- **未实现的原因**:该领域正是用户近期**刻意精简为 15 套主题**的范围,补回自定义主题编辑器可能与该方向冲突;且它高度视觉化,无人值守无法目视校准配色。**留待用户确认是否要做**——要做的话后端已就绪,只差前端编辑器 UI + `applyTheme` 应用自定义 CSS 变量 + 菜单列出 + store 载入 customThemes。
 
 ## 四、近期已提交的大事(committed,均未 push)
 
