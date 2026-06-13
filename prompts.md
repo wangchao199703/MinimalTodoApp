@@ -300,4 +300,6 @@
 
 **提示词:** 我要睡觉了,我要你参考旧的 wpf 项目,补全所有的功能,要求功能都通过测试,你现在有一次提问的机会,后面我就睡觉了,你自己干,有问题先记录下来跳过,自主决策。(提问环节确认:「通过测试」=后端 cargo 测试 + 构建必过 + 逐功能冲烟记录)
 - **自主夜间任务,分轮进行**。先盘点 legacy WPF 与现版差距:数据模型/命令已基本对齐;提醒引擎(App.tsx useReminderLoop)、完成/提醒音效(effects.ts)均已实现;**主要功能缺口=自定义主题编辑器**(后端 custom_theme 命令俱全但前端从未调用、无 UI)。
-- **第 1 轮(本条):后端 cargo 测试套件 + 命令可测化重构**。把 `commands.rs` 每个命令体抽成 `*_impl(conn, …)` 核心函数(命令壳只加锁转调,逻辑/SQL 一字未改);新增 `#[cfg(test)]` 覆盖标签/任务/便签/便签分组/自定义主题/设置 CRUD + 迁移幂等 + 三态补丁 + 收集箱自愈 + 纯函数(safe_file_name/safe_ext)。`database.rs` 加 `migrate_for_test` 辅助与 DB 层测试。**25 个测试全过、零警告**。`(本轮)`
+- **第 1 轮:后端 cargo 测试套件 + 命令可测化重构**。把 `commands.rs` 每个命令体抽成 `*_impl(conn, …)` 核心函数(命令壳只加锁转调,逻辑/SQL 一字未改);新增 `#[cfg(test)]` 覆盖标签/任务/便签/便签分组/自定义主题/设置 CRUD + 迁移幂等 + 三态补丁 + 收集箱自愈 + 纯函数(safe_file_name/safe_ext)。`database.rs` 加 `migrate_for_test` 辅助与 DB 层测试。**25 个测试全过、零警告**。`03a9e1f`
+- **第 2 轮:旧数据迁移 `import.rs` 可测化 + 测试**。把纯导入逻辑抽成 `import_into(conn, &old)`(`maybe_import` 只管前置检查/读文件/解析);新增测试覆盖 `to_due_text`(ISO 带时区/小数秒/naive,时区无关断言)、`valid_id`(空/Nil GUID)、端到端:跳过 4 个内置视图分组并压实 order、优先级 0→Medium、GroupId 指向内置视图回退 OriginalGroupId、空 GUID→无标签、悬空 parent_id 丢弃、sort 索引→模式名、selected_group_id→视图键映射、便签/便签分组导入、布尔标量与 imported_at。**累计 36 个测试全过**。`(本轮)`
+- **功能差距审计结论**:数据模型/命令、提醒引擎(App.tsx useReminderLoop)、完成/提醒音效(effects.ts)、四象限/置顶/缩进/完成级联子孙/清空已完成/日历/排序/导入导出 均已对齐 WPF。**唯一明显缺口=主题管理(自定义主题编辑器 + 主题收藏 FavoriteThemeKeys)**:后端 custom_theme 命令俱全但前端无 UI、i18n 有 Favorite 键无实现。因该领域是用户近期**刻意精简为 15 套**的范围、且高度视觉化无法无人值守校验,**判定为待用户确认的跳过项,未擅自实现**(见 handoff)。

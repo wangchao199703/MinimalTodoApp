@@ -193,6 +193,15 @@ pub fn maybe_import(conn: &Connection) -> Result<bool, String> {
     let raw = std::fs::read_to_string(&path).map_err(|e| err(&e))?;
     let old: OldAppData = serde_json::from_str(&raw).map_err(|e| err(&e))?;
 
+    import_into(conn, &old)?;
+    Ok(true)
+}
+
+/// 纯导入逻辑:把已解析的旧数据写入(已迁移好表结构的)连接,单事务。
+/// 与文件/前置条件检查解耦,便于用内存库直接单测迁移正确性。
+fn import_into(conn: &Connection, old: &OldAppData) -> Result<(), String> {
+    let err = |e: &dyn std::fmt::Display| e.to_string();
+
     let tx = conn.unchecked_transaction().map_err(|e| err(&e))?;
 
     // —— 标签:跳过 4 个内置视图分组,真实标签按原顺序压实 order_index ——
@@ -428,5 +437,212 @@ pub fn maybe_import(conn: &Connection) -> Result<bool, String> {
     )?;
 
     tx.commit().map_err(|e| err(&e))?;
-    Ok(true)
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mem_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        crate::database::migrate_for_test(&conn).unwrap();
+        conn
+    }
+
+    fn import_json(json: &str) -> Connection {
+        let old: OldAppData = serde_json::from_str(json).unwrap();
+        let conn = mem_db();
+        import_into(&conn, &old).unwrap();
+        conn
+    }
+
+    // ---- 纯函数 ----
+
+    #[test]
+    fn to_due_text_handles_tz_frac_and_naive() {
+        // 格式正确性判断(不依赖本机时区):YYYY-MM-DD HH:mm
+        let well_formed = |s: &str| {
+            let b = s.as_bytes();
+            s.len() == 16
+                && b[4] == b'-'
+                && b[7] == b'-'
+                && b[10] == b' '
+                && b[13] == b':'
+                && s.chars().filter(|c| c.is_ascii_digit()).count() == 12
+        };
+        // 带时区:能解析并格式化(具体小时随本机时区,故只校验格式)
+        let r = to_due_text("2026-06-09T05:00:00+08:00").unwrap();
+        assert!(well_formed(&r), "got {r}");
+        // 带小数秒 + 时区:也应能解析
+        let r = to_due_text("2026-06-09T05:00:00.0576525+08:00").unwrap();
+        assert!(well_formed(&r), "got {r}");
+        // 无时区 naive:不涉及时区换算,可断言精确值
+        assert_eq!(
+            to_due_text("2026-06-09T05:00:00"),
+            Some("2026-06-09 05:00".to_string())
+        );
+        // 非法
+        assert_eq!(to_due_text("not-a-date"), None);
+    }
+
+    #[test]
+    fn valid_id_filters_nil_and_empty() {
+        assert_eq!(valid_id(&Some("abc".into())), Some("abc".to_string()));
+        assert_eq!(valid_id(&Some(NIL_GUID.into())), None);
+        assert_eq!(valid_id(&Some("".into())), None);
+        assert_eq!(valid_id(&None), None);
+    }
+
+    // ---- 端到端导入 ----
+
+    #[test]
+    fn skips_builtin_view_groups_and_compacts_order() {
+        let json = r#"{
+            "Groups": [
+                {"Id":"g-all","Name":"全部","IsAllUncompletedGroup":true,"OrderIndex":0},
+                {"Id":"g-real1","Name":"工作","OrderIndex":5},
+                {"Id":"g-done","Name":"已完成","IsCompletedGroup":true,"OrderIndex":1},
+                {"Id":"g-real2","Name":"生活","OrderIndex":9}
+            ]
+        }"#;
+        let conn = import_json(json);
+        let groups = crate::commands::get_groups_impl(&conn).unwrap();
+        // 只剩两个真实标签,按 OrderIndex 压实为 0、1
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups[0].name, "工作");
+        assert_eq!(groups[0].order_index, 0);
+        assert_eq!(groups[1].name, "生活");
+        assert_eq!(groups[1].order_index, 1);
+    }
+
+    #[test]
+    fn task_priority_none_becomes_medium_and_due_converted() {
+        let json = r#"{
+            "Items": [
+                {"Id":"t1","Title":"无优先级","Priority":0,"DueDate":"2026-06-09T05:00:00"},
+                {"Id":"t2","Title":"高","Priority":3}
+            ]
+        }"#;
+        let conn = import_json(json);
+        let tasks = crate::commands::get_tasks_impl(&conn).unwrap();
+        let t1 = tasks.iter().find(|t| t.id == "t1").unwrap();
+        let t2 = tasks.iter().find(|t| t.id == "t2").unwrap();
+        assert_eq!(t1.priority, 2, "Priority 0(None)迁移为 Medium");
+        assert_eq!(t1.due_date.as_deref(), Some("2026-06-09 05:00"));
+        assert_eq!(t2.priority, 3);
+        assert_eq!(t2.due_date, None);
+    }
+
+    #[test]
+    fn task_group_falls_back_when_pointing_to_builtin_or_nil() {
+        let json = r#"{
+            "Groups": [
+                {"Id":"g-quad","Name":"四象限","IsQuadrantGroup":true,"OrderIndex":0},
+                {"Id":"g-real","Name":"工作","OrderIndex":1}
+            ],
+            "Items": [
+                {"Id":"t-builtin","Title":"指向内置视图","GroupId":"g-quad","OriginalGroupId":"g-real"},
+                {"Id":"t-nil","Title":"空GUID标签","GroupId":"00000000-0000-0000-0000-000000000000"},
+                {"Id":"t-ok","Title":"正常标签","GroupId":"g-real"}
+            ]
+        }"#;
+        let conn = import_json(json);
+        let tasks = crate::commands::get_tasks_impl(&conn).unwrap();
+        let by = |id: &str| tasks.iter().find(|t| t.id == id).unwrap().clone();
+        // 指向内置视图分组 → 回退到 OriginalGroupId(真实标签)
+        assert_eq!(by("t-builtin").group_id.as_deref(), Some("g-real"));
+        // 空 GUID → 无标签
+        assert_eq!(by("t-nil").group_id, None);
+        assert_eq!(by("t-ok").group_id.as_deref(), Some("g-real"));
+    }
+
+    #[test]
+    fn dangling_parent_id_is_dropped() {
+        let json = r#"{
+            "Items": [
+                {"Id":"t1","Title":"父不存在","ParentId":"nonexistent"},
+                {"Id":"t2","Title":"父存在","ParentId":"t1"}
+            ]
+        }"#;
+        let conn = import_json(json);
+        let tasks = crate::commands::get_tasks_impl(&conn).unwrap();
+        let t1 = tasks.iter().find(|t| t.id == "t1").unwrap();
+        let t2 = tasks.iter().find(|t| t.id == "t2").unwrap();
+        assert_eq!(t1.parent_id, None, "指向不存在的父应被丢弃(否则违反外键)");
+        assert_eq!(t2.parent_id.as_deref(), Some("t1"));
+    }
+
+    #[test]
+    fn sort_index_maps_to_mode_name() {
+        // sort=2 → "priority"
+        let conn = import_json(r#"{"Sort": 2}"#);
+        let s = crate::commands::get_settings_impl(&conn).unwrap();
+        assert_eq!(s.get("sort").unwrap(), "priority");
+        // 越界 → custom
+        let conn = import_json(r#"{"Sort": 99}"#);
+        let s = crate::commands::get_settings_impl(&conn).unwrap();
+        assert_eq!(s.get("sort").unwrap(), "custom");
+    }
+
+    #[test]
+    fn selected_group_id_maps_builtin_views() {
+        let json = r#"{
+            "Groups": [{"Id":"g-done","Name":"已完成","IsCompletedGroup":true,"OrderIndex":0}],
+            "SelectedGroupId": "g-done"
+        }"#;
+        let conn = import_json(json);
+        let s = crate::commands::get_settings_impl(&conn).unwrap();
+        assert_eq!(s.get("selected_group_id").unwrap(), "completed");
+    }
+
+    #[test]
+    fn notes_and_note_groups_imported() {
+        let json = r#"{
+            "NoteGroups": [{"Id":"ng1","Name":"工作笔记","OrderIndex":0}],
+            "Notes": [
+                {"Id":"n1","Title":"标题","CustomTitle":"自定义","Content":"正文","GroupId":"ng1","OrderIndex":0,"CreatedAt":"2026-06-09T05:00:00"},
+                {"Id":"n2","Title":"孤儿","GroupId":"00000000-0000-0000-0000-000000000000"}
+            ]
+        }"#;
+        let conn = import_json(json);
+        let groups = crate::commands::get_note_groups_impl(&conn).unwrap();
+        assert_eq!(groups.len(), 1);
+        let notes = crate::commands::get_notes_impl(&conn).unwrap();
+        let n1 = notes.iter().find(|n| n.id == "n1").unwrap();
+        assert_eq!(n1.custom_title, "自定义");
+        assert_eq!(n1.group_id.as_deref(), Some("ng1"));
+        assert_eq!(n1.created_at, "2026-06-09 05:00");
+        // 指向空 GUID 的便签 → 无分组(NULL)
+        let n2 = notes.iter().find(|n| n.id == "n2").unwrap();
+        assert_eq!(n2.group_id, None);
+    }
+
+    #[test]
+    fn scalar_settings_bools_and_imported_at() {
+        let json = r#"{
+            "AlwaysOnTop": true,
+            "ShowHolidays": false,
+            "Theme": "dark-onyx",
+            "Language": "en"
+        }"#;
+        let conn = import_json(json);
+        let s = crate::commands::get_settings_impl(&conn).unwrap();
+        assert_eq!(s.get("always_on_top").unwrap(), "1");
+        assert_eq!(s.get("show_holidays").unwrap(), "0");
+        assert_eq!(s.get("theme").unwrap(), "dark-onyx");
+        assert_eq!(s.get("language").unwrap(), "en");
+        assert!(s.contains_key("imported_at"), "应写入 imported_at 防重导");
+    }
+
+    #[test]
+    fn empty_json_imports_nothing() {
+        let conn = import_json("{}");
+        assert_eq!(crate::commands::get_tasks_impl(&conn).unwrap().len(), 0);
+        assert_eq!(crate::commands::get_groups_impl(&conn).unwrap().len(), 0);
+        // 即便没有业务数据,也应标记 imported_at
+        let s = crate::commands::get_settings_impl(&conn).unwrap();
+        assert!(s.contains_key("imported_at"));
+    }
 }
