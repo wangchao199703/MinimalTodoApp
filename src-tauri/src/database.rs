@@ -164,5 +164,31 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         )?;
     }
 
+    if version < 2 {
+        // 标签去掉默认颜色:把旧的默认蓝(列默认值 #3B82F6)清空,标签默认无色,
+        // 由用户右键「修改颜色」自定义。用户另选的非默认色原样保留。
+        conn.execute_batch(
+            r#"
+            BEGIN;
+            UPDATE groups SET color = '' WHERE color = '#3B82F6';
+            PRAGMA user_version = 2;
+            COMMIT;
+            "#,
+        )?;
+    }
+
+    if version < 3 {
+        // 标签彻底去掉彩色:清空所有标签颜色(含导入的旧色),一律默认无色,
+        // 由用户右键「修改颜色」按需重新上色。
+        conn.execute_batch(
+            r#"
+            BEGIN;
+            UPDATE groups SET color = '';
+            PRAGMA user_version = 3;
+            COMMIT;
+            "#,
+        )?;
+    }
+
     Ok(())
 }

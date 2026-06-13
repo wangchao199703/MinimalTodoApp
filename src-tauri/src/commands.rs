@@ -81,8 +81,9 @@ pub fn create_group(db: State<Db>, name: String) -> CmdResult<Group> {
     let order: i64 = conn
         .query_row("SELECT COALESCE(MAX(order_index), -1) + 1 FROM groups", [], |r| r.get(0))
         .map_err(err)?;
+    // 标签默认无色(color=''),由用户右键「修改颜色」设色;TagIcon 空色即单色渲染
     conn.execute(
-        "INSERT INTO groups (id, name, order_index) VALUES (?1, ?2, ?3)",
+        "INSERT INTO groups (id, name, color, order_index) VALUES (?1, ?2, '', ?3)",
         params![id, name, order],
     )
     .map_err(err)?;

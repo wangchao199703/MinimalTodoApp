@@ -71,6 +71,7 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.NoteInheritSize": "字号继承全局",
     "S.X.NoteInheritLineSpacing": "行距继承全局",
     "S.X.TagBoardRoot": "标签看板",
+    "S.X.NoColor": "无色",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -140,6 +141,7 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.NoteInheritSize": "Inherit global size",
     "S.X.NoteInheritLineSpacing": "Inherit global line spacing",
     "S.X.TagBoardRoot": "Tag board",
+    "S.X.NoColor": "No color",
   },
 };
 

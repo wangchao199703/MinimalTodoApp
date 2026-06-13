@@ -156,13 +156,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       ? (settings["sort"] as SortMode)
       : "custom";
 
-    // 恢复上次选中的视图(被删除的标签则回退到全部)
+    // 恢复上次选中的视图(标签第二侧栏/具体标签已移除,具体标签回退到全部,标签看板保留)
     let view: View = { kind: "all" };
     const saved = settings["selected_group_id"];
     if (saved === "completed" || saved === "quadrant" || saved === "tagboard" || saved === "notes")
       view = { kind: saved };
-    else if (saved && groups.some((g) => g.id === saved))
-      view = { kind: "group", groupId: saved };
 
     set({
       tasks,

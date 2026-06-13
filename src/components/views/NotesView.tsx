@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { FilePlus2, FileText, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { FilePlus2, FileText, Folder, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { deriveTitle } from "../../lib/markdown";
 import { t } from "../../lib/i18n";
 import type { Note } from "../../lib/tauri-ipc";
 import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
-import NotesTree, { colorForId } from "../NotesTree";
+import NotesTree, { noteGroupColor } from "../NotesTree";
 
 // 便签视图 = 第二侧边栏(便签树 + 新建)+ 右侧编辑区
 
@@ -83,9 +83,11 @@ function Editor({ note }: { note: Note }) {
 
 export default function NotesView() {
   const notes = useAppStore((s) => s.notes);
+  const noteGroups = useAppStore((s) => s.noteGroups);
   const selectedNoteId = useAppStore((s) => s.selectedNoteId);
   const addNote = useAppStore((s) => s.addNote);
   const addNoteGroup = useAppStore((s) => s.addNoteGroup);
+  const toggleNoteGroupCollapse = useAppStore((s) => s.toggleNoteGroupCollapse);
   const selectNote = useAppStore((s) => s.selectNote);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
@@ -118,45 +120,74 @@ export default function NotesView() {
   const toggleCollapsed = () =>
     saveSetting("notes_sidebar_collapsed", collapsed ? "0" : "1");
 
+  // 折叠态图标列按分组分桶,与展开态树保持一致
+  const notesByGroup = new Map<string, Note[]>();
+  for (const n of notes) {
+    if (!n.group_id) continue;
+    const list = notesByGroup.get(n.group_id) ?? [];
+    list.push(n);
+    notesByGroup.set(n.group_id, list);
+  }
+
   return (
     <div className="flex min-h-0 flex-1">
       {collapsed ? (
         // 收起态:对齐主侧栏,只剩一列图标(新建便签 + 各便签),底部展开按钮
         <aside className="flex w-12 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
-          <div className="shrink-0 p-1 pt-2">
-            <button
-              title={t("S.X.ExpandSidebar")}
-              onClick={toggleCollapsed}
-              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-            >
-              <PanelLeftOpen size={16} />
-            </button>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto p-1">
+          {/* 顶部 h-9 占位,与主侧栏标题区等高,保证首图标纵向对齐 */}
+          <div data-tauri-drag-region className="h-9 shrink-0" />
+          <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto p-1 pt-0">
             <button
               title={t("S.X.NewNote")}
               onClick={() => void addNote()}
-              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
             >
-              <FilePlus2 size={16} />
+              <FilePlus2 size={14} />
             </button>
-            {notes.map((n) => {
-              const active = n.id === selectedNoteId;
-              return (
-                <button
-                  key={n.id}
-                  title={n.custom_title || n.title || t("S.X.UntitledNote")}
-                  onClick={() => selectNote(n.id)}
-                  className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
-                    active
-                      ? "bg-sidebar-selected text-sidebar-selected-fg"
-                      : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
-                  }`}
-                >
-                  <FileText size={16} style={{ color: colorForId(n.group_id ?? "") }} />
-                </button>
-              );
+            {noteGroups.map((g) => {
+              const color = noteGroupColor(settings, g.id);
+              // 折叠分组:只显示一个分组图标(点击展开),不铺开其便签
+              if (g.is_collapsed) {
+                return (
+                  <button
+                    key={g.id}
+                    title={g.name}
+                    onClick={() => void toggleNoteGroupCollapse(g)}
+                    className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
+                  >
+                    <Folder size={14} style={{ color }} />
+                  </button>
+                );
+              }
+              // 展开分组:铺开其下各便签图标
+              return (notesByGroup.get(g.id) ?? []).map((n) => {
+                const active = n.id === selectedNoteId;
+                return (
+                  <button
+                    key={n.id}
+                    title={n.custom_title || n.title || t("S.X.UntitledNote")}
+                    onClick={() => selectNote(n.id)}
+                    className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+                      active
+                        ? "bg-sidebar-selected text-sidebar-selected-fg"
+                        : "text-sidebar-strong hover:bg-sidebar-hover"
+                    }`}
+                  >
+                    <FileText size={14} style={{ color }} />
+                  </button>
+                );
+              });
             })}
+          </div>
+          {/* 折叠/展开按钮统一放底部 */}
+          <div className="shrink-0 p-1">
+            <button
+              title={t("S.X.ExpandSidebar")}
+              onClick={toggleCollapsed}
+              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
+            >
+              <PanelLeftOpen size={14} />
+            </button>
           </div>
         </aside>
       ) : (
@@ -186,17 +217,21 @@ export default function NotesView() {
               >
                 <FolderPlus size={14} />
               </button>
-              <button
-                title={t("S.X.CollapseSidebar")}
-                onClick={toggleCollapsed}
-                className="flex h-6 w-6 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-              >
-                <PanelLeftClose size={14} />
-              </button>
             </div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto pr-1 pb-2">
             <NotesTree />
+          </div>
+          {/* 折叠按钮统一放底部(对齐主侧栏) */}
+          <div className="shrink-0 p-2 pt-1">
+            <button
+              title={t("S.X.CollapseSidebar")}
+              onClick={toggleCollapsed}
+              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+            >
+              <PanelLeftClose size={14} className="shrink-0" />
+              <span className="min-w-0 flex-1 truncate text-left">{t("S.X.CollapseSidebar")}</span>
+            </button>
           </div>
         </aside>
       )}

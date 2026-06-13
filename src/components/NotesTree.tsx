@@ -5,13 +5,15 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { ChevronRight, FilePlus2, FileText, Folder, Trash2, X } from "lucide-react";
+import { ChevronRight, FilePlus2, FileText, Folder, Palette, Trash2, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
 import { t } from "../lib/i18n";
 import { ipc, type Note, type NoteGroup } from "../lib/tauri-ipc";
 import { confirm } from "./ui/ConfirmDialog";
+import { Popover, MenuItem } from "./ui/Popover";
+import ColorDialog from "./dialogs/ColorDialog";
 
 /**
  * 便签视图的第二侧边栏树(分组/便签两级),用 sidebar token 配色。
@@ -19,21 +21,12 @@ import { confirm } from "./ui/ConfirmDialog";
  * 点便签 = 选中并跳到便签视图;拖拽重排/拖入分组逻辑原样保留。
  */
 
-// 便签分组无独立颜色字段,按 id 哈希分配稳定调色板色,分组下便签继承——与标签侧栏的彩色风格统一
-const NOTE_PALETTE = [
-  "#3b82f6", // 蓝
-  "#f97316", // 橙
-  "#14b8a6", // 青
-  "#eab308", // 黄
-  "#22c55e", // 绿
-  "#a855f7", // 紫
-  "#ec4899", // 粉
-  "#06b6d4", // 天蓝
-];
-export function colorForId(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return NOTE_PALETTE[h % NOTE_PALETTE.length];
+// 便签分组无独立颜色字段:图标默认无色,由用户右键设色,持久化在 settings.notegroup_color_<id>;分组下便签继承
+export function noteGroupColor(
+  settings: Record<string, string>,
+  groupId: string | null,
+): string | undefined {
+  return (groupId && settings[`notegroup_color_${groupId}`]) || undefined;
 }
 
 /** 把元素注册为「拖便签进分组」的释放目标 */
@@ -59,7 +52,7 @@ function displayTitle(n: Note): string {
   return n.custom_title || n.title || t("S.X.UntitledNote");
 }
 
-function NoteRow({ note, active, color }: { note: Note; active: boolean; color: string }) {
+function NoteRow({ note, active, color }: { note: Note; active: boolean; color?: string }) {
   const selectNote = useAppStore((s) => s.selectNote);
   const setView = useAppStore((s) => s.setView);
   const removeNote = useAppStore((s) => s.removeNote);
@@ -71,7 +64,7 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color: 
         selectNote(note.id);
         setView({ kind: "notes" });
       }}
-      className={`group relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-1 pl-7 text-sm ${
+      className={`group relative flex cursor-default items-center gap-2 rounded-md py-1.5 pr-1 pl-7 text-sm ${
         active
           ? "bg-sidebar-selected text-sidebar-selected-fg"
           : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
@@ -84,7 +77,7 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color: 
           }`}
         />
       )}
-      <FileText size={13} className="shrink-0" style={{ color }} />
+      <FileText size={14} className="shrink-0" style={{ color }} />
       <span className="min-w-0 flex-1 truncate">{displayTitle(note)}</span>
       <button
         title={t("S.X.Delete")}
@@ -110,11 +103,16 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
   const removeNoteGroup = useAppStore((s) => s.removeNoteGroup);
   const addNote = useAppStore((s) => s.addNote);
   const setView = useAppStore((s) => s.setView);
+  const settings = useAppStore((s) => s.settings);
+  const saveSetting = useAppStore((s) => s.saveSetting);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(group.name);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [colorOpen, setColorOpen] = useState(false);
   // 拖便签到分组头 = 移入该分组(对齐旧版 NotesDropHandler)
   const { ref: dropRef, isOver } = useNoteGroupDrop(group.id);
-  const color = colorForId(group.id);
+  // 分组图标颜色:默认无色,右键自定义(持久化 notegroup_color_<id>),分组下便签继承
+  const color = noteGroupColor(settings, group.id);
 
   return (
     <div>
@@ -129,6 +127,10 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
           onDoubleClick={() => {
             setDraft(group.name);
             setEditing(true);
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setMenu({ x: e.clientX, y: e.clientY });
           }}
           className={`flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
             isOver
@@ -205,6 +207,29 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
         notes.map((n) => (
           <NoteRow key={n.id} note={n} active={selectedNoteId === n.id} color={color} />
         ))}
+      {menu && (
+        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
+          <div className="w-32">
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setColorOpen(true);
+              }}
+            >
+              <Palette size={13} />
+              {t("S.Group.ChangeColor")}
+            </MenuItem>
+          </div>
+        </Popover>
+      )}
+      {colorOpen && (
+        <ColorDialog
+          value={color || ""}
+          onPick={(c) => saveSetting(`notegroup_color_${group.id}`, c)}
+          onClear={() => saveSetting(`notegroup_color_${group.id}`, "")}
+          onClose={() => setColorOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -265,7 +290,7 @@ export default function NotesTree() {
   }
 
   return (
-    <div ref={listRef} className="flex flex-col gap-0.5 px-1">
+    <div ref={listRef} className="flex flex-col gap-0.5 px-2">
       {noteGroups.map((g) => (
         <GroupSection key={g.id} group={g} notes={byGroup.get(g.id) ?? []} />
       ))}

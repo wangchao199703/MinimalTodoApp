@@ -10,11 +10,14 @@ import {
   NotebookPen,
   PanelLeftClose,
   PanelLeftOpen,
+  Palette,
 } from "lucide-react";
 import { useAppStore, type View } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
 import { t } from "../lib/i18n";
+import { Popover, MenuItem } from "./ui/Popover";
+import ColorDialog from "./dialogs/ColorDialog";
 
 function viewKey(v: View): string {
   return v.kind === "group" ? `group:${v.groupId}` : v.kind;
@@ -24,14 +27,7 @@ function viewKey(v: View): string {
 const NAV_KEYS = ["all", "quadrant", "tagboard", "notes", "completed"] as const;
 type NavKey = (typeof NAV_KEYS)[number];
 
-/** 内置项各配固定色,图标用该色渲染,与第二侧栏的彩色标签图标统一风格 */
-const NAV_COLORS: Record<NavKey, string> = {
-  all: "#3b82f6", // 蓝
-  quadrant: "#f97316", // 橙
-  tagboard: "#14b8a6", // 青
-  notes: "#eab308", // 黄
-  completed: "#22c55e", // 绿
-};
+/** 内置项图标颜色默认无色(单色),由用户右键自定义,持久化在 settings.nav_color_<key> */
 
 /** 解析持久化顺序:过滤未知键、去重,缺失的按内置默认顺序补全(向后兼容) */
 function parseNavOrder(raw: string | undefined): NavKey[] {
@@ -73,6 +69,7 @@ function NavRow(props: {
   collapsed: boolean;
   color?: string;
   onClick: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   // 彩色图标:包一层并设 color,lucide 走 currentColor 即上色(选中态也保持彩色,对齐标签图标)
   const iconEl = props.color ? (
@@ -88,10 +85,11 @@ function NavRow(props: {
       <button
         title={props.label}
         onClick={props.onClick}
+        onContextMenu={props.onContextMenu}
         className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
           props.active
             ? "bg-sidebar-selected text-sidebar-selected-fg"
-            : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+            : "text-sidebar-strong hover:bg-sidebar-hover"
         }`}
       >
         {iconEl}
@@ -101,6 +99,7 @@ function NavRow(props: {
   return (
     <button
       onClick={props.onClick}
+      onContextMenu={props.onContextMenu}
       className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
         props.active
           ? "bg-sidebar-selected text-sidebar-selected-fg"
@@ -173,6 +172,15 @@ export default function Sidebar() {
   const collapsed = settings["sidebar_collapsed"] === "1";
   const toggleCollapsed = () => saveSetting("sidebar_collapsed", collapsed ? "0" : "1");
 
+  // 内置项图标颜色:默认无色,右键菜单「修改颜色」自定义(持久化 nav_color_<key>)
+  const [menu, setMenu] = useState<{ key: NavKey; x: number; y: number } | null>(null);
+  const [colorKey, setColorKey] = useState<NavKey | null>(null);
+  const navColor = (key: NavKey) => settings[`nav_color_${key}`] || undefined;
+  const openMenu = (e: React.MouseEvent, key: NavKey) => {
+    e.preventDefault();
+    setMenu({ key, x: e.clientX, y: e.clientY });
+  };
+
   // 内置导航项当前顺序(可拖动)
   const navOrder = parseNavOrder(settings["sidebar_order"]);
 
@@ -187,7 +195,8 @@ export default function Sidebar() {
             count={uncompleted.length}
             active={activeKey === "all"}
             collapsed={collapsed}
-            color={NAV_COLORS.all}
+            color={navColor("all")}
+            onContextMenu={(e) => openMenu(e, "all")}
             onClick={() => setView({ kind: "all" })}
           />
         );
@@ -198,7 +207,8 @@ export default function Sidebar() {
             label={t("S.Group.Quadrant")}
             active={activeKey === "quadrant"}
             collapsed={collapsed}
-            color={NAV_COLORS.quadrant}
+            color={navColor("quadrant")}
+            onContextMenu={(e) => openMenu(e, "quadrant")}
             onClick={() => setView({ kind: "quadrant" })}
           />
         );
@@ -209,20 +219,22 @@ export default function Sidebar() {
             label={t("S.Group.Completed")}
             active={activeKey === "completed"}
             collapsed={collapsed}
-            color={NAV_COLORS.completed}
+            color={navColor("completed")}
+            onContextMenu={(e) => openMenu(e, "completed")}
             onClick={() => setView({ kind: "completed" })}
           />
         );
       case "tagboard":
-        // 「标签」:普通导航行,点击进标签看板;标签列表在看板/标签视图的第二侧边栏里
+        // 「标签」:普通导航行,点击直接进标签看板(已无第二侧边栏)
         return (
           <NavRow
             icon={<Kanban size={14} className="shrink-0" />}
             label={t("S.Group.TagBoard")}
             count={groups.length}
-            active={activeKey === "tagboard" || activeKey.startsWith("group:")}
+            active={activeKey === "tagboard"}
             collapsed={collapsed}
-            color={NAV_COLORS.tagboard}
+            color={navColor("tagboard")}
+            onContextMenu={(e) => openMenu(e, "tagboard")}
             onClick={() => setView({ kind: "tagboard" })}
           />
         );
@@ -235,7 +247,8 @@ export default function Sidebar() {
             count={notes.length}
             active={activeKey === "notes"}
             collapsed={collapsed}
-            color={NAV_COLORS.notes}
+            color={navColor("notes")}
+            onContextMenu={(e) => openMenu(e, "notes")}
             onClick={() => setView({ kind: "notes" })}
           />
         );
@@ -290,6 +303,32 @@ export default function Sidebar() {
           onClick={toggleCollapsed}
         />
       </div>
+
+      {/* 右键菜单(与标签同款):「修改颜色」→ 打开调色对话框 */}
+      {menu && (
+        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
+          <div className="w-32">
+            <MenuItem
+              onClick={() => {
+                const k = menu.key;
+                setMenu(null);
+                setColorKey(k);
+              }}
+            >
+              <Palette size={13} />
+              {t("S.Group.ChangeColor")}
+            </MenuItem>
+          </div>
+        </Popover>
+      )}
+      {colorKey && (
+        <ColorDialog
+          value={settings[`nav_color_${colorKey}`] || ""}
+          onPick={(c) => saveSetting(`nav_color_${colorKey}`, c)}
+          onClear={() => saveSetting(`nav_color_${colorKey}`, "")}
+          onClose={() => setColorKey(null)}
+        />
+      )}
     </aside>
   );
 }
