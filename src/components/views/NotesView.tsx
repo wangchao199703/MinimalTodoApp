@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { FilePlus2, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { FilePlus2, FileText, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { deriveTitle } from "../../lib/markdown";
 import { t } from "../../lib/i18n";
 import type { Note } from "../../lib/tauri-ipc";
 import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
-import NotesTree from "../NotesTree";
+import NotesTree, { colorForId } from "../NotesTree";
 
 // 便签视图 = 第二侧边栏(便签树 + 新建)+ 右侧编辑区
 
@@ -86,6 +86,7 @@ export default function NotesView() {
   const selectedNoteId = useAppStore((s) => s.selectedNoteId);
   const addNote = useAppStore((s) => s.addNote);
   const addNoteGroup = useAppStore((s) => s.addNoteGroup);
+  const selectNote = useAppStore((s) => s.selectNote);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
   const selected = notes.find((n) => n.id === selectedNoteId) ?? null;
@@ -120,14 +121,43 @@ export default function NotesView() {
   return (
     <div className="flex min-h-0 flex-1">
       {collapsed ? (
-        <aside className="flex w-8 shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar pt-2">
-          <button
-            title={t("S.X.ExpandSidebar")}
-            onClick={toggleCollapsed}
-            className="flex h-7 w-7 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-          >
-            <PanelLeftOpen size={15} />
-          </button>
+        // 收起态:对齐主侧栏,只剩一列图标(新建便签 + 各便签),底部展开按钮
+        <aside className="flex w-12 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+          <div className="shrink-0 p-1 pt-2">
+            <button
+              title={t("S.X.ExpandSidebar")}
+              onClick={toggleCollapsed}
+              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+            >
+              <PanelLeftOpen size={16} />
+            </button>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto p-1">
+            <button
+              title={t("S.X.NewNote")}
+              onClick={() => void addNote()}
+              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+            >
+              <FilePlus2 size={16} />
+            </button>
+            {notes.map((n) => {
+              const active = n.id === selectedNoteId;
+              return (
+                <button
+                  key={n.id}
+                  title={n.custom_title || n.title || t("S.X.UntitledNote")}
+                  onClick={() => selectNote(n.id)}
+                  className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+                    active
+                      ? "bg-sidebar-selected text-sidebar-selected-fg"
+                      : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+                  }`}
+                >
+                  <FileText size={16} style={{ color: colorForId(n.group_id ?? "") }} />
+                </button>
+              );
+            })}
+          </div>
         </aside>
       ) : (
         /* 第二侧边栏:便签树 + 顶部新建按钮(便签 / 分组),右边缘可拖动改宽 */

@@ -49,14 +49,13 @@ const FONTS = [
   "system-ui",
 ];
 
-/** 分组键(对齐旧版 S.Settings.Nav.*,收集箱在新版叫便签) */
-type Section = "todo" | "notes" | "general" | "font" | "about";
+/** 分组键(对齐旧版 S.Settings.Nav.*,收集箱在新版叫便签;字体已并入通用) */
+type Section = "general" | "todo" | "notes" | "about";
 
 const SECTIONS: { key: Section; labelKey: string }[] = [
+  { key: "general", labelKey: "S.Settings.Nav.General" },
   { key: "todo", labelKey: "S.Settings.Nav.Todo" },
   { key: "notes", labelKey: "S.X.Notes" },
-  { key: "general", labelKey: "S.Settings.Nav.General" },
-  { key: "font", labelKey: "S.Settings.Nav.Font" },
   { key: "about", labelKey: "S.Settings.Nav.About" },
 ];
 
@@ -65,7 +64,7 @@ export default function SettingsPanel() {
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
   const resetSettings = useAppStore((s) => s.resetSettings);
-  const [section, setSection] = useState<Section>("todo");
+  const [section, setSection] = useState<Section>("general");
   const [autostart, setAutostart] = useState(false);
   const [version, setVersion] = useState("");
 
@@ -93,18 +92,13 @@ export default function SettingsPanel() {
   const noteFont = settings["note_font_family"] || "";
   const noteSize = Number(settings["note_font_size"] || "0");
   const noteSpacing = Number(settings["note_line_spacing"] || "0");
-  // 字号与行距是否继承全局(均为 0 即继承)——由独立开关控制
-  const noteInherit = noteSize <= 0 && noteSpacing <= 0;
-  const setNoteInherit = (v: boolean) => {
-    if (v) {
-      saveSetting("note_font_size", "0");
-      saveSetting("note_line_spacing", "0");
-    } else {
-      // 关闭继承时落到一组明确默认值,滑块即可正常调
-      saveSetting("note_font_size", "14");
-      saveSetting("note_line_spacing", "1.1");
-    }
-  };
+  // 字号、行距各自独立继承全局(各自 0 即继承);关闭继承时落到明确默认值好让滑块可调
+  const noteSizeInherit = noteSize <= 0;
+  const noteSpacingInherit = noteSpacing <= 0;
+  const setNoteSizeInherit = (v: boolean) =>
+    saveSetting("note_font_size", v ? "0" : "14");
+  const setNoteSpacingInherit = (v: boolean) =>
+    saveSetting("note_line_spacing", v ? "0" : "1.1");
 
   const fontSelect = (value: string, onChange: (v: string) => void, inheritOption?: boolean) => (
     <select
@@ -184,48 +178,56 @@ export default function SettingsPanel() {
               <span className="w-12 shrink-0 text-xs text-text-2">{t("S.Settings.FontFamily")}</span>
               {fontSelect(noteFont, (v) => saveSetting("note_font_family", v), true)}
             </label>
+            {/* 字号:独立继承开关;继承时滑块显示全局值并置灰禁用 */}
             <Toggle
-              label={t("S.X.NoteInheritSizeSpacing")}
-              desc={t("S.X.NoteInheritSizeSpacingDesc")}
-              checked={noteInherit}
-              onChange={setNoteInherit}
+              label={t("S.X.NoteInheritSize")}
+              checked={noteSizeInherit}
+              onChange={setNoteSizeInherit}
             />
-            {!noteInherit && (
-              <>
-                <label className="mt-1 mb-2 flex items-center gap-2">
-                  <span className="w-12 shrink-0 text-xs text-text-2">
-                    {t("S.Settings.FontSize")}
-                  </span>
-                  <input
-                    type="range"
-                    min={10}
-                    max={22}
-                    step={1}
-                    value={noteSize || 14}
-                    onChange={(e) => saveSetting("note_font_size", e.target.value)}
-                    className="min-w-0 flex-1 accent-(--accent)"
-                  />
-                  <span className="w-8 text-right text-xs text-muted">{noteSize || 14}</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <span className="w-12 shrink-0 text-xs text-text-2">
-                    {t("S.Settings.LineSpacing")}
-                  </span>
-                  <input
-                    type="range"
-                    min={0.9}
-                    max={1.6}
-                    step={0.05}
-                    value={noteSpacing || 1.1}
-                    onChange={(e) => saveSetting("note_line_spacing", e.target.value)}
-                    className="min-w-0 flex-1 accent-(--accent)"
-                  />
-                  <span className="w-8 text-right text-xs text-muted">
-                    {(noteSpacing || 1.1).toFixed(2)}
-                  </span>
-                </label>
-              </>
-            )}
+            <label
+              className={`mt-1 mb-2 flex items-center gap-2 ${noteSizeInherit ? "opacity-50" : ""}`}
+            >
+              <span className="w-12 shrink-0 text-xs text-text-2">{t("S.Settings.FontSize")}</span>
+              <input
+                type="range"
+                min={10}
+                max={22}
+                step={1}
+                disabled={noteSizeInherit}
+                value={noteSizeInherit ? fontSize : noteSize || 14}
+                onChange={(e) => saveSetting("note_font_size", e.target.value)}
+                className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
+              />
+              <span className="w-8 text-right text-xs text-muted">
+                {noteSizeInherit ? fontSize : noteSize || 14}
+              </span>
+            </label>
+            {/* 行距:独立继承开关;继承时滑块显示全局值并置灰禁用 */}
+            <Toggle
+              label={t("S.X.NoteInheritLineSpacing")}
+              checked={noteSpacingInherit}
+              onChange={setNoteSpacingInherit}
+            />
+            <label
+              className={`mt-1 flex items-center gap-2 ${noteSpacingInherit ? "opacity-50" : ""}`}
+            >
+              <span className="w-12 shrink-0 text-xs text-text-2">
+                {t("S.Settings.LineSpacing")}
+              </span>
+              <input
+                type="range"
+                min={0.9}
+                max={1.6}
+                step={0.05}
+                disabled={noteSpacingInherit}
+                value={noteSpacingInherit ? lineSpacing : noteSpacing || 1.1}
+                onChange={(e) => saveSetting("note_line_spacing", e.target.value)}
+                className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
+              />
+              <span className="w-8 text-right text-xs text-muted">
+                {(noteSpacingInherit ? lineSpacing : noteSpacing || 1.1).toFixed(2)}
+              </span>
+            </label>
           </>
         )}
 
@@ -247,33 +249,7 @@ export default function SettingsPanel() {
               onChange={setFlag("show_holidays")}
             />
             <div className="my-2 h-px bg-divider" />
-            <div className="flex items-start justify-between gap-3 py-2">
-              <span className="min-w-0">
-                <span className="block text-sm text-text-1">{t("S.X.ResetDefaults")}</span>
-                <span className="mt-0.5 block text-xs text-muted">
-                  {t("S.X.ResetDefaultsDesc")}
-                </span>
-              </span>
-              <button
-                onClick={async () => {
-                  if (
-                    await confirm({
-                      title: t("S.X.ResetDefaults"),
-                      message: t("S.X.ResetDefaultsConfirm"),
-                    })
-                  )
-                    void resetSettings();
-                }}
-                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-overdue ring-1 ring-divider hover:bg-card-hover"
-              >
-                {t("S.X.ResetDefaults")}
-              </button>
-            </div>
-          </>
-        )}
-
-        {section === "font" && (
-          <>
+            {/* 字体(原独立「字体」页并入通用) */}
             <p className="mb-1 text-sm text-text-1">{t("S.Settings.Font")}</p>
             <p className="mb-3 text-xs text-muted">{t("S.Settings.FontDesc")}</p>
             <label className="mb-2 flex items-center gap-2">
@@ -306,6 +282,29 @@ export default function SettingsPanel() {
               />
               <span className="w-8 text-right text-xs text-muted">{lineSpacing.toFixed(2)}</span>
             </label>
+            <div className="my-2 h-px bg-divider" />
+            <div className="flex items-start justify-between gap-3 py-2">
+              <span className="min-w-0">
+                <span className="block text-sm text-text-1">{t("S.X.ResetDefaults")}</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  {t("S.X.ResetDefaultsDesc")}
+                </span>
+              </span>
+              <button
+                onClick={async () => {
+                  if (
+                    await confirm({
+                      title: t("S.X.ResetDefaults"),
+                      message: t("S.X.ResetDefaultsConfirm"),
+                    })
+                  )
+                    void resetSettings();
+                }}
+                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-overdue ring-1 ring-divider hover:bg-card-hover"
+              >
+                {t("S.X.ResetDefaults")}
+              </button>
+            </div>
           </>
         )}
 

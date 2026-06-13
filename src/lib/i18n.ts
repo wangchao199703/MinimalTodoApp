@@ -68,6 +68,8 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ResetDefaultsConfirm": "确定将除语言外的所有设置恢复为默认值？此操作不可撤销。",
     "S.X.NoteInheritSizeSpacing": "字号·行距继承全局",
     "S.X.NoteInheritSizeSpacingDesc": "关闭后可单独设置便签的字号与行距。",
+    "S.X.NoteInheritSize": "字号继承全局",
+    "S.X.NoteInheritLineSpacing": "行距继承全局",
     "S.X.TagBoardRoot": "标签看板",
   },
   en: {
@@ -135,6 +137,8 @@ const EXTRA: Record<Lang, Record<string, string>> = {
       "Restore all settings except language to defaults? This cannot be undone.",
     "S.X.NoteInheritSizeSpacing": "Inherit global size & spacing",
     "S.X.NoteInheritSizeSpacingDesc": "Turn off to set note size and line spacing separately.",
+    "S.X.NoteInheritSize": "Inherit global size",
+    "S.X.NoteInheritLineSpacing": "Inherit global line spacing",
     "S.X.TagBoardRoot": "Tag board",
   },
 };

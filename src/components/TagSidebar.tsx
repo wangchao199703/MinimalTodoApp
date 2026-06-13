@@ -217,15 +217,48 @@ export default function TagSidebar() {
     saveSetting("tags_sidebar_collapsed", collapsed ? "0" : "1");
 
   if (collapsed) {
+    // 收起态:对齐主侧栏,只剩一列图标(标签看板 + 各标签),底部展开按钮
     return (
-      <aside className="flex w-8 shrink-0 flex-col items-center border-r border-sidebar-border bg-sidebar pt-2">
-        <button
-          title={t("S.X.ExpandSidebar")}
-          onClick={toggleCollapsed}
-          className="flex h-7 w-7 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
-        >
-          <PanelLeftOpen size={15} />
-        </button>
+      <aside className="flex w-12 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">
+        <div className="shrink-0 p-1 pt-2">
+          <button
+            title={t("S.X.ExpandSidebar")}
+            onClick={toggleCollapsed}
+            className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+          >
+            <PanelLeftOpen size={16} />
+          </button>
+        </div>
+        <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto p-1">
+          <button
+            title={t("S.X.TagBoardRoot")}
+            onClick={() => setView({ kind: "tagboard" })}
+            className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+              view.kind === "tagboard"
+                ? "bg-sidebar-selected text-sidebar-selected-fg"
+                : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+            }`}
+          >
+            <Kanban size={16} />
+          </button>
+          {groups.map((g) => {
+            const active = view.kind === "group" && view.groupId === g.id;
+            return (
+              <button
+                key={g.id}
+                title={g.name}
+                onClick={() => setView({ kind: "group", groupId: g.id })}
+                className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+                  active
+                    ? "bg-sidebar-selected text-sidebar-selected-fg"
+                    : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+                }`}
+              >
+                <TagIcon icon={g.icon} iconImage={g.icon_image} color={g.color} size={16} />
+              </button>
+            );
+          })}
+        </div>
       </aside>
     );
   }

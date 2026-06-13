@@ -5,7 +5,7 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { ChevronRight, FilePlus2, Folder, Trash2, X } from "lucide-react";
+import { ChevronRight, FilePlus2, FileText, Folder, Trash2, X } from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
@@ -18,6 +18,23 @@ import { confirm } from "./ui/ConfirmDialog";
  * 收集箱已实体化为普通分组(初始自带、可删可改名),树里只有真实分组。
  * 点便签 = 选中并跳到便签视图;拖拽重排/拖入分组逻辑原样保留。
  */
+
+// 便签分组无独立颜色字段,按 id 哈希分配稳定调色板色,分组下便签继承——与标签侧栏的彩色风格统一
+const NOTE_PALETTE = [
+  "#3b82f6", // 蓝
+  "#f97316", // 橙
+  "#14b8a6", // 青
+  "#eab308", // 黄
+  "#22c55e", // 绿
+  "#a855f7", // 紫
+  "#ec4899", // 粉
+  "#06b6d4", // 天蓝
+];
+export function colorForId(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return NOTE_PALETTE[h % NOTE_PALETTE.length];
+}
 
 /** 把元素注册为「拖便签进分组」的释放目标 */
 function useNoteGroupDrop(groupId: string) {
@@ -42,7 +59,7 @@ function displayTitle(n: Note): string {
   return n.custom_title || n.title || t("S.X.UntitledNote");
 }
 
-function NoteRow({ note, active }: { note: Note; active: boolean }) {
+function NoteRow({ note, active, color }: { note: Note; active: boolean; color: string }) {
   const selectNote = useAppStore((s) => s.selectNote);
   const setView = useAppStore((s) => s.setView);
   const removeNote = useAppStore((s) => s.removeNote);
@@ -67,6 +84,7 @@ function NoteRow({ note, active }: { note: Note; active: boolean }) {
           }`}
         />
       )}
+      <FileText size={13} className="shrink-0" style={{ color }} />
       <span className="min-w-0 flex-1 truncate">{displayTitle(note)}</span>
       <button
         title={t("S.X.Delete")}
@@ -96,6 +114,7 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
   const [draft, setDraft] = useState(group.name);
   // 拖便签到分组头 = 移入该分组(对齐旧版 NotesDropHandler)
   const { ref: dropRef, isOver } = useNoteGroupDrop(group.id);
+  const color = colorForId(group.id);
 
   return (
     <div>
@@ -117,7 +136,7 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
               : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
           }`}
         >
-          <Folder size={14} className="shrink-0" />
+          <Folder size={14} className="shrink-0" style={{ color }} />
           {editing ? (
             <input
               autoFocus
@@ -183,7 +202,9 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
         </span>
       </div>
       {!group.is_collapsed &&
-        notes.map((n) => <NoteRow key={n.id} note={n} active={selectedNoteId === n.id} />)}
+        notes.map((n) => (
+          <NoteRow key={n.id} note={n} active={selectedNoteId === n.id} color={color} />
+        ))}
     </div>
   );
 }

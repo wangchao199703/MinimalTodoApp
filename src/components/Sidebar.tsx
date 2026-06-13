@@ -24,6 +24,15 @@ function viewKey(v: View): string {
 const NAV_KEYS = ["all", "quadrant", "tagboard", "notes", "completed"] as const;
 type NavKey = (typeof NAV_KEYS)[number];
 
+/** 内置项各配固定色,图标用该色渲染,与第二侧栏的彩色标签图标统一风格 */
+const NAV_COLORS: Record<NavKey, string> = {
+  all: "#3b82f6", // 蓝
+  quadrant: "#f97316", // 橙
+  tagboard: "#14b8a6", // 青
+  notes: "#eab308", // 黄
+  completed: "#22c55e", // 绿
+};
+
 /** 解析持久化顺序:过滤未知键、去重,缺失的按内置默认顺序补全(向后兼容) */
 function parseNavOrder(raw: string | undefined): NavKey[] {
   const known = new Set<string>(NAV_KEYS);
@@ -62,8 +71,17 @@ function NavRow(props: {
   count?: number;
   active: boolean;
   collapsed: boolean;
+  color?: string;
   onClick: () => void;
 }) {
+  // 彩色图标:包一层并设 color,lucide 走 currentColor 即上色(选中态也保持彩色,对齐标签图标)
+  const iconEl = props.color ? (
+    <span className="flex shrink-0" style={{ color: props.color }}>
+      {props.icon}
+    </span>
+  ) : (
+    props.icon
+  );
   if (props.collapsed) {
     // 折叠态:只剩图标,选中项用色块高亮
     return (
@@ -76,7 +94,7 @@ function NavRow(props: {
             : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
         }`}
       >
-        {props.icon}
+        {iconEl}
       </button>
     );
   }
@@ -89,7 +107,7 @@ function NavRow(props: {
           : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
       }`}
     >
-      {props.icon}
+      {iconEl}
       <span className="min-w-0 flex-1 truncate">{props.label}</span>
       {props.count !== undefined && props.count > 0 && (
         <span className="text-xs text-sidebar-muted">{props.count}</span>
@@ -169,6 +187,7 @@ export default function Sidebar() {
             count={uncompleted.length}
             active={activeKey === "all"}
             collapsed={collapsed}
+            color={NAV_COLORS.all}
             onClick={() => setView({ kind: "all" })}
           />
         );
@@ -179,6 +198,7 @@ export default function Sidebar() {
             label={t("S.Group.Quadrant")}
             active={activeKey === "quadrant"}
             collapsed={collapsed}
+            color={NAV_COLORS.quadrant}
             onClick={() => setView({ kind: "quadrant" })}
           />
         );
@@ -189,6 +209,7 @@ export default function Sidebar() {
             label={t("S.Group.Completed")}
             active={activeKey === "completed"}
             collapsed={collapsed}
+            color={NAV_COLORS.completed}
             onClick={() => setView({ kind: "completed" })}
           />
         );
@@ -201,6 +222,7 @@ export default function Sidebar() {
             count={groups.length}
             active={activeKey === "tagboard" || activeKey.startsWith("group:")}
             collapsed={collapsed}
+            color={NAV_COLORS.tagboard}
             onClick={() => setView({ kind: "tagboard" })}
           />
         );
@@ -213,6 +235,7 @@ export default function Sidebar() {
             count={notes.length}
             active={activeKey === "notes"}
             collapsed={collapsed}
+            color={NAV_COLORS.notes}
             onClick={() => setView({ kind: "notes" })}
           />
         );
