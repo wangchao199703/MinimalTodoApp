@@ -4,6 +4,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { ipc } from "../../lib/tauri-ipc";
 import { t } from "../../lib/i18n";
 import { applyFontSettings } from "../../lib/font";
+import { DESIGNS, DESIGN_LABEL_KEY, DESIGN_DESC_KEY, migrateDesign } from "../../lib/themes";
 import { confirm } from "../ui/ConfirmDialog";
 
 function Toggle(props: {
@@ -233,6 +234,30 @@ export default function SettingsPanel() {
 
         {section === "general" && (
           <>
+            {/* 界面版式:4 套换肤,选中即广播给主窗口实时切换 */}
+            <p className="mb-2 text-sm text-text-1">{t("S.X.Design.Title")}</p>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {DESIGNS.map((d) => {
+                const active = migrateDesign(settings["design"]) === d;
+                return (
+                  <button
+                    key={d}
+                    onClick={() => saveSetting("design", d)}
+                    className={`flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors ${
+                      active
+                        ? "border-accent bg-selected"
+                        : "border-divider hover:bg-card-hover"
+                    }`}
+                  >
+                    <span className="text-sm text-text-1">{t(DESIGN_LABEL_KEY[d])}</span>
+                    <span className="text-[11px] leading-tight text-muted">
+                      {t(DESIGN_DESC_KEY[d])}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="my-2 h-px bg-divider" />
             <Toggle
               label={t("S.Settings.AutoStart")}
               desc={t("S.Settings.AutoStartDesc")}

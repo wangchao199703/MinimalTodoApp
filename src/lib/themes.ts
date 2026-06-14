@@ -91,3 +91,35 @@ export function migrateThemeKey(saved: string | undefined): Theme {
   const v = (saved ?? DEFAULT_THEME).toLowerCase();
   return (VALID_THEMES as readonly string[]).includes(v) ? (v as Theme) : DEFAULT_THEME;
 }
+
+// ============ 界面版式(design):与配色主题正交的「布局/质感」轴 ============
+// 在 <html> 挂 design-<key>,统一 DOM + CSS 变量换肤(参考 Gemini 三套方案)。
+// 多数视图复用 TaskItem,一处定义即覆盖 列表 / 四象限 / 标签看板。在「设置」里切换。
+export const DESIGNS = ["classic", "apple", "linear", "cute"] as const;
+export type Design = (typeof DESIGNS)[number];
+export const DEFAULT_DESIGN: Design = "classic";
+
+/** 版式标签 i18n 键(zh/en 在 i18n EXTRA) */
+export const DESIGN_LABEL_KEY: Record<Design, string> = {
+  classic: "S.X.Design.Classic",
+  apple: "S.X.Design.Apple",
+  linear: "S.X.Design.Linear",
+  cute: "S.X.Design.Cute",
+};
+
+/** 版式一句话描述 i18n 键(设置里展示) */
+export const DESIGN_DESC_KEY: Record<Design, string> = {
+  classic: "S.X.Design.ClassicDesc",
+  apple: "S.X.Design.AppleDesc",
+  linear: "S.X.Design.LinearDesc",
+  cute: "S.X.Design.CuteDesc",
+};
+
+export function applyDesign(design: Design) {
+  const root = document.documentElement;
+  for (const d of DESIGNS) root.classList.toggle(`design-${d}`, d === design);
+}
+
+export function migrateDesign(saved: string | undefined): Design {
+  return (DESIGNS as readonly string[]).includes(saved ?? "") ? (saved as Design) : DEFAULT_DESIGN;
+}

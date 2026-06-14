@@ -311,4 +311,13 @@
   - ReminderPicker 快捷项改为 WPF 的 12 档 `[1,10,30,60,120,300,1440,2880,7200,10080,20160,40320]`。
   - QuickAdd 加**标签选择器**(Tag 钮→Popover 列「无标签」+各标签),新建可直接归入某标签(补回全宽看板后失去的能力)。
   - QuickAdd 加**父级选择器**(ListTree 钮→Popover 列未完成任务带缩进),直接建为子待办;选了父级则隐藏标签钮、标签跟随父。
-  - store `addTask` 扩展接受 `group_id`/`parent_id`:有父级则标签跟随父、缩进 = 父+1(封顶 6),对齐旧版 `AddTask`。i18n 双语加 `S.X.NewTaskTag/NewTaskParent/NewTaskAsChildOf`。`npm run build` 通过。`(本轮)`
+  - store `addTask` 扩展接受 `group_id`/`parent_id`:有父级则标签跟随父、缩进 = 父+1(封顶 6),对齐旧版 `AddTask`。i18n 双语加 `S.X.NewTaskTag/NewTaskParent/NewTaskAsChildOf`。`npm run build` 通过。`7a63061`
+
+**提示词:**(版式探索)前端不好看,重画几套挑选 →(看后)这几套都不行,撤销 → 参考桌面文档(Gemini 给的 3 套风格),设计多三种 UI 放到设置可切换。
+- 第一次尝试的 4 套(经典/柔卡/紧凑/极简,标题栏切换、仅 CSS 微调)**用户全否,已 `git reset` 回退**(留档 `3a9f089`)。
+- 本轮按 Gemini 文档重做、放**设置**里切换,且**重构 TaskItem 为统一可换肤 DOM**(差异更大):
+  - **苹果 Things**:无边框 + 下分隔线 + 留白,圆形 20px 细线勾选(中性边框),优先级用标题前**小圆点**,标签 `#文字` 浅色后缀。
+  - **极客 Linear**:紧凑 + 1px 下边框,方圆角 16px 勾选,优先级**前置信号图标**(SignalLow/Med/High),标签**暗色胶囊**。
+  - **可爱 Waterdrop**:独立卡片 + 1rem 大圆角 + 柔阴影 + 外距,大圆 24px 粗勾选(优先级色),标题 15px 粗,标签/副信息**彩色胶囊**。
+  - 经典保留为默认(现状)。
+- 实现:`themes.ts` design 轴(classic/apple/linear/cute)+ `applyDesign`;统一基线 `.task-check/.task-pri-dot/.task-pri-icon/.task-tag` + 3 套 `.design-*` CSS(双类覆盖 Tailwind);TaskItem 加 `--pri` 变量、标签后缀、圆点/信号图标元素;store design 状态 + 跨窗口同步;**设置→通用→界面版式** 2×2 卡片切换器;i18n 双语 `S.X.Design.*`。`npm run build` 通过。`(本轮)`

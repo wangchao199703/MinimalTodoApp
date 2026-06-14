@@ -53,7 +53,8 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
 - **最小化「缩小飞向托盘」动画**(genie):CSS 版与 framer-motion 版都试过,效果不满意,已回退。
 - **framer-motion**:引入过又**彻底卸载**(package.json 无)。列表动画用 `@formkit/auto-animate`,弹窗用 CSS `modal-in`。
-- **「版式(design)」切换实验**(2026-06-14):做过一套与配色正交的版式轴(`<html>.design-<key>` + 4 套:经典/柔卡/紧凑/极简,TitleBar 切换器),用户看后**全部否决**,已 `git reset --hard` 回退干净(回到 `7a63061`)。**别照搬这 4 套重做**;若再做前端改观,先问清用户想要的具体方向(配色块/留白/卡片风格等)再动手。
+- **第一版「版式」实验(已否决)**(2026-06-14):纯 CSS 微调的 4 套(经典/柔卡/紧凑/极简,TitleBar 切换),用户嫌差异太小**全否**,`git reset` 回退(留档 `3a9f089`)。教训:换肤差异要做足(改 DOM 结构,不只圆角阴影)。
+- **当前「界面版式」系统(已落地,非否决)**:按 Gemini 文档重做,在**设置→通用→界面版式**切换 **经典/苹果(Things)/极客(Linear)/可爱(Waterdrop)**。实现见 `themes.ts`(DESIGNS/applyDesign)、`index.css` 末尾 `.design-*` 块、`TaskItem.tsx`(统一可换肤 DOM:`--pri` 变量 + `.task-check/.task-pri-dot/.task-pri-icon/.task-tag`)。等用户挑定方向后再把该版式延伸到便签/日历/侧栏面板。
 
 ## 六、开发与自测
 

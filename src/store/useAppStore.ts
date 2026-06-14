@@ -13,7 +13,14 @@ import { sortTree, descendantIds, type SortMode } from "../lib/sort";
 import { nowText } from "../lib/date";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { applyTheme, migrateThemeKey, type Theme } from "../lib/themes";
+import {
+  applyTheme,
+  migrateThemeKey,
+  applyDesign,
+  migrateDesign,
+  type Theme,
+  type Design,
+} from "../lib/themes";
 import { setLang, type Lang } from "../lib/i18n";
 import { applyFontSettings } from "../lib/font";
 import { ensureGroupIconDir } from "../components/ui/TagIcon";
@@ -39,6 +46,7 @@ interface AppState {
   settings: Record<string, string>;
   view: View;
   theme: Theme;
+  design: Design;
   language: Lang;
   sortMode: SortMode;
   toasts: Toast[];
@@ -67,6 +75,7 @@ interface AppState {
   setScheduleOpen: (open: boolean) => void;
   setView: (v: View) => void;
   setTheme: (key: Theme) => void;
+  setDesign: (key: Design) => void;
   setLanguage: (lang: Lang) => void;
   setSortMode: (m: SortMode) => void;
   saveSetting: (key: string, value: string) => void;
@@ -122,6 +131,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: {},
   view: { kind: "all" },
   theme: "light-classic",
+  design: "classic",
   language: "zh-CN",
   sortMode: "custom",
   toasts: [],
@@ -149,6 +159,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     const theme = migrateThemeKey(settings["theme"]);
     if (settings["theme"] !== theme) void ipc.setSetting("theme", theme);
     applyTheme(theme);
+    const design = migrateDesign(settings["design"]);
+    applyDesign(design);
     applyFontSettings(
       settings["font_family"] || "Microsoft YaHei UI",
       Number(settings["font_size"] || "14"),
@@ -171,6 +183,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       groups,
       settings,
       theme,
+      design,
       language,
       view,
       sortMode,
@@ -188,12 +201,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     setLang(language);
     const theme = migrateThemeKey(settings["theme"]);
     applyTheme(theme);
+    const design = migrateDesign(settings["design"]);
+    applyDesign(design);
     applyFontSettings(
       settings["font_family"] || "Microsoft YaHei UI",
       Number(settings["font_size"] || "14"),
       Number(settings["line_spacing"] || "1.1"),
     );
-    set({ settings, theme, language, loaded: true });
+    set({ settings, theme, design, language, loaded: true });
   },
 
   applyRemoteSetting: (key, value) => {
@@ -205,6 +220,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       const th = migrateThemeKey(value);
       applyTheme(th);
       patch.theme = th;
+    } else if (key === "design") {
+      const dg = migrateDesign(value);
+      applyDesign(dg);
+      patch.design = dg;
     } else if (key === "language") {
       const lang: Lang = value === "en" ? "en" : "zh-CN";
       setLang(lang);
@@ -288,6 +307,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     applyTheme(key);
     set({ theme: key });
     get().saveSetting("theme", key);
+  },
+
+  setDesign: (key) => {
+    applyDesign(key);
+    set({ design: key });
+    get().saveSetting("design", key);
   },
 
   setLanguage: (language) => {

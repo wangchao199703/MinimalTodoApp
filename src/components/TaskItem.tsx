@@ -10,6 +10,9 @@ import {
   Pencil,
   Pin,
   PinOff,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
   Trash2,
   X,
 } from "lucide-react";
@@ -38,6 +41,13 @@ export const PRIORITY_KEY: Record<number, string> = {
   3: "S.Priority.High",
 };
 
+/** 优先级信号图标(极客版式前置展示) */
+const PRIORITY_ICON: Record<number, typeof SignalHigh> = {
+  1: SignalLow,
+  2: SignalMedium,
+  3: SignalHigh,
+};
+
 const DUE_CLASS: Record<string, string> = {
   overdue: "text-overdue",
   today: "text-warning",
@@ -47,6 +57,7 @@ const DUE_CLASS: Record<string, string> = {
 
 export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const tasks = useAppStore((s) => s.tasks);
+  const groups = useAppStore((s) => s.groups);
   const toggleComplete = useAppStore((s) => s.toggleComplete);
   const renameTask = useAppStore((s) => s.renameTask);
   const removeTask = useAppStore((s) => s.removeTask);
@@ -84,6 +95,8 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
 
   const [doneChildren, totalChildren] = childStats(tasks, task.id);
   const ds = dueState(task.due_date, task.is_completed, now);
+  const group = task.group_id ? groups.find((g) => g.id === task.group_id) : null;
+  const PriIcon = PRIORITY_ICON[task.priority] ?? SignalMedium;
 
   const commit = () => {
     setEditing(false);
@@ -110,8 +123,13 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
-      style={{ marginLeft: task.indent_level * 18 }}
-      className={`group relative flex items-center gap-2 rounded-lg border border-divider bg-card py-2 pr-3 pl-1.5 transition-colors hover:bg-card-hover ${
+      style={
+        {
+          marginLeft: task.indent_level * 18,
+          "--pri": PRIORITY_COLOR[task.priority],
+        } as React.CSSProperties
+      }
+      className={`task-item group relative flex items-center gap-2 rounded-lg border border-divider bg-card py-2 pr-3 pl-1.5 transition-colors hover:bg-card-hover ${
         isDragging ? "dragging" : ""
       } ${completing ? "completing" : ""}`}
     >
@@ -135,20 +153,24 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         task.indent_level === 0 && <span className="-ml-1 w-4 shrink-0" />
       )}
 
+      {/* 优先级信号图标:仅「极客」版式前置展示(CSS 控制可见) */}
+      {!task.is_completed && (
+        <span className="task-pri-icon shrink-0" style={{ color: "var(--pri)" }}>
+          <PriIcon size={14} />
+        </span>
+      )}
+
       <button
         title={task.is_completed ? t("S.X.Uncomplete") : t("S.X.Complete")}
         onClick={completeWithEffects}
-        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors"
-        style={{
-          borderColor: task.is_completed ? "var(--accent)" : PRIORITY_COLOR[task.priority],
-          background: task.is_completed ? "var(--accent)" : "transparent",
-          color: "var(--accent-text)",
-        }}
+        className={`task-check flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+          task.is_completed ? "is-done" : ""
+        }`}
       >
         {task.is_completed && <Check size={10} strokeWidth={3} />}
       </button>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="task-body flex min-w-0 flex-1 flex-col">
         {editing ? (
           <input
             autoFocus
@@ -165,21 +187,27 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
             className="min-w-0 bg-transparent text-sm text-text-1 outline-none"
           />
         ) : (
-          <span
-            onDoubleClick={() => {
-              setDraft(task.title);
-              setEditing(true);
-            }}
-            className={`truncate text-sm ${
-              task.is_completed ? "text-muted line-through" : "text-text-1"
-            }`}
-          >
-            {task.title}
-          </span>
+          <div className="task-title-row flex min-w-0 items-center gap-2">
+            {/* 优先级圆点:仅「苹果」版式展示(CSS 控制) */}
+            <span className="task-pri-dot shrink-0" style={{ background: "var(--pri)" }} />
+            <span
+              onDoubleClick={() => {
+                setDraft(task.title);
+                setEditing(true);
+              }}
+              className={`task-title min-w-0 truncate text-sm ${
+                task.is_completed ? "text-muted line-through" : "text-text-1"
+              }`}
+            >
+              {task.title}
+            </span>
+            {/* 标签后缀:经典版式隐藏,其余版式以 #标签 展示(CSS 控制) */}
+            {group && <span className="task-tag shrink-0 text-xs text-muted">{group.name}</span>}
+          </div>
         )}
 
         {(task.due_date || task.reminder_enabled || totalChildren > 0) && !editing && (
-          <span className="mt-0.5 flex items-center gap-2 text-xs">
+          <span className="task-meta mt-0.5 flex items-center gap-2 text-xs">
             {task.due_date && !task.is_completed && (
               <span title={formatDue(task.due_date)} className={DUE_CLASS[ds] ?? "text-text-2"}>
                 {countdownText(task.due_date, now)}
