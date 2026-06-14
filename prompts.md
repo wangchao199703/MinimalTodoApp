@@ -476,4 +476,7 @@
 - **缩放调轻**:`--ds` `0.11/层封顶3` → **`0.06/层封顶2`**(子任务 ~ -1px,不靠尺寸而靠层次)。
 - **视觉降级(新)**:`.task-item:not([data-level=0]) .task-title` 字重 → 400、行高 → 1.35;未完成子标题颜色 → `var(--secondary-text)`(`:not(.text-muted)` 排除已完成,保留划线灰)。
 - **对齐缩进(新)**:各版式定义 `--indent-step =` 自身复选框宽 + 间距(linear26/经典31/可爱38/notion25/fluent31/brutal31/frost30/tinted32/panel33),基线 `.task-item { margin-left: lvl × var(--indent-step) }` 统一驱动 → 子任务复选框对齐父任务文字开头;删除旧的 18px/12px 缩进规则。
-- **引导线**:`::before` 的 `left` 改为 `calc(var(--indent-step) * -0.5)`,落在缩进通道中线(各版式自适应)。`npm run build` 通过。`(本轮)`
+- **引导线**:`::before` 的 `left` 改为 `calc(var(--indent-step) * -0.5)`,落在缩进通道中线(各版式自适应)。`npm run build` 通过。`96b93d3`
+
+**提示词:** 将工作流 9 条更新到 `CLAUDE.md`(逐条原文见本条提示)。
+- 更新 `CLAUDE.md` 的「每轮改动工作流」+「工作风格」。两处实质新增:第 1 条加「读 md 文档第一次记内容、之后内容没变不重复记」;第 6 条加「需求有疑问点就停下来问、不自己决定」;其余统一敏感信息口径与措辞。纯文档,无需构建/运行。`(本轮)`
