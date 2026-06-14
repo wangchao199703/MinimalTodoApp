@@ -594,3 +594,7 @@
 - **Bug A(resize/最大化透出桌面自动修复)**:透明窗(`transparent:true`)WebView2 在尺寸变化时不重绘新暴露区→透桌(已知 artifact)。改前端自动兜底:`App.tsx` 监听 `getCurrentWindow().onResized()`(resize/最大化/还原均触发)→ 防抖 120ms → **纯 DOM 重绘**(根 `transform: translateZ(0)` + 强制 reflow + rAF 撤回)。选前端不选 Rust `set_size`:`set_size` 在最大化时会取消最大化、且自身又触发 `Resized` 成反馈环;纯 DOM 对 OS 尺寸零副作用、与最大化无关、不触发 `Resized`(天然防反馈环)、不与贴边 `Moved/Resized` 互扰。
 - **Bug B(贴边自动隐藏回归)**:根因=上轮 `f90f46d` 给 `show_main` 加的 `set_size(w+1,h)→还原` 强制重绘是**无 `moving` 守卫的尺寸变更**,会触发 `Resized/Moved` 干扰贴边轮询。**移除该 nudge**(重绘职责已交前端),贴边逻辑不再被自身尺寸抖动误扰;`show_main` 居中/清贴边态逻辑保留不变。
 - 改 `src-tauri/src/window.rs`(删 nudge + 删无用 `PhysicalSize` 引入)与 `src/App.tsx`(新增 onResized 重绘 effect)。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。`(本轮)`
+
+**提示词:** 新建待办的功能对齐 wpf,新建后上面弹窗,可以修改优先级、截止时间、周期提醒。
+- `addTask` 现返回创建的 `Task`(原 `Promise<void>` → `Promise<Task | undefined>`)。`QuickAdd.tsx` 在新建一条待办后,锚定底部输入栏弹出 `Popover`(复用 `ui/Popover`),内含优先级(高/中/低段控)/ 截止时间(复用 `DuePicker`)/ 周期提醒(复用 `ReminderPicker`),改动直接调 `setPriority`/`setDue`/`patchTask` 落到这条新任务上。非阻塞:输入框保持焦点可连续新建,ESC / 点外部 / 「完成」按钮关闭。
+- **可选/可跳过**:新增持久化设置 `quick_add_popup`(默认关闭,不改老用户行为),设置面板「待办」分区加开关;关闭时新建行为与原来完全一致。i18n 双语同步(`S.X.QuickSetTitle`/`QuickSetDone`/`QuickAddPopup`/`QuickAddPopupDesc`)。未升版本(2.0.0)。`(本轮)`

@@ -186,6 +186,12 @@ export default function SettingsPanel() {
               checked={flag("reminder_sound_enabled", true)}
               onChange={setFlag("reminder_sound_enabled")}
             />
+            <Toggle
+              label={t("S.X.QuickAddPopup")}
+              desc={t("S.X.QuickAddPopupDesc")}
+              checked={flag("quick_add_popup", false)}
+              onChange={setFlag("quick_add_popup")}
+            />
             {/* 完成提示音 / 周期提醒音:各自独立选择(4 套任选,自由组合),每项可试听 */}
             {(() => {
               const renderPicker = (

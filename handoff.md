@@ -25,7 +25,22 @@
 
 ## 三、当前进度(均已本地提交,未 push)
 
-### 最近一轮:resize/最大化重绘改自动 + 修复贴边隐藏回归(v2.0.0,未升版)
+### 最近一轮:新建后弹快捷设置,对齐 WPF(v2.0.0,未升版)
+
+- **目标**:对齐 WPF——新建一条待办后弹小窗,可直接改这条任务的优先级 / 截止时间 / 周期提醒。
+- **实现**:
+  - `useAppStore.addTask` 改为**返回创建的 `Task`**(`Promise<void>`→`Promise<Task|undefined>`),供 `QuickAdd` 锚定新任务。
+  - `QuickAdd.tsx`:`submit()` 成功后,若设置 `quick_add_popup` 开启,把新任务 id 存入 `postAddId`,锚定底部输入栏(`rowRef`)弹 `Popover`(复用 `ui/Popover`)。弹层**只存 id、实时从 `tasks` 取最新值**(`postTask`),任务被删则自动消失。
+    - 优先级:高(3)/中(2)/低(1)段控 → `setPriority(id, p)`。
+    - 截止:按钮显示当前值,点开复用 `DuePicker` → `setDue(id, d)`;行内 `X` 清除。
+    - 周期提醒:按钮显示当前间隔,点开复用 `ReminderPicker` → `patchTask({reminder_enabled:true, reminder_interval_minutes})`;行内 `X` 关闭提醒(`reminder_enabled:false`)。用 `patchTask` 而非 `toggleReminder` 是为**显式启用/清除**,避开 toggle 的方向歧义;提醒计时基线 `last_reminded_at ?? created_at` 用刚建任务的 `created_at`(=此刻)天然正确,无需另设。
+  - **非阻塞**:输入框保持焦点,可继续连续新建;ESC(`useEffect` 监听,放在早返回之前保证 hooks 顺序)/ 点外部(Popover 自带遮罩)/ 「完成」按钮均关闭。
+  - **可选/可跳过**:新增持久化设置 `quick_add_popup`(**默认关闭**,老用户行为不变),设置→待办 加 `Toggle`。
+- **改了**:`src/store/useAppStore.ts`(addTask 返回值)、`src/components/QuickAdd.tsx`(弹层主体)、`src/components/dialogs/SettingsPanel.tsx`(开关)、`src/lib/i18n.ts`(双语 4 键)。
+- **未碰**:`dragDropEnabled`/`transparent`/拖拽排序,未升版本(2.0.0)。`npm run build`(tsc 严格)通过。**未启动 dev、未 kill 进程**。
+- **需运行时目视验证**:① 设置→待办 打开「新建后弹出快捷设置」;② 新建一条待办→输入栏上方是否弹小窗;③ 改优先级/截止/周期提醒是否即时落到该任务;④ 弹层开着时继续打字 + Enter 是否能连续新建;⑤ ESC / 点别处 / 「完成」是否关闭;⑥ 设置关闭时新建行为是否与原来一致(不弹)。
+
+### 上一轮:resize/最大化重绘改自动 + 修复贴边隐藏回归(v2.0.0,未升版)
 
 - **Bug B(贴边自动隐藏失效,回归)根因**:上一轮 `f90f46d` 给 `show_main` 加的强制重绘 `set_size(w+1,h)→还原`(原第 58–61 行)是一处**无 `moving` 守卫的尺寸变更**;它在托盘「显示并居中」/单实例唤起时跑,会触发 `Resized`(以及 Windows 上 set_size 改变窗口原点带来的 `Moved`),干扰贴边轮询/`Moved` 监听,导致拖到边缘不再自动隐藏。**修复=移除该 nudge**(重绘职责改由前端承担,见 Bug A),贴边逻辑不再被自身尺寸抖动误扰。`show_main` 的「显示→`moving` 守卫下居中→清贴边态(`edge=NONE/hidden=false/pending=false`+持久化 `dock_edge=0`)」逻辑**保留不变**,「显示并居中」仍工作且不被贴边误收。`app.manage(Arc<DockState>)` 与 `setup_dock` 的 Moved/轮询逻辑均未动(经核对,二者非回归源)。
 - **Bug A(resize/最大化后透桌)自动修复,改前端**:不再用 Rust `set_size` 一次性 nudge。`App.tsx` 新增 effect 监听 `getCurrentWindow().onResized()`(resize 拖边、最大化、还原都会触发)→ **防抖 120ms** → **纯 DOM 重绘**:根节点瞬时 `transform: translateZ(0)` + 读 `offsetHeight` 强制 reflow + `requestAnimationFrame` 撤回。
