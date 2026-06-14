@@ -607,3 +607,6 @@
 - 恢复 `src/components/TagSidebar.tsx`(参照被删版 + 便签第二侧栏布局):点「标签」进 `tagboard` 视图即展开第二侧栏 —— 顶部「标签看板」入口 + 各标签(分组)列表,点标签进 `view.kind==="group"`,可右键改名/改色/改图标/删除、拖动重排、调宽/收起。
 - `App.tsx` 给 `tagboard` 与 `group` 视图都套「第二侧栏 + 内容」布局(group=TagSidebar+TaskList+QuickAdd;tagboard=TagSidebar+TagBoardView);`Sidebar.tsx` 标签主入口在 group 视图也保持选中态。
 - **拖待办到分组归类**:每个标签行/折叠图标用 `dropTargetForElements` 注册为放置目标(数据 `{type:"task-tag",groupId}`),TagSidebar 自己的 monitor 处理 `source.type==="task"` → `patchTask({group_id})`。与任务列表内部排序(TaskList 的 `task→task` monitor + `moveTask`)靠数据 type 区分共存:落到 task-tag 目标时 TaskList 的 `moveTask` 因 target 非 task 自然 no-op。未碰 `dragDropEnabled`、未升版本(2.0.0)、i18n 复用既有键。`npm run build` 通过。
+**提示词:** 新建待办的功能对齐 wpf,新建后上面弹窗,可以修改优先级、截止时间、周期提醒。
+- `addTask` 现返回创建的 `Task`(原 `Promise<void>` → `Promise<Task | undefined>`)。`QuickAdd.tsx` 在新建一条待办后,锚定底部输入栏弹出 `Popover`(复用 `ui/Popover`),内含优先级(高/中/低段控)/ 截止时间(复用 `DuePicker`)/ 周期提醒(复用 `ReminderPicker`),改动直接调 `setPriority`/`setDue`/`patchTask` 落到这条新任务上。非阻塞:输入框保持焦点可连续新建,ESC / 点外部 / 「完成」按钮关闭。
+- **可选/可跳过**:新增持久化设置 `quick_add_popup`(默认关闭,不改老用户行为),设置面板「待办」分区加开关;关闭时新建行为与原来完全一致。i18n 双语同步(`S.X.QuickSetTitle`/`QuickSetDone`/`QuickAddPopup`/`QuickAddPopupDesc`)。未升版本(2.0.0)。`(本轮)`

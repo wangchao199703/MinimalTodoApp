@@ -37,6 +37,20 @@
 - **i18n**:`S.Settings.Reinstall`/`ReinstallDesc`/`ReinstallBtn`、`S.Update.Reinstall`、`S.Update.Close` **此前已在 zh/en 双语就位**(本轮无新增 key)。
 - **改了**:`src/lib/updater.ts`、`src/components/dialogs/UpdateDialog.tsx`、`src/components/dialogs/SettingsPanel.tsx`。`npm run build`(tsc 严格 + vite)通过。**未启动 dev、未 kill 任何进程**(任务约束)。未碰 `dragDropEnabled`/`transparent`/拖拽排序。
 - **需运行时验证(无法在 dev 完整走通)**:真正重装需有「与当前运行版本号完全一致的真实 GitHub Release 且含便携 .exe 资产」。当前 dev 跑的是 2.0.0,若 GitHub 上无 `v2.0.0` Release 或其无 .exe 资产,点按钮只会弹 `检查更新失败`/`暂无安装包` Toast——这是预期保护,非 bug。完整链路(下载→bat 换壳→`--updated-from` 重启→回收旧 exe)须**打包成便携 exe 后**配真实同版本 Release 实测。可先验:点按钮能触发 `检查更新…` Toast、且关于段 UI 正常。
+### 最近一轮:新建后弹快捷设置,对齐 WPF(v2.0.0,未升版)
+
+- **目标**:对齐 WPF——新建一条待办后弹小窗,可直接改这条任务的优先级 / 截止时间 / 周期提醒。
+- **实现**:
+  - `useAppStore.addTask` 改为**返回创建的 `Task`**(`Promise<void>`→`Promise<Task|undefined>`),供 `QuickAdd` 锚定新任务。
+  - `QuickAdd.tsx`:`submit()` 成功后,若设置 `quick_add_popup` 开启,把新任务 id 存入 `postAddId`,锚定底部输入栏(`rowRef`)弹 `Popover`(复用 `ui/Popover`)。弹层**只存 id、实时从 `tasks` 取最新值**(`postTask`),任务被删则自动消失。
+    - 优先级:高(3)/中(2)/低(1)段控 → `setPriority(id, p)`。
+    - 截止:按钮显示当前值,点开复用 `DuePicker` → `setDue(id, d)`;行内 `X` 清除。
+    - 周期提醒:按钮显示当前间隔,点开复用 `ReminderPicker` → `patchTask({reminder_enabled:true, reminder_interval_minutes})`;行内 `X` 关闭提醒(`reminder_enabled:false`)。用 `patchTask` 而非 `toggleReminder` 是为**显式启用/清除**,避开 toggle 的方向歧义;提醒计时基线 `last_reminded_at ?? created_at` 用刚建任务的 `created_at`(=此刻)天然正确,无需另设。
+  - **非阻塞**:输入框保持焦点,可继续连续新建;ESC(`useEffect` 监听,放在早返回之前保证 hooks 顺序)/ 点外部(Popover 自带遮罩)/ 「完成」按钮均关闭。
+  - **可选/可跳过**:新增持久化设置 `quick_add_popup`(**默认关闭**,老用户行为不变),设置→待办 加 `Toggle`。
+- **改了**:`src/store/useAppStore.ts`(addTask 返回值)、`src/components/QuickAdd.tsx`(弹层主体)、`src/components/dialogs/SettingsPanel.tsx`(开关)、`src/lib/i18n.ts`(双语 4 键)。
+- **未碰**:`dragDropEnabled`/`transparent`/拖拽排序,未升版本(2.0.0)。`npm run build`(tsc 严格)通过。**未启动 dev、未 kill 进程**。
+- **需运行时目视验证**:① 设置→待办 打开「新建后弹出快捷设置」;② 新建一条待办→输入栏上方是否弹小窗;③ 改优先级/截止/周期提醒是否即时落到该任务;④ 弹层开着时继续打字 + Enter 是否能连续新建;⑤ ESC / 点别处 / 「完成」是否关闭;⑥ 设置关闭时新建行为是否与原来一致(不弹)。
 
 ### 上一轮:resize/最大化重绘改自动 + 修复贴边隐藏回归(v2.0.0,未升版)
 

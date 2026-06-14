@@ -115,7 +115,7 @@ interface AppState {
       /** 指定父待办则建为子待办:标签跟随父、缩进 = 父+1(对齐旧版 AddTask) */
       parent_id?: string;
     },
-  ) => Promise<void>;
+  ) => Promise<Task | undefined>;
   patchTask: (req: UpdateTaskRequest) => Promise<void>;
   toggleComplete: (task: Task) => Promise<void>;
   renameTask: (id: string, title: string) => Promise<void>;
@@ -504,6 +504,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const task = await ipc.createTask({ title, group_id, parent_id, indent_level, ...rest });
     // 新任务排在最前(order_index 为全局最小);子待办由 sortTree 按 parent_id 归位到父下
     set((s) => ({ tasks: [task, ...s.tasks] }));
+    return task;
   },
 
   patchTask: async (req) => {
