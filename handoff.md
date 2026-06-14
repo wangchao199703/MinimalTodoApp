@@ -203,3 +203,23 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 **未决/取舍/风险**:
 - 校验用「文件数 + 总字节一致」。迁移窗口内剪贴板监听线程若往旧 `clipboard-images` 写新图片,可能导致计数不一致 → 安全地中止迁移(旧数据完好),用户重试即可。可接受;若要更稳可在迁移期间临时暂停监听(当前未做)。
 - 迁移用复制(非 rename),跨盘也可靠;同盘大数据量会慢一点,换来 copy→verify→delete 的安全性。
+
+---
+
+## 交接:修复剪贴板监听图片失败(v2.0.0,仅后端)
+
+**背景/根因**:剪贴板后台 watcher 文本正常、图片不进列表。逐行对照 ShellPicker 可用版 `app/src-tauri/src/clipboard.rs`,移植版 `handle`/`handle_image` 调用序列(get_image→to_png→get_bytes→thumbnail)、clipboard-rs(0.3.4)、image(0.25.10)与默认 feature 全部一致——**不是移植丢行**。真因是 Windows 剪贴板「延迟渲染」竞态:变化事件常在图片格式(CF_DIB/CF_PNG,尤其 CF_BITMAP→DIB 合成)落盘前就触发,`has(Image)` 此刻为假 → 落进 text 分支被吞;文本同步渲染故正常。
+
+**改动(只动 `src-tauri/src/clipboard.rs`)**:
+- `handle()` 分支判据由 `if self.ctx.has(ContentFormat::Image)` 改为 `if self.image_ready()`。
+- 新增 `image_ready()`:最多轮询 5 次、每轮退避 50ms(约 250ms 上限),以「has(Image) 且 get_image() 确能取到图」为最终判据;到位走图片分支,否则回退文本。`handle_image` 体未改。
+- 未碰 commands.rs / lib.rs / database.rs / models.rs / 任何前端;time 仍 0.3.47;版本仍 2.0.0。
+
+**验证状态**:`cargo check`(冷 target)通过(本 worktree 无 node_modules/dist,codegen 用一次性占位 `dist/index.html` 过 `generate_context!`,check 后已删,工作树仅 clipboard.rs 改动)。
+
+**运行时验证点(需跑起来)**:
+1. 从浏览器/截图工具/画图复制图片 → 剪贴板列表实时出现图片缩略图项。
+2. 文本复制仍正常、去重仍生效。
+3. 快速连续复制不同图片,均能捕获(竞态退避足够)。
+
+**取舍/风险**:250ms 上限是经验值,极慢的延迟渲染源理论上仍可能超时回退文本;真出现可调大轮询次数。每次图片复制最多多花约 250ms 在 watcher 线程(独立线程,不阻塞 UI),可接受。

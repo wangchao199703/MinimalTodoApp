@@ -107,3 +107,10 @@
 - **依赖/权限**:新增 `tauri-plugin-dialog`(Cargo + npm)+ `dialog:allow-open` 权限(原生文件夹选择)。
 - **UI**:`SettingsPanel.tsx` 通用段新增「数据存储位置」(当前目录 + 选择新位置 → 确认 → 迁移 → 重启提示),i18n 双语。
 - 验证:`npm run build` + `cargo check`(time 仍 0.3.47)全过。版本保持 2.0.0。
+
+## v2.0.0 — 修复:剪贴板监听图片失败(延迟渲染竞态)
+
+- **现象**:后台剪贴板监听文本正常、图片失败——复制图片后列表不出现该项。
+- **根因**:Windows 剪贴板「延迟渲染」。变化事件(WM_CLIPBOARDUPDATE)常在图片格式(CF_DIB/CF_PNG,尤其从 CF_BITMAP 合成的 DIB)真正落到剪贴板**之前**就触发;此刻 `has(ContentFormat::Image)`/`get_image` 读到无图,代码遂落入 text 分支把图片当文本吞掉。文本(CF_UNICODETEXT)同步渲染故不受影响。逐行对照 ShellPicker 可用版,`handle`/`handle_image` 的调用序列与依赖版本(clipboard-rs 0.3.4 / image 0.25.10)完全一致,确认非移植丢行,而是该竞态暴露差异。
+- **修复(只动 `src-tauri/src/clipboard.rs`)**:新增 `image_ready()` 短时轮询(最多 5 次、每轮退避 50ms,约 250ms 上限),以「`has(Image)` 且 `get_image()` 确能取到图」为最终判据;到位才走图片分支,否则才回退文本。不打补丁、不改前端、不动 commands/database/lib。
+- 验证:`cargo check`(冷 target)通过。版本保持 2.0.0。

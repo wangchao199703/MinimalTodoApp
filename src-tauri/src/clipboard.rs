@@ -52,7 +52,12 @@ impl ClipboardHandler for ClipWatcher {
 
 impl ClipWatcher {
     fn handle(&self) -> anyhow::Result<()> {
-        if self.ctx.has(ContentFormat::Image) {
+        // Windows 剪贴板「延迟渲染」:复制图片时,变化事件(WM_CLIPBOARDUPDATE)往往
+        // 在图片格式(CF_DIB/CF_PNG,尤其是从 CF_BITMAP 合成的 DIB)真正落到剪贴板之前
+        // 就已经触发。此刻立即调 `has(Image)`/`get_image` 会读到「无图」,于是落进 text 分支
+        // 被当文本吞掉 → 图片永远进不了列表。文本(CF_UNICODETEXT)一般同步渲染,所以不受影响。
+        // 解决:短时轮询探测图片是否到位(最多约 250ms),到位再走图片分支,否则才回退文本。
+        if self.image_ready() {
             self.handle_image()
         } else if let Ok(text) = self.ctx.get_text() {
             if text.trim().is_empty() {
@@ -72,6 +77,22 @@ impl ClipWatcher {
         } else {
             Ok(())
         }
+    }
+
+    /// 短时轮询「剪贴板里是否已有可读图片」,化解延迟渲染竞态。
+    /// 既看格式标志(has),也实际尝试取一次图——有的源 has 已为真但 DIB 仍在合成、
+    /// get_image 会瞬时失败,故以「能成功取到图」为最终判据。最多约 250ms,失败即放弃(回退文本)。
+    fn image_ready(&self) -> bool {
+        for i in 0..5 {
+            if self.ctx.has(ContentFormat::Image) && self.ctx.get_image().is_ok() {
+                return true;
+            }
+            // 首轮不睡,后续每轮退避 50ms,给系统合成图片格式留时间
+            if i + 1 < 5 {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+        }
+        false
     }
 
     fn handle_image(&self) -> anyhow::Result<()> {
