@@ -603,3 +603,7 @@
 - `updater.ts` 新增 `fetchReinstallInfo()`:按当前版本对应 tag(`v<当前版本>`)拉 `releases/tags/<tag>` Release,取便携 exe 资产,返回 `UpdateInfo{reinstall:true, version=currentVersion}`;抽出共享 `pickExeAsset`/`GithubRelease`/`REPO_SLUG`,**完全复用既有 `downloadAndApply`**(下载字节→原始 IPC `apply_update`→bat 换壳带 `--updated-from` 重启),Rust 侧零改动。
 - `UpdateDialog.tsx` 支持 reinstall 模式:标题用 `S.Update.Reinstall`(替代 NewVersion),隐藏「跳过此版本」、按钮文案改「重新安装/关闭」。
 - 入口:设置→关于,自动更新开关下加「重新安装当前版本」一行 + 按钮,点了 `fetchReinstallInfo` → 打开同一 `UpdateDialog` 走下载进度+重启。i18n 键(`S.Settings.Reinstall*`/`S.Update.Reinstall`/`S.Update.Close`)双语已就位,无需新增。`npm run build` 通过。未升版本(2.0.0)。
+**提示词:** 标签功能改回原来的,加上第二侧边栏,显示标签看板和每个标签分组,并支持拖动待办到对应的分组。
+- 恢复 `src/components/TagSidebar.tsx`(参照被删版 + 便签第二侧栏布局):点「标签」进 `tagboard` 视图即展开第二侧栏 —— 顶部「标签看板」入口 + 各标签(分组)列表,点标签进 `view.kind==="group"`,可右键改名/改色/改图标/删除、拖动重排、调宽/收起。
+- `App.tsx` 给 `tagboard` 与 `group` 视图都套「第二侧栏 + 内容」布局(group=TagSidebar+TaskList+QuickAdd;tagboard=TagSidebar+TagBoardView);`Sidebar.tsx` 标签主入口在 group 视图也保持选中态。
+- **拖待办到分组归类**:每个标签行/折叠图标用 `dropTargetForElements` 注册为放置目标(数据 `{type:"task-tag",groupId}`),TagSidebar 自己的 monitor 处理 `source.type==="task"` → `patchTask({group_id})`。与任务列表内部排序(TaskList 的 `task→task` monitor + `moveTask`)靠数据 type 区分共存:落到 task-tag 目标时 TaskList 的 `moveTask` 因 target 非 task 自然 no-op。未碰 `dragDropEnabled`、未升版本(2.0.0)、i18n 复用既有键。`npm run build` 通过。

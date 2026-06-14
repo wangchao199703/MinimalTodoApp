@@ -225,13 +225,14 @@ export default function Sidebar() {
           />
         );
       case "tagboard":
-        // 「标签」:普通导航行,点击直接进标签看板(已无第二侧边栏)
+        // 「标签」:点击进标签看板视图,该视图展开第二侧边栏(标签看板入口 + 各标签);
+        // 进入具体标签(group 视图)时主入口仍保持选中态(第二侧栏才区分具体标签)
         return (
           <NavRow
             icon={<Kanban size={14} className="shrink-0" />}
             label={t("S.Group.TagBoard")}
             count={groups.length}
-            active={activeKey === "tagboard"}
+            active={activeKey === "tagboard" || view.kind === "group"}
             collapsed={collapsed}
             color={navColor("tagboard")}
             onContextMenu={(e) => openMenu(e, "tagboard")}

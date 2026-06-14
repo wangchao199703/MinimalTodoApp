@@ -107,7 +107,7 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
 - 新建待办 `QuickAdd.tsx`(内联输入栏):标题 + 优先级 + **标签选择器**(Tag 钮)+ **父级选择器**(ListTree 钮,建为子待办、标签跟随父)+ 提醒 + 截止;`addTask` 支持 `group_id`/`parent_id`。编辑用 `TaskEditDialog`(双击)。快捷时间:截止到 4周、提醒 12 档(对齐 WPF)。
 - 主侧栏 `Sidebar.tsx`:5 个内置导航项(所有待办/四象限/**标签**/便签/已完成,可拖排序),右键改色,底部折叠开关。
-- `tagboard` 视图(`App.tsx` dispatch):`<TagBoardView/>` **全宽**(无第二侧栏)。
+- `tagboard` / `group` 视图(`App.tsx` dispatch):**已改回第二侧边栏** `TagSidebar.tsx`——顶部「标签看板」入口 + 各标签列表(点标签进 `group` 视图),可右键改名/改色/改图标/删除、拖动重排、调宽/收起(`tags_sidebar_width`/`tags_sidebar_collapsed`)。`tagboard` 右侧 = `<TagBoardView/>`,`group` 右侧 = `<TaskList/>+<QuickAdd/>`。**支持拖待办到标签上归类**:标签行/折叠图标为 `dropTargetForElements` 目标(`{type:"task-tag",groupId}`),TagSidebar 自有 monitor → `patchTask({group_id})`;与任务排序 DnD(TaskList 的 `task→task` + `moveTask`)靠 type 区分共存(落 task-tag 时 moveTask 自然 no-op)。注:`store.init` 仍只恢复 `tagboard/notes/completed/quadrant`,不恢复具体 `group` 视图(重启回退「全部」,符合原状)。
 - `notes` 视图:`NotesView`(第二侧栏便签树 + 编辑区,可调宽/收起;收起为图标列,镜像分组折叠态)。
 - 设置:独立原生窗口(`SettingsWindow.tsx` + `SettingsPanel.tsx`),`☰` 菜单 → 设置打开。
 
