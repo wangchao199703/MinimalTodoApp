@@ -102,7 +102,6 @@ export const DESIGNS = [
   "notion",
   "fluent",
   "frost",
-  "darkglass",
   "tinted",
   "panel",
   "brutal",
@@ -118,7 +117,6 @@ export const DESIGN_LABEL_KEY: Record<Design, string> = {
   notion: "S.X.Design.Notion",
   fluent: "S.X.Design.Fluent",
   frost: "S.X.Design.Frost",
-  darkglass: "S.X.Design.DarkGlass",
   tinted: "S.X.Design.Tinted",
   panel: "S.X.Design.Panel",
   brutal: "S.X.Design.Brutal",
@@ -132,7 +130,6 @@ export const DESIGN_DESC_KEY: Record<Design, string> = {
   notion: "S.X.Design.NotionDesc",
   fluent: "S.X.Design.FluentDesc",
   frost: "S.X.Design.FrostDesc",
-  darkglass: "S.X.Design.DarkGlassDesc",
   tinted: "S.X.Design.TintedDesc",
   panel: "S.X.Design.PanelDesc",
   brutal: "S.X.Design.BrutalDesc",
@@ -238,7 +235,6 @@ export const DESIGN_CHECKBOX_DEFAULT: Record<Design, { size: number; width: numb
   notion: { size: 17, width: 1 }, // 1.05rem≈16.8 / 1px
   fluent: { size: 20, width: 2 }, // 1.25rem / 继承 border-2
   frost: { size: 18, width: 1.5 }, // 1.125rem / 1.5px
-  darkglass: { size: 16, width: 1 }, // 1rem / 1px
   tinted: { size: 20, width: 1.5 }, // 1.25rem / 1.5px
   panel: { size: 22, width: 1 }, // 1.375rem / 1px
   brutal: { size: 20, width: 2 }, // 1.25rem / 2px

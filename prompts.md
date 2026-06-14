@@ -383,4 +383,7 @@
   - **深邃暗玻 darkglass**:固定 `slate-900/72` 深玻 + 纯白字(配深色/玻璃主题)。
   - **微色调 tinted**:高覆盖玻璃 + `--pri` 极淡晕染(8% 嵌套 color-mix)+ 优先级色描边(其标志,例外地内置优先级)。
   - **双层面板 panel**:`app-task-list` 玻璃底 + `task-item` 纯实底任务条(外透内实,最清晰)。
-- 其余 3 套玻璃只做材质,优先级仍走 prio-* 设置;各套复用 task-* hook(半满态/进度条)。`themes.ts` DESIGNS 加 frost/darkglass/tinted/panel + LABEL/DESC/CHECKBOX_DEFAULT;i18n 双语;`index.css` 加 4 套 `.design-*`。`npm run build` 通过。`(本轮)`
+- 其余 3 套玻璃只做材质,优先级仍走 prio-* 设置;各套复用 task-* hook(半满态/进度条)。`themes.ts` DESIGNS 加 frost/darkglass/tinted/panel + LABEL/DESC/CHECKBOX_DEFAULT;i18n 双语;`index.css` 加 4 套 `.design-*`。`npm run build` 通过。`6b9cf24`
+
+**提示词:** 移除暗玻主题,其他保留。
+- 移除「深邃暗玻 darkglass」:从 `themes.ts` DESIGNS/LABEL/DESC/CHECKBOX_DEFAULT 删除、删 `index.css` 的 `.design-darkglass` 块、删 i18n 双语键。保留 纯净白玻/微色调/双层面板;共 9 套版式。`npm run build` 通过。`(本轮)`
