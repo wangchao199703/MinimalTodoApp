@@ -287,7 +287,7 @@ export function migratePriorityStyle(saved: string | undefined): PriorityStyle {
 /** 各内置版式勾选框默认几何(px),与 index.css 的 .design-* .task-check 对应。
  *  用于设置里「跟随版式」(置灰)时显示真实值——设置窗口无任务卡,无法用 getComputedStyle。 */
 export const DESIGN_CHECKBOX_DEFAULT: Record<Design, { size: number; width: number }> = {
-  apple: { size: 20, width: 1.5 }, // 1.25rem / 1.5px
+  apple: { size: 19, width: 1.5 }, // 19px / 1.5px(经典)
   linear: { size: 16, width: 1 }, // 1rem / 1px
   cute: { size: 24, width: 2 }, // 1.5rem / 2px
   notion: { size: 17, width: 1 }, // 1.05rem≈16.8 / 1px

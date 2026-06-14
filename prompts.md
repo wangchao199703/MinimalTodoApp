@@ -435,4 +435,7 @@
 
 **提示词:** 勾选框大小调整后,圆心没有和文字高度的中间对齐。
 - 根因:apple/cute/notion/fluent/brutal 用 `align-items: flex-start` + **固定 `margin-top`**,边距不随勾选框尺寸变,调大就把圆心顶偏(items-center 的 linear/frost/tinted/panel 靠 flex 居中,本就无此问题)。
-- 修法:5 套 flex-start 版式的固定 margin-top 改为 **`calc((1.25rem - var(--check-size, 版式默认尺寸)) / 2)`**——按标题行高(text-sm=1.25rem)居中,`var(--check-size, 默认)` 同时覆盖「跟随版式默认尺寸」与「自定义尺寸」两种情形,圆心恒落文字中线。`npm run build` 通过。`(本轮)`
+- 修法:5 套 flex-start 版式的固定 margin-top 改为 **`calc((1.25rem - var(--check-size, 版式默认尺寸)) / 2)`**——按标题行高(text-sm=1.25rem)居中,`var(--check-size, 默认)` 同时覆盖「跟随版式默认尺寸」与「自定义尺寸」两种情形,圆心恒落文字中线。`npm run build` 通过。`5d69f08`
+
+**提示词:** 将苹果样式的大小调整为 19,并改名为「经典」。
+- 仅改标签与默认尺寸,版式 key 仍 `apple`(无迁移)。`index.css` `.design-apple .task-check` 宽高 1.25rem→**19px**、margin-top fallback 同步 19px;`themes.ts` `DESIGN_CHECKBOX_DEFAULT.apple.size` 20→19(设置里「跟随版式」显示真实值);i18n `S.X.Design.Apple` zh「苹果」→「经典」、en「Apple」→「Classic」。`npm run build` 通过。`(本轮)`

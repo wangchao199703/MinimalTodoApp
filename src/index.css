@@ -772,12 +772,12 @@ body {
 .design-apple .task-item:hover { background: var(--card-hover-bg); }
 .design-apple .app-task-list { gap: 0; }
 .design-apple .task-check {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 19px;
+  height: 19px;
   border-width: 1.5px;
   border-color: var(--muted-text);
   /* 居中对齐标题行(1.25rem):随勾选框尺寸自适应,调大调小圆心始终落在文字中线 */
-  margin-top: calc((1.25rem - var(--check-size, 1.25rem)) / 2);
+  margin-top: calc((1.25rem - var(--check-size, 19px)) / 2);
 }
 .design-apple .task-check.is-done { border-color: var(--accent); }
 .design-apple .task-title { font-weight: 500; }
