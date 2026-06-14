@@ -78,7 +78,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const [completing, setCompleting] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
 
-  // 完成:烟花 + 音效(按设置)→ 滑出动画 → 落库
+  // 完成:烟花 + 音效(按设置)。活子待办(父未完成、非全部子完成)只打钩留原位、不播滑出动画(对齐旧版)
   const completeWithEffects = (e: React.MouseEvent) => {
     if (task.is_completed) {
       void toggleComplete(task);
@@ -87,6 +87,13 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
     const s = useAppStore.getState().settings;
     if ((s["effects_enabled"] ?? "1") === "1") fireworksAt(e.clientX, e.clientY);
     if (s["sound_enabled"] === "1") playCelebration();
+    const parent = task.parent_id ? tasks.find((t) => t.id === task.parent_id) : null;
+    const isLiveChild = !!parent && !parent.is_completed;
+    if (isLiveChild) {
+      // 不消失、不滑出,立即打钩(留在父下,划线)
+      void toggleComplete(task);
+      return;
+    }
     setCompleting(true);
     setTimeout(() => {
       setCompleting(false);

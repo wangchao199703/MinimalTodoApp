@@ -135,6 +135,18 @@ function replaceTask(tasks: Task[], next: Task): Task[] {
   return tasks.map((t) => (t.id === next.id ? next : t));
 }
 
+/** 沿 parent_id 链找根任务(防环 16 层) */
+function rootOfTask(byId: Map<string, Task>, t: Task): Task {
+  let cur = t;
+  let guard = 16;
+  while (cur.parent_id && guard-- > 0) {
+    const p = byId.get(cur.parent_id);
+    if (!p) break;
+    cur = p;
+  }
+  return cur;
+}
+
 let toastSeq = 0;
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -448,25 +460,48 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   toggleComplete: async (task) => {
-    const completing = !task.is_completed;
-    const next = await ipc.updateTask({
-      id: task.id,
-      is_completed: completing,
-      original_group_id: completing ? (task.group_id ?? "") : undefined,
-    });
-    let tasks = replaceTask(get().tasks, next);
-    if (completing) {
-      // 整族完成:父任务勾选时全部子孙一并完成(对齐旧版)
-      for (const cid of descendantIds(tasks, task.id)) {
-        const child = tasks.find((t) => t.id === cid);
-        if (child && !child.is_completed) {
-          const done = await ipc.updateTask({
-            id: cid,
-            is_completed: true,
-            original_group_id: child.group_id ?? "",
-          });
-          tasks = replaceTask(tasks, done);
-        }
+    // 取消完成:仅自身(已完成的活子任务原地取消打钩)
+    if (task.is_completed) {
+      const next = await ipc.updateTask({ id: task.id, is_completed: false });
+      set((s) => ({ tasks: replaceTask(s.tasks, next) }));
+      return;
+    }
+
+    // 完成:对齐旧版父子逻辑(MainViewModel.OnItemPropertyChanged)
+    let tasks = get().tasks;
+    const setDone = async (id: string) => {
+      const t = tasks.find((x) => x.id === id);
+      if (!t || t.is_completed) return;
+      const done = await ipc.updateTask({
+        id,
+        is_completed: true,
+        original_group_id: t.group_id ?? "",
+      });
+      tasks = replaceTask(tasks, done);
+    };
+    const completeWithDescendants = async (id: string) => {
+      await setDone(id);
+      for (const cid of descendantIds(tasks, id)) await setDone(cid);
+    };
+
+    const parent = task.parent_id ? tasks.find((x) => x.id === task.parent_id) : null;
+    // 活子待办:有父且父未完成 —— 只打钩、不整族完成、不消失
+    const isLiveChild = !!parent && !parent.is_completed;
+
+    if (!isLiveChild) {
+      // 顶层 / 父已完成:整族完成(随后因「根已完成」从未完成视图消失)
+      await completeWithDescendants(task.id);
+    } else {
+      await setDone(task.id);
+      // 向上传播:某父的所有直接子都完成 → 自动完成该父(逐级向上检查)
+      let pid: string | null = task.parent_id ?? null;
+      while (pid) {
+        const cur = tasks.find((x) => x.id === pid);
+        if (!cur || cur.is_completed) break;
+        const kids = tasks.filter((x) => x.parent_id === pid);
+        if (kids.length === 0 || !kids.every((k) => k.is_completed)) break;
+        await setDone(pid);
+        pid = cur.parent_id ?? null;
       }
     }
     set({ tasks });
@@ -562,9 +597,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   clearCompleted: async () => {
-    const doomed = get().tasks.filter((t) => t.is_completed);
+    // 只清「根任务已完成」的整族(活子任务的单独打钩不算已完成视图项)
+    const all = get().tasks;
+    const byId = new Map(all.map((t) => [t.id, t]));
+    const doomed = all.filter((t) => t.is_completed && rootOfTask(byId, t).is_completed);
+    const doomedIds = new Set(doomed.map((t) => t.id));
     for (const t of doomed) await ipc.deleteTask(t.id);
-    set((s) => ({ tasks: s.tasks.filter((t) => !t.is_completed) }));
+    set((s) => ({ tasks: s.tasks.filter((t) => !doomedIds.has(t.id)) }));
   },
 
   addGroup: async (name) => {
@@ -631,26 +670,22 @@ export function setupSettingsSync(): void {
 export function selectVisibleTasks(
   s: Pick<AppState, "tasks" | "view" | "sortMode">,
 ): Task[] {
+  // 以「根任务是否完成」划分:整族未完成 → 未完成视图(含其下已完成的子任务,原地划线保留);
+  // 整族已完成 → 已完成视图(对齐旧版 RootOf(i).IsCompleted 过滤)。
+  const byId = new Map(s.tasks.map((t) => [t.id, t]));
+  const rootDone = (t: Task) => rootOfTask(byId, t).is_completed;
+
   if (s.view.kind === "completed") {
     return s.tasks
-      .filter((t) => t.is_completed)
+      .filter((t) => t.is_completed && rootDone(t))
       .sort((a, b) => a.order_index - b.order_index);
   }
 
-  const uncompleted = s.tasks.filter((t) => !t.is_completed);
-  const flat = sortTree(uncompleted, s.sortMode);
+  // 未完成视图:根未完成的任务(已完成的活子任务也在其中,TaskItem 按 is_completed 划线)
+  const visible = s.tasks.filter((t) => !rootDone(t));
+  const flat = sortTree(visible, s.sortMode);
   if (s.view.kind !== "group") return flat;
 
   const groupId = s.view.groupId;
-  const byId = new Map(uncompleted.map((t) => [t.id, t]));
-  const rootOf = (t: Task): Task => {
-    let cur = t;
-    while (cur.parent_id) {
-      const p = byId.get(cur.parent_id);
-      if (!p) break;
-      cur = p;
-    }
-    return cur;
-  };
-  return flat.filter((t) => rootOf(t).group_id === groupId);
+  return flat.filter((t) => rootOfTask(byId, t).group_id === groupId);
 }

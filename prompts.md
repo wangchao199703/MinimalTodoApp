@@ -389,4 +389,11 @@
 - 移除「深邃暗玻 darkglass」:从 `themes.ts` DESIGNS/LABEL/DESC/CHECKBOX_DEFAULT 删除、删 `index.css` 的 `.design-darkglass` 块、删 i18n 双语键。保留 纯净白玻/微色调/双层面板;共 9 套版式。`npm run build` 通过。`f149129`
 
 **提示词:** 流体的子任务前面的线太粗了,参考极客和文档,浅一点细一点。
-- 流体引导线由 2px 强调色 + 外发光,改为与极客/文档一致:**1px + `--divider` 浅灰、无发光、贯通全高**(`.design-fluent .task-item:not([data-level=0])::before`)。`npm run build` 通过。`(本轮)`
+- 流体引导线由 2px 强调色 + 外发光,改为与极客/文档一致:**1px + `--divider` 浅灰、无发光、贯通全高**(`.design-fluent .task-item:not([data-level=0])::before`)。`npm run build` 通过。`d9a3097`
+
+**提示词:** 父子任务逻辑有问题,参考旧版 WPF:不是所有子任务完成时,单独完成的子任务不消失,只放烟花,不播左移消失动画。
+- 对齐旧版 `MainViewModel`(OnItemPropertyChanged + RootOf 过滤):
+  - **显示按「根任务是否完成」划分**(`selectVisibleTasks` 加 `rootOfTask`):整族未完成 → 未完成视图(其下已完成的子任务**原地划线保留**);整族已完成 → 已完成视图。`clearCompleted` 也只清「根已完成」的整族。
+  - **完成逻辑**(`toggleComplete` 重写):**活子待办**(有父且父未完成)= 只打钩、不整族完成、不消失;并**向上传播**(某父的直接子全完成 → 自动完成该父,逐级向上)。**顶层/父已完成** = 整族完成(随后因根已完成而消失)。
+  - **动画**(`TaskItem.completeWithEffects`):活子待办完成时**只放烟花、不播 `.completing` 滑出动画、不消失**;顶层/整族完成仍滑出。
+- `npm run build` 通过。`(本轮)`
