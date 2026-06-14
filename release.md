@@ -97,3 +97,13 @@
 - **侧栏入口 + 重排**:`Sidebar.tsx` 加「剪切板」导航项;默认顺序改为 所有待办 / 已完成 / 标签 / 四象限 / 剪切板 / 便签。导航项仍可拖动排序且持久化;老用户已有顺序里没有「剪切板」时,按默认顺序的相对位置「补位」插入(落在四象限后、便签前),不丢失既有排序。
 - **依赖**:`Cargo.toml` 加 `clipboard-rs=0.3.4`、`sha2`、`base64`、`image(png)`、`anyhow`;`time` 仍钉 0.3.47,无 E0119 冲突。
 - 验证:`npm run build`(tsc 严格)+ `cargo check` + `cargo test --lib`(39 passed,含 4 个新测试)全过。版本保持 2.0.0。
+
+## v2.0.0 — 设置·通用新增「数据存储位置」(数据整体迁移)
+
+- **可配置数据根**:`database.rs` 的 `data_dir()` 改为优先读「数据位置指针」、否则用默认目录(原默认实现拆为 `default_data_dir()`)。todo.db / note-images / group-icons / clipboard-images 全从这一个根推导,所以换位置后待办、便签、标签图标、剪贴板文本与图片整体跟着走。
+- **指针固定位置**:新增 `src-tauri/src/storage.rs`,自定义路径写在 `%LOCALAPPDATA%\MinimalTodoApp\datapath`(不随数据迁移的本机级位置;绝不存进 todo.db,否则库搬走后读不到 → 引导死锁)。指针读取在打开库之前生效。
+- **安全迁移**`migrate_data_dir` 命令:复制前 WAL checkpoint;`storage::migrate_data_root` 做 校验可写+冲突检测 → 复制(库文件含 WAL/SHM + 三图片目录)→ 校验(文件数/字节一致 + 关键文件存在)→ 写指针 → 标记旧根待清理。**copy→verify→delete**,任一步失败回滚新根、旧数据原封不动。迁移成功后改写新库里 clips.image_path 的旧根→新根前缀(剪贴板图片预览依赖绝对路径)。
+- **旧根清理 + 重启**:旧库不在运行时删(Windows 文件锁),下次启动 `cleanup_pending_old_root()`(db 打开前、带安全闸)删除旧库与图片目录。迁移完成需重启,新增 `restart_app` 命令(复用换壳 bat),UI 弹「立即重启」。
+- **依赖/权限**:新增 `tauri-plugin-dialog`(Cargo + npm)+ `dialog:allow-open` 权限(原生文件夹选择)。
+- **UI**:`SettingsPanel.tsx` 通用段新增「数据存储位置」(当前目录 + 选择新位置 → 确认 → 迁移 → 重启提示),i18n 双语。
+- 验证:`npm run build` + `cargo check`(time 仍 0.3.47)全过。版本保持 2.0.0。

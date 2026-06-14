@@ -3,7 +3,7 @@ import { X, Volume2 } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../../store/useAppStore";
 import { ipc } from "../../lib/tauri-ipc";
-import { t } from "../../lib/i18n";
+import { t, f } from "../../lib/i18n";
 import { applyFontSettings } from "../../lib/font";
 import {
   DESIGNS,
@@ -15,6 +15,7 @@ import {
   migratePriorityStyle,
 } from "../../lib/themes";
 import { confirm } from "../ui/ConfirmDialog";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import UpdateDialog from "./UpdateDialog";
 import { fetchReinstallInfo, type UpdateInfo } from "../../lib/updater";
 import {
@@ -103,6 +104,48 @@ export default function SettingsPanel() {
   const [reinstallInfo, setReinstallInfo] = useState<UpdateInfo | null>(null);
   const [reinstallBusy, setReinstallBusy] = useState(false);
   const pushToast = useAppStore((s) => s.pushToast);
+  // 数据存储位置:当前数据根目录 + 迁移中状态
+  const [dataDir, setDataDir] = useState("");
+  const [migrating, setMigrating] = useState(false);
+
+  // 选择新数据位置 → 确认(说明会移动数据并需重启)→ 迁移 → 提示重启
+  const changeDataLocation = async () => {
+    if (migrating) return;
+    const picked = await openDialog({ directory: true, multiple: false, title: t("S.X.DataLocationPick") });
+    if (typeof picked !== "string" || !picked) return;
+    if (picked === dataDir) {
+      pushToast(t("S.X.DataLocationSame"));
+      return;
+    }
+    if (
+      !(await confirm({
+        title: t("S.X.DataLocation"),
+        message: f("S.X.DataLocationConfirm", picked),
+      }))
+    )
+      return;
+    setMigrating(true);
+    pushToast(t("S.X.DataLocationMigrating"));
+    try {
+      await ipc.migrateDataDir(picked);
+      // 迁移成功:必须重启让库在新位置重新打开
+      if (
+        await confirm({
+          title: t("S.X.DataLocationDone"),
+          message: t("S.X.DataLocationRestart"),
+        })
+      ) {
+        await ipc.restartApp();
+      } else {
+        setDataDir(picked);
+      }
+    } catch (e) {
+      // 失败:旧数据原封不动,弹出原因
+      pushToast(f("S.X.DataLocationFailed", String(e)));
+    } finally {
+      setMigrating(false);
+    }
+  };
 
   const startReinstall = async () => {
     if (reinstallBusy) return;
@@ -119,6 +162,7 @@ export default function SettingsPanel() {
   useEffect(() => {
     void ipc.getAutostart().then(setAutostart).catch(() => {});
     void getVersion().then(setVersion).catch(() => {});
+    void ipc.getDataDir().then(setDataDir).catch(() => {});
   }, []);
 
   const flag = (key: string, def: boolean) =>
@@ -589,6 +633,24 @@ export default function SettingsPanel() {
               checked={flag("show_holidays", true)}
               onChange={setFlag("show_holidays")}
             />
+            <div className="my-2 h-px bg-divider" />
+            {/* 数据存储位置:显示当前位置 + 选择新位置(迁移全部数据,需重启) */}
+            <div className="flex items-start justify-between gap-3 py-2">
+              <span className="min-w-0">
+                <span className="block text-sm text-text-1">{t("S.X.DataLocation")}</span>
+                <span className="mt-0.5 block text-xs text-muted">{t("S.X.DataLocationDesc")}</span>
+                <span className="mt-1 block break-all text-xs text-text-2" title={dataDir}>
+                  {dataDir || "—"}
+                </span>
+              </span>
+              <button
+                onClick={() => void changeDataLocation()}
+                disabled={migrating}
+                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
+              >
+                {migrating ? t("S.X.DataLocationMigrating") : t("S.X.DataLocationPick")}
+              </button>
+            </div>
             <div className="my-2 h-px bg-divider" />
             <div className="flex items-start justify-between gap-3 py-2">
               <span className="min-w-0">

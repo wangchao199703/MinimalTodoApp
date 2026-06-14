@@ -184,6 +184,14 @@ export const ipc = {
   /** 恢复默认设置(保留语言) */
   resetSettings: () => invoke<void>("reset_settings"),
 
+  // ---- 数据存储位置 ----
+  /** 当前数据根目录(绝对路径) */
+  getDataDir: () => invoke<string>("get_data_dir"),
+  /** 把全部数据迁到 newDir(copy→校验→切换指针→标记旧根待清理),返回是否需重启 */
+  migrateDataDir: (newDir: string) => invoke<boolean>("migrate_data_dir", { new_dir: newDir }),
+  /** 原地重启 app(迁移后让库在新位置重新打开) */
+  restartApp: () => invoke<void>("restart_app"),
+
   // ---- 剪贴板 ----
   getClips: () => invoke<ClipItem[]>("get_clips"),
   deleteClip: (id: number) => invoke<void>("delete_clip", { id }),

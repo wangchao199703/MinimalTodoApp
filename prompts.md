@@ -621,3 +621,17 @@
 - **后端**:新增 `src-tauri/src/clipboard.rs`(`clipboard-rs` 后台线程监听系统剪贴板,默认开启;文本入库、图片存 PNG 文件 + 内嵌缩略图 base64;与上一条 hash 相同则去重;emit `clip-added`)。`database.rs` 加迁移 **v4**(`clips` / `clip_tags_def` / `clip_tags` 三表)+ `clipboard_images_dir()`(从 `data_dir()` 推导,为任务2 数据位置可配置预留集中出口)+ `clip_insert`/`clip_latest_hash`。`commands.rs` 加剪贴板读取/删除/置顶/标签 CRUD/打标签命令;`models.rs` 加 `ClipItem`/`ClipTag`/`NewClip`;`lib.rs` 注册模块 + setup 里 `start_watching` + 注册 11 个命令。`Cargo.toml` 加 `clipboard-rs=0.3.4`/`sha2`/`base64`/`image(png)`/`anyhow`(time 仍 0.3.47,无冲突)。`tauri.conf.json` asset 作用域加 `clipboard-images/**`。
 - **前端**:新增 `src/components/views/ClipboardView.tsx`(第二侧栏=剪切板标签可过滤/改名/改色/删 + 剪贴项列表,右键加入待办/便签、打标签、置顶、删除)。`tauri-ipc.ts` 加类型与方法;`useAppStore.ts` 加 `clipboard` 视图、clips/clipTags/clipFilterTagId 状态、`clip-added` 模块层监听、clipToTask/clipToNote(find-or-create「剪切板」待办标签/便签分组)等动作;`Sidebar.tsx` 加「剪切板」入口 + 默认顺序改为 all/completed/tagboard/quadrant/clipboard/notes + 老用户持久化顺序按默认相对位置补位「剪切板」;`App.tsx` 渲染 ClipboardView(日历不在此视图弹出);i18n 双语补键。
 - 验证:`npm run build`(tsc 严格)通过;`cargo check` + `cargo test --lib`(39 passed,含 4 个新剪贴板/迁移测试)通过。未升版本(2.0.0)。
+
+## 数据存储位置(数据迁移)
+
+**原始提示词:** 设置通用选项新增数据存储位置功能,选择后对数据进行移动,要求待办、便签、剪切板的图片都存到新位置,剪贴板的文本和图片存储位置也随设置改变。
+
+**本轮改动:**
+- **可配置数据根**:`database.rs` 的 `data_dir()` 改为优先读「数据位置指针」,否则用默认 `%AppData%\MinimalTodoApp`;原默认实现拆为 `default_data_dir()`。todo.db / note-images / group-icons / clipboard-images 全从这一个根推导,根一变整体跟着走。
+- **指针存哪**:新增 `src-tauri/src/storage.rs`,指针文件 = `%LOCALAPPDATA%\MinimalTodoApp\datapath`(纯文本,存自定义路径)。选这里是因为它**不随数据迁移**(本机级,与用户选的数据目录无关);绝不能存进 todo.db——库自己会被搬走,启动时就读不到指针 → 引导死锁。读指针在 `db::init` 打开库之前生效。
+- **迁移命令**`migrate_data_dir(new_dir)`(commands.rs):复制前先 WAL checkpoint(TRUNCATE)把 -wal 落进主库;再走 `storage::migrate_data_root`(校验新目录可写 + 冲突检测 → 复制库文件与三图片目录 → 按文件数/字节校验 + 关键文件存在 → 写指针 → 标记旧根待清理)。**copy→verify→delete**:校验通过前不动旧数据,任何一步失败回滚新根半成品、返回错误、旧数据原封不动。迁移成功后在**新位置的库**里把 clips.image_path 绝对路径前缀(旧根→新根)改写(剪贴板图片预览靠绝对路径),只改新库不碰旧库。
+- **旧根清理时机**:不在运行进程里删旧库(Windows 文件锁)。写「pending-cleanup」标记记旧根,**下次启动** `storage::cleanup_pending_old_root()`(在 db::init 之前)删旧库与三图片目录,并有「当前根 != 旧根」安全闸防误删。
+- **需要重启**:迁移完成必须重启 app 让库在新位置重新打开。新增 `restart_app` 命令(复用 updater 换壳 bat 思路,不带 --updated-from)。UI 迁移成功后弹确认 →「立即重启」。
+- **dialog 插件**:新增 `tauri-plugin-dialog`(Cargo + npm `@tauri-apps/plugin-dialog`)+ `dialog:allow-open` 权限,用于原生文件夹选择。
+- **设置 UI**:`SettingsPanel.tsx` 通用段新增「数据存储位置」(显示当前目录 + 「选择新位置」按钮 → 确认会移动数据并需重启 → 调迁移 → 提示重启)。i18n 双语补 `S.X.DataLocation*` 键。
+- 验证:`npm run build`(tsc 严格)+ `cargo check`(tauri-plugin-dialog v2.7.1 编入,time 仍 0.3.47)全过。版本保持 2.0.0。

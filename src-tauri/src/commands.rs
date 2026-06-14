@@ -948,6 +948,69 @@ pub fn remove_clip_tag(db: State<Db>, clip_id: i64, tag_id: i64) -> CmdResult<()
     Ok(())
 }
 
+// ---------- 数据存储位置(可配置数据根 + 迁移)----------
+
+/// 当前数据根目录(绝对路径),供设置 UI 显示。
+#[tauri::command]
+pub fn get_data_dir() -> String {
+    crate::storage::current_data_dir_string()
+}
+
+/// 迁移数据到 `new_dir`:安全顺序见 storage::migrate_data_root(copy→verify→写指针→标记旧根待清理)。
+///
+/// 本命令额外处理两件运行时相关的事:
+/// 1) 复制前做 WAL checkpoint(TRUNCATE),把 -wal 里的改动落进主库 todo.db,
+///    保证拷到新位置的库是完整最新数据。**不动旧库其它内容**(失败时旧数据须原封不动)。
+/// 2) clips.image_path 存的是**绝对路径**(见 clipboard.rs),迁移成功后,在**新位置的库**里
+///    把旧根前缀改写成新根前缀,否则图片预览(convertFileSrc(image_path))失效。
+///    只改新库、不碰旧库:这样若迁移失败旧库保持纯净;旧库下次启动随旧根一并清理。
+///    note-images / group-icons 只存文件名,无需改写。
+/// 完成后需重启 app(库在新位置重新打开),返回 true 表示需重启。
+#[tauri::command(rename_all = "snake_case")]
+pub fn migrate_data_dir(db: State<Db>, new_dir: String) -> CmdResult<bool> {
+    let new_root = std::path::PathBuf::from(new_dir.trim());
+    if new_root.as_os_str().is_empty() {
+        return Err("MIGRATE_EMPTY_PATH".into());
+    }
+    let old_root = crate::storage::resolve_data_dir();
+
+    // 1) 复制前 checkpoint:把 -wal 落进主库(只读不改业务数据)。
+    {
+        let conn = db.0.lock().map_err(err)?;
+        let _ = conn.pragma_update(None, "wal_checkpoint", "TRUNCATE");
+    }
+
+    // 2) 安全迁移(copy→verify→写指针→标记旧根待清理);失败旧数据原封不动。
+    let outcome = crate::storage::migrate_data_root(&new_root)?;
+
+    // 3) 迁移成功:在新位置的库里改写剪贴板图片绝对路径前缀(旧根 → 新根)。
+    //    单独开一个一次性连接,不影响进程持有的旧库连接。
+    let old_prefix = old_root.to_string_lossy().to_string();
+    let new_prefix = new_root.to_string_lossy().to_string();
+    if let Ok(conn) = Connection::open(new_root.join("todo.db")) {
+        // SUBSTR 起点用 SQLite 自己的 LENGTH(按字符计),避免中文路径下 Rust 字节长度错位。
+        let _ = conn.execute(
+            "UPDATE clips SET image_path = ?2 || SUBSTR(image_path, LENGTH(?1) + 1) \
+             WHERE image_path LIKE ?1 || '%'",
+            params![old_prefix, new_prefix],
+        );
+    }
+
+    Ok(outcome.need_restart)
+}
+
+/// 应用迁移后重启:复用更新换壳的 bat 思路,等本进程退出后原地重启同一个 exe。
+/// 不带 --updated-from(不回收自身),仅重启让库在新位置重新打开。
+#[tauri::command]
+pub fn restart_app(app: tauri::AppHandle) -> CmdResult<()> {
+    crate::storage::spawn_restart().map_err(err)?;
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        app.exit(0);
+    });
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

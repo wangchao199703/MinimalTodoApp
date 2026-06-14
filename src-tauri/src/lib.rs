@@ -3,12 +3,17 @@ mod commands;
 mod database;
 mod import;
 mod models;
+mod storage;
 mod updater;
 mod window;
 
 pub fn run() {
     // 更新换壳后回收旧 exe(无 --updated-from 参数时为空操作)
     updater::cleanup_after_update();
+
+    // 数据迁移完成后:清理上一处旧数据根(此时指针已指向新位置、旧库无人占用)。
+    // 必须在 database::init 打开新位置的库之前执行。
+    storage::cleanup_pending_old_root();
 
     let conn = database::init().expect("数据库初始化失败");
 
@@ -35,6 +40,8 @@ pub fn run() {
         ))
         // 系统通知:周期提醒在 app 最小化/隐藏时也能弹右下角 OS 通知
         .plugin(tauri_plugin_notification::init())
+        // 目录选择对话框:数据存储位置「选择新位置」用
+        .plugin(tauri_plugin_dialog::init())
         .manage(database::Db(std::sync::Mutex::new(conn)))
         .setup(|app| {
             window::setup_tray(app.handle())?;
@@ -75,6 +82,9 @@ pub fn run() {
             commands::save_group_icon,
             commands::list_group_icons,
             commands::export_file,
+            commands::get_data_dir,
+            commands::migrate_data_dir,
+            commands::restart_app,
             commands::get_clips,
             commands::delete_clip,
             commands::pin_clip,
