@@ -89,8 +89,8 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
     }
     const s = useAppStore.getState().settings;
     if ((s["effects_enabled"] ?? "1") === "1") fireworksAt(e.clientX, e.clientY);
-    if (s["sound_enabled"] === "1")
-      playComplete(normalizeSoundStyle(s["complete_sound_style"] || s["sound_style"]));
+    if ((s["sound_enabled"] ?? "1") === "1")
+      playComplete(normalizeSoundStyle(s["complete_sound_style"] || s["sound_style"] || "cute"));
     const parent = task.parent_id ? tasks.find((t) => t.id === task.parent_id) : null;
     const isLiveChild = !!parent && !parent.is_completed;
     if (isLiveChild) {

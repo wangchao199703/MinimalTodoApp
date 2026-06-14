@@ -177,7 +177,7 @@ export default function SettingsPanel() {
             <Toggle
               label={t("S.Settings.Sound")}
               desc={t("S.Settings.SoundDesc")}
-              checked={flag("sound_enabled", false)}
+              checked={flag("sound_enabled", true)}
               onChange={setFlag("sound_enabled")}
             />
             <Toggle
@@ -192,8 +192,9 @@ export default function SettingsPanel() {
                 key: string,
                 titleKey: string,
                 preview: (s: (typeof SOUND_STYLES)[number]) => void,
+                def: (typeof SOUND_STYLES)[number],
               ) => {
-                const cur = normalizeSoundStyle(settings[key] || settings["sound_style"]);
+                const cur = normalizeSoundStyle(settings[key] || settings["sound_style"] || def);
                 return (
                   <div className="mt-1 mb-1">
                     <p className="mb-2 text-sm text-text-1">{t(titleKey)}</p>
@@ -232,11 +233,13 @@ export default function SettingsPanel() {
                     "complete_sound_style",
                     "S.Settings.SoundStyle.CompleteTitle",
                     playComplete,
+                    "cute",
                   )}
                   {renderPicker(
                     "reminder_sound_style",
                     "S.Settings.SoundStyle.ReminderTitle",
                     playReminder,
+                    "game",
                   )}
                 </>
               );

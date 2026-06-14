@@ -573,3 +573,6 @@
 **提示词:** 完成提示音和周期提醒音不要组合,各自可自由单独选择,给用户更多选择。
 - 把 agent 做的「单一 `sound_style` 同步驱动完成+提醒」拆成**两个独立设置**:`complete_sound_style`(完成音)、`reminder_sound_style`(提醒音),各 4 套任选、自由组合(4×4)。
 - `SettingsPanel` 提示音区改为**两个独立选择器**(完成提示音 / 周期提醒音),每项一个试听按钮;`TaskItem` 完成音读 `complete_sound_style`、`App.tsx` 提醒音读 `reminder_sound_style`(均回退旧 `sound_style` 兼容)。i18n 加 `CompleteTitle/ReminderTitle/Preview` 双语。`applyRemoteSetting` 对任意 key 都并入 settings,跨窗口同步自动生效。`npm run build` 通过。`5340782`
+
+**提示词:** 默认完成提示音改俏皮可爱、默认周期提醒音改奖励游戏化、默认完成音效打开(用户说开 agent;实为 3 个默认值,内联改更快,已直说并内联)。
+- 完成音默认 `cute`、提醒音默认 `game`、`sound_enabled` 默认 ON:`TaskItem` 完成音 fallback `|| "cute"` 且开关读 `(s["sound_enabled"] ?? "1")`;`App.tsx` 提醒音 fallback `|| "game"`;`SettingsPanel` `sound_enabled` Toggle 默认 `true`、`renderPicker` 加 `def` 参数(complete→cute / reminder→game)使选中高亮与真实默认一致。`npm run build` 通过。`(本轮)`
