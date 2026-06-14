@@ -922,7 +922,7 @@ body {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: color-mix(in srgb, var(--muted-text) 40%, var(--divider));
+  background: var(--divider);
 }
 /* 苹果/可爱/白玻/微色调/双层面板:子任务前竖线引导(对齐流体:1px 浅灰常驻) */
 .design-apple .task-item:not([data-level="0"])::before,
@@ -936,7 +936,7 @@ body {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: color-mix(in srgb, var(--muted-text) 40%, var(--divider));
+  background: var(--divider);
 }
 
 /* 折叠箭头:苹果/极客平时隐藏、hover 整行才显现(防误触);可爱/经典常驻 */
@@ -985,7 +985,7 @@ body {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: color-mix(in srgb, var(--muted-text) 40%, var(--divider));
+  background: var(--divider);
 }
 .design-notion .task-collapse { opacity: 0; }
 .design-notion .task-item:hover .task-collapse { opacity: 1; }
@@ -1035,7 +1035,7 @@ body {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: color-mix(in srgb, var(--muted-text) 40%, var(--divider));
+  background: var(--divider);
 }
 .design-fluent .task-collapse { opacity: 0; }
 .design-fluent .task-item:hover .task-collapse { opacity: 1; }
