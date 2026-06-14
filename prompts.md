@@ -375,4 +375,12 @@
 - store 默认 `design:"linear"`/`priorityStyle:"notion"`;init/initSettingsWindow 用 `migrateDesign` 归一内置键(老用户存的 `classic` → 默认 linear,`custom:<id>` 原样保留)。SettingsPanel 的勾选框默认值 fallback 改 `.linear`。`npm run build` 通过。`2089d83`
 
 **提示词:** 检查 6 套版式待办的字体大小,可爱版式字体特别大。
-- 排查:只有可爱版式 `.design-cute .task-title` 显式 `font-size: 0.9375rem`(15px),其余 5 套都用基线 `text-sm`(14px)→ 可爱偏大。去掉可爱的 `font-size` 覆盖(保留 `font-weight:700`),6 套标题字号统一 14px,仅字重不同。`npm run build` 通过。`(本轮)`
+- 排查:只有可爱版式 `.design-cute .task-title` 显式 `font-size: 0.9375rem`(15px),其余 5 套都用基线 `text-sm`(14px)→ 可爱偏大。去掉可爱的 `font-size` 覆盖(保留 `font-weight:700`),6 套标题字号统一 14px,仅字重不同。`npm run build` 通过。`6fae429`
+
+**提示词:** 再加几套(桌面文档:4 套"清晰透明"风,强调可读性)→ 此前曾加过 4 套炫酷玻璃(视界/霓虹/全息/亚克力)被用户「撤销」(`git reset` 回退);本轮按新文档做"高可读"玻璃。
+- 文档三原则:文字纯色不发光、玻璃高覆盖率(≥60% 底)、优先级收敛为实体点/线/块。据此加 **4 套**(共 10 套):
+  - **纯净白玻 frost**:`--card-bg` 80% 高覆盖磨砂(随主题自适应)+ 纯色深字,最清晰。
+  - **深邃暗玻 darkglass**:固定 `slate-900/72` 深玻 + 纯白字(配深色/玻璃主题)。
+  - **微色调 tinted**:高覆盖玻璃 + `--pri` 极淡晕染(8% 嵌套 color-mix)+ 优先级色描边(其标志,例外地内置优先级)。
+  - **双层面板 panel**:`app-task-list` 玻璃底 + `task-item` 纯实底任务条(外透内实,最清晰)。
+- 其余 3 套玻璃只做材质,优先级仍走 prio-* 设置;各套复用 task-* hook(半满态/进度条)。`themes.ts` DESIGNS 加 frost/darkglass/tinted/panel + LABEL/DESC/CHECKBOX_DEFAULT;i18n 双语;`index.css` 加 4 套 `.design-*`。`npm run build` 通过。`(本轮)`
