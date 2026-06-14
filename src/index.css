@@ -780,7 +780,14 @@ body {
 .task-item:not([data-level="0"]) .task-title { font-weight: 400; line-height: 1.35; }
 .task-item:not([data-level="0"]) .task-title:not(.text-muted) { color: var(--secondary-text); }
 .task-check.is-done { background: var(--accent); border-color: var(--accent); }
-.task-pri-dot { display: none; height: 0.5rem; width: 0.5rem; border-radius: 9999px; }
+.task-pri-dot {
+  display: none;
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 9999px;
+  /* 标题行改 items-start 后,把圆点下移居中到首行(与勾选框同基准 1.25rem),换行也贴第一行 */
+  margin-top: calc((1.25rem - 0.5rem) / 2 * var(--ds, 1));
+}
 .task-pri-icon { display: none; }
 .task-tag { display: none; }
 .task-tag::before { content: "#"; opacity: 0.7; }

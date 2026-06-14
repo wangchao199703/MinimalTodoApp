@@ -222,7 +222,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
             className="min-w-0 bg-transparent text-sm text-text-1 outline-none"
           />
         ) : (
-          <div className="task-title-row flex min-w-0 items-center gap-1.5">
+          <div className="task-title-row flex min-w-0 items-start gap-1.5">
             {/* 优先级标记(高优先级 ! 等):由 prio-* 设置按 data-pri 用 CSS ::before 注入 */}
             <span className="task-pri-mark shrink-0" />
             {/* 优先级小圆点:文档(notion)优先级展示用(CSS 控制) */}

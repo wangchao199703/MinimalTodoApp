@@ -491,7 +491,11 @@
 - 该文档内容上轮已记入附录且未变,按 `CLAUDE.md` 规则 1 不重复记录。
 - 审计:字号(标题14/子任务13/元数据12)、字重、间距、子任务降级 已符合。主要偏差=标题 `truncate` 单行省略,文档建议窄窗 `break-words` 换行完整显示。已问用户 → 选换行完整显示。
 - 改动:① 标题 `truncate` → `break-words`(`TaskItem`);② 文档强调换行后复选框必须对齐首行、绝不 `items-center` → 把 极客/白玻/微色调/双层面板 4 套从 `align-items:center` 改 `flex-start`,**9 套全顶对齐**;③ 把「复选框对齐首行」的 `margin-top` 计算从分散 5 套**收敛到基线 `.task-check`**(随尺寸+层级 `--ds` 自适应),删冗余。
-- 未改(有理由):字体已是系统原生无外部字体,中文应用 Microsoft YaHei UI 优先比 system-ui 优先更宜中文渲染(文档链拉丁优先),不改;行高 1.45 在容差内且与复选框居中基准一致,不为 0.5px 重调;notion 字重 400 是其克制特征,保留。`npm run build` 通过。`(本轮)`
+- 未改(有理由):字体已是系统原生无外部字体,中文应用 Microsoft YaHei UI 优先比 system-ui 优先更宜中文渲染(文档链拉丁优先),不改;行高 1.45 在容差内且与复选框居中基准一致,不为 0.5px 重调;notion 字重 400 是其克制特征,保留。`npm run build` 通过。`e63251e`
+
+**提示词:** 勾选框和第一行对齐了,但优先级圆点着色没和勾选框在一行。
+- 根因:优先级圆点(notion 圆点着色)在 `task-title-row` 里,该行原 `items-center`;标题换行后整行变高,圆点被居中挤到中间,脱离第一行。
+- 修法:① `task-title-row` `items-center` → `items-start`(子元素贴首行);② `.task-pri-dot` 加 `margin-top: calc((1.25rem - 0.5rem)/2 * var(--ds))`——与勾选框同 1.25rem 基准,圆点圆心落首行中线,和勾选框一条线。`npm run build` 通过。`(本轮)`
 
 ---
 
