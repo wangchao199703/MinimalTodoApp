@@ -412,4 +412,7 @@
 - 把勾选框的实心饼填充改回**空心进度环**:`conic-gradient(accent var(--pct), divider 0)`(已完成段 accent + 余量段 divider)+ `radial-gradient` mask 挖空中心 + `border-color: transparent`——勾选框本体即进度环(对齐上一版独立小圆环的观感)。`npm run build` 通过。`27bc336`
 
 **提示词:** 圆环显示异常,自查确认。
-- 自查发现 3 处并修复:① conic 硬停止裸 `0`(无单位)在 WebView 下可能解析异常 → 改 `var(--divider) var(--pct)` 显式同位;② mask 用默认 `circle`(farthest-corner)致方框内中心孔偏大/环怪 → 改 `circle closest-side`(58%/60%)相对圆精确;③ 环规则特异性 (0,3,1) 被 `.prio-apple .task-check:not(...)`(0,4,0)盖过致环外多套一圈优先级色边框 → 选择器加 `:not(.is-done)` 提到 (0,4,1),`border-color: transparent` 稳定生效。`npm run build` 通过。`(本轮)`
+- 自查发现 3 处并修复:① conic 硬停止裸 `0`(无单位)在 WebView 下可能解析异常 → 改 `var(--divider) var(--pct)` 显式同位;② mask 用默认 `circle`(farthest-corner)致方框内中心孔偏大/环怪 → 改 `circle closest-side`(58%/60%)相对圆精确;③ 环规则特异性 (0,3,1) 被 `.prio-apple .task-check:not(...)`(0,4,0)盖过致环外多套一圈优先级色边框 → 选择器加 `:not(.is-done)` 提到 (0,4,1),`border-color: transparent` 稳定生效。`27bc336`/`cc1548a`
+
+**提示词:**(附图)圆环显示异常——方形勾选框版式下成了「半蓝半白方块」。
+- 根因:默认版式极客(及文档/粗野)的勾选框是**方形**,conic + 圆形 mask 套在方框上就成了半填充方块。圆环进度本质是圆,故圆环模式下给父任务勾选框**强制 `border-radius: 9999px`**(覆盖方形/自定义形状),conic 与圆 mask 对齐 → 干净空心环。`npm run build` 通过。`(本轮)`

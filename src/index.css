@@ -1195,6 +1195,8 @@ html.pg-ring .task-progress { display: none; }
 html.pg-ring .task-subcount { display: none; }
 html.pg-ring .task-check.is-parent:not(.is-done) {
   background: conic-gradient(var(--accent) var(--pct, 0%), var(--divider) var(--pct, 0%));
+  /* 进度环本质是圆:强制圆形、无边框,覆盖方形/自定义形状,使 conic + 圆 mask 对齐 */
+  border-radius: 9999px;
   border-color: transparent;
   -webkit-mask: radial-gradient(circle closest-side, transparent 58%, #000 60%);
   mask: radial-gradient(circle closest-side, transparent 58%, #000 60%);
