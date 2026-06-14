@@ -438,4 +438,9 @@
 - 修法:5 套 flex-start 版式的固定 margin-top 改为 **`calc((1.25rem - var(--check-size, 版式默认尺寸)) / 2)`**——按标题行高(text-sm=1.25rem)居中,`var(--check-size, 默认)` 同时覆盖「跟随版式默认尺寸」与「自定义尺寸」两种情形,圆心恒落文字中线。`npm run build` 通过。`5d69f08`
 
 **提示词:** 将苹果样式的大小调整为 19,并改名为「经典」。
-- 仅改标签与默认尺寸,版式 key 仍 `apple`(无迁移)。`index.css` `.design-apple .task-check` 宽高 1.25rem→**19px**、margin-top fallback 同步 19px;`themes.ts` `DESIGN_CHECKBOX_DEFAULT.apple.size` 20→19(设置里「跟随版式」显示真实值);i18n `S.X.Design.Apple` zh「苹果」→「经典」、en「Apple」→「Classic」。`npm run build` 通过。`(本轮)`
+- 仅改标签与默认尺寸,版式 key 仍 `apple`(无迁移)。`index.css` `.design-apple .task-check` 宽高 1.25rem→**19px**、margin-top fallback 同步 19px;`themes.ts` `DESIGN_CHECKBOX_DEFAULT.apple.size` 20→19(设置里「跟随版式」显示真实值);i18n `S.X.Design.Apple` zh「苹果」→「经典」、en「Apple」→「Classic」。`npm run build` 通过。`af1e50a`
+
+**提示词:** 子待办的勾选框、字体大小、行距,比父层级等比缩小。
+- 引入层级缩放因子 **`--ds = calc(1 - 0.07 * min(var(--lvl), 3))`**(挂 `.task-item`,封顶第 3 层≈0.79)。
+- 勾选框:把 9 套版式各自的 `width/height` 收敛为 **`--cb-base`**,基线 `.task-check` 统一 `width/height = calc(var(--check-size, var(--cb-base)) * var(--ds))` —— 自定义尺寸优先、否则版式默认,再乘层级缩放;删除冗余的 `html.cb-size` 宽高覆盖(否则自定义尺寸不随层级缩);5 套 flex-start 版式 margin-top 居中同步乘 `--ds` 并改用 `var(--cb-base)` fallback。
+- 字体/行距:`.task-title { font-size: calc(0.875rem * --ds); line-height: 1.43 }`、`.task-meta { font-size: calc(0.75rem * --ds) }`(行高用无单位倍数,随字号缩放即行距缩小)。`npm run build` 通过。`(本轮)`

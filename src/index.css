@@ -752,7 +752,19 @@ body {
    经典(classic)= 基线默认,不写覆盖即保持现状。 */
 
 /* —— 新元素基线:勾选框颜色走 --pri(优先级色);优先级圆点/信号图标、标签后缀默认隐藏 —— */
-.task-check { border-color: var(--muted-text); color: var(--accent-text); }
+.task-check {
+  border-color: var(--muted-text);
+  color: var(--accent-text);
+  /* 勾选框尺寸:自定义优先(--check-size),否则版式默认(--cb-base);再按层级缩放(--ds) */
+  width: calc(var(--check-size, var(--cb-base, 1rem)) * var(--ds, 1));
+  height: calc(var(--check-size, var(--cb-base, 1rem)) * var(--ds, 1));
+}
+
+/* —— 层级等比缩小:子待办越深,勾选框/字体/行距越小(--ds 缩放因子,封顶第 3 层)——
+   --lvl 为 TaskItem 注入的缩进层级数;勾选框尺寸经 --ds、标题/副信息字号与行高同步缩放。 */
+.task-item { --ds: calc(1 - 0.07 * min(var(--lvl, 0), 3)); }
+.task-title { font-size: calc(0.875rem * var(--ds, 1)); line-height: 1.43; }
+.task-meta { font-size: calc(0.75rem * var(--ds, 1)); }
 .task-check.is-done { background: var(--accent); border-color: var(--accent); }
 .task-pri-dot { display: none; height: 0.5rem; width: 0.5rem; border-radius: 9999px; }
 .task-pri-icon { display: none; }
@@ -772,12 +784,11 @@ body {
 .design-apple .task-item:hover { background: var(--card-hover-bg); }
 .design-apple .app-task-list { gap: 0; }
 .design-apple .task-check {
-  width: 19px;
-  height: 19px;
+  --cb-base: 19px;
   border-width: 1.5px;
   border-color: var(--muted-text);
-  /* 居中对齐标题行(1.25rem):随勾选框尺寸自适应,调大调小圆心始终落在文字中线 */
-  margin-top: calc((1.25rem - var(--check-size, 19px)) / 2);
+  /* 居中对齐标题行(1.25rem):随勾选框尺寸 + 层级缩放(--ds)自适应,圆心始终落文字中线 */
+  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-apple .task-check.is-done { border-color: var(--accent); }
 .design-apple .task-title { font-weight: 500; }
@@ -796,8 +807,7 @@ body {
 .design-linear .task-item:hover { background: var(--card-hover-bg); }
 .design-linear .app-task-list { gap: 0; }
 .design-linear .task-check {
-  width: 1rem;
-  height: 1rem;
+  --cb-base: 1rem;
   border-radius: 4px;
   border-width: 1px;
   border-color: var(--muted-text);
@@ -828,10 +838,9 @@ body {
 .glassy .design-cute .task-item { box-shadow: 0 2px 10px -2px rgb(0 0 0 / 0.35); }
 .design-cute .app-task-list { gap: 0.5rem; padding-top: 0.25rem; }
 .design-cute .task-check {
-  width: 1.5rem;
-  height: 1.5rem;
+  --cb-base: 1.5rem;
   border-width: 2px;
-  margin-top: calc((1.25rem - var(--check-size, 1.5rem)) / 2);
+  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-cute .task-title { font-weight: 700; }
 .design-cute .task-tag {
@@ -943,12 +952,11 @@ body {
 .design-notion .task-item:hover { background: var(--card-hover-bg); }
 .design-notion .app-task-list { gap: 0.1rem; }
 .design-notion .task-check {
-  width: 1.05rem;
-  height: 1.05rem;
+  --cb-base: 1.05rem;
   border-radius: 3px;
   border-width: 1px;
   border-color: var(--muted-text);
-  margin-top: calc((1.25rem - var(--check-size, 1.05rem)) / 2);
+  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-notion .task-check .task-half { display: none; }
 .design-notion .task-check.is-indeterminate::after {
@@ -990,10 +998,9 @@ body {
 }
 .design-fluent .app-task-list { gap: 0.4rem; padding-top: 0.25rem; }
 .design-fluent .task-check {
-  width: 1.25rem;
-  height: 1.25rem;
+  --cb-base: 1.25rem;
   border-color: color-mix(in srgb, white 45%, var(--divider));
-  margin-top: calc((1.25rem - var(--check-size, 1.25rem)) / 2);
+  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-fluent .task-check .task-half {
   display: block;
@@ -1043,12 +1050,11 @@ body {
 }
 .design-brutal .app-task-list { gap: 0.75rem; padding-right: 6px; }
 .design-brutal .task-check {
-  width: 1.25rem;
-  height: 1.25rem;
+  --cb-base: 1.25rem;
   border-radius: 0;
   border-width: 2px;
   border-color: var(--primary-text);
-  margin-top: calc((1.25rem - var(--check-size, 1.25rem)) / 2);
+  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-brutal .task-check.is-done { background: var(--accent); border-color: var(--primary-text); }
 .design-brutal .task-check .task-half { display: block; color: var(--primary-text); }
@@ -1095,8 +1101,8 @@ body {
 /* 信号强度:左侧前置信号图标(低1/中2/高3 格),按 --pri 着色;勾选框环保持中性 */
 .prio-signal .task-pri-icon { display: flex; }
 
-/* 勾选框自定义(自定义版式生效时):html.cb-* 特异性高于版式 .design-* .task-check,故覆盖之 */
-html.cb-size .task-check { width: var(--check-size); height: var(--check-size); }
+/* 勾选框自定义(自定义版式生效时):html.cb-* 特异性高于版式 .design-* .task-check,故覆盖之。
+   尺寸不在此处覆盖——基线 .task-check 已用 var(--check-size, --cb-base) 解析并叠加 --ds 层级缩放。 */
 html.cb-shape .task-check { border-radius: var(--check-radius); }
 html.cb-width .task-check { border-width: var(--check-bw); }
 
@@ -1117,8 +1123,7 @@ html.cb-width .task-check { border-width: var(--check-bw); }
 .design-frost .task-item:hover { background: color-mix(in srgb, var(--card-bg) 90%, transparent); }
 .design-frost .app-task-list { gap: 0.45rem; }
 .design-frost .task-check {
-  width: 1.125rem;
-  height: 1.125rem;
+  --cb-base: 1.125rem;
   border-color: var(--muted-text);
   background: color-mix(in srgb, var(--card-bg) 50%, transparent);
 }
@@ -1143,8 +1148,7 @@ html.cb-width .task-check { border-width: var(--check-bw); }
 }
 .design-tinted .app-task-list { gap: 0.45rem; }
 .design-tinted .task-check {
-  width: 1.25rem;
-  height: 1.25rem;
+  --cb-base: 1.25rem;
   border-radius: 6px;
   border-color: color-mix(in srgb, var(--pri) 60%, transparent);
   background: color-mix(in srgb, var(--card-bg) 50%, transparent);
@@ -1173,8 +1177,7 @@ html.cb-width .task-check { border-width: var(--check-bw); }
   margin-left: calc(var(--lvl, 0) * 12px);
 }
 .design-panel .task-check {
-  width: 1.375rem;
-  height: 1.375rem;
+  --cb-base: 1.375rem;
   border-radius: 6px;
   border-color: var(--divider);
   background: color-mix(in srgb, var(--accent) 12%, var(--card-bg));
