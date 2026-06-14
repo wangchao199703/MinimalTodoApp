@@ -42,6 +42,7 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
 ## 四、近期已提交的大事(committed,均未 push)
 
+- **便签拖入 .md 导入**:从资源管理器把 `.md`/`.markdown` 拖进便签区 → 建便签(标题=文件名去扩展名,正文=Markdown 文本,直接存 `notes.content`,TipTap 以 `contentType:"markdown"` 渲染,无需转换)并打开(多份选最后一条);拖到分组头则归类到该组,拖空白处落默认分组。实现:store `importNotesFromFiles(files, groupId?)`(`createNote`→`updateNote` 回填);`src/lib/markdownIO.ts` 加 `readMarkdownDrop/isMarkdownFile/stripMdExt`;`NotesView.tsx` 容器 + `NotesTree.tsx` 各分组头挂 **React 合成 `onDragOver`(preventDefault)/`onDragLeave`/`onDrop`**,仅当 `dataTransfer.types` 含 `Files` 才拦截(避开内部排序拖拽),分组头 drop `stopPropagation` 防冒泡;i18n `S.X.DropMdToImport` 双语。**未碰 `dragDropEnabled:false`**。⚠️ **该功能依赖 WebView2 在 `dragDropEnabled:false` 下向网页派发「来自资源管理器的外部文件 drop」,需运行时验证;若不派发则另议方案(绝不可开 OS 拖放,否则毁掉排序)。** `npm run build` 通过。
 - **提示音风格(4 套成对)**:`src/lib/effects.ts` 新增 `playComplete(style)`/`playReminder(style)` + 合成原语 `tone`/`bowl`/`drop`,4 套风格 `minimal`/`game`/`zen`/`cute`(`SOUND_STYLES`、`normalizeSoundStyle`)。完成音与提醒音跟随同一设置键 `sound_style`(默认 `minimal`,贴近原完成音)。触发处:`TaskItem.tsx`(完成)、`App.tsx` 提醒轮询(提醒)按 `sound_style` 分发;原 `sound_enabled`/`reminder_sound_enabled` 开关保留。设置→待办 加「提示音风格」网格,每项带「完成/提醒」试听按钮(`SettingsPanel.tsx`)。i18n `S.Settings.SoundStyle.*` 双语已加(`src/i18n/{zh,en}.json`)。`npm run build` 通过。注:`playCelebration`/`playReminderDing` 旧导出仍保留未删(无引用,可后续清理)。
 - `0b9a598` 侧栏彩色化与收起图标化 + 设置面板重排 + 便签字体双开关。
 - `ccc3478` 标签/便签改回独立第二侧边栏 + 支持调宽与收起(注:标签第二侧栏在 §三 中又被移除)。

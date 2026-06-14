@@ -10,6 +10,7 @@ import {
   type UpdateTaskRequest,
 } from "../lib/tauri-ipc";
 import { sortTree, descendantIds, type SortMode } from "../lib/sort";
+import { deriveTitle } from "../lib/markdown";
 import { nowText } from "../lib/date";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -73,6 +74,11 @@ interface AppState {
   resetSettings: () => Promise<void>;
   selectNote: (id: string | null) => void;
   addNote: (groupId?: string) => Promise<void>;
+  /** 从拖入的 .md 文件批量导入便签:标题=文件名(去扩展名),正文=Markdown 文本;可指定目标分组,导入后选中最后一条 */
+  importNotesFromFiles: (
+    files: { name: string; content: string }[],
+    groupId?: string,
+  ) => Promise<void>;
   patchNote: (req: UpdateNoteRequest) => Promise<void>;
   removeNote: (id: string) => Promise<void>;
   addNoteGroup: (name: string) => Promise<void>;
@@ -300,6 +306,33 @@ export const useAppStore = create<AppState>((set, get) => ({
     // 未指定分组时后端落到默认分组(可能自动新建「收集箱」),同步分组列表
     const noteGroups = groupId ? get().noteGroups : await ipc.getNoteGroups();
     set((s) => ({ notes: [note, ...s.notes], noteGroups, selectedNoteId: note.id }));
+  },
+
+  importNotesFromFiles: async (files, groupId) => {
+    if (files.length === 0) return;
+    // 逐个:先建空便签(后端可能自动建「收集箱」分组),再回填文件名标题 + Markdown 正文
+    let lastId: string | null = null;
+    const created: Note[] = [];
+    for (const f of files) {
+      const blank = await ipc.createNote(groupId);
+      const next = await ipc.updateNote({
+        id: blank.id,
+        content: f.content,
+        title: deriveTitle(f.content),
+        custom_title: f.name, // 文件名(已去扩展名),作为用户标题
+      });
+      created.push(next);
+      lastId = next.id;
+    }
+    // 未指定分组时后端可能新建默认分组,同步分组列表;否则沿用现有
+    const noteGroups = groupId ? get().noteGroups : await ipc.getNoteGroups();
+    const createdIds = new Set(created.map((n) => n.id));
+    set((s) => ({
+      // 新便签置顶(create_note 默认排在最前),过滤掉占位再插入回填后的版本
+      notes: [...created, ...s.notes.filter((n) => !createdIds.has(n.id))],
+      noteGroups,
+      selectedNoteId: lastId, // 多份打开最后一条
+    }));
   },
 
   patchNote: async (req) => {
