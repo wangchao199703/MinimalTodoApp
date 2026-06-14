@@ -926,3 +926,154 @@ body {
 .design-linear .task-collapse { opacity: 0; }
 .design-apple .task-item:hover .task-collapse,
 .design-linear .task-item:hover .task-collapse { opacity: 1; }
+
+/* ============ 追加 3 套版式:文档 Notion / 流体 Fluent / 粗野 Brutalism ============ */
+
+/* ========== 文档块感 Notion:弱边界 + 文本流 + 灰方块半满 + 实线引导 ========== */
+.design-notion .task-item {
+  border-color: transparent;
+  border-radius: 4px;
+  background: transparent;
+  align-items: flex-start;
+  padding: 0.25rem 0.4rem;
+  gap: 0.5rem;
+  margin-left: calc(var(--lvl, 0) * 12px);
+}
+.design-notion .task-item:hover { background: var(--card-hover-bg); }
+.design-notion .app-task-list { gap: 0.1rem; }
+.design-notion .task-check {
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 3px;
+  border-width: 1px;
+  border-color: var(--muted-text);
+  margin-top: 0.15rem;
+}
+.design-notion .task-check .task-half { display: none; }
+.design-notion .task-check.is-indeterminate::after {
+  content: "";
+  height: 0.55rem;
+  width: 0.55rem;
+  border-radius: 1px;
+  background: var(--muted-text);
+}
+.design-notion .task-title { font-weight: 400; }
+.design-notion .task-tag { display: inline; }
+.design-notion .task-tag::before { content: ""; }
+.design-notion .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--divider);
+}
+.design-notion .task-collapse { opacity: 0; }
+.design-notion .task-item:hover .task-collapse { opacity: 1; }
+
+/* ========== 流体拟态 Fluent:毛玻璃 + 发光描边 + 发光进度条 + 发光引导线 ========== */
+.design-fluent .task-item {
+  background: color-mix(in srgb, var(--card-bg) 55%, transparent);
+  backdrop-filter: blur(8px);
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, white 30%, var(--divider));
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+  align-items: flex-start;
+  padding: 0.6rem 0.7rem;
+  gap: 0.7rem;
+  margin-left: calc(var(--lvl, 0) * 12px);
+}
+.design-fluent .task-item:hover {
+  background: color-mix(in srgb, var(--card-bg) 72%, transparent);
+}
+.design-fluent .app-task-list { gap: 0.4rem; padding-top: 0.25rem; }
+.design-fluent .task-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-color: color-mix(in srgb, white 45%, var(--divider));
+  margin-top: 0.1rem;
+}
+.design-fluent .task-check .task-half {
+  display: block;
+  color: var(--accent);
+  filter: drop-shadow(0 0 3px var(--accent));
+}
+.design-fluent .task-check.is-indeterminate { border-color: var(--accent); }
+.design-fluent .task-progress { display: block; height: 3px; }
+.design-fluent .task-progress-fill { box-shadow: 0 0 8px var(--accent); }
+.design-fluent .task-subcount { display: none; }
+.design-fluent .task-tag {
+  display: inline;
+  background: color-mix(in srgb, white 26%, transparent);
+  border-radius: 9999px;
+  padding: 0.02rem 0.4rem;
+}
+.design-fluent .task-tag::before { content: ""; }
+.design-fluent .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 55%, white);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.design-fluent .task-collapse { opacity: 0; }
+.design-fluent .task-item:hover .task-collapse { opacity: 1; }
+
+/* ========== 新粗野像素 Brutalism:粗黑边 + 硬偏移阴影 + 方块勾选 + 贴纸标签 ========== */
+/* 用 --primary-text 充当「黑」:浅色近黑、深色近白,兼容各主题且不失粗野感 */
+.design-brutal .task-item {
+  border: 2px solid var(--primary-text);
+  border-radius: 2px;
+  background: var(--card-bg);
+  box-shadow: 3px 3px 0 0 var(--primary-text);
+  align-items: flex-start;
+  padding: 0.5rem 0.6rem;
+  gap: 0.7rem;
+  margin-left: calc(var(--lvl, 0) * 14px);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.design-brutal .task-item:hover {
+  box-shadow: 5px 5px 0 0 var(--primary-text);
+  transform: translate(-2px, -2px);
+  background: var(--card-bg);
+}
+.design-brutal .app-task-list { gap: 0.75rem; padding-right: 6px; }
+.design-brutal .task-check {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0;
+  border-width: 2px;
+  border-color: var(--primary-text);
+  margin-top: 0.1rem;
+}
+.design-brutal .task-check.is-done { background: var(--accent); border-color: var(--primary-text); }
+.design-brutal .task-check .task-half { display: block; color: var(--primary-text); }
+.design-brutal .task-check.is-indeterminate { background: transparent; }
+.design-brutal .task-title { font-weight: 700; }
+.design-brutal .task-tag {
+  display: inline;
+  background: color-mix(in srgb, var(--accent) 25%, var(--card-bg));
+  color: var(--primary-text);
+  border: 1px solid var(--primary-text);
+  border-radius: 0;
+  padding: 0 0.3rem;
+  font-weight: 700;
+  box-shadow: 1px 1px 0 0 var(--primary-text);
+}
+.design-brutal .task-tag::before { content: ""; }
+.design-brutal .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary-text);
+}
+.design-brutal .task-collapse { opacity: 0; font-weight: 900; }
+.design-brutal .task-item:hover .task-collapse { opacity: 1; }

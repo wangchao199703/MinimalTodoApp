@@ -332,4 +332,11 @@
 - TaskItem 加 `--lvl`/`data-level` + `indeterminate`/`progress` + `.task-collapse/.task-half/.task-progress/.task-subcount`;`index.css` 末尾加多级块。`npm run build` 通过。`92aaf9d`
 
 **提示词:** 将所有的折叠按钮放到右边边,左边的勾选框往左边靠。
-- 所有版式:折叠箭头从**左侧**(勾选框前)移到**行右边缘**(删除按钮之后);删掉左侧折叠/占位块,勾选框自然靠左(约左移 20px)。`.task-collapse` 的 hover 显隐逻辑与位置无关,仍生效(苹果/极客 hover 才显,经典/可爱常驻)。`npm run build` 通过。`(本轮)`
+- 所有版式:折叠箭头从**左侧**(勾选框前)移到**行右边缘**(删除按钮之后);删掉左侧折叠/占位块,勾选框自然靠左(约左移 20px)。`.task-collapse` 的 hover 显隐逻辑与位置无关,仍生效(苹果/极客 hover 才显,经典/可爱常驻)。`npm run build` 通过。`88ad01e`
+
+**提示词:** 参考桌面文档(已更新,加了风格 4/5/6)再加几套。
+- 文档新增 3 套,按方案落地为新版式(复用现有统一 DOM + `task-*` hook,只加 CSS 皮肤 + 注册 + i18n),共 **7 套**:
+  - **④文档 Notion**:弱边界、hover 整行成块、极小行距、方框灰方块半满、`#`标签去前缀、细实线引导、右侧 hover 箭头;用 `1/3` 计数不用进度条。
+  - **⑤流体 Fluent**:毛玻璃 `backdrop-blur` + 半透明白描边 + 柔阴影、发光勾选(半满发光横杠)、**发光进度条**、左侧**发光引导线**、半透明胶囊标签。
+  - **⑥粗野 Brutalism**:粗黑边(`--primary-text` 充当黑,浅近黑/深近白)+ 硬偏移阴影(hover 位移放大)、方块勾选、贴纸标签(带边+硬阴影)、粗黑引导线。
+- `themes.ts` DESIGNS 加 notion/fluent/brutal;i18n 双语加 `S.X.Design.{Notion,Fluent,Brutal}{,Desc}`;`index.css` 末尾加 3 套 `.design-*`。设置→通用→界面版式 2×2 自动列出 7 套。`npm run build` 通过。`(本轮)`

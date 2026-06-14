@@ -95,7 +95,15 @@ export function migrateThemeKey(saved: string | undefined): Theme {
 // ============ 界面版式(design):与配色主题正交的「布局/质感」轴 ============
 // 在 <html> 挂 design-<key>,统一 DOM + CSS 变量换肤(参考 Gemini 三套方案)。
 // 多数视图复用 TaskItem,一处定义即覆盖 列表 / 四象限 / 标签看板。在「设置」里切换。
-export const DESIGNS = ["classic", "apple", "linear", "cute"] as const;
+export const DESIGNS = [
+  "classic",
+  "apple",
+  "linear",
+  "cute",
+  "notion",
+  "fluent",
+  "brutal",
+] as const;
 export type Design = (typeof DESIGNS)[number];
 export const DEFAULT_DESIGN: Design = "classic";
 
@@ -105,6 +113,9 @@ export const DESIGN_LABEL_KEY: Record<Design, string> = {
   apple: "S.X.Design.Apple",
   linear: "S.X.Design.Linear",
   cute: "S.X.Design.Cute",
+  notion: "S.X.Design.Notion",
+  fluent: "S.X.Design.Fluent",
+  brutal: "S.X.Design.Brutal",
 };
 
 /** 版式一句话描述 i18n 键(设置里展示) */
@@ -113,6 +124,9 @@ export const DESIGN_DESC_KEY: Record<Design, string> = {
   apple: "S.X.Design.AppleDesc",
   linear: "S.X.Design.LinearDesc",
   cute: "S.X.Design.CuteDesc",
+  notion: "S.X.Design.NotionDesc",
+  fluent: "S.X.Design.FluentDesc",
+  brutal: "S.X.Design.BrutalDesc",
 };
 
 export function applyDesign(design: Design) {
