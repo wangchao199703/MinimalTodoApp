@@ -320,4 +320,13 @@
   - **极客 Linear**:紧凑 + 1px 下边框,方圆角 16px 勾选,优先级**前置信号图标**(SignalLow/Med/High),标签**暗色胶囊**。
   - **可爱 Waterdrop**:独立卡片 + 1rem 大圆角 + 柔阴影 + 外距,大圆 24px 粗勾选(优先级色),标题 15px 粗,标签/副信息**彩色胶囊**。
   - 经典保留为默认(现状)。
-- 实现:`themes.ts` design 轴(classic/apple/linear/cute)+ `applyDesign`;统一基线 `.task-check/.task-pri-dot/.task-pri-icon/.task-tag` + 3 套 `.design-*` CSS(双类覆盖 Tailwind);TaskItem 加 `--pri` 变量、标签后缀、圆点/信号图标元素;store design 状态 + 跨窗口同步;**设置→通用→界面版式** 2×2 卡片切换器;i18n 双语 `S.X.Design.*`。`npm run build` 通过。`(本轮)`
+- 实现:`themes.ts` design 轴(classic/apple/linear/cute)+ `applyDesign`;统一基线 `.task-check/.task-pri-dot/.task-pri-icon/.task-tag` + 3 套 `.design-*` CSS(双类覆盖 Tailwind);TaskItem 加 `--pri` 变量、标签后缀、圆点/信号图标元素;store design 状态 + 跨窗口同步;**设置→通用→界面版式** 2×2 卡片切换器;i18n 双语 `S.X.Design.*`。`npm run build` 通过。`94737b3`
+
+**提示词:** 参考桌面文档(Gemini 多级子任务方案)按这样设计多级任务。
+- 按文档在三套新版式实现**多级(最多 6 级)子任务**视觉(经典保持现状)。架构说明:现版任务树是「扁平列表+缩进」(拖拽/排序依赖),不改递归组件以免动拖拽;在扁平架构内用 CSS+少量 DOM 落地:
+  - **半满态复选框**:父任务部分子完成且自身未完成 → 苹果/极客横杠 `Minus`、可爱圆点(`::after`)+ 半满底;经典保持空框。
+  - **子任务进度条**:父任务标题下,苹果细 2px、可爱粗 6px、极客不用条(留 `1/3`);苹果/可爱隐藏 n/m 计数。
+  - **克制缩进**:经典 18px/级,三套新版式收紧到 12px/级(`--lvl` + calc)。
+  - **树状引导线**:极客常驻、苹果 hover 显现(缩进行 `::before` 竖线);可爱靠卡片不画线。
+  - **折叠箭头悬浮显现**:苹果/极客平时隐藏、hover 整行才显(防误触);可爱/经典常驻。
+- TaskItem 加 `--lvl`/`data-level` + `indeterminate`/`progress` + `.task-collapse/.task-half/.task-progress/.task-subcount`;`index.css` 末尾加多级块。`npm run build` 通过。`(本轮)`

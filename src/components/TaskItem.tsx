@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CornerDownRight,
   CornerUpLeft,
+  Minus,
   Pencil,
   Pin,
   PinOff,
@@ -97,6 +98,10 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const ds = dueState(task.due_date, task.is_completed, now);
   const group = task.group_id ? groups.find((g) => g.id === task.group_id) : null;
   const PriIcon = PRIORITY_ICON[task.priority] ?? SignalMedium;
+  // 半满态:有子任务且部分(非全部)完成,父本身未完成 —— 复选框显示「➖/圆点」
+  const indeterminate =
+    !task.is_completed && totalChildren > 0 && doneChildren > 0 && doneChildren < totalChildren;
+  const progress = totalChildren > 0 ? Math.round((doneChildren / totalChildren) * 100) : 0;
 
   const commit = () => {
     setEditing(false);
@@ -123,9 +128,10 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
+      data-level={task.indent_level}
       style={
         {
-          marginLeft: task.indent_level * 18,
+          "--lvl": task.indent_level,
           "--pri": PRIORITY_COLOR[task.priority],
         } as React.CSSProperties
       }
@@ -145,7 +151,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         <button
           title={task.is_collapsed ? t("S.X.Expand") : t("S.X.Collapse")}
           onClick={() => void toggleCollapse(task)}
-          className="-ml-1 flex h-4 w-4 shrink-0 items-center justify-center text-muted hover:text-text-1"
+          className="task-collapse -ml-1 flex h-4 w-4 shrink-0 items-center justify-center text-muted transition-opacity hover:text-text-1"
         >
           {task.is_collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
         </button>
@@ -165,9 +171,13 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         onClick={completeWithEffects}
         className={`task-check flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
           task.is_completed ? "is-done" : ""
-        }`}
+        } ${indeterminate ? "is-indeterminate" : ""}`}
       >
-        {task.is_completed && <Check size={10} strokeWidth={3} />}
+        {task.is_completed ? (
+          <Check size={10} strokeWidth={3} />
+        ) : (
+          indeterminate && <Minus className="task-half" size={11} strokeWidth={3} />
+        )}
       </button>
 
       <div className="task-body flex min-w-0 flex-1 flex-col">
@@ -206,6 +216,13 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
           </div>
         )}
 
+        {/* 子任务进度条:父任务专属,经典隐藏、其余版式显示(粗细按版式) */}
+        {totalChildren > 0 && !editing && (
+          <div className="task-progress mt-1">
+            <div className="task-progress-fill" style={{ width: `${progress}%` }} />
+          </div>
+        )}
+
         {(task.due_date || task.reminder_enabled || totalChildren > 0) && !editing && (
           <span className="task-meta mt-0.5 flex items-center gap-2 text-xs">
             {task.due_date && !task.is_completed && (
@@ -220,7 +237,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
               </span>
             )}
             {totalChildren > 0 && (
-              <span className="text-muted">
+              <span className="task-subcount text-muted">
                 {doneChildren}/{totalChildren}
               </span>
             )}

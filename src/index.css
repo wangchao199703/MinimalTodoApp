@@ -850,3 +850,79 @@ body {
   border-radius: 9999px;
   font-weight: 600;
 }
+
+/* ============ 多级子任务(最多 6 级):半满态 + 进度条 + 克制缩进 + 引导线 + 悬浮箭头 ============ */
+
+/* 缩进:经典 18px/级;三套新版式收紧到 12px/级(6 级最多 72px) */
+.task-item { margin-left: calc(var(--lvl, 0) * 18px); }
+.design-apple .task-item,
+.design-linear .task-item,
+.design-cute .task-item { margin-left: calc(var(--lvl, 0) * 12px); }
+
+/* 半满态标记:经典隐藏(父复选框保持空);苹果/极客用横杠,可爱用圆点 */
+.task-check .task-half { display: none; }
+.design-apple .task-check .task-half,
+.design-linear .task-check .task-half { display: block; }
+.design-apple .task-check.is-indeterminate,
+.design-linear .task-check.is-indeterminate {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.design-cute .task-check.is-indeterminate::after {
+  content: "";
+  height: 0.55rem;
+  width: 0.55rem;
+  border-radius: 9999px;
+  background: var(--pri);
+}
+
+/* 子任务进度条:经典隐藏;苹果细(2px),可爱粗(6px);极客用 1/3 计数不用条 */
+.task-progress {
+  display: none;
+  height: 2px;
+  width: 100%;
+  border-radius: 9999px;
+  background: var(--divider);
+  overflow: hidden;
+}
+.task-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.design-apple .task-progress { display: block; }
+.design-cute .task-progress { display: block; height: 6px; }
+/* 进度条已表达进度,苹果/可爱隐藏副信息里的 n/m 计数(极客保留) */
+.design-apple .task-subcount,
+.design-cute .task-subcount { display: none; }
+
+/* 树状引导线:极客常驻、苹果 hover 显现;在缩进行左侧画竖线(可爱靠卡片不画线) */
+.design-linear .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--divider);
+}
+.design-apple .task-item:not([data-level="0"])::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--divider);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.design-apple .task-item:hover::before { opacity: 1; }
+
+/* 折叠箭头:苹果/极客平时隐藏、hover 整行才显现(防误触);可爱/经典常驻 */
+.design-apple .task-collapse,
+.design-linear .task-collapse { opacity: 0; }
+.design-apple .task-item:hover .task-collapse,
+.design-linear .task-item:hover .task-collapse { opacity: 1; }
