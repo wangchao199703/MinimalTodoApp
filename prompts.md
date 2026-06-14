@@ -443,4 +443,7 @@
 **提示词:** 子待办的勾选框、字体大小、行距,比父层级等比缩小。
 - 引入层级缩放因子 **`--ds = calc(1 - 0.07 * min(var(--lvl), 3))`**(挂 `.task-item`,封顶第 3 层≈0.79)。
 - 勾选框:把 9 套版式各自的 `width/height` 收敛为 **`--cb-base`**,基线 `.task-check` 统一 `width/height = calc(var(--check-size, var(--cb-base)) * var(--ds))` —— 自定义尺寸优先、否则版式默认,再乘层级缩放;删除冗余的 `html.cb-size` 宽高覆盖(否则自定义尺寸不随层级缩);5 套 flex-start 版式 margin-top 居中同步乘 `--ds` 并改用 `var(--cb-base)` fallback。
-- 字体/行距:`.task-title { font-size: calc(0.875rem * --ds); line-height: 1.43 }`、`.task-meta { font-size: calc(0.75rem * --ds) }`(行高用无单位倍数,随字号缩放即行距缩小)。`npm run build` 通过。`(本轮)`
+- 字体/行距:`.task-title { font-size: calc(0.875rem * --ds); line-height: 1.43 }`、`.task-meta { font-size: calc(0.75rem * --ds) }`(行高用无单位倍数,随字号缩放即行距缩小)。`npm run build` 通过。`cb57d7b`
+
+**提示词:** 子任务变小不够明显,加大变小幅度。
+- 层级缩减系数 `0.07 → 0.11`(第1层0.89/第2层0.78/第3层0.67,仍封顶第3层)。`npm run build` 通过。`(本轮)`
