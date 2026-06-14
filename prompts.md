@@ -579,3 +579,9 @@
 
 **提示词:** 在窗口上调整大小后程序显示异常(内容不填满、透出桌面);把右击托盘「显示主界面」改为「显示并居中」,居中显示程序,并修复这个显示异常的界面;派 agent 后台去干。
 - 仅改 `src-tauri/src/window.rs`。托盘 show 项「显示主界面」→「显示并居中」/「Show window」→「Show & center」(`rebuild_tray`+`setup_tray` 两处);`show_main` 增强为显示→居中→强制 WebView2 重绘,兼作「拉大窗口透出桌面」一键恢复手段。根因:主窗 `transparent:true`,WebView2 放大 resize 时新区不重绘而透桌;修复=微调内层尺寸(`set_size(w+1,h)`→还原)触发整窗重绘。居中复用贴边「忽略自身移动」标志 `DockState.moving`(经 `app.manage(Arc<DockState>)` 托管供 `show_main` 用 `try_state` 取回),避免被贴边逻辑误判收边;不用 `window.center()`(不走该标志)。未做 resize 自动重绘(C):`Resized` 无 `moving` 守卫,防抖+防反馈环有 jank 风险,恢复手段已覆盖。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。`f90f46d`
+
+**提示词:** 当前拖入 md 只能在便签界面拖入,需所有界面都能拖入;在其它界面拖入要归入「导入」分组,没有就创建。
+- 等窗口 agent 提交完(共享工作树,避免互卷 commit)后内联实现。
+- 新增 store `importNotesToImportGroup(files)`:找现有「导入/Import」便签分组(兼容中英),没有则按当前语言 `createNoteGroup` 新建 → `importNotesFromFiles(files, 导入组id)` → `setView({kind:"notes"})` 切到便签视图打开。
+- `App.tsx` 根 `<div key={language}>` 挂全局 `onDragOver/onDrop`(仅 `dataTransfer.types` 含 `Files` 才 `preventDefault` 拦截,内部排序拖拽无 `Files` 不受影响)→ `readMarkdownDrop` → `importNotesToImportGroup`,作为「其它界面」兜底。
+- `NotesView` 的 `onAreaDragOver/onAreaDrop` 补 `stopPropagation`,使便签区内的拖入(默认分组/指定分组)不冒泡到根兜底、避免二次导入。复用既有 `markdownIO`/`importNotesFromFiles`,未碰 `dragDropEnabled`。`npm run build` 通过。`(本轮)`

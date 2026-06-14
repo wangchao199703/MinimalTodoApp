@@ -4,6 +4,7 @@ import { useAppStore } from "./store/useAppStore";
 import { parseDue, nowText } from "./lib/date";
 import { applyFontSettings } from "./lib/font";
 import { playReminder, normalizeSoundStyle } from "./lib/effects";
+import { readMarkdownDrop } from "./lib/markdownIO";
 import { f } from "./lib/i18n";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
@@ -115,6 +116,23 @@ export default function App() {
   const init = useAppStore((s) => s.init);
   const view = useAppStore((s) => s.view);
   const language = useAppStore((s) => s.language);
+  const importNotesToImportGroup = useAppStore((s) => s.importNotesToImportGroup);
+
+  // 全界面兜底:任意视图拖入 .md → 归入「导入」便签分组(便签视图内的拖入已被其自身处理并 stopPropagation,不会到这)
+  const isFileDrag = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
+  const onRootDragOver = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return; // 内部排序拖拽(无 Files)不拦截
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const onRootDrop = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    void (async () => {
+      const files = await readMarkdownDrop(e.dataTransfer);
+      if (files.length > 0) await importNotesToImportGroup(files);
+    })();
+  };
   const theme = useAppStore((s) => s.theme);
   const scheduleOpen = useAppStore((s) => s.scheduleOpen);
   const saveSetting = useAppStore((s) => s.saveSetting);
@@ -234,7 +252,12 @@ export default function App() {
   return (
     // key=language:切换语言时整树重建,所有 t() 文案即时刷新。
     // 布局对齐 todo-flow:侧栏整列直通窗口顶部,标题栏只覆盖右侧内容区。
-    <div key={language} className="flex h-full bg-window">
+    <div
+      key={language}
+      className="flex h-full bg-window"
+      onDragOver={onRootDragOver}
+      onDrop={onRootDrop}
+    >
       <ThemeBackdrop theme={theme} />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">

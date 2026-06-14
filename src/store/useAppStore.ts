@@ -79,6 +79,8 @@ interface AppState {
     files: { name: string; content: string }[],
     groupId?: string,
   ) => Promise<void>;
+  /** 在任意界面拖入 .md:归入「导入」便签分组(没有则创建),并切到便签视图打开 */
+  importNotesToImportGroup: (files: { name: string; content: string }[]) => Promise<void>;
   patchNote: (req: UpdateNoteRequest) => Promise<void>;
   removeNote: (id: string) => Promise<void>;
   addNoteGroup: (name: string) => Promise<void>;
@@ -333,6 +335,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       noteGroups,
       selectedNoteId: lastId, // 多份打开最后一条
     }));
+  },
+
+  importNotesToImportGroup: async (files) => {
+    if (files.length === 0) return;
+    const s = get();
+    // 找现有「导入/Import」分组(兼容中英),没有则按当前语言新建
+    let group =
+      s.noteGroups.find((g) => g.name.trim() === "导入" || g.name.trim() === "Import") ?? null;
+    if (!group) {
+      group = await ipc.createNoteGroup(get().language === "en" ? "Import" : "导入");
+      set((st) => ({ noteGroups: [...st.noteGroups, group as NoteGroup] }));
+    }
+    await get().importNotesFromFiles(files, group.id);
+    get().setView({ kind: "notes" }); // 切到便签视图,打开导入的便签(importNotesFromFiles 已选中)
   },
 
   patchNote: async (req) => {

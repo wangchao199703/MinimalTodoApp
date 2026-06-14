@@ -103,6 +103,7 @@ export default function NotesView() {
   const onAreaDragOver = (e: React.DragEvent) => {
     if (!isFileDrag(e)) return; // 非外部文件(如内部排序拖拽)不拦截
     e.preventDefault(); // 必须 preventDefault 才会触发 drop
+    e.stopPropagation(); // 便签区自行处理,不冒泡到 App 根的「导入」分组兜底
     e.dataTransfer.dropEffect = "copy";
     if (!fileOver) setFileOver(true);
   };
@@ -114,6 +115,7 @@ export default function NotesView() {
   const onAreaDrop = (e: React.DragEvent) => {
     if (!isFileDrag(e)) return;
     e.preventDefault(); // 阻止 WebView 默认导航到文件
+    e.stopPropagation(); // 已在便签区落默认分组,不再冒泡到 App 根的「导入」分组兜底
     setFileOver(false);
     void (async () => {
       const files = await readMarkdownDrop(e.dataTransfer);
