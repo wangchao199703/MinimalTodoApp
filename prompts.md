@@ -409,4 +409,7 @@
 - 去掉独立的 `.task-progress-ring` 元素;`--pct` 移到容器、父任务勾选框加 `is-parent` 类;「圆环」进度模式用 `html.pg-ring .task-check.is-parent` 填充勾选框,并隐藏数字/进度条与半满标记。`npm run build` 通过。`8b58076`
 
 **提示词:** 不要实心圆环,参考上一版设计(空心环)。
-- 把勾选框的实心饼填充改回**空心进度环**:`conic-gradient(accent var(--pct), divider 0)`(已完成段 accent + 余量段 divider)+ `radial-gradient` mask 挖空中心 + `border-color: transparent`——勾选框本体即进度环(对齐上一版独立小圆环的观感)。`npm run build` 通过。`(本轮)`
+- 把勾选框的实心饼填充改回**空心进度环**:`conic-gradient(accent var(--pct), divider 0)`(已完成段 accent + 余量段 divider)+ `radial-gradient` mask 挖空中心 + `border-color: transparent`——勾选框本体即进度环(对齐上一版独立小圆环的观感)。`npm run build` 通过。`27bc336`
+
+**提示词:** 圆环显示异常,自查确认。
+- 自查发现 3 处并修复:① conic 硬停止裸 `0`(无单位)在 WebView 下可能解析异常 → 改 `var(--divider) var(--pct)` 显式同位;② mask 用默认 `circle`(farthest-corner)致方框内中心孔偏大/环怪 → 改 `circle closest-side`(58%/60%)相对圆精确;③ 环规则特异性 (0,3,1) 被 `.prio-apple .task-check:not(...)`(0,4,0)盖过致环外多套一圈优先级色边框 → 选择器加 `:not(.is-done)` 提到 (0,4,1),`border-color: transparent` 稳定生效。`npm run build` 通过。`(本轮)`
