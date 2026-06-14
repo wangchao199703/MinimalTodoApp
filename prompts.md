@@ -418,4 +418,8 @@
 - 根因:默认版式极客(及文档/粗野)的勾选框是**方形**,conic + 圆形 mask 套在方框上就成了半填充方块。圆环进度本质是圆,故圆环模式下给父任务勾选框**强制 `border-radius: 9999px`**(覆盖方形/自定义形状),conic 与圆 mask 对齐 → 干净空心环。`npm run build` 通过。`816962c`
 
 **提示词:**(附图)还是不行。
-- conic + mask 在 WebView2 下太脆(方框/track 可见度/seam),仍异常。**改用 SVG 进度环**(业界可靠做法):TaskItem 在父任务勾选框内渲染 `<svg class="task-ring">`(track 圆 + fill 弧,`stroke-dasharray: var(--pct-num) 100` + `pathLength=100` + `rotate(-90deg)`);容器传数值 `--pct-num`。圆环模式下勾选框去边框/底、SVG `inset:-2px` 铺满。SVG 本身是圆,方框版式也正常。`npm run build` 通过。`(本轮)`
+- conic + mask 在 WebView2 下太脆(方框/track 可见度/seam),仍异常。**改用 SVG 进度环**(业界可靠做法):TaskItem 在父任务勾选框内渲染 `<svg class="task-ring">`(track 圆 + fill 弧,`stroke-dasharray: var(--pct-num) 100` + `pathLength=100` + `rotate(-90deg)`);容器传数值 `--pct-num`。圆环模式下勾选框去边框/底、SVG `inset:-2px` 铺满。SVG 本身是圆,方框版式也正常。`npm run build` 通过。`a0aa59b`
+
+**提示词:** 进度选项「圆环」改名为「勾选框」;针对方形勾选框做适配,和圆形一样,只是显示方形。
+- 改名:`S.X.Progress.Ring` 「圆环」→「勾选框」(en Checkbox)。
+- 形状自适配:SVG 圆环无法跟随方形,改回 **conic 填充 + `::before` 内缩挖洞** 成环——conic 被勾选框自身 `border-radius` 裁形(圆框→圆/方框→方),`::before` 洞 `border-radius: inherit` 自动跟随;勾选框不再强制圆,保留各版式/自定义形状。圆框显示圆环、方框显示方框环。`npm run build` 通过。`(本轮)`

@@ -176,13 +176,6 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         ) : (
           indeterminate && <Minus className="task-half" size={11} strokeWidth={3} />
         )}
-        {/* 进度环(仅「圆环」进度模式显示,CSS 控制):track + 按 --pct-num 的 fill 弧 */}
-        {totalChildren > 0 && !task.is_completed && (
-          <svg className="task-ring" viewBox="0 0 36 36" aria-hidden="true">
-            <circle className="task-ring-track" cx="18" cy="18" r="15.5" />
-            <circle className="task-ring-fill" cx="18" cy="18" r="15.5" pathLength={100} />
-          </svg>
-        )}
       </button>
 
       <div className="task-body flex min-w-0 flex-1 flex-col">

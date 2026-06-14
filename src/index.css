@@ -1194,28 +1194,24 @@ html.pg-bar .task-subcount { display: none; }
 html.pg-ring .task-progress { display: none; }
 html.pg-ring .task-subcount { display: none; }
 
-/* 进度环 SVG(可靠做法:track 圆 + 按 --pct-num 的 fill 弧),默认隐藏 */
-.task-ring { display: none; }
-.task-ring circle { fill: none; stroke-width: 4; }
-.task-ring-track { stroke: var(--divider); }
-.task-ring-fill {
-  stroke: var(--accent);
-  stroke-dasharray: var(--pct-num, 0) 100;
-  stroke-linecap: round;
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
-  transition: stroke-dasharray 0.3s ease;
-}
-/* 圆环模式:父任务勾选框去边框/底,内部铺满 SVG 进度环;隐藏半满标记 */
+/* 「勾选框」进度:父任务勾选框本体按完成比例显示进度环。
+   conic 填充(被勾选框自身 border-radius 裁形:圆框→圆,方框→方),
+   再用 ::before 内缩挖空中心(border-radius: inherit 自动跟随圆/方),形成环。 */
 html.pg-ring .task-check.is-parent:not(.is-done) {
   position: relative;
   border-color: transparent;
-  background: transparent;
+  background: conic-gradient(
+    var(--accent) calc(var(--pct-num, 0) * 1%),
+    var(--divider) calc(var(--pct-num, 0) * 1%)
+  );
+}
+html.pg-ring .task-check.is-parent:not(.is-done)::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: inherit;
+  background: var(--card-bg);
 }
 html.pg-ring .task-check.is-parent .task-half { display: none; }
-html.pg-ring .task-check.is-parent::after { display: none; }
-html.pg-ring .task-check.is-parent .task-ring {
-  display: block;
-  position: absolute;
-  inset: -2px;
-}
+/* 隐藏可爱版式半满态的中心圆点(::after),避免叠在进度环洞上 */
+html.pg-ring .task-check.is-parent.is-indeterminate::after { display: none; }
