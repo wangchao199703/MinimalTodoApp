@@ -8,6 +8,7 @@ import { readMarkdownDrop } from "./lib/markdownIO";
 import { f } from "./lib/i18n";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
+import TagSidebar from "./components/TagSidebar";
 import ResizeBorders from "./components/ResizeBorders";
 import TaskList from "./components/TaskList";
 import QuickAdd from "./components/QuickAdd";
@@ -318,10 +319,24 @@ export default function App() {
             {view.kind === "quadrant" ? (
               <QuadrantView />
             ) : view.kind === "tagboard" ? (
-              // 标签看板:全宽看板(已移除第二侧边栏)
-              <TagBoardView />
+              // 标签看板:第二侧边栏(标签列表)+ 看板
+              <div className="flex min-h-0 flex-1">
+                <TagSidebar />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <TagBoardView />
+                </div>
+              </div>
             ) : view.kind === "notes" ? (
               <NotesView />
+            ) : view.kind === "group" ? (
+              // 具体标签:第二侧边栏常驻 + 该标签的任务列表
+              <div className="flex min-h-0 flex-1">
+                <TagSidebar />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <TaskList />
+                  <QuickAdd />
+                </div>
+              </div>
             ) : (
               <>
                 <TaskList />

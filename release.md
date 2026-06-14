@@ -17,6 +17,7 @@
 - **恢复默认设置**:设置→通用 一键将所有设置恢复默认(保留语言)。
 - **侧栏彩色化**:主侧栏内置项 + 便签分组支持上色;图标默认无色,**右键→修改颜色**自定义(通用 `ColorDialog`,与标签同款),持久化在 settings。
 - **标签简化**:删除标签第二侧边栏,「标签」入口点击直接进**全宽标签看板**(保留任务-标签数据);标签默认色清空(迁移 v2/v3),统一为无色基线 + 右键自定义。
+- **标签第二侧边栏恢复 + 拖待办到分组(v2.0.0)**:撤销上面的「标签简化」,改回原来的第二侧边栏。恢复 `src/components/TagSidebar.tsx`(参照被删版与便签第二侧栏布局):点「标签」进 `tagboard` 视图即展开第二侧栏——顶部「标签看板」入口(全宽看板)+ 各标签(分组)列表;点某标签进 `view.kind==="group"` 该标签任务视图,可右键改名/改色/改图标/删除、拖动重排、调宽/收起(状态持久化 `tags_sidebar_width`/`tags_sidebar_collapsed`)。`App.tsx` 给 `tagboard` 与 `group` 两个视图都套「第二侧栏 + 内容」布局;`Sidebar.tsx` 标签主入口在 group 视图也保持选中态。**新增:拖待办到标签上归类**——每个标签行/折叠图标经 `dropTargetForElements` 注册为放置目标(数据 `{type:"task-tag",groupId}`),TagSidebar 自有 monitor 把 `source.type==="task"` 的落下 → `patchTask({group_id})`;与任务列表内部排序(TaskList 的 `task→task` monitor + `moveTask`)靠数据 type 区分共存(落到 `task-tag` 目标时 `moveTask` 因 target 非 task 自然 no-op)。复用既有 i18n 键、未碰 `dragDropEnabled`、未升版本。`npm run build` 通过。
 - **侧栏统一打磨**:一/二侧栏图标统一 14 号、位置对齐;折叠按钮统一置底;折叠态图标默认清晰(不再 hover 才显色);待办圆圈左内距缩短约 50%。
 - **窗口放大透出桌面 + 托盘恢复手段**(v2.0.0):托盘「显示主界面」改为「显示并居中」(`Show & center`);`show_main` 增强为「显示 → 居中 → 强制 WebView2 重绘」,既是托盘动作也是一键修复手段。根因是主窗口 `transparent:true`,Windows + WebView2 放大 resize 时新暴露区域不重绘而透出桌面壁纸;修复办法是微调一次内层尺寸(`set_size(w+1,h)` 再还原)触发整窗重绘。居中走贴边自动隐藏的「忽略自身移动」标志(`DockState.moving`,经 `app.manage(Arc<DockState>)` 托管供 `show_main` 复用),避免居中被误判为用户拖动而收边。未做 resize 结束自动重绘(C):`Resized` 无类似 `moving` 守卫,防抖 + 防 `set_size` 反馈环复杂且有 jank 风险,「显示并居中」恢复手段已覆盖。
 - **窗口 resize/最大化重绘改自动 + 修复贴边隐藏回归**(v2.0.0):

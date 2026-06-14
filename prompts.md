@@ -594,3 +594,8 @@
 - **Bug A(resize/最大化透出桌面自动修复)**:透明窗(`transparent:true`)WebView2 在尺寸变化时不重绘新暴露区→透桌(已知 artifact)。改前端自动兜底:`App.tsx` 监听 `getCurrentWindow().onResized()`(resize/最大化/还原均触发)→ 防抖 120ms → **纯 DOM 重绘**(根 `transform: translateZ(0)` + 强制 reflow + rAF 撤回)。选前端不选 Rust `set_size`:`set_size` 在最大化时会取消最大化、且自身又触发 `Resized` 成反馈环;纯 DOM 对 OS 尺寸零副作用、与最大化无关、不触发 `Resized`(天然防反馈环)、不与贴边 `Moved/Resized` 互扰。
 - **Bug B(贴边自动隐藏回归)**:根因=上轮 `f90f46d` 给 `show_main` 加的 `set_size(w+1,h)→还原` 强制重绘是**无 `moving` 守卫的尺寸变更**,会触发 `Resized/Moved` 干扰贴边轮询。**移除该 nudge**(重绘职责已交前端),贴边逻辑不再被自身尺寸抖动误扰;`show_main` 居中/清贴边态逻辑保留不变。
 - 改 `src-tauri/src/window.rs`(删 nudge + 删无用 `PhysicalSize` 引入)与 `src/App.tsx`(新增 onResized 重绘 effect)。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。`(本轮)`
+
+**提示词:** 标签功能改回原来的,加上第二侧边栏,显示标签看板和每个标签分组,并支持拖动待办到对应的分组。
+- 恢复 `src/components/TagSidebar.tsx`(参照被删版 + 便签第二侧栏布局):点「标签」进 `tagboard` 视图即展开第二侧栏 —— 顶部「标签看板」入口 + 各标签(分组)列表,点标签进 `view.kind==="group"`,可右键改名/改色/改图标/删除、拖动重排、调宽/收起。
+- `App.tsx` 给 `tagboard` 与 `group` 视图都套「第二侧栏 + 内容」布局(group=TagSidebar+TaskList+QuickAdd;tagboard=TagSidebar+TagBoardView);`Sidebar.tsx` 标签主入口在 group 视图也保持选中态。
+- **拖待办到分组归类**:每个标签行/折叠图标用 `dropTargetForElements` 注册为放置目标(数据 `{type:"task-tag",groupId}`),TagSidebar 自己的 monitor 处理 `source.type==="task"` → `patchTask({group_id})`。与任务列表内部排序(TaskList 的 `task→task` monitor + `moveTask`)靠数据 type 区分共存:落到 task-tag 目标时 TaskList 的 `moveTask` 因 target 非 task 自然 no-op。未碰 `dragDropEnabled`、未升版本(2.0.0)、i18n 复用既有键。`npm run build` 通过。
