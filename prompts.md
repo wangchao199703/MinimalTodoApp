@@ -446,4 +446,8 @@
 - 字体/行距:`.task-title { font-size: calc(0.875rem * --ds); line-height: 1.43 }`、`.task-meta { font-size: calc(0.75rem * --ds) }`(行高用无单位倍数,随字号缩放即行距缩小)。`npm run build` 通过。`cb57d7b`
 
 **提示词:** 子任务变小不够明显,加大变小幅度。
-- 层级缩减系数 `0.07 → 0.11`(第1层0.89/第2层0.78/第3层0.67,仍封顶第3层)。`npm run build` 通过。`(本轮)`
+- 层级缩减系数 `0.07 → 0.11`(第1层0.89/第2层0.78/第3层0.67,仍封顶第3层)。`npm run build` 通过。`d704ccc`
+
+**提示词:** 从回收站还原任务时,子任务都需要取消勾选,修复一下。
+- 根因:`toggleComplete` 取消完成分支只翻自身 `is_completed:false`,后代仍是勾选态;但完成是整族一起完成,还原也应整族还原。
+- 修法:取消完成分支改为 `[task.id, ...descendantIds(tasks, task.id)]` 逐个 `setUndone`(已是未完成的跳过),与 `completeWithDescendants` 对称。`npm run build` 通过。`(本轮)`

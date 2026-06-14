@@ -461,10 +461,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   toggleComplete: async (task) => {
-    // 取消完成:仅自身(已完成的活子任务原地取消打钩)
+    // 取消完成 / 从已完成还原:自身 + 全部后代一起取消打钩
+    // (整族一起完成,还原也整族一起还原;否则父还原后子任务仍是勾选态)
     if (task.is_completed) {
-      const next = await ipc.updateTask({ id: task.id, is_completed: false });
-      set((s) => ({ tasks: replaceTask(s.tasks, next) }));
+      let tasks = get().tasks;
+      const ids = [task.id, ...descendantIds(tasks, task.id)];
+      const setUndone = async (id: string) => {
+        const t = tasks.find((x) => x.id === id);
+        if (!t || !t.is_completed) return;
+        const next = await ipc.updateTask({ id, is_completed: false });
+        tasks = replaceTask(tasks, next);
+      };
+      for (const id of ids) await setUndone(id);
+      set({ tasks });
       return;
     }
 
