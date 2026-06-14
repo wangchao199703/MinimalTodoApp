@@ -25,6 +25,21 @@
 
 ## 三、当前进度(均已本地提交,未 push)
 
+### 最近一轮:窗口放大透出桌面 + 托盘「显示并居中」(v2.0.0,未升版)
+
+- **现象**:用户拖边把窗口拉大后,网页内容只占左侧,右侧露出**真·桌面壁纸**。
+- **根因**:主窗口 `tauri.conf.json` 是 `transparent:true`(为亚克力/圆角)。Windows + WebView2 在窗口**放大 resize 时,新暴露区域不重绘** → 透明窗口透出桌面。这是已知透明窗口重绘 artifact;**不要去掉 `transparent:true`**(毁亚克力/圆角与页面内拖拽)。resize 机制本身没问题(`ResizeBorders.tsx` 用原生 `startResizeDragging`,未动)。
+- **改了什么**(仅 `src-tauri/src/window.rs`):
+  1. 托盘 show 项标签:「显示主界面」→「显示并居中」/「Show window」→「Show & center」(`rebuild_tray` 与 `setup_tray` 两处都改)。事件 id 仍是 `"show"`。
+  2. `show_main` 增强为「显示 → 居中 → 强制重绘」,既是托盘动作也是**一键恢复手段**(用户右击托盘即可修好当前透桌的窗口)。
+     - **居中**:算 `mp + (ms - size)/2` 居中坐标后 `set_position`;**走贴边自动隐藏的「忽略自身移动」标志 `DockState.moving`**——置 `moving=true` → set_position → 还原。同时把 `edge` 清成 `EDGE_NONE`、`hidden=false`、`pending=false` 并持久化 `dock_edge=0`(居中=离开贴边)。**没用 `window.center()`**:它内部 set_position 不走该标志,会被贴边逻辑误判为用户拖动而收边(这是任务点名的坑)。
+     - **`DockState` 跨函数访问**:`setup_dock` 里 `app.manage(state.clone())` 把 `Arc<DockState>` 托管;`show_main` 用 `app.try_state::<Arc<DockState>>()` 取回复用同一标志(`show_main` 是自由函数,拿不到闭包里的 state,故走托管)。
+     - **强制重绘**:`inner_size()` 取当前内层尺寸,`set_size(w+1, h)` 再 `set_size(原)`(`PhysicalSize`),促 WebView2 重绘整窗,消除透桌。**此重绘 workaround 是否真消除透桌,需运行时目视验证。**
+- **未做 C(resize 结束自动重绘)**:`Resized` 事件没有像 Moved 那样的 `moving` 守卫,要自己加防抖 + 防 `set_size` 反馈环,复杂且有 jank/反馈环风险;A/B 的「显示并居中」恢复手段已覆盖根因,故按任务「不过度设计」跳过。若日后要做:监听 `Resized` + 防抖 ~200ms + 一个 `resizing`/自身 set_size 守卫(参照 Moved 的 `moving`)。
+- **验证**:`cargo check` 通过;`npm run build`(tsc 严格 + vite)通过。未升版本(仍 2.0.0)。**注意我未启动 dev / 未 kill 进程**(本机多项目并行);Rust 由主会话的 dev 自动重编。
+
+---
+
 HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
 - `c63a878` 标签简化为全宽看板 + 侧栏统一打磨 + 右键改色 + 工作流文档化(详见 §四 历史)。

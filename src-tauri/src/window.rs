@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, PhysicalPosition, WebviewWindow};
+use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 
 fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -16,11 +16,48 @@ fn main_window(app: &AppHandle) -> Option<WebviewWindow> {
     app.get_webview_window("main")
 }
 
+/// 显示主窗口并居中,同时强制 WebView2 重绘——既是托盘「显示并居中」动作,
+/// 也是「拉大窗口后内容透出桌面」的一键恢复手段。
+///
+/// 透明窗口(transparent:true,为亚克力/圆角)在 Windows + WebView2 放大 resize 时,
+/// 新暴露区域不会被重绘,于是透出桌面壁纸。可靠的修复办法是微调一次内层尺寸触发整窗重绘。
+///
+/// 居中走「带忽略标志的 set_position」路径:DockState.moving 置位期间,贴边监听器会
+/// 跳过本次 Moved,避免居中产生的移动被误判为「用户拖动」而触发贴边收起/吸附。
+/// (window.center() 内部也 set_position 但不走此标志,故不用它。)
 pub fn show_main(app: &AppHandle) {
-    if let Some(w) = main_window(app) {
-        let _ = w.unminimize();
-        let _ = w.show();
-        let _ = w.set_focus();
+    let Some(w) = main_window(app) else { return };
+    let _ = w.unminimize();
+    let _ = w.show();
+    let _ = w.set_focus();
+
+    // 居中:算出居中坐标,在 moving 忽略标志保护下 set_position(避免触发贴边)
+    if let (Ok(size), Ok(Some(mon))) = (w.outer_size(), w.current_monitor()) {
+        let mp = mon.position();
+        let ms = mon.size();
+        let cx = mp.x + (ms.width as i32 - size.width as i32) / 2;
+        let cy = mp.y + (ms.height as i32 - size.height as i32) / 2;
+        // 复用贴边自动隐藏的「忽略自身移动」标志:置位 → 移动 → 还原
+        let dock = app.try_state::<Arc<DockState>>();
+        if let Some(state) = &dock {
+            state.moving.store(true, Ordering::SeqCst);
+            // 居中即视为离开贴边:清掉贴边态与待收起,确保不被收边
+            state.edge.store(EDGE_NONE, Ordering::SeqCst);
+            state.hidden.store(false, Ordering::SeqCst);
+            state.pending.store(false, Ordering::SeqCst);
+            write_setting(app, "dock_edge", &EDGE_NONE.to_string());
+        }
+        let _ = w.set_position(PhysicalPosition::new(cx, cy));
+        if let Some(state) = &dock {
+            state.moving.store(false, Ordering::SeqCst);
+        }
+    }
+
+    // 强制 WebView2 重绘:微调一次内层尺寸再还原,促使新暴露区域被重绘,
+    // 消除「拉大窗口后右侧透出桌面」的透明窗口 artifact。
+    if let Ok(inner) = w.inner_size() {
+        let _ = w.set_size(PhysicalSize::new(inner.width + 1, inner.height));
+        let _ = w.set_size(inner);
     }
 }
 
@@ -50,7 +87,7 @@ fn write_setting(app: &AppHandle, key: &str, value: &str) {
 #[tauri::command]
 pub fn rebuild_tray(app: AppHandle, en: bool) -> Result<(), String> {
     let Some(tray) = app.tray_by_id("main") else { return Ok(()) };
-    let show_label = if en { "Show window" } else { "显示主界面" };
+    let show_label = if en { "Show & center" } else { "显示并居中" };
     let quit_label = if en { "Exit" } else { "退出" };
     let show = MenuItem::with_id(&app, "show", show_label, true, None::<&str>).map_err(err)?;
     let quit = MenuItem::with_id(&app, "quit", quit_label, true, None::<&str>).map_err(err)?;
@@ -63,7 +100,7 @@ pub fn rebuild_tray(app: AppHandle, en: bool) -> Result<(), String> {
 pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     // 托盘菜单按启动时语言构建,切语言时经 rebuild_tray 即时重建
     let en = read_setting(app, "language").as_deref() == Some("en");
-    let show_label = if en { "Show window" } else { "显示主界面" };
+    let show_label = if en { "Show & center" } else { "显示并居中" };
     let quit_label = if en { "Exit" } else { "退出" };
 
     let show = MenuItem::with_id(app, "show", show_label, true, None::<&str>)?;
@@ -232,6 +269,8 @@ pub fn setup_dock(app: &AppHandle) {
         // (setup 时 current_monitor 常不可用,不能在此直接定位)
         pending: AtomicBool::new(saved_edge != EDGE_NONE),
     });
+    // 注册为 Tauri 托管状态,供 show_main(托盘「显示并居中」)复用同一忽略标志居中
+    app.manage(state.clone());
     // 启动恢复的首次收起不播动画(对齐旧版 HideToEdge(animate:false))
     let boot_restore = Arc::new(AtomicBool::new(saved_edge != EDGE_NONE));
 

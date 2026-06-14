@@ -575,4 +575,7 @@
 - `SettingsPanel` 提示音区改为**两个独立选择器**(完成提示音 / 周期提醒音),每项一个试听按钮;`TaskItem` 完成音读 `complete_sound_style`、`App.tsx` 提醒音读 `reminder_sound_style`(均回退旧 `sound_style` 兼容)。i18n 加 `CompleteTitle/ReminderTitle/Preview` 双语。`applyRemoteSetting` 对任意 key 都并入 settings,跨窗口同步自动生效。`npm run build` 通过。`5340782`
 
 **提示词:** 默认完成提示音改俏皮可爱、默认周期提醒音改奖励游戏化、默认完成音效打开(用户说开 agent;实为 3 个默认值,内联改更快,已直说并内联)。
-- 完成音默认 `cute`、提醒音默认 `game`、`sound_enabled` 默认 ON:`TaskItem` 完成音 fallback `|| "cute"` 且开关读 `(s["sound_enabled"] ?? "1")`;`App.tsx` 提醒音 fallback `|| "game"`;`SettingsPanel` `sound_enabled` Toggle 默认 `true`、`renderPicker` 加 `def` 参数(complete→cute / reminder→game)使选中高亮与真实默认一致。`npm run build` 通过。`(本轮)`
+- 完成音默认 `cute`、提醒音默认 `game`、`sound_enabled` 默认 ON:`TaskItem` 完成音 fallback `|| "cute"` 且开关读 `(s["sound_enabled"] ?? "1")`;`App.tsx` 提醒音 fallback `|| "game"`;`SettingsPanel` `sound_enabled` Toggle 默认 `true`、`renderPicker` 加 `def` 参数(complete→cute / reminder→game)使选中高亮与真实默认一致。`npm run build` 通过。`5022f85`
+
+**提示词:** 在窗口上调整大小后程序显示异常(内容不填满、透出桌面);把右击托盘「显示主界面」改为「显示并居中」,居中显示程序,并修复这个显示异常的界面;派 agent 后台去干。
+- 仅改 `src-tauri/src/window.rs`。托盘 show 项「显示主界面」→「显示并居中」/「Show window」→「Show & center」(`rebuild_tray`+`setup_tray` 两处);`show_main` 增强为显示→居中→强制 WebView2 重绘,兼作「拉大窗口透出桌面」一键恢复手段。根因:主窗 `transparent:true`,WebView2 放大 resize 时新区不重绘而透桌;修复=微调内层尺寸(`set_size(w+1,h)`→还原)触发整窗重绘。居中复用贴边「忽略自身移动」标志 `DockState.moving`(经 `app.manage(Arc<DockState>)` 托管供 `show_main` 用 `try_state` 取回),避免被贴边逻辑误判收边;不用 `window.center()`(不走该标志)。未做 resize 自动重绘(C):`Resized` 无 `moving` 守卫,防抖+防反馈环有 jank 风险,恢复手段已覆盖。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。`(本轮)`
