@@ -55,7 +55,11 @@ function TagRow({ group, count, active }: { group: Group; count: number; active:
   const renameGroup = useAppStore((s) => s.renameGroup);
   const removeGroup = useAppStore((s) => s.removeGroup);
   const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("group", group.id);
-  const taskOver = useTagDrop(ref, group.id);
+  // 「拖待办归类」的放置目标挂在内层独立元素上:pragmatic-dnd 同一元素只能注册一个 dropTarget,
+  // 外层 ref 已被 useSortableItem 用于「分组重排」;放同一元素会被忽略(警告 + task-tag 失效)。
+  // 内层目标 canDrop 只认 task,拖分组重排时它不接、自然冒泡到外层,两套互不干扰。
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const taskOver = useTagDrop(innerRef, group.id);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(group.name);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
@@ -84,6 +88,7 @@ function TagRow({ group, count, active }: { group: Group; count: number; active:
           }`}
         />
       )}
+      <div ref={innerRef}>
       {editing ? (
         <input
           autoFocus
@@ -133,6 +138,7 @@ function TagRow({ group, count, active }: { group: Group; count: number; active:
           </button>
         </div>
       )}
+      </div>
       {menu && (
         <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
           <div className="w-36">
