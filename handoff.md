@@ -172,3 +172,34 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 **未决/取舍**:
 - 监听用 `clipboard-rs`(ShellPicker 用名,crate 名带连字符);默认开启(有意覆盖「新功能默认关」约定,用户明确要默认开)。当前未做「关闭监听」开关——如需可加设置项 + 监听线程读 settings 判断是否记录。
 - 列表上限 500 条(`get_clips` LIMIT 500),未做自动清理/容量上限 GC,后续可加。
+
+---
+
+## 数据存储位置(数据迁移)—— 交接
+
+**背景/目标**:用户要在 设置·通用 新增「数据存储位置」,选新目录后把待办、便签、标签图标、剪贴板(文本与图片)整体搬到新位置。剪贴板文本/图片的存储位置也随之改变。
+
+**实现要点**:
+- 所有数据都从 `database::data_dir()` 单一根推导。本轮让它可配置(剪贴板那轮预留的出口):优先读指针文件,否则默认 `%AppData%\MinimalTodoApp`。
+- 指针 = `%LOCALAPPDATA%\MinimalTodoApp\datapath`(纯文本)。**为什么放这**:必须是不随数据迁移的固定位置——库自己会被搬走,若指针存库里则搬走后启动读不到指针 → 引导死锁。读指针在 db::init 打开库之前。
+- 迁移命令 `migrate_data_dir(new_dir)`:WAL checkpoint → `storage::migrate_data_root`(copy→verify→写指针→标记旧根待清理)→ 改写新库 clips.image_path 前缀。失败回滚、旧数据不动。
+- 旧根删除推迟到下次启动(`cleanup_pending_old_root`,db 打开前),规避 Windows 文件锁;有「当前根 != 旧根」安全闸。
+- 迁移后需重启(`restart_app` 命令,换壳 bat)。
+
+**改了哪些文件**:
+- 新增 `src-tauri/src/storage.rs`(指针读写、迁移、启动清理、重启 bat)。
+- `src-tauri/src/database.rs`(`data_dir()` 走 storage、新增 `default_data_dir()`)。
+- `src-tauri/src/commands.rs`(`get_data_dir` / `migrate_data_dir` / `restart_app`)。
+- `src-tauri/src/lib.rs`(注册 storage 模块、启动调 cleanup、注册 3 命令、加 dialog 插件)。
+- `src-tauri/Cargo.toml`(+ tauri-plugin-dialog)、`capabilities/default.json`(+ dialog:allow-open)。
+- `src/lib/tauri-ipc.ts`(getDataDir/migrateDataDir/restartApp)、`SettingsPanel.tsx`(UI)、`src/lib/i18n.ts`(双语 S.X.DataLocation*)、`package.json`(+ @tauri-apps/plugin-dialog)。
+
+**运行时验证点**(需跑起来走查):
+1. 设置·通用 显示当前数据位置;点「选择新位置」选一个空目录 → 确认。
+2. 迁移成功 → 弹「立即重启」→ 重启后:待办 / 便签 / 标签自定义图标 / 剪贴板图片 全部还在且正常显示(尤其剪贴板图片**全尺寸预览**走 image_path 绝对路径,验证前缀已改写)。
+3. 旧位置(`%AppData%\MinimalTodoApp` 或上一处)的 todo.db 与三图片目录在重启后被清空。
+4. 失败路径:选一个已含 todo.db / 非空 clipboard-images 的目录 → 应中止报冲突,旧数据不动。
+
+**未决/取舍/风险**:
+- 校验用「文件数 + 总字节一致」。迁移窗口内剪贴板监听线程若往旧 `clipboard-images` 写新图片,可能导致计数不一致 → 安全地中止迁移(旧数据完好),用户重试即可。可接受;若要更稳可在迁移期间临时暂停监听(当前未做)。
+- 迁移用复制(非 rename),跨盘也可靠;同盘大数据量会慢一点,换来 copy→verify→delete 的安全性。

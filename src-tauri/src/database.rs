@@ -5,16 +5,25 @@ use std::sync::Mutex;
 /// 全局数据库连接(tauri 托管状态)
 pub struct Db(pub Mutex<Connection>);
 
-/// 数据目录沿用旧版 WPF 的 %AppData%\MinimalTodoApp,
-/// 便于首启时就近发现旧版 data.json 完成迁移
-pub fn data_dir() -> PathBuf {
+/// 默认数据目录沿用旧版 WPF 的 %AppData%\MinimalTodoApp,
+/// 便于首启时就近发现旧版 data.json 完成迁移。
+pub fn default_data_dir() -> PathBuf {
     let appdata = std::env::var("APPDATA").expect("APPDATA 环境变量不存在");
     PathBuf::from(appdata).join("MinimalTodoApp")
 }
 
+/// 实际数据根目录:优先读「数据位置指针」(自定义路径),否则用默认目录。
+///
+/// 指针文件存在不随数据迁移的固定位置(%LOCALAPPDATA%\MinimalTodoApp\datapath),
+/// 详见 storage.rs。todo.db / note-images / group-icons / clipboard-images 全部从
+/// 这一个根推导,所以根一变它们整体跟着走。**绝不能把指针存进 todo.db**
+/// (库自己会被搬走 → 启动时读不到指针 → 引导死锁)。
+pub fn data_dir() -> PathBuf {
+    crate::storage::resolve_data_dir()
+}
+
 /// 剪贴板图片目录,与 note-images/group-icons 同级,从「数据根目录」(data_dir)推导。
-/// 注:后续若让数据位置可配置(任务2),只需把这里的根从 data_dir() 换成集中配置的
-/// 数据根即可,调用方都走这一个出口,无需四处改路径。
+/// 数据位置可配置后,根一变它自动跟随,调用方无需改路径。
 pub fn clipboard_images_dir() -> PathBuf {
     let dir = data_dir().join("clipboard-images");
     let _ = std::fs::create_dir_all(&dir);
