@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
+use tauri::{AppHandle, Manager, PhysicalPosition, WebviewWindow};
 
 fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -52,13 +52,10 @@ pub fn show_main(app: &AppHandle) {
             state.moving.store(false, Ordering::SeqCst);
         }
     }
-
-    // 强制 WebView2 重绘:微调一次内层尺寸再还原,促使新暴露区域被重绘,
-    // 消除「拉大窗口后右侧透出桌面」的透明窗口 artifact。
-    if let Ok(inner) = w.inner_size() {
-        let _ = w.set_size(PhysicalSize::new(inner.width + 1, inner.height));
-        let _ = w.set_size(inner);
-    }
+    // 注:不再在此用 set_size 微调强制重绘——那是个无 moving 守卫的尺寸变更,
+    // 会触发 Resized/Moved 干扰贴边轮询(贴边自动隐藏曾因此回归);
+    // 透明窗口透出桌面的重绘改由前端 onResized 防抖 + 纯 DOM 重绘兜底(见 App.tsx),
+    // 对最大化无副作用、也不与贴边逻辑互扰。
 }
 
 fn read_setting(app: &AppHandle, key: &str) -> Option<String> {

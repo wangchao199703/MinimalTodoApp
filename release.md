@@ -19,6 +19,9 @@
 - **标签简化**:删除标签第二侧边栏,「标签」入口点击直接进**全宽标签看板**(保留任务-标签数据);标签默认色清空(迁移 v2/v3),统一为无色基线 + 右键自定义。
 - **侧栏统一打磨**:一/二侧栏图标统一 14 号、位置对齐;折叠按钮统一置底;折叠态图标默认清晰(不再 hover 才显色);待办圆圈左内距缩短约 50%。
 - **窗口放大透出桌面 + 托盘恢复手段**(v2.0.0):托盘「显示主界面」改为「显示并居中」(`Show & center`);`show_main` 增强为「显示 → 居中 → 强制 WebView2 重绘」,既是托盘动作也是一键修复手段。根因是主窗口 `transparent:true`,Windows + WebView2 放大 resize 时新暴露区域不重绘而透出桌面壁纸;修复办法是微调一次内层尺寸(`set_size(w+1,h)` 再还原)触发整窗重绘。居中走贴边自动隐藏的「忽略自身移动」标志(`DockState.moving`,经 `app.manage(Arc<DockState>)` 托管供 `show_main` 复用),避免居中被误判为用户拖动而收边。未做 resize 结束自动重绘(C):`Resized` 无类似 `moving` 守卫,防抖 + 防 `set_size` 反馈环复杂且有 jank 风险,「显示并居中」恢复手段已覆盖。
+- **窗口 resize/最大化重绘改自动 + 修复贴边隐藏回归**(v2.0.0):
+  - **贴边自动隐藏回归修复**:上轮(`f90f46d`)给 `show_main` 加的「微调内层尺寸 `set_size(w+1,h)` 强制重绘」是一处**无 `moving` 守卫的尺寸变更**,会触发 `Resized`/`Moved` 干扰贴边轮询(尤其托盘「显示并居中」时),导致拖到边缘不再自动隐藏。**移除该 `set_size` 重绘 nudge**,贴边逻辑不再被自身的尺寸抖动误扰;「显示并居中」仍照常(显示→`moving` 守卫下居中→清贴边态)。
+  - **resize/最大化后自动重绘改前端**:透明窗口透出桌面的重绘,从 Rust 的一次性 `set_size` 改为前端 `App.tsx` 监听 `getCurrentWindow().onResized()`(resize 拖边、最大化、还原都会触发)→ 防抖 120ms → 纯 DOM 重绘(根节点瞬时 `transform: translateZ(0)` + 强制 reflow + rAF 撤回)。**对 OS 窗口尺寸零副作用**:既不会像 `set_size` 那样在最大化时取消最大化,也不会和贴边的 `Moved/Resized` 互扰,且天然带防反馈环(纯 DOM 不触发 `Resized`)。`cargo check`、`npm run build` 通过,未升版本(2.0.0)。
 - **便签折叠态镜像树**:第二侧栏收起为图标列时按分组呈现——展开分组铺开便签图标,折叠分组只显示一个分组图标(点击展开)。
 - **工作流约定**:`CLAUDE.md` 新增「每轮改动工作流」(1–5)+「工作风格」(6–9)——提示词记 `prompts.md`(原 `优化记录.md`,已 `git mv`)、改动记 `release.md`、未授权不升版本号、做完即本地 commit 不 push、写 `handoff.md`、做完 run 起来验证;并约定追根因不打补丁、路径非最短直说、输出说重点。
 - **后端测试套件(首次)**:`commands.rs` 每个命令体抽成可测的 `*_impl(conn, …)` 核心函数(命令壳只加锁转调,逻辑/SQL 未改);新增 `#[cfg(test)]` 覆盖标签/任务/便签/便签分组/自定义主题/设置的 CRUD、迁移幂等与建表、三态补丁(due/group/parent)、四象限覆盖清零、父删级联子、收集箱自愈、设置重置保留 language/imported_at,以及纯函数(safe_file_name/safe_ext/is_supported_image)。`database.rs` 加 DB 层测试。无功能行为改动。

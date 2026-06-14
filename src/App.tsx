@@ -200,6 +200,52 @@ export default function App() {
     })();
   }, [scheduleOpen, loaded, saveSetting]);
 
+  // 窗口尺寸变化(resize 拖边 / 最大化 / 还原)后自动强制 WebView2 整表面重绘。
+  //
+  // 根因:主窗 transparent:true(为亚克力/圆角),WebView2 在窗口尺寸变化时不重绘
+  // 新暴露区域,于是透出桌面壁纸(已知 artifact,见 tauri#12800)。
+  //
+  // 为何放前端、不放 Rust:Rust 用 set_size 微调触发重绘,但窗口处于最大化时
+  // set_size 会取消最大化;且 set_size 自身又触发 Resized 易成反馈环。前端走纯 DOM
+  // 重绘——对 OS 窗口尺寸零副作用、与是否最大化无关,也不会和贴边逻辑的 Moved/Resized 互扰。
+  //
+  // onResized 在 resize 与最大化/还原时都会触发;防抖到尺寸停止变化后再重绘一次,避免拖动中频繁抖动。
+  useEffect(() => {
+    let timer: number | undefined;
+    let unlisten: (() => void) | undefined;
+    let disposed = false;
+
+    // 纯 DOM 重绘:瞬时给根节点加一个不可见的合成层位移再撤回,强制 WebView2
+    // 重新合成整个表面(不改 OS 窗口尺寸,故对最大化状态无副作用)。
+    const repaint = () => {
+      const el = document.documentElement;
+      el.style.transform = "translateZ(0)";
+      // 读取布局属性强制同步 reflow,确保上面的样式落地
+      void el.offsetHeight;
+      requestAnimationFrame(() => {
+        el.style.transform = "";
+      });
+    };
+
+    void getCurrentWindow()
+      .onResized(() => {
+        if (disposed) return;
+        if (timer !== undefined) clearTimeout(timer);
+        // 防抖:尺寸停止变化 120ms 后重绘一次
+        timer = window.setTimeout(repaint, 120);
+      })
+      .then((fn) => {
+        if (disposed) fn();
+        else unlisten = fn;
+      });
+
+    return () => {
+      disposed = true;
+      if (timer !== undefined) clearTimeout(timer);
+      unlisten?.();
+    };
+  }, []);
+
   // 禁用 WebView2 默认右键菜单(返回/刷新/打印…),输入框保留系统菜单
   useEffect(() => {
     const block = (e: MouseEvent) => {

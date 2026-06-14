@@ -25,7 +25,16 @@
 
 ## 三、当前进度(均已本地提交,未 push)
 
-### 最近一轮:窗口放大透出桌面 + 托盘「显示并居中」(v2.0.0,未升版)
+### 最近一轮:resize/最大化重绘改自动 + 修复贴边隐藏回归(v2.0.0,未升版)
+
+- **Bug B(贴边自动隐藏失效,回归)根因**:上一轮 `f90f46d` 给 `show_main` 加的强制重绘 `set_size(w+1,h)→还原`(原第 58–61 行)是一处**无 `moving` 守卫的尺寸变更**;它在托盘「显示并居中」/单实例唤起时跑,会触发 `Resized`(以及 Windows 上 set_size 改变窗口原点带来的 `Moved`),干扰贴边轮询/`Moved` 监听,导致拖到边缘不再自动隐藏。**修复=移除该 nudge**(重绘职责改由前端承担,见 Bug A),贴边逻辑不再被自身尺寸抖动误扰。`show_main` 的「显示→`moving` 守卫下居中→清贴边态(`edge=NONE/hidden=false/pending=false`+持久化 `dock_edge=0`)」逻辑**保留不变**,「显示并居中」仍工作且不被贴边误收。`app.manage(Arc<DockState>)` 与 `setup_dock` 的 Moved/轮询逻辑均未动(经核对,二者非回归源)。
+- **Bug A(resize/最大化后透桌)自动修复,改前端**:不再用 Rust `set_size` 一次性 nudge。`App.tsx` 新增 effect 监听 `getCurrentWindow().onResized()`(resize 拖边、最大化、还原都会触发)→ **防抖 120ms** → **纯 DOM 重绘**:根节点瞬时 `transform: translateZ(0)` + 读 `offsetHeight` 强制 reflow + `requestAnimationFrame` 撤回。
+  - **为何前端而非 Rust**:① `set_size` 在窗口**最大化时会取消最大化**(任务点名的坑),纯 DOM 重绘对 OS 窗口尺寸**零副作用**,最大化照样修;② `set_size` 自身又触发 `Resized` → 反馈环,纯 DOM 重绘不改 OS 尺寸**不触发 `Resized`**,天然防反馈环;③ 不与贴边的 `Moved/Resized` 互扰(Bug B 的教训)。
+  - **未碰**:`transparent:true`、`dragDropEnabled`、`ResizeBorders.tsx` 的 `startResizeDragging`(均按任务约束保留)。
+- **改了**:`src-tauri/src/window.rs`(删 set_size nudge + 删无用 `PhysicalSize` 引入)、`src/App.tsx`(新增 onResized 防抖重绘 effect)。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。**我未启动 dev、未 kill 任何进程**。
+- **需运行时目视验证(必做)**:① 拖窗口到上/左/右边缘→是否自动隐藏、鼠标顶边缘→是否唤出(贴边是否恢复);② 向下拖边缩小窗口→内容是否填满、不再透桌;③ 单击标题栏最大化按钮→是否不再透桌、且窗口**仍保持最大化**(没被取消最大化);④ 托盘「显示并居中」→是否仍正常居中显示、之后还能正常贴边。
+
+### 上一轮:窗口放大透出桌面 + 托盘「显示并居中」(v2.0.0,未升版)
 
 - **现象**:用户拖边把窗口拉大后,网页内容只占左侧,右侧露出**真·桌面壁纸**。
 - **根因**:主窗口 `tauri.conf.json` 是 `transparent:true`(为亚克力/圆角)。Windows + WebView2 在窗口**放大 resize 时,新暴露区域不重绘** → 透明窗口透出桌面。这是已知透明窗口重绘 artifact;**不要去掉 `transparent:true`**(毁亚克力/圆角与页面内拖拽)。resize 机制本身没问题(`ResizeBorders.tsx` 用原生 `startResizeDragging`,未动)。
