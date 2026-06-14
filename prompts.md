@@ -463,4 +463,7 @@
 
 **提示词:** 子待办除了字体变小,高度也等比缩小。
 - 根因:行高主要由各版式**固定垂直 padding** 撑着,`--ds` 没作用到它。
-- 修法:9 套版式的 `padding: Vy Vx` 收敛为 `--pad-y: Vy + padding-inline: Vx`,基线 `.task-item` 统一 `padding-top/bottom = calc(var(--pad-y) * var(--ds))`(横向 padding 不动 → 宽度不变,仅高度随层级缩)。`npm run build` 通过。`(本轮)`
+- 修法:9 套版式的 `padding: Vy Vx` 收敛为 `--pad-y: Vy + padding-inline: Vx`,基线 `.task-item` 统一 `padding-top/bottom = calc(var(--pad-y) * var(--ds))`(横向 padding 不动 → 宽度不变,仅高度随层级缩)。`npm run build` 通过。`001fd73`
+
+**提示词:** 子任务前面的竖线有点浅,加深一点。
+- 4 条浅引导线(linear/苹果系合并/notion/fluent)背景 `var(--divider)` → `color-mix(in srgb, var(--muted-text) 40%, var(--divider))`(混入 40% 次要文字色加深,仍柔和);粗野的 2px 黑线不动。`npm run build` 通过。`(本轮)`
