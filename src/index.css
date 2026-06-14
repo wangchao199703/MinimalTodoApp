@@ -752,7 +752,7 @@ body {
    经典(classic)= 基线默认,不写覆盖即保持现状。 */
 
 /* —— 新元素基线:勾选框颜色走 --pri(优先级色);优先级圆点/信号图标、标签后缀默认隐藏 —— */
-.task-check { border-color: var(--pri); color: var(--accent-text); }
+.task-check { border-color: var(--muted-text); color: var(--accent-text); }
 .task-check.is-done { background: var(--accent); border-color: var(--accent); }
 .task-pri-dot { display: none; height: 0.5rem; width: 0.5rem; border-radius: 9999px; }
 .task-pri-icon { display: none; }
@@ -779,7 +779,6 @@ body {
   margin-top: 0.1rem;
 }
 .design-apple .task-check.is-done { border-color: var(--accent); }
-.design-apple .task-pri-dot { display: block; }
 .design-apple .task-title { font-weight: 500; }
 .design-apple .task-tag { display: inline; }
 
@@ -803,7 +802,6 @@ body {
   border-color: var(--muted-text);
 }
 .design-linear .task-check.is-done { border-radius: 4px; border-color: var(--accent); }
-.design-linear .task-pri-icon { display: flex; }
 .design-linear .task-title { font-weight: 500; }
 .design-linear .task-tag {
   display: inline;
@@ -1077,3 +1075,29 @@ body {
 }
 .design-brutal .task-collapse { opacity: 0; font-weight: 900; }
 .design-brutal .task-item:hover .task-collapse { opacity: 1; }
+
+/* ============ 优先级展示(prio-*):与版式正交,设置里选 苹果/极客/文档/无 ============
+   容器 data-pri=1/2/3,--pri=该级色(低绿/中黄/高红)。基线勾选框环已中性,优先级表达全由本段按设置叠加。 */
+.task-pri-mark { display: none; }
+
+/* 苹果:复选框圆环着色 + 高优先级标题后红 !(不覆盖完成/半满态的强调色) */
+.prio-apple .task-check:not(.is-done):not(.is-indeterminate) { border-color: var(--pri); }
+.prio-apple .task-item[data-pri="3"] .task-pri-mark {
+  display: inline;
+  order: 9;
+  color: var(--overdue-text);
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.prio-apple .task-item[data-pri="3"] .task-pri-mark::before { content: "!"; }
+
+/* 极客:行最左 2px gutter 竖线(IDE 风) */
+.prio-linear .task-item { border-left: 2px solid var(--pri); }
+
+/* 文档:标题文字着色(高红/中黄,低保持默认)+ 标题前小圆点 */
+.prio-notion .task-pri-dot { display: block; }
+.prio-notion .task-item[data-pri="3"] .task-title { color: var(--overdue-text); }
+.prio-notion .task-item[data-pri="2"] .task-title { color: var(--warning-text); }
+
+/* 无:不展示优先级(基线已中性,无需额外规则) */

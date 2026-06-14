@@ -137,3 +137,28 @@ export function applyDesign(design: Design) {
 export function migrateDesign(saved: string | undefined): Design {
   return (DESIGNS as readonly string[]).includes(saved ?? "") ? (saved as Design) : DEFAULT_DESIGN;
 }
+
+// ============ 优先级展示(priority_style):与版式正交的「优先级怎么显示」轴 ============
+// 在 <html> 挂 prio-<key>。apple=复选框圆环着色+高优先级 ! / linear=行左 gutter 竖线 /
+// notion=标题文字着色+小圆点 / none=不展示。容器上的 data-pri / --pri 供 CSS 取用。
+export const PRIORITY_STYLES = ["apple", "linear", "notion", "none"] as const;
+export type PriorityStyle = (typeof PRIORITY_STYLES)[number];
+export const DEFAULT_PRIORITY_STYLE: PriorityStyle = "apple";
+
+export const PRIORITY_STYLE_LABEL_KEY: Record<PriorityStyle, string> = {
+  apple: "S.X.Prio.Apple",
+  linear: "S.X.Prio.Linear",
+  notion: "S.X.Prio.Notion",
+  none: "S.X.Prio.None",
+};
+
+export function applyPriorityStyle(style: PriorityStyle) {
+  const root = document.documentElement;
+  for (const p of PRIORITY_STYLES) root.classList.toggle(`prio-${p}`, p === style);
+}
+
+export function migratePriorityStyle(saved: string | undefined): PriorityStyle {
+  return (PRIORITY_STYLES as readonly string[]).includes(saved ?? "")
+    ? (saved as PriorityStyle)
+    : DEFAULT_PRIORITY_STYLE;
+}

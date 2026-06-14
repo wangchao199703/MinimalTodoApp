@@ -18,8 +18,11 @@ import {
   migrateThemeKey,
   applyDesign,
   migrateDesign,
+  applyPriorityStyle,
+  migratePriorityStyle,
   type Theme,
   type Design,
+  type PriorityStyle,
 } from "../lib/themes";
 import { setLang, type Lang } from "../lib/i18n";
 import { applyFontSettings } from "../lib/font";
@@ -47,6 +50,7 @@ interface AppState {
   view: View;
   theme: Theme;
   design: Design;
+  priorityStyle: PriorityStyle;
   language: Lang;
   sortMode: SortMode;
   toasts: Toast[];
@@ -76,6 +80,7 @@ interface AppState {
   setView: (v: View) => void;
   setTheme: (key: Theme) => void;
   setDesign: (key: Design) => void;
+  setPriorityStyle: (key: PriorityStyle) => void;
   setLanguage: (lang: Lang) => void;
   setSortMode: (m: SortMode) => void;
   saveSetting: (key: string, value: string) => void;
@@ -132,6 +137,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   view: { kind: "all" },
   theme: "light-classic",
   design: "classic",
+  priorityStyle: "apple",
   language: "zh-CN",
   sortMode: "custom",
   toasts: [],
@@ -161,6 +167,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     applyTheme(theme);
     const design = migrateDesign(settings["design"]);
     applyDesign(design);
+    const priorityStyle = migratePriorityStyle(settings["priority_style"]);
+    applyPriorityStyle(priorityStyle);
     applyFontSettings(
       settings["font_family"] || "Microsoft YaHei UI",
       Number(settings["font_size"] || "14"),
@@ -184,6 +192,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       settings,
       theme,
       design,
+      priorityStyle,
       language,
       view,
       sortMode,
@@ -203,12 +212,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     applyTheme(theme);
     const design = migrateDesign(settings["design"]);
     applyDesign(design);
+    const priorityStyle = migratePriorityStyle(settings["priority_style"]);
+    applyPriorityStyle(priorityStyle);
     applyFontSettings(
       settings["font_family"] || "Microsoft YaHei UI",
       Number(settings["font_size"] || "14"),
       Number(settings["line_spacing"] || "1.1"),
     );
-    set({ settings, theme, design, language, loaded: true });
+    set({ settings, theme, design, priorityStyle, language, loaded: true });
   },
 
   applyRemoteSetting: (key, value) => {
@@ -224,6 +235,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       const dg = migrateDesign(value);
       applyDesign(dg);
       patch.design = dg;
+    } else if (key === "priority_style") {
+      const ps = migratePriorityStyle(value);
+      applyPriorityStyle(ps);
+      patch.priorityStyle = ps;
     } else if (key === "language") {
       const lang: Lang = value === "en" ? "en" : "zh-CN";
       setLang(lang);
@@ -313,6 +328,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     applyDesign(key);
     set({ design: key });
     get().saveSetting("design", key);
+  },
+
+  setPriorityStyle: (key) => {
+    applyPriorityStyle(key);
+    set({ priorityStyle: key });
+    get().saveSetting("priority_style", key);
   },
 
   setLanguage: (language) => {

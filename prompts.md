@@ -339,4 +339,10 @@
   - **④文档 Notion**:弱边界、hover 整行成块、极小行距、方框灰方块半满、`#`标签去前缀、细实线引导、右侧 hover 箭头;用 `1/3` 计数不用进度条。
   - **⑤流体 Fluent**:毛玻璃 `backdrop-blur` + 半透明白描边 + 柔阴影、发光勾选(半满发光横杠)、**发光进度条**、左侧**发光引导线**、半透明胶囊标签。
   - **⑥粗野 Brutalism**:粗黑边(`--primary-text` 充当黑,浅近黑/深近白)+ 硬偏移阴影(hover 位移放大)、方块勾选、贴纸标签(带边+硬阴影)、粗黑引导线。
-- `themes.ts` DESIGNS 加 notion/fluent/brutal;i18n 双语加 `S.X.Design.{Notion,Fluent,Brutal}{,Desc}`;`index.css` 末尾加 3 套 `.design-*`。设置→通用→界面版式 2×2 自动列出 7 套。`npm run build` 通过。`(本轮)`
+- `themes.ts` DESIGNS 加 notion/fluent/brutal;i18n 双语加 `S.X.Design.{Notion,Fluent,Brutal}{,Desc}`;`index.css` 末尾加 3 套 `.design-*`。设置→通用→界面版式 2×2 自动列出 7 套。`npm run build` 通过。`439a2cf`
+
+**提示词:** 将苹果、极客、文档、无优先级展示抽取为设置,并且将这次优先级改动回撤,优先级展示通过设置调整。
+- **回撤** 上一轮「优先级按版式寄生上色」提交(`git reset --hard` 去掉 8b0483b:含 cute 马卡龙/fluent 光晕/brutal 色块等)。
+- **新增「优先级展示」设置轴**(与版式正交,`<html>.prio-*`,4 选项):**苹果**(复选框圆环着色 + 高优先级标题后红 `!`)/ **极客**(行最左 2px gutter 竖线)/ **文档**(标题文字着色 高红中黄 + 小圆点)/ **无**(不展示)。
+- 解耦:基线勾选框环色改**中性** `--muted-text`(原为 `--pri`),去掉版式耦合的优先级指示(`.design-apple .task-pri-dot`、`.design-linear .task-pri-icon` 删除),TaskItem 移除信号图标元素 + 加 `.task-pri-mark`;优先级表达全部改由 `prio-*` 按 `data-pri`/`--pri` 叠加。
+- `themes.ts` 加 PRIORITY_STYLES + applyPriorityStyle/migratePriorityStyle;store priorityStyle 状态 + setter + init/initSettingsWindow 应用 + applyRemoteSetting 跨窗口同步;设置→通用 新增「优先级展示」选择器;i18n 双语 `S.X.Prio.*`;默认 apple。`npm run build` 通过。`(本轮)`

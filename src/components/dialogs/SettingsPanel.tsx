@@ -4,7 +4,15 @@ import { useAppStore } from "../../store/useAppStore";
 import { ipc } from "../../lib/tauri-ipc";
 import { t } from "../../lib/i18n";
 import { applyFontSettings } from "../../lib/font";
-import { DESIGNS, DESIGN_LABEL_KEY, DESIGN_DESC_KEY, migrateDesign } from "../../lib/themes";
+import {
+  DESIGNS,
+  DESIGN_LABEL_KEY,
+  DESIGN_DESC_KEY,
+  migrateDesign,
+  PRIORITY_STYLES,
+  PRIORITY_STYLE_LABEL_KEY,
+  migratePriorityStyle,
+} from "../../lib/themes";
 import { confirm } from "../ui/ConfirmDialog";
 
 function Toggle(props: {
@@ -253,6 +261,26 @@ export default function SettingsPanel() {
                     <span className="text-[11px] leading-tight text-muted">
                       {t(DESIGN_DESC_KEY[d])}
                     </span>
+                  </button>
+                );
+              })}
+            </div>
+            {/* 优先级展示:与版式正交,选 苹果/极客/文档/无 */}
+            <p className="mb-2 text-sm text-text-1">{t("S.X.Prio.Title")}</p>
+            <div className="mb-3 grid grid-cols-2 gap-2">
+              {PRIORITY_STYLES.map((p) => {
+                const active = migratePriorityStyle(settings["priority_style"]) === p;
+                return (
+                  <button
+                    key={p}
+                    onClick={() => saveSetting("priority_style", p)}
+                    className={`rounded-lg border px-3 py-1.5 text-left text-sm transition-colors ${
+                      active
+                        ? "border-accent bg-selected text-text-1"
+                        : "border-divider text-text-2 hover:bg-card-hover"
+                    }`}
+                  >
+                    {t(PRIORITY_STYLE_LABEL_KEY[p])}
                   </button>
                 );
               })}

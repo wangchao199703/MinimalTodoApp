@@ -11,9 +11,6 @@ import {
   Pencil,
   Pin,
   PinOff,
-  SignalHigh,
-  SignalLow,
-  SignalMedium,
   Trash2,
   X,
 } from "lucide-react";
@@ -40,13 +37,6 @@ export const PRIORITY_KEY: Record<number, string> = {
   1: "S.Priority.Low",
   2: "S.Priority.Medium",
   3: "S.Priority.High",
-};
-
-/** 优先级信号图标(极客版式前置展示) */
-const PRIORITY_ICON: Record<number, typeof SignalHigh> = {
-  1: SignalLow,
-  2: SignalMedium,
-  3: SignalHigh,
 };
 
 const DUE_CLASS: Record<string, string> = {
@@ -97,7 +87,6 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const [doneChildren, totalChildren] = childStats(tasks, task.id);
   const ds = dueState(task.due_date, task.is_completed, now);
   const group = task.group_id ? groups.find((g) => g.id === task.group_id) : null;
-  const PriIcon = PRIORITY_ICON[task.priority] ?? SignalMedium;
   // 半满态:有子任务且部分(非全部)完成,父本身未完成 —— 复选框显示「➖/圆点」
   const indeterminate =
     !task.is_completed && totalChildren > 0 && doneChildren > 0 && doneChildren < totalChildren;
@@ -147,13 +136,6 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         />
       )}
 
-      {/* 优先级信号图标:仅「极客」版式前置展示(CSS 控制可见) */}
-      {!task.is_completed && (
-        <span className="task-pri-icon shrink-0" style={{ color: "var(--pri)" }}>
-          <PriIcon size={14} />
-        </span>
-      )}
-
       <button
         title={task.is_completed ? t("S.X.Uncomplete") : t("S.X.Complete")}
         onClick={completeWithEffects}
@@ -185,8 +167,10 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
             className="min-w-0 bg-transparent text-sm text-text-1 outline-none"
           />
         ) : (
-          <div className="task-title-row flex min-w-0 items-center gap-2">
-            {/* 优先级圆点:仅「苹果」版式展示(CSS 控制) */}
+          <div className="task-title-row flex min-w-0 items-center gap-1.5">
+            {/* 优先级标记(高优先级 ! 等):由 prio-* 设置按 data-pri 用 CSS ::before 注入 */}
+            <span className="task-pri-mark shrink-0" />
+            {/* 优先级小圆点:文档(notion)优先级展示用(CSS 控制) */}
             <span className="task-pri-dot shrink-0" style={{ background: "var(--pri)" }} />
             <span
               onDoubleClick={() => {
