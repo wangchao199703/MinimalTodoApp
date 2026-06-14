@@ -220,6 +220,18 @@ export function migratePriorityStyle(saved: string | undefined): PriorityStyle {
 
 // ============ 勾选框三项设置(形状/大小/粗细):空串=跟随版式,设了才覆盖版式默认 ============
 // 在 <html> 按「是否设置」切 cb-* class + 写 CSS 变量;配合 index.css 的 html.cb-* .task-check 覆盖规则。
+/** 各内置版式勾选框默认几何(px),与 index.css 的 .design-* .task-check 对应。
+ *  用于设置里「跟随版式」(置灰)时显示真实值——设置窗口无任务卡,无法用 getComputedStyle。 */
+export const DESIGN_CHECKBOX_DEFAULT: Record<Design, { size: number; width: number }> = {
+  classic: { size: 16, width: 2 }, // 基线 h-4 w-4 / border-2
+  apple: { size: 20, width: 1.5 }, // 1.25rem / 1.5px
+  linear: { size: 16, width: 1 }, // 1rem / 1px
+  cute: { size: 24, width: 2 }, // 1.5rem / 2px
+  notion: { size: 17, width: 1 }, // 1.05rem≈16.8 / 1px
+  fluent: { size: 20, width: 2 }, // 1.25rem / 继承 border-2
+  brutal: { size: 20, width: 2 }, // 1.25rem / 2px
+};
+
 export function applyCheckbox(shape: string, size: string, width: string) {
   const r = document.documentElement;
   r.classList.toggle("cb-shape", !!shape);

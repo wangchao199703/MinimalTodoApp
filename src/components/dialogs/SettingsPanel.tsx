@@ -9,6 +9,7 @@ import {
   DESIGNS,
   DESIGN_LABEL_KEY,
   DESIGN_DESC_KEY,
+  DESIGN_CHECKBOX_DEFAULT,
   PRIORITY_STYLES,
   PRIORITY_STYLE_LABEL_KEY,
   migratePriorityStyle,
@@ -308,6 +309,12 @@ export default function SettingsPanel() {
               const cbShape = ac?.shape ?? "";
               const cbSize = ac?.size ?? "";
               const cbWidth = ac?.width ?? "";
+              // 当前生效版式的基础版式 → 取其勾选框真实默认值,用于「跟随版式」时显示
+              const baseKey = ac ? ac.base : design;
+              const defs =
+                (DESIGN_CHECKBOX_DEFAULT as Record<string, { size: number; width: number }>)[
+                  baseKey
+                ] ?? DESIGN_CHECKBOX_DEFAULT.classic;
               const shapeOpts: { v: string; key: string }[] = [
                 { v: "", key: "S.X.Checkbox.FollowVersion" },
                 { v: "round", key: "S.X.Checkbox.Round" },
@@ -337,7 +344,7 @@ export default function SettingsPanel() {
                   <Toggle
                     label={`${t("S.X.Checkbox.Size")} · ${t("S.X.Checkbox.FollowVersion")}`}
                     checked={cbSize === ""}
-                    onChange={(v) => editCheckbox("size", v ? "" : "18")}
+                    onChange={(v) => editCheckbox("size", v ? "" : String(defs.size))}
                   />
                   <label className={`mt-1 mb-2 flex items-center gap-2 ${cbSize === "" ? "opacity-50" : ""}`}>
                     <span className="w-12 shrink-0 text-xs text-text-2">{t("S.X.Checkbox.Size")}</span>
@@ -347,17 +354,17 @@ export default function SettingsPanel() {
                       max={28}
                       step={1}
                       disabled={cbSize === ""}
-                      value={cbSize || "18"}
+                      value={cbSize || defs.size}
                       onChange={(e) => editCheckbox("size", e.target.value)}
                       className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
                     />
-                    <span className="w-10 text-right text-xs text-muted">{cbSize || "—"}</span>
+                    <span className="w-10 text-right text-xs text-muted">{cbSize || defs.size}</span>
                   </label>
                   {/* 粗细:跟随版式开关 + 滑块(1–4) */}
                   <Toggle
                     label={`${t("S.X.Checkbox.Width")} · ${t("S.X.Checkbox.FollowVersion")}`}
                     checked={cbWidth === ""}
-                    onChange={(v) => editCheckbox("width", v ? "" : "2")}
+                    onChange={(v) => editCheckbox("width", v ? "" : String(defs.width))}
                   />
                   <label className={`mt-1 flex items-center gap-2 ${cbWidth === "" ? "opacity-50" : ""}`}>
                     <span className="w-12 shrink-0 text-xs text-text-2">{t("S.X.Checkbox.Width")}</span>
@@ -367,11 +374,11 @@ export default function SettingsPanel() {
                       max={4}
                       step={0.5}
                       disabled={cbWidth === ""}
-                      value={cbWidth || "2"}
+                      value={cbWidth || defs.width}
                       onChange={(e) => editCheckbox("width", e.target.value)}
                       className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
                     />
-                    <span className="w-10 text-right text-xs text-muted">{cbWidth || "—"}</span>
+                    <span className="w-10 text-right text-xs text-muted">{cbWidth || defs.width}</span>
                   </label>
                 </div>
               );
