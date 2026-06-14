@@ -140,7 +140,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         {
           "--lvl": task.indent_level,
           "--pri": PRIORITY_COLOR[task.priority],
-          "--pct": `${progress}%`,
+          "--pct-num": progress,
         } as React.CSSProperties
       }
       className={`task-item group relative flex items-center gap-2 rounded-lg border border-divider bg-card py-2 pr-3 pl-1.5 transition-colors hover:bg-card-hover ${
@@ -175,6 +175,13 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
           <Check size={10} strokeWidth={3} />
         ) : (
           indeterminate && <Minus className="task-half" size={11} strokeWidth={3} />
+        )}
+        {/* 进度环(仅「圆环」进度模式显示,CSS 控制):track + 按 --pct-num 的 fill 弧 */}
+        {totalChildren > 0 && !task.is_completed && (
+          <svg className="task-ring" viewBox="0 0 36 36" aria-hidden="true">
+            <circle className="task-ring-track" cx="18" cy="18" r="15.5" />
+            <circle className="task-ring-fill" cx="18" cy="18" r="15.5" pathLength={100} />
+          </svg>
         )}
       </button>
 

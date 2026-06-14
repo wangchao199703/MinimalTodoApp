@@ -415,4 +415,7 @@
 - 自查发现 3 处并修复:① conic 硬停止裸 `0`(无单位)在 WebView 下可能解析异常 → 改 `var(--divider) var(--pct)` 显式同位;② mask 用默认 `circle`(farthest-corner)致方框内中心孔偏大/环怪 → 改 `circle closest-side`(58%/60%)相对圆精确;③ 环规则特异性 (0,3,1) 被 `.prio-apple .task-check:not(...)`(0,4,0)盖过致环外多套一圈优先级色边框 → 选择器加 `:not(.is-done)` 提到 (0,4,1),`border-color: transparent` 稳定生效。`27bc336`/`cc1548a`
 
 **提示词:**(附图)圆环显示异常——方形勾选框版式下成了「半蓝半白方块」。
-- 根因:默认版式极客(及文档/粗野)的勾选框是**方形**,conic + 圆形 mask 套在方框上就成了半填充方块。圆环进度本质是圆,故圆环模式下给父任务勾选框**强制 `border-radius: 9999px`**(覆盖方形/自定义形状),conic 与圆 mask 对齐 → 干净空心环。`npm run build` 通过。`(本轮)`
+- 根因:默认版式极客(及文档/粗野)的勾选框是**方形**,conic + 圆形 mask 套在方框上就成了半填充方块。圆环进度本质是圆,故圆环模式下给父任务勾选框**强制 `border-radius: 9999px`**(覆盖方形/自定义形状),conic 与圆 mask 对齐 → 干净空心环。`npm run build` 通过。`816962c`
+
+**提示词:**(附图)还是不行。
+- conic + mask 在 WebView2 下太脆(方框/track 可见度/seam),仍异常。**改用 SVG 进度环**(业界可靠做法):TaskItem 在父任务勾选框内渲染 `<svg class="task-ring">`(track 圆 + fill 弧,`stroke-dasharray: var(--pct-num) 100` + `pathLength=100` + `rotate(-90deg)`);容器传数值 `--pct-num`。圆环模式下勾选框去边框/底、SVG `inset:-2px` 铺满。SVG 本身是圆,方框版式也正常。`npm run build` 通过。`(本轮)`

@@ -1193,13 +1193,29 @@ html.pg-bar .task-subcount { display: none; }
 /* 强制「圆环」:父任务勾选框做成空心进度环(accent 已完成 + divider 余量,中心挖空);隐藏数字/进度条与半满标记 */
 html.pg-ring .task-progress { display: none; }
 html.pg-ring .task-subcount { display: none; }
+
+/* 进度环 SVG(可靠做法:track 圆 + 按 --pct-num 的 fill 弧),默认隐藏 */
+.task-ring { display: none; }
+.task-ring circle { fill: none; stroke-width: 4; }
+.task-ring-track { stroke: var(--divider); }
+.task-ring-fill {
+  stroke: var(--accent);
+  stroke-dasharray: var(--pct-num, 0) 100;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dasharray 0.3s ease;
+}
+/* 圆环模式:父任务勾选框去边框/底,内部铺满 SVG 进度环;隐藏半满标记 */
 html.pg-ring .task-check.is-parent:not(.is-done) {
-  background: conic-gradient(var(--accent) var(--pct, 0%), var(--divider) var(--pct, 0%));
-  /* 进度环本质是圆:强制圆形、无边框,覆盖方形/自定义形状,使 conic + 圆 mask 对齐 */
-  border-radius: 9999px;
+  position: relative;
   border-color: transparent;
-  -webkit-mask: radial-gradient(circle closest-side, transparent 58%, #000 60%);
-  mask: radial-gradient(circle closest-side, transparent 58%, #000 60%);
+  background: transparent;
 }
 html.pg-ring .task-check.is-parent .task-half { display: none; }
 html.pg-ring .task-check.is-parent::after { display: none; }
+html.pg-ring .task-check.is-parent .task-ring {
+  display: block;
+  position: absolute;
+  inset: -2px;
+}
