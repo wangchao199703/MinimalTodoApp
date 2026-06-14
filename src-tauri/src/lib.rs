@@ -32,6 +32,8 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
         ))
+        // 系统通知:周期提醒在 app 最小化/隐藏时也能弹右下角 OS 通知
+        .plugin(tauri_plugin_notification::init())
         .manage(database::Db(std::sync::Mutex::new(conn)))
         .setup(|app| {
             window::setup_tray(app.handle())?;

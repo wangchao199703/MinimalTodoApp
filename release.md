@@ -73,3 +73,14 @@
 `src-tauri/tauri.conf.json` · `src-tauri/Cargo.toml` · `package.json`
 
 **发布:** 更新本文件与 `release-notes.md` → `.\release.ps1`(构建便携 exe → FileVersion 校验 → tag → GitHub Release 上传)。
+
+## v2.0.0 — 周期提醒支持系统通知(最小化也能弹)
+
+**问题:** 周期提醒原先只在 `useReminderLoop` 调 `pushToast` 弹 app 内 toast,窗口最小化/隐藏/失焦时看不见(对齐旧版 WPF 的托盘气泡能力缺失)。
+
+**改动:**
+- Rust:`src-tauri/Cargo.toml` 加 `tauri-plugin-notification = "2"`;`src-tauri/src/lib.rs` 在 autostart 插件之后追加 `.plugin(tauri_plugin_notification::init())`(单实例插件仍最先注册,顺序未动);`src-tauri/capabilities/default.json` 加 `notification:default` 权限。
+- 前端:新增 `src/lib/notify.ts`(`notifyReminder`),`src/App.tsx` 的 `useReminderLoop` 触发处在 `pushToast` 之外调 `void notifyReminder(...)`;`package.json` 加 `@tauri-apps/plugin-notification`。
+- **按窗口可见性区分**:仅当窗口 `!isVisible() || isMinimized()`(app 内 toast 看不见)时才发 OS 通知,可见时只保留 toast 避免重复打扰;窗口状态获取失败时保守发(保证「最小化必弹」不漏)。
+- 通知标题 = `S.Fmt.ReminderToastTitle`(「待办:{title}」),正文对齐旧版气泡(`S.Fmt.ReminderMsgWithDue` 带截止 / `S.Fmt.ReminderMsg` + 间隔 `IntervalHours`/`IntervalMinutes`)。首次发通知前按需请求权限(权限结果缓存,避免每次 IPC)。失败静默,不影响提醒主流程。
+- 验证:`npm run build` 通过,`cargo check --manifest-path src-tauri/Cargo.toml` 通过(`tauri-plugin-notification v2.3.3` 编入)。版本号保持 2.0.0。

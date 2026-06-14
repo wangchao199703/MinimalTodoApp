@@ -105,3 +105,14 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 3. `npm run tauri dev` 跑起来;多项目时注意 §六 端口冲突。
 4. 做任何一项先看 `legacy/` 对应源码,**对齐旧版**是默认要求。
 5. 每轮按 §二 1–5 仪式走;**不 push、不 release**,除非用户明说。
+
+## 九、周期提醒系统通知(本轮,2.0.0)
+
+- **背景**:周期提醒 `useReminderLoop`(`src/App.tsx`)原只 `pushToast` 弹 app 内 toast,最小化/隐藏/失焦看不见;旧版 WPF 用托盘气泡(NotifyIcon balloon)能在最小化时弹右下角。
+- **实现**:接入 Tauri 官方 `tauri-plugin-notification`。
+  - Rust:`Cargo.toml` 加 `tauri-plugin-notification = "2"`;`lib.rs` 在 autostart 插件**之后**追加 `.plugin(tauri_plugin_notification::init())`(**单实例插件仍最先**,顺序未动);`capabilities/default.json` 加 `notification:default`。
+  - 前端:`src/lib/notify.ts` 暴露 `notifyReminder(title, intervalMinutes, dueDate)`;`App.tsx` 触发处在 `pushToast` 后 `void notifyReminder(...)`。
+- **按窗口可见性区分**:仅 `!isVisible() || isMinimized()` 时发 OS 通知(可见时只 toast,避免重复打扰);窗口状态获取失败时保守发,保证「最小化必弹」。标题=`S.Fmt.ReminderToastTitle`,正文对齐旧版气泡(`ReminderMsg`/`ReminderMsgWithDue`)。权限按需 `requestPermission` 且缓存。
+- **验证**:`npm run build` + `cargo check` 均过。未升版本(2.0.0)。
+- **下一步可选**:目前系统通知点击无跳转动作(纯展示);若要点通知唤起主窗口/定位任务,可加 `onAction` 监听 + `window::show_main`。是否做交用户定。
+- **运行时验证点**:跑起来 → 建一个开了周期提醒、间隔很短(如 1 分钟)的待办 → 最小化窗口 → 等提醒触发 → 看 Windows 右下角是否弹系统通知;再不最小化时确认只弹 app 内 toast、不弹系统通知。

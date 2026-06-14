@@ -6,6 +6,7 @@ import { applyFontSettings } from "./lib/font";
 import { playReminder, normalizeSoundStyle } from "./lib/effects";
 import { readMarkdownDrop } from "./lib/markdownIO";
 import { f } from "./lib/i18n";
+import { notifyReminder } from "./lib/notify";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
 import ResizeBorders from "./components/ResizeBorders";
@@ -52,6 +53,8 @@ function useReminderLoop() {
         const base = t.last_reminded_at ?? t.created_at;
         if (now - parseDue(base).getTime() >= t.reminder_interval_minutes * 60000) {
           pushToast(f("S.Fmt.ReminderToastTitle", t.title));
+          // 系统通知:窗口最小化/隐藏时也能弹右下角 OS 通知(可见时仅 app 内 toast)
+          void notifyReminder(t.title, t.reminder_interval_minutes, t.due_date);
           const st = useAppStore.getState().settings;
           if ((st["reminder_sound_enabled"] ?? "1") === "1") {
             playReminder(normalizeSoundStyle(st["reminder_sound_style"] || st["sound_style"] || "game"));
