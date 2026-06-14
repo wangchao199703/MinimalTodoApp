@@ -372,4 +372,7 @@
 
 **提示词:** 界面版式移除经典,默认用极客加圆点着色。
 - `themes.ts`:`DESIGNS` 去掉 `classic`(剩 6 套:极客/苹果/可爱/文档/流体/粗野);`DEFAULT_DESIGN` → `linear`、`DEFAULT_PRIORITY_STYLE` → `notion`(圆点着色);同步从 `DESIGN_LABEL_KEY/DESC_KEY/CHECKBOX_DEFAULT` 删 classic。
-- store 默认 `design:"linear"`/`priorityStyle:"notion"`;init/initSettingsWindow 用 `migrateDesign` 归一内置键(老用户存的 `classic` → 默认 linear,`custom:<id>` 原样保留)。SettingsPanel 的勾选框默认值 fallback 改 `.linear`。`npm run build` 通过。`(本轮)`
+- store 默认 `design:"linear"`/`priorityStyle:"notion"`;init/initSettingsWindow 用 `migrateDesign` 归一内置键(老用户存的 `classic` → 默认 linear,`custom:<id>` 原样保留)。SettingsPanel 的勾选框默认值 fallback 改 `.linear`。`npm run build` 通过。`2089d83`
+
+**提示词:** 检查 6 套版式待办的字体大小,可爱版式字体特别大。
+- 排查:只有可爱版式 `.design-cute .task-title` 显式 `font-size: 0.9375rem`(15px),其余 5 套都用基线 `text-sm`(14px)→ 可爱偏大。去掉可爱的 `font-size` 覆盖(保留 `font-weight:700`),6 套标题字号统一 14px,仅字重不同。`npm run build` 通过。`(本轮)`

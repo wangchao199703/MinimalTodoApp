@@ -832,7 +832,7 @@ body {
   border-width: 2px;
   margin-top: 0.05rem;
 }
-.design-cute .task-title { font-weight: 700; font-size: 0.9375rem; }
+.design-cute .task-title { font-weight: 700; }
 .design-cute .task-tag {
   display: inline;
   background: color-mix(in srgb, var(--accent) 14%, transparent);
