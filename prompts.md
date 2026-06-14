@@ -584,4 +584,13 @@
 - 等窗口 agent 提交完(共享工作树,避免互卷 commit)后内联实现。
 - 新增 store `importNotesToImportGroup(files)`:找现有「导入/Import」便签分组(兼容中英),没有则按当前语言 `createNoteGroup` 新建 → `importNotesFromFiles(files, 导入组id)` → `setView({kind:"notes"})` 切到便签视图打开。
 - `App.tsx` 根 `<div key={language}>` 挂全局 `onDragOver/onDrop`(仅 `dataTransfer.types` 含 `Files` 才 `preventDefault` 拦截,内部排序拖拽无 `Files` 不受影响)→ `readMarkdownDrop` → `importNotesToImportGroup`,作为「其它界面」兜底。
-- `NotesView` 的 `onAreaDragOver/onAreaDrop` 补 `stopPropagation`,使便签区内的拖入(默认分组/指定分组)不冒泡到根兜底、避免二次导入。复用既有 `markdownIO`/`importNotesFromFiles`,未碰 `dragDropEnabled`。`npm run build` 通过。`(本轮)`
+- `NotesView` 的 `onAreaDragOver/onAreaDrop` 补 `stopPropagation`,使便签区内的拖入(默认分组/指定分组)不冒泡到根兜底、避免二次导入。复用既有 `markdownIO`/`importNotesFromFiles`,未碰 `dragDropEnabled`。`npm run build` 通过。`cd0bb77`
+
+**提示词:** 把工作流 1–9 + 新增「多任务处理机制(Multi-Agent Workflow)」更新到 `CLAUDE.md`(逐条原文见本条)。
+- `CLAUDE.md` 工作风格段后新增「🤖 多任务处理机制」章节:识别到「多个且相互独立」任务时,以「总调度师 + 分角色虚拟 Agent」组织,按 `📋 调度总览` / `🧑‍💻 [Agent 名称]` 结构化输出;并加注说明「虚拟 Agent(单条回复内分角色呈现)」≠「真后台 Agent 工具」。1–9 条上轮已就位,本次仅追加章节。纯文档。
+- 注:当时窗口修复 agent 正在跑(改 `window.rs`/`App.tsx` 未提交),故**只 `git add CLAUDE.md prompts.md` 显式提交**,不卷入其在途改动。`(本轮)`
+
+**提示词:** app 顶部向下缩小后程序显示异常,点显示并居中恢复,但单击最大化又异常,修复这个;另外贴边隐藏功能也失效了,派 agent 后台去修。
+- **Bug A(resize/最大化透出桌面自动修复)**:透明窗(`transparent:true`)WebView2 在尺寸变化时不重绘新暴露区→透桌(已知 artifact)。改前端自动兜底:`App.tsx` 监听 `getCurrentWindow().onResized()`(resize/最大化/还原均触发)→ 防抖 120ms → **纯 DOM 重绘**(根 `transform: translateZ(0)` + 强制 reflow + rAF 撤回)。选前端不选 Rust `set_size`:`set_size` 在最大化时会取消最大化、且自身又触发 `Resized` 成反馈环;纯 DOM 对 OS 尺寸零副作用、与最大化无关、不触发 `Resized`(天然防反馈环)、不与贴边 `Moved/Resized` 互扰。
+- **Bug B(贴边自动隐藏回归)**:根因=上轮 `f90f46d` 给 `show_main` 加的 `set_size(w+1,h)→还原` 强制重绘是**无 `moving` 守卫的尺寸变更**,会触发 `Resized/Moved` 干扰贴边轮询。**移除该 nudge**(重绘职责已交前端),贴边逻辑不再被自身尺寸抖动误扰;`show_main` 居中/清贴边态逻辑保留不变。
+- 改 `src-tauri/src/window.rs`(删 nudge + 删无用 `PhysicalSize` 引入)与 `src/App.tsx`(新增 onResized 重绘 effect)。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。`(本轮)`
