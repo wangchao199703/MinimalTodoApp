@@ -213,6 +213,27 @@ export function resolveDesign(
   return { base: migrateDesign(designValue), shape: "", size: "", width: "", progress: "" };
 }
 
+/** 各内置版式勾选框是否圆形(与 index.css 的 .design-* .task-check border-radius 对应) */
+const DESIGN_ROUND: Record<Design, boolean> = {
+  linear: false,
+  apple: true,
+  cute: true,
+  notion: false,
+  fluent: true,
+  frost: true,
+  tinted: false,
+  panel: false,
+  brutal: false,
+};
+
+/** 当前生效版式的勾选框是否圆形(供进度环按圆/方渲染);cb 形状覆盖优先 */
+export function isRoundCheckbox(designValue: string, customs: CustomDesign[]): boolean {
+  const r = resolveDesign(designValue, customs);
+  if (r.shape === "round") return true;
+  if (r.shape === "square") return false;
+  return DESIGN_ROUND[r.base];
+}
+
 /** 应用 active design:基础版式 class + 勾选框/进度覆盖(内置 → 清空覆盖) */
 export function applyActiveDesign(designValue: string, customsRaw: string | undefined) {
   const r = resolveDesign(designValue, parseCustomDesigns(customsRaw));

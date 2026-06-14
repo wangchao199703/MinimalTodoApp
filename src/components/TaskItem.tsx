@@ -21,6 +21,7 @@ import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { childStats } from "../lib/sort";
 import { dueState, countdownText, formatDue } from "../lib/date";
+import { isRoundCheckbox } from "../lib/themes";
 import { fireworksAt, playCelebration } from "../lib/effects";
 import { t } from "../lib/i18n";
 import type { Task } from "../lib/tauri-ipc";
@@ -59,6 +60,8 @@ const DUE_CLASS: Record<string, string> = {
 export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const tasks = useAppStore((s) => s.tasks);
   const groups = useAppStore((s) => s.groups);
+  const design = useAppStore((s) => s.design);
+  const customDesigns = useAppStore((s) => s.customDesigns);
   const toggleComplete = useAppStore((s) => s.toggleComplete);
   const renameTask = useAppStore((s) => s.renameTask);
   const removeTask = useAppStore((s) => s.removeTask);
@@ -175,6 +178,30 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
           <Check size={10} strokeWidth={3} />
         ) : (
           indeterminate && <Minus className="task-half" size={11} strokeWidth={3} />
+        )}
+        {/* 进度环(仅「勾选框」进度模式显示,CSS 控制):按勾选框形状渲染 圆 / 圆角方 */}
+        {totalChildren > 0 && !task.is_completed && (
+          <svg className="task-ring" viewBox="0 0 36 36" aria-hidden="true">
+            {isRoundCheckbox(design, customDesigns) ? (
+              <>
+                <circle className="task-ring-track" cx="18" cy="18" r="15.5" />
+                <circle className="task-ring-fill" cx="18" cy="18" r="15.5" pathLength={100} />
+              </>
+            ) : (
+              <>
+                <rect className="task-ring-track" x="2.5" y="2.5" width="31" height="31" rx="5" />
+                <rect
+                  className="task-ring-fill"
+                  x="2.5"
+                  y="2.5"
+                  width="31"
+                  height="31"
+                  rx="5"
+                  pathLength={100}
+                />
+              </>
+            )}
+          </svg>
         )}
       </button>
 

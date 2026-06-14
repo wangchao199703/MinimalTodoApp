@@ -422,4 +422,7 @@
 
 **提示词:** 进度选项「圆环」改名为「勾选框」;针对方形勾选框做适配,和圆形一样,只是显示方形。
 - 改名:`S.X.Progress.Ring` 「圆环」→「勾选框」(en Checkbox)。
-- 形状自适配:SVG 圆环无法跟随方形,改回 **conic 填充 + `::before` 内缩挖洞** 成环——conic 被勾选框自身 `border-radius` 裁形(圆框→圆/方框→方),`::before` 洞 `border-radius: inherit` 自动跟随;勾选框不再强制圆,保留各版式/自定义形状。圆框显示圆环、方框显示方框环。`npm run build` 通过。`(本轮)`
+- 形状自适配:SVG 圆环无法跟随方形,改回 **conic 填充 + `::before` 内缩挖洞** 成环——conic 被勾选框自身 `border-radius` 裁形(圆框→圆/方框→方),`::before` 洞 `border-radius: inherit` 自动跟随;勾选框不再强制圆,保留各版式/自定义形状。圆框显示圆环、方框显示方框环。`npm run build` 通过。`1bc25e2`
+
+**提示词:**(附图)显示异常。
+- conic+::before 仍渲染异常(seam/太厚)。**回到 SVG 进度环**(此前圆框版本用户已认可),并**按形状渲染 `<circle>` 或圆角 `<rect>`**:`themes.ts` 加 `DESIGN_ROUND` 表 + `isRoundCheckbox(design, customs)`(cb 形状覆盖优先);TaskItem 读 `design`/`customDesigns`,圆框渲染 `<circle>`(rotate -90 从 12 点)、方框渲染 `<rect rx=5>`;`stroke-dasharray=var(--pct-num) 100` + `pathLength=100`,track 浅灰整圈 + fill 强调色弧。`npm run build` 通过。`(本轮)`
