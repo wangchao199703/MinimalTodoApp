@@ -107,3 +107,16 @@
 - **依赖/权限**:新增 `tauri-plugin-dialog`(Cargo + npm)+ `dialog:allow-open` 权限(原生文件夹选择)。
 - **UI**:`SettingsPanel.tsx` 通用段新增「数据存储位置」(当前目录 + 选择新位置 → 确认 → 迁移 → 重启提示),i18n 双语。
 - 验证:`npm run build` + `cargo check`(time 仍 0.3.47)全过。版本保持 2.0.0。
+
+## v2.0.0 — 剪贴板视图 5 项打磨(右键编辑/复制 · 拖拽打标签 · 标签过滤 · 单标签 · 搜索)
+
+- **右键「复制」**:剪贴项右键菜单加「复制」,把内容写回系统剪贴板。文本→写文本,图片→读原图文件写图片。新增后端命令 `copy_clip`(commands.rs,复用 clipboard.rs 已引入的 `clipboard-rs`,**未碰 clipboard.rs**)。写回会被后台监听当作新复制再入库置顶(同 ShellPicker「粘贴即置顶」)。
+- **右键「编辑」= 独立 OS 窗口(便签式 Markdown)**:文本项右键「编辑」→ 打开独立原生窗口(label=`clip-editor`)。左编辑右预览(切换),`renderMarkdown` 预览,**手动点保存才落库**。未保存关闭弹「保存 / 不保存 / 取消」三选(`onCloseRequested` 拦截 + `destroy` 绕过二次拦截)。
+  - 建窗命令 `open_clip_editor_window(clip_id)` 为 **async**(主线程消息循环建 webview,否则死锁);待编辑 id 经后端 `ClipEditorTarget(Mutex<Option<i64>>)` 暂存(不走 URL query,query 不作为路由会白屏),窗口挂载后 `take_clip_editor_target` 取走;窗口复用经 `clip-editor-target` 事件切换。保存经 `clip-updated` 事件同步回主窗口列表。
+  - 前端按 `getCurrentWindow().label` 路由(main.tsx 新增 `clip-editor` 分支 → `ClipEditorWindow.tsx`);capabilities `windows` 加 `clip-editor`,补 `core:window:allow-destroy`。
+- **拖拽打标签**(task2):`ClipRow` 注册拖源(type=`clip-item`,带 clipId);`ClipTagRow` 与收起态标签按钮各自注册 dropTarget(`canDrop` 只认 `clip-item`,落下即 `setClipItemTag`)。这些元素原本无 dropTarget,不存在「同元素重复注册」问题。
+- **单标签语义**(task4):新增后端 `set_clip_item_tag(clip_id, tag_id)`——先清该剪贴项全部关联再(可选)写一个,`tag_id<=0`=清空,保证 `tag_ids` 至多 1 个。菜单(替换原标签 + 「无标签」清空项)与拖拽两条路径都走它。前端 store `toggleClipItemTag` → `setClipItemTag` 单选语义。
+- **标签过滤**(task3):根因核查——`main` 上菜单路径的过滤本就正确(`clipFilterTagId` 与 `tag_ids` 均为 number、`includes` 比较对齐、toggle 乐观更新本地)。本轮统一为单标签后,过滤改为 `clipFilterTagId!=null && !c.tag_ids.includes(...)` 与单标签一致,打标签(菜单/拖拽)后点该标签必能筛出。
+- **搜索**(task5):`ClipboardView` 右侧顶部加搜索框(参照 ShellPicker),按 `clip.text` 前端过滤已加载列表(标签筛选 + 文本搜索叠加),带清除按钮。
+- 新增/改动文件:`commands.rs`(set_clip_item_tag/update_clip_text/copy_clip + 单元测试)、`window.rs`(ClipEditorTarget + open_clip_editor_window/take_clip_editor_target)、`lib.rs`(注册命令 + manage 状态)、`capabilities/default.json`、`ClipEditorWindow.tsx`(新)、`ClipboardView.tsx`、`main.tsx`、`useAppStore.ts`、`tauri-ipc.ts`、`i18n.ts`(双语新键)。**未碰 clipboard.rs**。
+- 验证:`npm run build`(tsc 严格)+ `cargo check` + `cargo test --lib`(40 passed,含 1 个新单标签测试)全过;`time` 仍 0.3.47。版本保持 2.0.0。

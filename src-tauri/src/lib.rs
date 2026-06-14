@@ -43,6 +43,8 @@ pub fn run() {
         // 目录选择对话框:数据存储位置「选择新位置」用
         .plugin(tauri_plugin_dialog::init())
         .manage(database::Db(std::sync::Mutex::new(conn)))
+        // 剪贴项编辑窗口的「待编辑目标」:open 时存 clip_id,编辑窗口挂载后 take 走(见 window.rs)
+        .manage(window::ClipEditorTarget(std::sync::Mutex::new(None)))
         .setup(|app| {
             window::setup_tray(app.handle())?;
             window::setup_dock(app.handle());
@@ -95,6 +97,11 @@ pub fn run() {
             commands::delete_clip_tag,
             commands::add_clip_tag,
             commands::remove_clip_tag,
+            commands::set_clip_item_tag,
+            commands::update_clip_text,
+            commands::copy_clip,
+            window::open_clip_editor_window,
+            window::take_clip_editor_target,
             window::set_acrylic,
             window::set_autostart,
             window::get_autostart,

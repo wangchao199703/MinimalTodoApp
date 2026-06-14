@@ -182,6 +182,55 @@ pub async fn open_settings_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// ============ 独立剪贴项编辑窗口(便签式文本编辑器) ============
+
+/// 待编辑的剪贴项 id。open_clip_editor_window 写入,编辑窗口挂载后 take_clip_editor_target 取走。
+/// 用「后端暂存 + 前端拉取」而不是 URL query 传参:多窗口前端按窗口 label 路由,
+/// query 不作为路由会白屏(见 CLAUDE.md 多窗口坑)。
+pub struct ClipEditorTarget(pub std::sync::Mutex<Option<i64>>);
+
+/// 打开/聚焦「剪贴项编辑」独立原生窗口(label = "clip-editor",复用单窗口)。
+/// 必须 async:同步命令在主线程跑,WebviewWindowBuilder::build() 在 Windows 需主线程消息循环建 webview,
+/// 主线程被命令阻塞即死锁(同 open_settings_window 的理由)。
+/// 窗口已存在(再次编辑别的项)→ 更新目标 + emit `clip-editor-target` 让前端切换到新项 + 聚焦。
+#[tauri::command(rename_all = "snake_case")]
+pub async fn open_clip_editor_window(app: AppHandle, clip_id: i64) -> Result<(), String> {
+    use tauri::Emitter;
+    if let Some(state) = app.try_state::<ClipEditorTarget>() {
+        *state.0.lock().map_err(err)? = Some(clip_id);
+    }
+    if let Some(w) = app.get_webview_window("clip-editor") {
+        let _ = app.emit_to("clip-editor", "clip-editor-target", clip_id);
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+        return Ok(());
+    }
+    // 加载同一前端,前端按窗口 label("clip-editor")路由到 ClipEditorWindow
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        "clip-editor",
+        tauri::WebviewUrl::App("index.html".into()),
+    )
+    .title("编辑剪贴项")
+    .inner_size(520.0, 460.0)
+    .min_inner_size(360.0, 280.0)
+    .decorations(false)
+    .resizable(true)
+    .center()
+    .build()
+    .map_err(err)?;
+    Ok(())
+}
+
+/// 编辑窗口挂载后调用:取走当前待编辑的剪贴项 id(并清空,避免下次误用)。
+/// 返回 None 表示无目标(理论上不会发生,窗口总是带目标打开)。
+#[tauri::command]
+pub fn take_clip_editor_target(state: tauri::State<ClipEditorTarget>) -> Result<Option<i64>, String> {
+    let mut guard = state.0.lock().map_err(err)?;
+    Ok(guard.take())
+}
+
 // ============ 贴边自动隐藏 ============
 
 const EDGE_NONE: i32 = 0;

@@ -635,3 +635,7 @@
 - **dialog 插件**:新增 `tauri-plugin-dialog`(Cargo + npm `@tauri-apps/plugin-dialog`)+ `dialog:allow-open` 权限,用于原生文件夹选择。
 - **设置 UI**:`SettingsPanel.tsx` 通用段新增「数据存储位置」(显示当前目录 + 「选择新位置」按钮 → 确认会移动数据并需重启 → 调迁移 → 提示重启)。i18n 双语补 `S.X.DataLocation*` 键。
 - 验证:`npm run build`(tsc 严格)+ `cargo check`(tauri-plugin-dialog v2.7.1 编入,time 仍 0.3.47)全过。版本保持 2.0.0。
+
+## 剪贴板视图 5 项打磨(右键编辑/复制·拖拽打标签·标签过滤·单标签·搜索)
+
+剪切板右键可编辑/复制,编辑打开类便签的文本编辑器独立弹窗、不跳便签窗口、手动保存、未保存提示;剪切板项要能拖到标签打标签;打了标签在对应标签分组看不到;只能打一个标签;搜索功能没搬过来
