@@ -368,4 +368,8 @@
 - SettingsPanel 取当前生效版式的基础版式默认值:置灰时滑块值/数值显示该真实值;关掉「跟随版式」时从该真实值起步(`editCheckbox("size", String(defs.size))`)。`npm run build` 通过。`33c3602`
 
 **提示词:** 将界面样式和字体抽取一个分组叫做外观,放在通用下面。
-- 设置新增分组 **「外观」**(`SettingsPanel` Section 加 `appearance`,排在 `general` 之后):把 界面版式 + 勾选框 + 优先级展示 + 字体 从「通用」移入「外观」;「通用」只留 开机自启 / 显示节假日 / 恢复默认。i18n 双语 `S.X.Appearance`。`npm run build` 通过。`(本轮)`
+- 设置新增分组 **「外观」**(`SettingsPanel` Section 加 `appearance`,排在 `general` 之后):把 界面版式 + 勾选框 + 优先级展示 + 字体 从「通用」移入「外观」;「通用」只留 开机自启 / 显示节假日 / 恢复默认。i18n 双语 `S.X.Appearance`。`npm run build` 通过。`1758217`
+
+**提示词:** 界面版式移除经典,默认用极客加圆点着色。
+- `themes.ts`:`DESIGNS` 去掉 `classic`(剩 6 套:极客/苹果/可爱/文档/流体/粗野);`DEFAULT_DESIGN` → `linear`、`DEFAULT_PRIORITY_STYLE` → `notion`(圆点着色);同步从 `DESIGN_LABEL_KEY/DESC_KEY/CHECKBOX_DEFAULT` 删 classic。
+- store 默认 `design:"linear"`/`priorityStyle:"notion"`;init/initSettingsWindow 用 `migrateDesign` 归一内置键(老用户存的 `classic` → 默认 linear,`custom:<id>` 原样保留)。SettingsPanel 的勾选框默认值 fallback 改 `.linear`。`npm run build` 通过。`(本轮)`

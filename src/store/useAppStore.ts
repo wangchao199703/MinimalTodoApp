@@ -144,9 +144,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: {},
   view: { kind: "all" },
   theme: "light-classic",
-  design: "classic",
+  design: "linear",
   customDesigns: [],
-  priorityStyle: "apple",
+  priorityStyle: "notion",
   language: "zh-CN",
   sortMode: "custom",
   toasts: [],
@@ -174,7 +174,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const theme = migrateThemeKey(settings["theme"]);
     if (settings["theme"] !== theme) void ipc.setSetting("theme", theme);
     applyTheme(theme);
-    const design = settings["design"] || "classic";
+    // 内置键经 migrateDesign 归一(已删的 classic → 默认 linear);custom:<id> 原样保留
+    const rawDesign = settings["design"] || "linear";
+    const design = rawDesign.startsWith("custom:") ? rawDesign : migrateDesign(rawDesign);
     const customDesigns = parseCustomDesigns(settings["custom_designs"]);
     applyActiveDesign(design, settings["custom_designs"]);
     const priorityStyle = migratePriorityStyle(settings["priority_style"]);
@@ -221,7 +223,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     setLang(language);
     const theme = migrateThemeKey(settings["theme"]);
     applyTheme(theme);
-    const design = settings["design"] || "classic";
+    const rawDesign = settings["design"] || "linear";
+    const design = rawDesign.startsWith("custom:") ? rawDesign : migrateDesign(rawDesign);
     const customDesigns = parseCustomDesigns(settings["custom_designs"]);
     applyActiveDesign(design, settings["custom_designs"]);
     const priorityStyle = migratePriorityStyle(settings["priority_style"]);
@@ -245,8 +248,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       patch.theme = th;
     } else if (key === "design" || key === "custom_designs") {
       // 版式或自定义版式表变更:用合并后的设置重新解析并应用
-      applyActiveDesign(settings["design"] || "classic", settings["custom_designs"]);
-      patch.design = settings["design"] || "classic";
+      applyActiveDesign(settings["design"] || "linear", settings["custom_designs"]);
+      patch.design = settings["design"] || "linear";
       patch.customDesigns = parseCustomDesigns(settings["custom_designs"]);
     } else if (key === "priority_style") {
       const ps = migratePriorityStyle(value);
@@ -377,7 +380,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const target = customDesigns.find((c) => c.id === id);
     const next = customDesigns.filter((c) => c.id !== id);
     // 若删的是当前生效版式,退回其基础版式
-    const nextDesign = design === `custom:${id}` ? (target?.base ?? "classic") : design;
+    const nextDesign = design === `custom:${id}` ? (target?.base ?? "linear") : design;
     set({ customDesigns: next, design: nextDesign });
     get().saveSetting("custom_designs", JSON.stringify(next));
     if (nextDesign !== design) get().saveSetting("design", nextDesign);

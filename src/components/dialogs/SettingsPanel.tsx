@@ -315,7 +315,7 @@ export default function SettingsPanel() {
               const defs =
                 (DESIGN_CHECKBOX_DEFAULT as Record<string, { size: number; width: number }>)[
                   baseKey
-                ] ?? DESIGN_CHECKBOX_DEFAULT.classic;
+                ] ?? DESIGN_CHECKBOX_DEFAULT.linear;
               const shapeOpts: { v: string; key: string }[] = [
                 { v: "", key: "S.X.Checkbox.FollowVersion" },
                 { v: "round", key: "S.X.Checkbox.Round" },

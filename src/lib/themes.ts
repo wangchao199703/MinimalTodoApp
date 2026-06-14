@@ -96,20 +96,18 @@ export function migrateThemeKey(saved: string | undefined): Theme {
 // 在 <html> 挂 design-<key>,统一 DOM + CSS 变量换肤(参考 Gemini 三套方案)。
 // 多数视图复用 TaskItem,一处定义即覆盖 列表 / 四象限 / 标签看板。在「设置」里切换。
 export const DESIGNS = [
-  "classic",
-  "apple",
   "linear",
+  "apple",
   "cute",
   "notion",
   "fluent",
   "brutal",
 ] as const;
 export type Design = (typeof DESIGNS)[number];
-export const DEFAULT_DESIGN: Design = "classic";
+export const DEFAULT_DESIGN: Design = "linear";
 
 /** 版式标签 i18n 键(zh/en 在 i18n EXTRA) */
 export const DESIGN_LABEL_KEY: Record<Design, string> = {
-  classic: "S.X.Design.Classic",
   apple: "S.X.Design.Apple",
   linear: "S.X.Design.Linear",
   cute: "S.X.Design.Cute",
@@ -120,7 +118,6 @@ export const DESIGN_LABEL_KEY: Record<Design, string> = {
 
 /** 版式一句话描述 i18n 键(设置里展示) */
 export const DESIGN_DESC_KEY: Record<Design, string> = {
-  classic: "S.X.Design.ClassicDesc",
   apple: "S.X.Design.AppleDesc",
   linear: "S.X.Design.LinearDesc",
   cute: "S.X.Design.CuteDesc",
@@ -197,7 +194,7 @@ export function applyActiveDesign(designValue: string, customsRaw: string | unde
 // notion=标题文字着色+小圆点 / none=不展示。容器上的 data-pri / --pri 供 CSS 取用。
 export const PRIORITY_STYLES = ["apple", "linear", "signal", "notion", "none"] as const;
 export type PriorityStyle = (typeof PRIORITY_STYLES)[number];
-export const DEFAULT_PRIORITY_STYLE: PriorityStyle = "apple";
+export const DEFAULT_PRIORITY_STYLE: PriorityStyle = "notion";
 
 export const PRIORITY_STYLE_LABEL_KEY: Record<PriorityStyle, string> = {
   apple: "S.X.Prio.Apple",
@@ -223,7 +220,6 @@ export function migratePriorityStyle(saved: string | undefined): PriorityStyle {
 /** 各内置版式勾选框默认几何(px),与 index.css 的 .design-* .task-check 对应。
  *  用于设置里「跟随版式」(置灰)时显示真实值——设置窗口无任务卡,无法用 getComputedStyle。 */
 export const DESIGN_CHECKBOX_DEFAULT: Record<Design, { size: number; width: number }> = {
-  classic: { size: 16, width: 2 }, // 基线 h-4 w-4 / border-2
   apple: { size: 20, width: 1.5 }, // 1.25rem / 1.5px
   linear: { size: 16, width: 1 }, // 1rem / 1px
   cute: { size: 24, width: 2 }, // 1.5rem / 2px
