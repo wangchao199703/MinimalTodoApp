@@ -5,12 +5,21 @@ import {
   monitorForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
-import { ChevronRight, FilePlus2, FileText, Folder, Palette, Trash2, X } from "lucide-react";
+import {
+  ChevronRight,
+  Eraser,
+  FilePlus2,
+  FileText,
+  Folder,
+  Palette,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
 import { readMarkdownDrop } from "../lib/markdownIO";
-import { t } from "../lib/i18n";
+import { f, t } from "../lib/i18n";
 import { ipc, type Note, type NoteGroup } from "../lib/tauri-ipc";
 import { confirm } from "./ui/ConfirmDialog";
 import { Popover, MenuItem } from "./ui/Popover";
@@ -102,6 +111,7 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
   const toggleCollapse = useAppStore((s) => s.toggleNoteGroupCollapse);
   const renameNoteGroup = useAppStore((s) => s.renameNoteGroup);
   const removeNoteGroup = useAppStore((s) => s.removeNoteGroup);
+  const clearNoteGroupNotes = useAppStore((s) => s.clearNoteGroupNotes);
   const addNote = useAppStore((s) => s.addNote);
   const setView = useAppStore((s) => s.setView);
   const settings = useAppStore((s) => s.settings);
@@ -243,6 +253,21 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
             >
               <Palette size={13} />
               {t("S.Group.ChangeColor")}
+            </MenuItem>
+            <MenuItem
+              onClick={async () => {
+                setMenu(null);
+                if (
+                  await confirm({
+                    title: t("S.X.Clear"),
+                    message: f("S.X.ConfirmClearNoteGroup", group.name),
+                  })
+                )
+                  void clearNoteGroupNotes(group.id);
+              }}
+            >
+              <Eraser size={13} />
+              {t("S.X.Clear")}
             </MenuItem>
           </div>
         </Popover>

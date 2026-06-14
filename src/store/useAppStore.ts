@@ -92,6 +92,8 @@ interface AppState {
   importNotesToImportGroup: (files: { name: string; content: string }[]) => Promise<void>;
   patchNote: (req: UpdateNoteRequest) => Promise<void>;
   removeNote: (id: string) => Promise<void>;
+  /** 清空某便签分组下的所有便签 */
+  clearNoteGroupNotes: (groupId: string) => Promise<void>;
   addNoteGroup: (name: string) => Promise<void>;
   renameNoteGroup: (id: string, name: string) => Promise<void>;
   toggleNoteGroupCollapse: (g: NoteGroup) => Promise<void>;
@@ -129,6 +131,8 @@ interface AppState {
   toggleComplete: (task: Task) => Promise<void>;
   renameTask: (id: string, title: string) => Promise<void>;
   removeTask: (id: string) => Promise<void>;
+  /** 清空某标签(分组)下的所有待办 */
+  clearGroupTasks: (groupId: string) => Promise<void>;
   togglePin: (task: Task) => Promise<void>;
   setPriority: (id: string, priority: number) => Promise<void>;
   setDue: (id: string, due: string) => Promise<void>;
@@ -401,6 +405,35 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({
       notes: s.notes.filter((n) => n.id !== id),
       selectedNoteId: s.selectedNoteId === id ? null : s.selectedNoteId,
+    }));
+  },
+
+  clearGroupTasks: async (groupId) => {
+    // 清空某标签(分组)下的所有待办:逐个删(父删级联子,子已删则忽略),完成后重拉对齐状态
+    const ids = get().tasks.filter((t) => t.group_id === groupId).map((t) => t.id);
+    for (const id of ids) {
+      try {
+        await ipc.deleteTask(id);
+      } catch {
+        /* 已被父级级联删除,忽略 */
+      }
+    }
+    set({ tasks: await ipc.getTasks() });
+  },
+
+  clearNoteGroupNotes: async (groupId) => {
+    // 清空某便签分组下的所有便签
+    const ids = get().notes.filter((n) => n.group_id === groupId).map((n) => n.id);
+    for (const id of ids) {
+      try {
+        await ipc.deleteNote(id);
+      } catch {
+        /* 忽略 */
+      }
+    }
+    set((s) => ({
+      notes: s.notes.filter((n) => n.group_id !== groupId),
+      selectedNoteId: ids.includes(s.selectedNoteId ?? "") ? null : s.selectedNoteId,
     }));
   },
 

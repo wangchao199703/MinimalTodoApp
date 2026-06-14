@@ -6,6 +6,7 @@ import {
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import {
+  Eraser,
   Kanban,
   Palette,
   PanelLeftClose,
@@ -54,6 +55,7 @@ function TagRow({ group, count, active }: { group: Group; count: number; active:
   const setView = useAppStore((s) => s.setView);
   const renameGroup = useAppStore((s) => s.renameGroup);
   const removeGroup = useAppStore((s) => s.removeGroup);
+  const clearGroupTasks = useAppStore((s) => s.clearGroupTasks);
   const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("group", group.id);
   // 「拖待办归类」的放置目标挂在内层独立元素上:pragmatic-dnd 同一元素只能注册一个 dropTarget,
   // 外层 ref 已被 useSortableItem 用于「分组重排」;放同一元素会被忽略(警告 + task-tag 失效)。
@@ -76,6 +78,12 @@ function TagRow({ group, count, active }: { group: Group; count: number; active:
   const confirmDelete = async () => {
     if (await confirm({ title: t("S.Tag.Delete"), message: f("S.X.ConfirmDeleteTag", group.name) })) {
       void removeGroup(group.id);
+    }
+  };
+
+  const confirmClear = async () => {
+    if (await confirm({ title: t("S.X.Clear"), message: f("S.X.ConfirmClearGroupTasks", group.name) })) {
+      void clearGroupTasks(group.id);
     }
   };
 
@@ -169,6 +177,15 @@ function TagRow({ group, count, active }: { group: Group; count: number; active:
             >
               <Shapes size={13} />
               {t("S.Group.ChangeIcon")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                void confirmClear();
+              }}
+            >
+              <Eraser size={13} />
+              {t("S.X.Clear")}
             </MenuItem>
             <div className="my-1 h-px bg-divider" />
             <MenuItem
