@@ -107,7 +107,7 @@ export const DESIGNS = [
   "brutal",
 ] as const;
 export type Design = (typeof DESIGNS)[number];
-export const DEFAULT_DESIGN: Design = "linear";
+export const DEFAULT_DESIGN: Design = "apple";
 
 /** 版式标签 i18n 键(zh/en 在 i18n EXTRA) */
 export const DESIGN_LABEL_KEY: Record<Design, string> = {

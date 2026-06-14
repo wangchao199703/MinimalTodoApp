@@ -139,7 +139,7 @@ export default function TitleBar() {
         </button>
         <button
           title={t("S.X.Minimize")}
-          onClick={() => void win.minimize()}
+          onClick={() => void win.hide()}
           className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
         >
           <Minus size={14} />
@@ -153,7 +153,7 @@ export default function TitleBar() {
         </button>
         <button
           title={t("S.Close")}
-          onClick={() => void win.close()}
+          onClick={() => void win.hide()}
           className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-red-500 hover:text-white"
         >
           <X size={14} />

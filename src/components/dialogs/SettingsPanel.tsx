@@ -625,6 +625,8 @@ export default function SettingsPanel() {
               onChange={(v) => {
                 setAutostart(v);
                 void ipc.setAutostart(v).catch(() => setAutostart(!v));
+                // 记录用户手动选择:关闭→标记 disabled(启动不再自动开);开启→清除标记
+                saveSetting("autostart_disabled", v ? "0" : "1");
               }}
             />
             <Toggle

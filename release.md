@@ -53,7 +53,9 @@
 - **重新安装/修复当前版本(对齐 WPF)**:此前自动更新只检测「更高版本」,缺 WPF 的「重新安装当前版本」(修复损坏/卡顿)。设置→关于,自动更新开关下新增「重新安装当前版本」按钮 → 按当前版本 tag(`v<当前版本>`)拉取 `releases/tags/<tag>` 同一 Release 的便携 exe,**复用既有下载+换壳重启链路**(`downloadAndApply` → 原始 IPC `apply_update` → bat 等旧进程退出后带 `--updated-from` 启动同版本、新版回收旧 exe),Rust 侧零改动。`updater.ts` 新增 `fetchReinstallInfo()`(抽出共享 `pickExeAsset`/`GithubRelease`/`REPO_SLUG`),返回 `UpdateInfo{reinstall:true}`;`UpdateDialog` 加 reinstall 模式(标题 `S.Update.Reinstall`、隐藏「跳过此版本」、按钮改「重新安装/关闭」)。i18n 键(`S.Settings.Reinstall*`/`S.Update.Reinstall`/`S.Update.Close`)双语此前已就位,无新增。**真正重装需有对应版本的真实 GitHub Release,dev 环境无法完整走到换壳重启,需打包后实测。**
 - **新建后弹快捷设置(对齐 WPF)**:新建一条待办后,锚定底部输入栏弹出 `Popover`(复用 `ui/Popover`),可直接改这条任务的**优先级**(高/中/低段控,调 `setPriority`)/ **截止时间**(复用 `DuePicker`,调 `setDue`)/ **周期提醒**(复用 `ReminderPicker`,调 `patchTask` 显式启用/清除)。`addTask` 改为返回创建的 `Task`(`Promise<void>`→`Promise<Task|undefined>`),弹层只存其 id、实时从 `tasks` 取最新值。**非阻塞**:输入框保持焦点可继续连续新建,ESC / 点外部 / 「完成」均关闭。**可选/可跳过**:新增持久化设置 `quick_add_popup`(**默认关闭**,不改老用户行为),设置→待办 加开关;关闭时新建行为与原完全一致。i18n 双语同步(`S.X.QuickSetTitle`/`QuickSetDone`/`QuickAddPopup`/`QuickAddPopupDesc`)。`npm run build` 通过,未升版本(2.0.0)。
 
-> 以上未递增版本号(仍 2.0.0)、未发版。发版时再统一递增三处版本号 + 写 `release-notes.md` + 跑 `release.ps1`。
+- **默认版式改「经典」+ 自启默认开 + 关闭/最小化到通知栏**:① 默认界面版式由极客改为**经典(apple)**,首启即经典、用户改后跟随;② **开机自启默认开启**,每次启动(重新)注册指向当前 exe(升级换新 exe 后自动更新关联),新增 `autostart_disabled` 记录用户手动关闭(关过就不再自动开),恢复默认=开;③ 标题栏**最小化/关闭按钮都改为隐藏到托盘**(`win.hide()`)——隐藏后不在任务栏、只在通知栏,双击托盘唤回(退出走托盘右键)。
+
+> 以上未递增版本号(仍 2.0.0)。v2.0.0 发版准备:已写 `release-notes.md`;`release.ps1` 构建产物就绪,发布卡在 GitHub 鉴权(需 `GH_TOKEN`)。
 
 ---
 

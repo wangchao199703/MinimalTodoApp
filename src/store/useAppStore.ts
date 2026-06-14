@@ -198,7 +198,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   settings: {},
   view: { kind: "all" },
   theme: "light-classic",
-  design: "linear",
+  design: "apple",
   customDesigns: [],
   priorityStyle: "notion",
   language: "zh-CN",
@@ -236,8 +236,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     const theme = migrateThemeKey(settings["theme"]);
     if (settings["theme"] !== theme) void ipc.setSetting("theme", theme);
     applyTheme(theme);
-    // 内置键经 migrateDesign 归一(已删的 classic → 默认 linear);custom:<id> 原样保留
-    const rawDesign = settings["design"] || "linear";
+    // 内置键经 migrateDesign 归一(默认/已删旧键 → 经典 apple);custom:<id> 原样保留
+    const rawDesign = settings["design"] || "apple";
     const design = rawDesign.startsWith("custom:") ? rawDesign : migrateDesign(rawDesign);
     const customDesigns = parseCustomDesigns(settings["custom_designs"]);
     applyActiveDesign(design, settings["custom_designs"]);
@@ -248,6 +248,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       Number(settings["font_size"] || "14"),
       Number(settings["line_spacing"] || "1.1"),
     );
+    // 开机自启:默认开启;每次启动(重新)注册指向当前 exe —— 升级换新 exe 后自动更新关联文件。
+    // 除非用户手动关闭过(autostart_disabled="1")才不再自动开。
+    if (settings["autostart_disabled"] !== "1") void ipc.setAutostart(true).catch(() => {});
 
     const validSort: SortMode[] = ["custom", "due", "priority", "completed", "created", "title"];
     const sortMode = validSort.includes(settings["sort"] as SortMode)
@@ -344,7 +347,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   resetSettings: async () => {
     await ipc.resetSettings(); // 清空设置表(保留 language / imported_at)
-    void ipc.setAutostart(false).catch(() => {}); // 自启存于系统,单独复位为默认(关)
+    void ipc.setAutostart(true).catch(() => {}); // 自启存于系统,复位为默认(开)
     // 广播给所有窗口(含自身):各自重载,套用默认主题/字体/行距/侧栏等
     void emit("settings-reset");
   },
