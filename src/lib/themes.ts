@@ -234,12 +234,26 @@ export function isRoundCheckbox(designValue: string, customs: CustomDesign[]): b
   return DESIGN_ROUND[r.base];
 }
 
+/** 各内置版式的默认子任务进度模式(「跟随版式」时采用):count 数字 / bar 直线 / ring 勾选框 */
+const DESIGN_PROGRESS_DEFAULT: Record<Design, string> = {
+  linear: "count",
+  apple: "ring",
+  cute: "ring",
+  notion: "count",
+  fluent: "ring",
+  frost: "ring",
+  tinted: "ring",
+  panel: "bar",
+  brutal: "bar",
+};
+
 /** 应用 active design:基础版式 class + 勾选框/进度覆盖(内置 → 清空覆盖) */
 export function applyActiveDesign(designValue: string, customsRaw: string | undefined) {
   const r = resolveDesign(designValue, parseCustomDesigns(customsRaw));
   applyDesign(r.base);
   applyCheckbox(r.shape, r.size, r.width);
-  applyProgress(r.progress);
+  // 进度覆盖为空(跟随版式)时,采用该版式的默认进度模式
+  applyProgress(r.progress || DESIGN_PROGRESS_DEFAULT[r.base]);
 }
 
 // ============ 优先级展示(priority_style):与版式正交的「优先级怎么显示」轴 ============

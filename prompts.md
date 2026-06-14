@@ -425,4 +425,7 @@
 - 形状自适配:SVG 圆环无法跟随方形,改回 **conic 填充 + `::before` 内缩挖洞** 成环——conic 被勾选框自身 `border-radius` 裁形(圆框→圆/方框→方),`::before` 洞 `border-radius: inherit` 自动跟随;勾选框不再强制圆,保留各版式/自定义形状。圆框显示圆环、方框显示方框环。`npm run build` 通过。`1bc25e2`
 
 **提示词:**(附图)显示异常。
-- conic+::before 仍渲染异常(seam/太厚)。**回到 SVG 进度环**(此前圆框版本用户已认可),并**按形状渲染 `<circle>` 或圆角 `<rect>`**:`themes.ts` 加 `DESIGN_ROUND` 表 + `isRoundCheckbox(design, customs)`(cb 形状覆盖优先);TaskItem 读 `design`/`customDesigns`,圆框渲染 `<circle>`(rotate -90 从 12 点)、方框渲染 `<rect rx=5>`;`stroke-dasharray=var(--pct-num) 100` + `pathLength=100`,track 浅灰整圈 + fill 强调色弧。`npm run build` 通过。`(本轮)`
+- conic+::before 仍渲染异常(seam/太厚)。**回到 SVG 进度环**(此前圆框版本用户已认可),并**按形状渲染 `<circle>` 或圆角 `<rect>`**:`themes.ts` 加 `DESIGN_ROUND` 表 + `isRoundCheckbox(design, customs)`(cb 形状覆盖优先);TaskItem 读 `design`/`customDesigns`,圆框渲染 `<circle>`(rotate -90 从 12 点)、方框渲染 `<rect rx=5>`;`stroke-dasharray=var(--pct-num) 100` + `pathLength=100`,track 浅灰整圈 + fill 强调色弧。`npm run build` 通过。`140e301`
+
+**提示词:** 各版式默认进度:苹果/可爱/流体/白玻/微色调=勾选框,粗野=直线。
+- `themes.ts` 加 `DESIGN_PROGRESS_DEFAULT` 表(linear=count, apple/cute/fluent/frost/tinted=ring, notion=count, panel=bar, brutal=bar);`applyActiveDesign` 在进度覆盖为空(跟随版式)时采用该表 → 每个版式有自己的默认进度模式。`npm run build` 通过。`(本轮)`
