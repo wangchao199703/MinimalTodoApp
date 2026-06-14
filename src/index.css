@@ -1190,11 +1190,14 @@ html.pg-count .task-progress { display: none; }
 html.pg-bar .task-progress { display: block; }
 html.pg-bar .task-subcount { display: none; }
 
-/* 强制「圆环」:父任务勾选框内部按完成比例 conic 填充;隐藏数字/进度条与半满标记 */
+/* 强制「圆环」:父任务勾选框做成空心进度环(accent 已完成 + divider 余量,中心挖空);隐藏数字/进度条与半满标记 */
 html.pg-ring .task-progress { display: none; }
 html.pg-ring .task-subcount { display: none; }
 html.pg-ring .task-check.is-parent {
-  background: conic-gradient(var(--accent) var(--pct, 0%), transparent 0);
+  background: conic-gradient(var(--accent) var(--pct, 0%), var(--divider) 0);
+  border-color: transparent;
+  -webkit-mask: radial-gradient(circle, transparent 46%, #000 47%);
+  mask: radial-gradient(circle, transparent 46%, #000 47%);
 }
 html.pg-ring .task-check.is-parent .task-half { display: none; }
 html.pg-ring .task-check.is-parent::after { display: none; }
