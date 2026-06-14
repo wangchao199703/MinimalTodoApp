@@ -21,7 +21,8 @@
         "decorations": false,
         "transparent": true,
         "maximizable": false,
-        "center": true
+        "center": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {

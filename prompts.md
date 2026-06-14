@@ -454,4 +454,9 @@
 
 **提示词:** 回收站(已完成视图)展开折叠子任务无效,修复一下。
 - 根因:`selectVisibleTasks` 已完成分支只 `filter + order_index 排序`,绕过了 `sortTree`,而折叠隐藏是在 `sortTree`(`is_collapsed` 时不递归子)里做的 → 已完成视图折叠无效。
-- 修法:已完成分支改走 `sortTree(done, sortMode)`(已完成族整族 done,构树正确);`npm run build` 通过。`(本轮)`
+- 修法:已完成分支改走 `sortTree(done, sortMode)`(已完成族整族 done,构树正确);`npm run build` 通过。`0aae316`
+
+**提示词:** 所有待办无法拖动排序,修复一下 → 重启后仍不行,是 bug。
+- 先排查前端全链路(拖源 `useSortableItem`、列表 `monitorForElements`、`reorderIds`/`reorderTasks`)均完好,排除 JS 全局 `dragstart` 拦截 / `-webkit-user-drag` / 烟花画布遮挡 / 排序模式;清理重启 dev 也无效。
+- **根因**:Tauri v2 窗口默认 `dragDropEnabled: true`,WebView2 的 OS 级拖放处理器会**拦截并吞掉页面内的 HTML5 drag**(pragmatic-drag-and-drop 依赖原生 HTML5 DnD)→ 全应用拖拽排序(待办/标签/便签/侧栏)全失效。
+- **修法**:`src-tauri/tauri.conf.json` 主窗口加 `"dragDropEnabled": false`,把 DnD 交还 Web 层。应用未监听任何 OS 文件拖放(图片走文件选择器),关掉无副作用。改的是 Tauri 配置,`tauri dev` 监视 `src-tauri` 自动重建。`(本轮)`
