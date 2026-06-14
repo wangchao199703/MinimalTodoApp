@@ -469,4 +469,11 @@
 - 4 条浅引导线(linear/苹果系合并/notion/fluent)背景 `var(--divider)` → `color-mix(in srgb, var(--muted-text) 40%, var(--divider))`(混入 40% 次要文字色加深,仍柔和);粗野的 2px 黑线不动。`npm run build` 通过。`9c6e619`
 
 **提示词:** 撤销这次更改。
-- 撤销上一条「引导线加深」:4 条引导线背景改回 `var(--divider)`。`npm run build` 通过。`(本轮)`
+- 撤销上一条「引导线加深」:4 条引导线背景改回 `var(--divider)`。`npm run build` 通过。`7922c8a`
+
+**提示词:** (桌面文档 202606142140)参考这样设置父子任务——窄窗「微缩进 + 视觉降级」黄金公式:轻微缩小、字重/颜色降级、对齐缩进、引导线。
+- 决策(问过):① 按文档调回轻微缩小+降级(不要上轮的大幅缩小);② 对齐缩进应用到全部 9 套版式。
+- **缩放调轻**:`--ds` `0.11/层封顶3` → **`0.06/层封顶2`**(子任务 ~ -1px,不靠尺寸而靠层次)。
+- **视觉降级(新)**:`.task-item:not([data-level=0]) .task-title` 字重 → 400、行高 → 1.35;未完成子标题颜色 → `var(--secondary-text)`(`:not(.text-muted)` 排除已完成,保留划线灰)。
+- **对齐缩进(新)**:各版式定义 `--indent-step =` 自身复选框宽 + 间距(linear26/经典31/可爱38/notion25/fluent31/brutal31/frost30/tinted32/panel33),基线 `.task-item { margin-left: lvl × var(--indent-step) }` 统一驱动 → 子任务复选框对齐父任务文字开头;删除旧的 18px/12px 缩进规则。
+- **引导线**:`::before` 的 `left` 改为 `calc(var(--indent-step) * -0.5)`,落在缩进通道中线(各版式自适应)。`npm run build` 通过。`(本轮)`

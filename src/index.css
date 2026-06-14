@@ -763,13 +763,19 @@ body {
 /* —— 层级等比缩小:子待办越深,勾选框/字体/行距越小(--ds 缩放因子,封顶第 3 层)——
    --lvl 为 TaskItem 注入的缩进层级数;勾选框尺寸经 --ds、标题/副信息字号与行高同步缩放。 */
 .task-item {
-  --ds: calc(1 - 0.11 * min(var(--lvl, 0), 3));
-  /* 垂直内边距随层级缩放(横向不动,宽度不变);各版式只给 --pad-y 默认值 */
+  /* 层级缩放:轻微(每层 6%,封顶第 2 层)——窄窗下主要靠字重/颜色/引导线分层,不靠大幅缩小 */
+  --ds: calc(1 - 0.06 * min(var(--lvl, 0), 2));
+  /* 阶梯缩进:子任务复选框对齐父任务文字开头(步长 = 父复选框宽 + 间距,各版式给 --indent-step) */
+  margin-left: calc(var(--lvl, 0) * var(--indent-step, 26px));
+  /* 垂直内边距随层级轻微收紧(横向不动,宽度不变);各版式只给 --pad-y 默认值 */
   padding-top: calc(var(--pad-y, 0.5rem) * var(--ds, 1));
   padding-bottom: calc(var(--pad-y, 0.5rem) * var(--ds, 1));
 }
-.task-title { font-size: calc(0.875rem * var(--ds, 1)); line-height: 1.43; }
+.task-title { font-size: calc(0.875rem * var(--ds, 1)); line-height: 1.45; }
 .task-meta { font-size: calc(0.75rem * var(--ds, 1)); }
+/* 子任务视觉降级:字重降一档 + 行高收紧 + 颜色变浅(未完成)——用层次而非尺寸区分主次 */
+.task-item:not([data-level="0"]) .task-title { font-weight: 400; line-height: 1.35; }
+.task-item:not([data-level="0"]) .task-title:not(.text-muted) { color: var(--secondary-text); }
 .task-check.is-done { background: var(--accent); border-color: var(--accent); }
 .task-pri-dot { display: none; height: 0.5rem; width: 0.5rem; border-radius: 9999px; }
 .task-pri-icon { display: none; }
@@ -784,6 +790,7 @@ body {
   background: transparent;
   align-items: flex-start;
   --pad-y: 0.625rem;
+  --indent-step: 31px; /* 复选框 19 + 间距 12 */
   padding-inline: 0.75rem;
   gap: 0.75rem;
 }
@@ -808,6 +815,7 @@ body {
   background: transparent;
   align-items: center;
   --pad-y: 0.375rem;
+  --indent-step: 26px; /* 复选框 16 + 间距 10 */
   padding-inline: 0.625rem;
   gap: 0.6rem;
 }
@@ -838,6 +846,7 @@ body {
   box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.06);
   align-items: flex-start;
   --pad-y: 0.75rem;
+  --indent-step: 38px; /* 复选框 24 + 间距 14 */
   padding-inline: 0.85rem;
   gap: 0.9rem;
 }
@@ -869,11 +878,7 @@ body {
 
 /* ============ 多级子任务(最多 6 级):半满态 + 进度条 + 克制缩进 + 引导线 + 悬浮箭头 ============ */
 
-/* 缩进:经典 18px/级;三套新版式收紧到 12px/级(6 级最多 72px) */
-.task-item { margin-left: calc(var(--lvl, 0) * 18px); }
-.design-apple .task-item,
-.design-linear .task-item,
-.design-cute .task-item { margin-left: calc(var(--lvl, 0) * 12px); }
+/* 缩进:统一走基线 .task-item 的 margin-left = lvl × var(--indent-step)(各版式按复选框+间距对齐父文字) */
 
 /* 半满态标记:经典隐藏(父复选框保持空);苹果/极客用横杠,可爱用圆点 */
 .task-check .task-half { display: none; }
@@ -918,7 +923,7 @@ body {
 .design-linear .task-item:not([data-level="0"])::before {
   content: "";
   position: absolute;
-  left: -6px;
+  left: calc(var(--indent-step, 26px) * -0.5);
   top: 0;
   bottom: 0;
   width: 1px;
@@ -932,7 +937,7 @@ body {
 .design-panel .task-item:not([data-level="0"])::before {
   content: "";
   position: absolute;
-  left: -6px;
+  left: calc(var(--indent-step, 26px) * -0.5);
   top: 0;
   bottom: 0;
   width: 1px;
@@ -954,9 +959,9 @@ body {
   background: transparent;
   align-items: flex-start;
   --pad-y: 0.25rem;
+  --indent-step: 25px; /* 复选框 ~17 + 间距 8 */
   padding-inline: 0.4rem;
   gap: 0.5rem;
-  margin-left: calc(var(--lvl, 0) * 12px);
 }
 .design-notion .task-item:hover { background: var(--card-hover-bg); }
 .design-notion .app-task-list { gap: 0.1rem; }
@@ -981,7 +986,7 @@ body {
 .design-notion .task-item:not([data-level="0"])::before {
   content: "";
   position: absolute;
-  left: -4px;
+  left: calc(var(--indent-step, 25px) * -0.5);
   top: 0;
   bottom: 0;
   width: 1px;
@@ -999,9 +1004,9 @@ body {
   box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
   align-items: flex-start;
   --pad-y: 0.6rem;
+  --indent-step: 31px; /* 复选框 20 + 间距 11 */
   padding-inline: 0.7rem;
   gap: 0.7rem;
-  margin-left: calc(var(--lvl, 0) * 12px);
 }
 .design-fluent .task-item:hover {
   background: color-mix(in srgb, var(--card-bg) 72%, transparent);
@@ -1031,7 +1036,7 @@ body {
 .design-fluent .task-item:not([data-level="0"])::before {
   content: "";
   position: absolute;
-  left: -6px;
+  left: calc(var(--indent-step, 26px) * -0.5);
   top: 0;
   bottom: 0;
   width: 1px;
@@ -1049,9 +1054,9 @@ body {
   box-shadow: 3px 3px 0 0 var(--primary-text);
   align-items: flex-start;
   --pad-y: 0.5rem;
+  --indent-step: 31px; /* 复选框 20 + 间距 11 */
   padding-inline: 0.6rem;
   gap: 0.7rem;
-  margin-left: calc(var(--lvl, 0) * 14px);
   transition: transform 0.1s, box-shadow 0.1s;
 }
 .design-brutal .task-item:hover {
@@ -1085,7 +1090,7 @@ body {
 .design-brutal .task-item:not([data-level="0"])::before {
   content: "";
   position: absolute;
-  left: -8px;
+  left: calc(var(--indent-step, 31px) * -0.5);
   top: 0;
   bottom: 0;
   width: 2px;
@@ -1128,9 +1133,9 @@ html.cb-width .task-check { border-width: var(--check-bw); }
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
   align-items: center;
   --pad-y: 0.55rem;
+  --indent-step: 30px; /* 复选框 ~18 + 间距 12 */
   padding-inline: 0.65rem;
   gap: 0.75rem;
-  margin-left: calc(var(--lvl, 0) * 12px);
 }
 .design-frost .task-item:hover { background: color-mix(in srgb, var(--card-bg) 90%, transparent); }
 .design-frost .app-task-list { gap: 0.45rem; }
@@ -1152,9 +1157,9 @@ html.cb-width .task-check { border-width: var(--check-bw); }
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
   align-items: center;
   --pad-y: 0.55rem;
+  --indent-step: 32px; /* 复选框 20 + 间距 12 */
   padding-inline: 0.65rem;
   gap: 0.75rem;
-  margin-left: calc(var(--lvl, 0) * 12px);
 }
 .design-tinted .task-item:hover {
   background: color-mix(in srgb, var(--pri) 12%, color-mix(in srgb, var(--card-bg) 88%, transparent));
@@ -1186,9 +1191,9 @@ html.cb-width .task-check { border-width: var(--check-bw); }
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   align-items: center;
   --pad-y: 0.5rem;
+  --indent-step: 33px; /* 复选框 22 + 间距 11 */
   padding-inline: 0.6rem;
   gap: 0.7rem;
-  margin-left: calc(var(--lvl, 0) * 12px);
 }
 .design-panel .task-check {
   --cb-base: 1.375rem;
