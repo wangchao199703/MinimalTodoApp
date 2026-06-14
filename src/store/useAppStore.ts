@@ -84,8 +84,8 @@ interface AppState {
   setTheme: (key: Theme) => void;
   /** 切换生效版式(内置键或 "custom:<id>") */
   setDesign: (value: string) => void;
-  /** 编辑勾选框某维度:当前是内置版式则派生新自定义版式;已是自定义则就地更新 */
-  editCheckbox: (dim: "shape" | "size" | "width", value: string) => void;
+  /** 编辑版式某维度(勾选框形状/大小/粗细 或 子任务进度):内置版式则派生新自定义版式,已是自定义则就地更新 */
+  editCheckbox: (dim: "shape" | "size" | "width" | "progress", value: string) => void;
   /** 删除某自定义版式(若正生效则退回其基础版式) */
   deleteCustomDesign: (id: string) => void;
   setPriorityStyle: (key: PriorityStyle) => void;
@@ -376,6 +376,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         shape: "",
         size: "",
         width: "",
+        progress: "",
         [dim]: value,
       };
       next = [...customDesigns, created];

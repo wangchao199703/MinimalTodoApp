@@ -396,4 +396,11 @@
   - **显示按「根任务是否完成」划分**(`selectVisibleTasks` 加 `rootOfTask`):整族未完成 → 未完成视图(其下已完成的子任务**原地划线保留**);整族已完成 → 已完成视图。`clearCompleted` 也只清「根已完成」的整族。
   - **完成逻辑**(`toggleComplete` 重写):**活子待办**(有父且父未完成)= 只打钩、不整族完成、不消失;并**向上传播**(某父的直接子全完成 → 自动完成该父,逐级向上)。**顶层/父已完成** = 整族完成(随后因根已完成而消失)。
   - **动画**(`TaskItem.completeWithEffects`):活子待办完成时**只放烟花、不播 `.completing` 滑出动画、不消失**;顶层/整族完成仍滑出。
-- `npm run build` 通过。`(本轮)`
+- `npm run build` 通过。`62ee100`
+
+**提示词:** 父任务进度现在是 数字1/2 或直线涂色,加一个圆环百分比涂色,并加入设置可自定义,每个样式都自定义(不是全局)。
+- 父任务子任务进度新增第三种「**圆环百分比**」(`.task-progress-ring`,conic-gradient + mask 做空心环,`--pct` 传百分比);并做成**按版式自定义**(复用勾选框的自定义版式机制,非全局):
+  - `themes.ts`:`CustomDesign` 加 `progress` 维度;`applyProgress(mode)` 切 `html.pg-{count,bar,ring}` class;`resolveDesign`/`applyActiveDesign` 带上 progress;`PROGRESS_MODES`/`PROGRESS_LABEL_KEY`。
+  - store:`editCheckbox` 的 dim 加 `"progress"`,派生的自定义版式带 `progress:""`。
+  - `index.css`:`.task-progress-ring` 基线 + `html.pg-*` 三套强制规则(特异性高于版式默认,只显一种)。
+  - `TaskItem`:meta 行渲染圆环元素。`SettingsPanel`:外观→「进度」4 按钮(跟随版式/数字/直线/圆环),改即派生;自定义版式摘要带进度。i18n 双语 `S.X.Progress.*`。`npm run build` 通过。`(本轮)`

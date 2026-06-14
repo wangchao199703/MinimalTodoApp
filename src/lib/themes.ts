@@ -154,6 +154,25 @@ export interface CustomDesign {
   shape: string;
   size: string;
   width: string;
+  /** 子任务进度显示:"" 跟随版式 / count 数字 / bar 直线 / ring 圆环 */
+  progress: string;
+}
+
+/** 子任务进度显示模式(空串=跟随版式) */
+export const PROGRESS_MODES = ["count", "bar", "ring"] as const;
+export const PROGRESS_LABEL_KEY: Record<string, string> = {
+  "": "S.X.Checkbox.FollowVersion",
+  count: "S.X.Progress.Count",
+  bar: "S.X.Progress.Bar",
+  ring: "S.X.Progress.Ring",
+};
+
+/** 应用子任务进度模式:在 <html> 切 pg-* class(空=不切,跟随版式) */
+export function applyProgress(mode: string) {
+  const r = document.documentElement;
+  r.classList.toggle("pg-count", mode === "count");
+  r.classList.toggle("pg-bar", mode === "bar");
+  r.classList.toggle("pg-ring", mode === "ring");
 }
 
 export function parseCustomDesigns(raw: string | undefined): CustomDesign[] {
@@ -173,29 +192,33 @@ export function parseCustomDesigns(raw: string | undefined): CustomDesign[] {
         shape: typeof d.shape === "string" ? d.shape : "",
         size: typeof d.size === "string" ? d.size : "",
         width: typeof d.width === "string" ? d.width : "",
+        progress: typeof d.progress === "string" ? d.progress : "",
       }));
   } catch {
     return [];
   }
 }
 
-/** 解析 active design 值 → 基础版式 + 勾选框覆盖(内置则无覆盖) */
+/** 解析 active design 值 → 基础版式 + 勾选框/进度覆盖(内置则无覆盖) */
 export function resolveDesign(
   designValue: string,
   customs: CustomDesign[],
-): { base: Design; shape: string; size: string; width: string } {
+): { base: Design; shape: string; size: string; width: string; progress: string } {
   if (designValue.startsWith("custom:")) {
     const c = customs.find((x) => x.id === designValue.slice(7));
-    if (c) return { base: c.base, shape: c.shape, size: c.size, width: c.width };
+    if (c) {
+      return { base: c.base, shape: c.shape, size: c.size, width: c.width, progress: c.progress };
+    }
   }
-  return { base: migrateDesign(designValue), shape: "", size: "", width: "" };
+  return { base: migrateDesign(designValue), shape: "", size: "", width: "", progress: "" };
 }
 
-/** 应用 active design:基础版式 class + 勾选框覆盖(内置 → 清空覆盖) */
+/** 应用 active design:基础版式 class + 勾选框/进度覆盖(内置 → 清空覆盖) */
 export function applyActiveDesign(designValue: string, customsRaw: string | undefined) {
   const r = resolveDesign(designValue, parseCustomDesigns(customsRaw));
   applyDesign(r.base);
   applyCheckbox(r.shape, r.size, r.width);
+  applyProgress(r.progress);
 }
 
 // ============ 优先级展示(priority_style):与版式正交的「优先级怎么显示」轴 ============

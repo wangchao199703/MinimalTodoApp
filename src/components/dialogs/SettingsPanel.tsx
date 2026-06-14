@@ -273,6 +273,12 @@ export default function SettingsPanel() {
                   c.shape && (c.shape === "square" ? t("S.X.Checkbox.Square") : t("S.X.Checkbox.Round")),
                   c.size && `${c.size}px`,
                   c.width && `${c.width}px`,
+                  c.progress &&
+                    t(
+                      { count: "S.X.Progress.Count", bar: "S.X.Progress.Bar", ring: "S.X.Progress.Ring" }[
+                        c.progress
+                      ] ?? "",
+                    ),
                 ].filter(Boolean);
                 return (
                   <div
@@ -310,6 +316,7 @@ export default function SettingsPanel() {
               const cbShape = ac?.shape ?? "";
               const cbSize = ac?.size ?? "";
               const cbWidth = ac?.width ?? "";
+              const cbProgress = ac?.progress ?? "";
               // 当前生效版式的基础版式 → 取其勾选框真实默认值,用于「跟随版式」时显示
               const baseKey = ac ? ac.base : design;
               const defs =
@@ -320,6 +327,12 @@ export default function SettingsPanel() {
                 { v: "", key: "S.X.Checkbox.FollowVersion" },
                 { v: "round", key: "S.X.Checkbox.Round" },
                 { v: "square", key: "S.X.Checkbox.Square" },
+              ];
+              const progressOpts: { v: string; key: string }[] = [
+                { v: "", key: "S.X.Checkbox.FollowVersion" },
+                { v: "count", key: "S.X.Progress.Count" },
+                { v: "bar", key: "S.X.Progress.Bar" },
+                { v: "ring", key: "S.X.Progress.Ring" },
               ];
               return (
                 <div className="mb-3">
@@ -381,6 +394,27 @@ export default function SettingsPanel() {
                     />
                     <span className="w-10 text-right text-xs text-muted">{cbWidth || defs.width}</span>
                   </label>
+                  {/* 子任务进度显示:数字 / 直线 / 圆环(改即派生自定义版式) */}
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="w-12 shrink-0 text-xs text-text-2">
+                      {t("S.X.Progress.Title")}
+                    </span>
+                    <div className="flex flex-1 gap-1.5">
+                      {progressOpts.map((o) => (
+                        <button
+                          key={o.v}
+                          onClick={() => editCheckbox("progress", o.v)}
+                          className={`flex-1 rounded-md border px-1 py-1 text-xs transition-colors ${
+                            cbProgress === o.v
+                              ? "border-accent bg-selected text-text-1"
+                              : "border-divider text-text-2 hover:bg-card-hover"
+                          }`}
+                        >
+                          {t(o.key)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               );
             })()}

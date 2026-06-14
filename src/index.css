@@ -1179,3 +1179,29 @@ html.cb-width .task-check { border-width: var(--check-bw); }
 .design-panel .task-title { font-weight: 500; }
 .design-panel .task-check .task-half { display: block; }
 .design-panel .task-progress { display: block; }
+
+/* ============ 子任务进度显示模式(pg-*):数字 / 直线 / 圆环,按自定义版式设置 ============ */
+.task-progress-ring {
+  display: none;
+  height: 0.85rem;
+  width: 0.85rem;
+  border-radius: 9999px;
+  background: conic-gradient(var(--accent) var(--pct, 0%), var(--divider) 0);
+  -webkit-mask: radial-gradient(circle, transparent 46%, #000 47%);
+  mask: radial-gradient(circle, transparent 46%, #000 47%);
+}
+
+/* 强制「数字」:仅 n/m 计数 */
+html.pg-count .task-subcount { display: inline; }
+html.pg-count .task-progress { display: none; }
+html.pg-count .task-progress-ring { display: none; }
+
+/* 强制「直线」:仅进度条 */
+html.pg-bar .task-progress { display: block; }
+html.pg-bar .task-subcount { display: none; }
+html.pg-bar .task-progress-ring { display: none; }
+
+/* 强制「圆环」:仅圆环百分比 */
+html.pg-ring .task-progress-ring { display: inline-block; }
+html.pg-ring .task-progress { display: none; }
+html.pg-ring .task-subcount { display: none; }

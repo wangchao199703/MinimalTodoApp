@@ -238,6 +238,14 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
                 {doneChildren}/{totalChildren}
               </span>
             )}
+            {/* 子任务进度圆环(仅「圆环」进度模式显示,CSS 控制) */}
+            {totalChildren > 0 && (
+              <span
+                className="task-progress-ring shrink-0"
+                style={{ "--pct": `${progress}%` } as React.CSSProperties}
+                title={`${doneChildren}/${totalChildren}`}
+              />
+            )}
           </span>
         )}
       </div>
