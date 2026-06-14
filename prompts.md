@@ -348,4 +348,11 @@
 - `themes.ts` 加 PRIORITY_STYLES + applyPriorityStyle/migratePriorityStyle;store priorityStyle 状态 + setter + init/initSettingsWindow 应用 + applyRemoteSetting 跨窗口同步;设置→通用 新增「优先级展示」选择器;i18n 双语 `S.X.Prio.*`;默认 apple。`npm run build` 通过。`29e1348`
 
 **提示词:** 优先级展示设置项加上移除的信号强度。
-- 「优先级展示」加回 **信号强度** 选项(原 linear 版式移除的 Signal 图标):TaskItem 重新加回 `task-pri-icon`(SignalLow/Med/High,按 `--pri` 着色,放复选框前);`prio-signal` 显示之、勾选框环保持中性。PRIORITY_STYLES 加 `signal`,i18n 双语 `S.X.Prio.Signal`。共 5 选项(苹果/极客/信号强度/文档/无)。`npm run build` 通过。`(本轮)`
+- 「优先级展示」加回 **信号强度** 选项(原 linear 版式移除的 Signal 图标):TaskItem 重新加回 `task-pri-icon`(SignalLow/Med/High,按 `--pri` 着色,放复选框前);`prio-signal` 显示之、勾选框环保持中性。PRIORITY_STYLES 加 `signal`,i18n 双语 `S.X.Prio.Signal`。共 5 选项(苹果/极客/信号强度/文档/无)。`npm run build` 通过。`fd77167`
+
+**提示词:** 苹果(圆环+!)改名为 复选框环着色;极客(左侧竖线)改名为 左侧竖线;文档(标题着色)改为 圆点着色。
+- 选项名改为直接描述机制,且行为与名一致(内部 key apple/linear/notion 不变,免迁移):
+  - **复选框环着色**:去掉高优先级 `!`,只留复选框圆环按优先级着色(删 `prio-apple` 的 task-pri-mark 规则)。
+  - **左侧竖线**:仅改名,行为不变。
+  - **圆点着色**:去掉标题文字着色,只留标题前优先级小圆点(删 `prio-notion` 的 task-title 着色规则,留 task-pri-dot)。
+- i18n 双语改 `S.X.Prio.{Apple,Linear,Notion}` 标签。`npm run build` 通过。`(本轮)`

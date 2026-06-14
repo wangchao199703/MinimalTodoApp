@@ -1080,25 +1080,14 @@ body {
    容器 data-pri=1/2/3,--pri=该级色(低绿/中黄/高红)。基线勾选框环已中性,优先级表达全由本段按设置叠加。 */
 .task-pri-mark { display: none; }
 
-/* 苹果:复选框圆环着色 + 高优先级标题后红 !(不覆盖完成/半满态的强调色) */
+/* 复选框环着色:复选框圆环按优先级着色(不覆盖完成/半满态的强调色) */
 .prio-apple .task-check:not(.is-done):not(.is-indeterminate) { border-color: var(--pri); }
-.prio-apple .task-item[data-pri="3"] .task-pri-mark {
-  display: inline;
-  order: 9;
-  color: var(--overdue-text);
-  font-weight: 800;
-  font-size: 0.95rem;
-  line-height: 1;
-}
-.prio-apple .task-item[data-pri="3"] .task-pri-mark::before { content: "!"; }
 
-/* 极客:行最左 2px gutter 竖线(IDE 风) */
+/* 左侧竖线:行最左 2px gutter 竖线(IDE 风) */
 .prio-linear .task-item { border-left: 2px solid var(--pri); }
 
-/* 文档:标题文字着色(高红/中黄,低保持默认)+ 标题前小圆点 */
+/* 圆点着色:标题前一个按优先级着色的小圆点(不改标题文字色) */
 .prio-notion .task-pri-dot { display: block; }
-.prio-notion .task-item[data-pri="3"] .task-title { color: var(--overdue-text); }
-.prio-notion .task-item[data-pri="2"] .task-title { color: var(--warning-text); }
 
 /* 无:不展示优先级(基线已中性,无需额外规则) */
 
