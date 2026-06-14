@@ -758,6 +758,9 @@ body {
   /* 勾选框尺寸:自定义优先(--check-size),否则版式默认(--cb-base);再按层级缩放(--ds) */
   width: calc(var(--check-size, var(--cb-base, 1rem)) * var(--ds, 1));
   height: calc(var(--check-size, var(--cb-base, 1rem)) * var(--ds, 1));
+  /* 复选框对齐标题首行:9 套版式统一 flex-start 顶对齐,标题换行(break-words)后复选框仍贴第一行,
+     绝不用 items-center(对齐窄窗文档);随尺寸 + 层级缩放(--ds)自适应,圆心落首行中线。 */
+  margin-top: calc((1.25rem - var(--check-size, var(--cb-base, 1rem))) / 2 * var(--ds, 1));
 }
 
 /* —— 层级等比缩小:子待办越深,勾选框/字体/行距越小(--ds 缩放因子,封顶第 3 层)——
@@ -800,8 +803,6 @@ body {
   --cb-base: 19px;
   border-width: 1.5px;
   border-color: var(--muted-text);
-  /* 居中对齐标题行(1.25rem):随勾选框尺寸 + 层级缩放(--ds)自适应,圆心始终落文字中线 */
-  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-apple .task-check.is-done { border-color: var(--accent); }
 .design-apple .task-title { font-weight: 500; }
@@ -813,7 +814,7 @@ body {
   border-bottom: 1px solid var(--divider);
   border-radius: 0;
   background: transparent;
-  align-items: center;
+  align-items: flex-start;
   --pad-y: 0.375rem;
   --indent-step: 26px; /* 复选框 16 + 间距 10 */
   padding-inline: 0.625rem;
@@ -857,7 +858,6 @@ body {
 .design-cute .task-check {
   --cb-base: 1.5rem;
   border-width: 2px;
-  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-cute .task-title { font-weight: 700; }
 .design-cute .task-tag {
@@ -970,7 +970,6 @@ body {
   border-radius: 3px;
   border-width: 1px;
   border-color: var(--muted-text);
-  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-notion .task-check .task-half { display: none; }
 .design-notion .task-check.is-indeterminate::after {
@@ -1015,7 +1014,6 @@ body {
 .design-fluent .task-check {
   --cb-base: 1.25rem;
   border-color: color-mix(in srgb, white 45%, var(--divider));
-  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-fluent .task-check .task-half {
   display: block;
@@ -1070,7 +1068,6 @@ body {
   border-radius: 0;
   border-width: 2px;
   border-color: var(--primary-text);
-  margin-top: calc((1.25rem - var(--check-size, var(--cb-base))) / 2 * var(--ds, 1));
 }
 .design-brutal .task-check.is-done { background: var(--accent); border-color: var(--primary-text); }
 .design-brutal .task-check .task-half { display: block; color: var(--primary-text); }
@@ -1131,7 +1128,7 @@ html.cb-width .task-check { border-width: var(--check-bw); }
   backdrop-filter: blur(16px);
   border: 1px solid color-mix(in srgb, white 45%, transparent);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
-  align-items: center;
+  align-items: flex-start;
   --pad-y: 0.55rem;
   --indent-step: 30px; /* 复选框 ~18 + 间距 12 */
   padding-inline: 0.65rem;
@@ -1155,7 +1152,7 @@ html.cb-width .task-check { border-width: var(--check-bw); }
   backdrop-filter: blur(14px);
   border: 1px solid color-mix(in srgb, var(--pri) 22%, transparent);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.05);
-  align-items: center;
+  align-items: flex-start;
   --pad-y: 0.55rem;
   --indent-step: 32px; /* 复选框 20 + 间距 12 */
   padding-inline: 0.65rem;
@@ -1189,7 +1186,7 @@ html.cb-width .task-check { border-width: var(--check-bw); }
   background: var(--card-bg);
   border: 1px solid var(--divider);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
-  align-items: center;
+  align-items: flex-start;
   --pad-y: 0.5rem;
   --indent-step: 33px; /* 复选框 22 + 间距 11 */
   padding-inline: 0.6rem;

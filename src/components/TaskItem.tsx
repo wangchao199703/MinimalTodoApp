@@ -232,7 +232,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
                 setDraft(task.title);
                 setEditing(true);
               }}
-              className={`task-title min-w-0 truncate text-sm ${
+              className={`task-title min-w-0 break-words text-sm ${
                 task.is_completed ? "text-muted line-through" : "text-text-1"
               }`}
             >
