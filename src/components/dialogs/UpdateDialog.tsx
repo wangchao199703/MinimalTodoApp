@@ -20,10 +20,14 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
     }
   };
 
+  const reinstall = props.info.reinstall === true;
+
   return (
     <Modal title={t("S.Update.Title")} onClose={props.onClose} width={400}>
       <p className="text-sm font-medium text-text-1">
-        {f("S.Update.NewVersion", props.info.version, props.info.currentVersion)}
+        {reinstall
+          ? f("S.Update.Reinstall", props.info.version)
+          : f("S.Update.NewVersion", props.info.version, props.info.currentVersion)}
       </p>
 
       {props.info.notes && (
@@ -47,26 +51,29 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
         </div>
       ) : (
         <div className="mt-3 flex justify-end gap-2">
-          <button
-            onClick={() => {
-              saveSetting("ignored_update_version", props.info.version);
-              props.onClose();
-            }}
-            className="rounded-md px-2.5 py-1.5 text-xs text-muted hover:bg-card-hover"
-          >
-            {t("S.Update.SkipThis")}
-          </button>
+          {/* 重装当前版本时无「跳过此版本」语义,只保留取消 + 立即重装 */}
+          {!reinstall && (
+            <button
+              onClick={() => {
+                saveSetting("ignored_update_version", props.info.version);
+                props.onClose();
+              }}
+              className="rounded-md px-2.5 py-1.5 text-xs text-muted hover:bg-card-hover"
+            >
+              {t("S.Update.SkipThis")}
+            </button>
+          )}
           <button
             onClick={props.onClose}
             className="rounded-md px-2.5 py-1.5 text-xs text-text-2 hover:bg-card-hover"
           >
-            {t("S.Update.Ignore")}
+            {reinstall ? t("S.Update.Close") : t("S.Update.Ignore")}
           </button>
           <button
             onClick={() => void start()}
             className="rounded-md bg-accent px-3 py-1.5 text-xs text-on-accent hover:opacity-90"
           >
-            {t("S.Update.Now")}
+            {reinstall ? t("S.Settings.ReinstallBtn") : t("S.Update.Now")}
           </button>
         </div>
       )}

@@ -5,8 +5,9 @@ import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "./i18n";
 
+const REPO_SLUG = "wangchao199703/MinimalTodoApp";
 const RELEASES_LATEST =
-  "https://api.github.com/repos/wangchao199703/MinimalTodoApp/releases/latest";
+  `https://api.github.com/repos/${REPO_SLUG}/releases/latest`;
 
 export interface UpdateInfo {
   version: string;
@@ -14,6 +15,19 @@ export interface UpdateInfo {
   assetUrl: string;
   assetName: string;
   currentVersion: string;
+  /** true 表示「重新安装当前版本」(同版本重装,非升级),UI 据此切换文案/隐藏跳过按钮 */
+  reinstall?: boolean;
+}
+
+interface GithubRelease {
+  tag_name?: string;
+  body?: string;
+  assets?: { name: string; browser_download_url: string }[];
+}
+
+/** 从一个 Release 选出可下载的便携 exe 资产(末尾 .exe);无则 null */
+function pickExeAsset(release: GithubRelease) {
+  return (release.assets ?? []).find((a) => a.name.toLowerCase().endsWith(".exe"));
 }
 
 /** "v1.2.3" / "1.2.3" → [1,2,3];解析失败返回 null */
@@ -37,11 +51,7 @@ export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null
   const s = useAppStore.getState();
   if (!manual && s.settings["auto_update_enabled"] === "0") return null;
 
-  let release: {
-    tag_name?: string;
-    body?: string;
-    assets?: { name: string; browser_download_url: string }[];
-  };
+  let release: GithubRelease;
   try {
     const resp = await fetch(RELEASES_LATEST, {
       headers: { Accept: "application/vnd.github+json" },
@@ -63,7 +73,7 @@ export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null
   const version = remote.join(".");
   if (!manual && s.settings["ignored_update_version"] === version) return null;
 
-  const asset = (release.assets ?? []).find((a) => a.name.toLowerCase().endsWith(".exe"));
+  const asset = pickExeAsset(release);
   if (!asset) {
     if (manual) s.pushToast(t("S.Update.NoAsset"));
     return null;
@@ -75,6 +85,44 @@ export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null
     assetUrl: asset.browser_download_url,
     assetName: asset.name,
     currentVersion: current.join("."),
+  };
+}
+
+/**
+ * 「重新安装当前版本」:按当前版本对应 tag 拉取同一 Release,取便携 exe 资产,
+ * 返回带 reinstall=true 的 UpdateInfo(不做版本比较)。失败/无资产返回 null 并弹 Toast。
+ * 后续下载+换壳重启完全复用 downloadAndApply(同升级路径)。
+ */
+export async function fetchReinstallInfo(): Promise<UpdateInfo | null> {
+  const s = useAppStore.getState();
+  const current = await getVersion();
+  // tag 约定带 v 前缀(release.ps1 打的 tag),与 latest 解析逻辑一致
+  const tag = `v${current}`;
+  const url = `https://api.github.com/repos/${REPO_SLUG}/releases/tags/${encodeURIComponent(tag)}`;
+
+  let release: GithubRelease;
+  try {
+    const resp = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
+    if (!resp.ok) throw new Error(String(resp.status));
+    release = await resp.json();
+  } catch {
+    s.pushToast(t("S.Update.CheckFailed"));
+    return null;
+  }
+
+  const asset = pickExeAsset(release);
+  if (!asset) {
+    s.pushToast(t("S.Update.NoAsset"));
+    return null;
+  }
+
+  return {
+    version: current,
+    notes: release.body ?? "",
+    assetUrl: asset.browser_download_url,
+    assetName: asset.name,
+    currentVersion: current,
+    reinstall: true,
   };
 }
 

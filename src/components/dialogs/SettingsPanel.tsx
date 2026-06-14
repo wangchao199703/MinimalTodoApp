@@ -15,6 +15,8 @@ import {
   migratePriorityStyle,
 } from "../../lib/themes";
 import { confirm } from "../ui/ConfirmDialog";
+import UpdateDialog from "./UpdateDialog";
+import { fetchReinstallInfo, type UpdateInfo } from "../../lib/updater";
 import {
   SOUND_STYLES,
   normalizeSoundStyle,
@@ -97,6 +99,22 @@ export default function SettingsPanel() {
   const [section, setSection] = useState<Section>("general");
   const [autostart, setAutostart] = useState(false);
   const [version, setVersion] = useState("");
+  // 「重新安装当前版本」:拉取同 tag Release → 复用更新对话框走下载+换壳重启
+  const [reinstallInfo, setReinstallInfo] = useState<UpdateInfo | null>(null);
+  const [reinstallBusy, setReinstallBusy] = useState(false);
+  const pushToast = useAppStore((s) => s.pushToast);
+
+  const startReinstall = async () => {
+    if (reinstallBusy) return;
+    setReinstallBusy(true);
+    pushToast(t("S.Update.Checking"));
+    try {
+      const info = await fetchReinstallInfo();
+      if (info) setReinstallInfo(info);
+    } finally {
+      setReinstallBusy(false);
+    }
+  };
 
   useEffect(() => {
     void ipc.getAutostart().then(setAutostart).catch(() => {});
@@ -602,9 +620,28 @@ export default function SettingsPanel() {
               checked={flag("auto_update_enabled", true)}
               onChange={setFlag("auto_update_enabled")}
             />
+            {/* 重新安装/修复当前版本:按当前版本 tag 重新下载同一发布并换壳重启 */}
+            <div className="flex items-start justify-between gap-3 py-2">
+              <span className="min-w-0">
+                <span className="block text-sm text-text-1">{t("S.Settings.Reinstall")}</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  {t("S.Settings.ReinstallDesc")}
+                </span>
+              </span>
+              <button
+                onClick={() => void startReinstall()}
+                disabled={reinstallBusy}
+                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
+              >
+                {t("S.Settings.ReinstallBtn")}
+              </button>
+            </div>
           </>
         )}
       </div>
+      {reinstallInfo && (
+        <UpdateDialog info={reinstallInfo} onClose={() => setReinstallInfo(null)} />
+      )}
     </div>
   );
 }

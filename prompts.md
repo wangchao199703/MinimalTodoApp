@@ -596,4 +596,10 @@
 - 改 `src-tauri/src/window.rs`(删 nudge + 删无用 `PhysicalSize` 引入)与 `src/App.tsx`(新增 onResized 重绘 effect)。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。`(本轮)`
 
 **提示词:** 周期提醒目前在 app 内弹窗,需要在 app 最小化时也支持弹窗,即右下角弹窗。
-- 用 Tauri 官方 `tauri-plugin-notification` 加系统通知:`src-tauri/Cargo.toml` 加依赖、`lib.rs` 在 autostart 之后追加 `.plugin(tauri_plugin_notification::init())`(单实例插件仍最先)、`capabilities/default.json` 加 `notification:default`。前端新增 `src/lib/notify.ts`,在 `useReminderLoop` 触发处除现有 `pushToast` 外发一条 OS 通知。**按窗口可见性区分**:仅当窗口 `!isVisible() || isMinimized()` 时发系统通知(可见时只保留 app 内 toast,避免重复打扰);拿不到窗口状态时保守发(确保「最小化必弹」)。通知标题=`S.Fmt.ReminderToastTitle`(待办:{title}),正文对齐旧版气泡(`S.Fmt.ReminderMsg`/`ReminderMsgWithDue` + 间隔)。首次发通知前按需 `isPermissionGranted`/`requestPermission`(权限缓存避免每次走 IPC)。`npm run build`、`cargo check` 均过,未升版本(2.0.0)。`(本轮)`
+- 用 Tauri 官方 `tauri-plugin-notification` 加系统通知:`src-tauri/Cargo.toml` 加依赖、`lib.rs` 在 autostart 之后追加 `.plugin(tauri_plugin_notification::init())`(单实例插件仍最先)、`capabilities/default.json` 加 `notification:default`。前端新增 `src/lib/notify.ts`,在 `useReminderLoop` 触发处除现有 `pushToast` 外发一条 OS 通知。**按窗口可见性区分**:仅当窗口 `!isVisible() || isMinimized()` 时发系统通知(可见时只保留 app 内 toast,避免重复打扰);拿不到窗口状态时保守发(确保「最小化必弹」)。通知标题=`S.Fmt.ReminderToastTitle`(待办:{title}),正文对齐旧版气泡(`S.Fmt.ReminderMsg`/`ReminderMsgWithDue` + 间隔)。首次发通知前按需 `isPermissionGranted`/`requestPermission`(权限缓存避免每次走 IPC)。`npm run build`、`cargo check` 均过,未升版本(2.0.0)。`146dabb`
+
+**提示词:** 当前没有更新当前版本的功能,对齐 wpf 补齐重新安装当前版本的功能。
+- 对齐 WPF `UpdateService.FetchReleaseByTagAsync(tag)`:Tauri 版只检测「更高版本」,缺「重新安装/修复当前版本」。
+- `updater.ts` 新增 `fetchReinstallInfo()`:按当前版本对应 tag(`v<当前版本>`)拉 `releases/tags/<tag>` Release,取便携 exe 资产,返回 `UpdateInfo{reinstall:true, version=currentVersion}`;抽出共享 `pickExeAsset`/`GithubRelease`/`REPO_SLUG`,**完全复用既有 `downloadAndApply`**(下载字节→原始 IPC `apply_update`→bat 换壳带 `--updated-from` 重启),Rust 侧零改动。
+- `UpdateDialog.tsx` 支持 reinstall 模式:标题用 `S.Update.Reinstall`(替代 NewVersion),隐藏「跳过此版本」、按钮文案改「重新安装/关闭」。
+- 入口:设置→关于,自动更新开关下加「重新安装当前版本」一行 + 按钮,点了 `fetchReinstallInfo` → 打开同一 `UpdateDialog` 走下载进度+重启。i18n 键(`S.Settings.Reinstall*`/`S.Update.Reinstall`/`S.Update.Close`)双语已就位,无需新增。`npm run build` 通过。未升版本(2.0.0)。
