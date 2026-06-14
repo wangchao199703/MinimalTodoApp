@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FilePlus2, FileText, Folder, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { deriveTitle } from "../../lib/markdown";
+import { readMarkdownDrop } from "../../lib/markdownIO";
 import { t } from "../../lib/i18n";
 import type { Note } from "../../lib/tauri-ipc";
 import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
@@ -91,7 +92,34 @@ export default function NotesView() {
   const selectNote = useAppStore((s) => s.selectNote);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
+  const importNotesFromFiles = useAppStore((s) => s.importNotesFromFiles);
   const selected = notes.find((n) => n.id === selectedNoteId) ?? null;
+
+  // 从资源管理器拖入 .md/.markdown → 新建便签(标题=文件名,正文=Markdown 文本);
+  // 落在便签区空白处 = 不指定分组(后端落默认分组);落在某分组上由 NotesTree 处理(stopPropagation 截断,不冒泡到此)。
+  // 注:WebView2 在 dragDropEnabled:false 下是否派发外部文件 drop 需运行时验证;此处仅用网页 File API,绝不开 OS 拖放(否则破坏排序)。
+  const [fileOver, setFileOver] = useState(false);
+  const isFileDrag = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
+  const onAreaDragOver = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return; // 非外部文件(如内部排序拖拽)不拦截
+    e.preventDefault(); // 必须 preventDefault 才会触发 drop
+    e.dataTransfer.dropEffect = "copy";
+    if (!fileOver) setFileOver(true);
+  };
+  const onAreaDragLeave = (e: React.DragEvent) => {
+    // 只在真正离开整个区域时取消高亮(避免子元素间移动闪烁)
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setFileOver(false);
+  };
+  const onAreaDrop = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault(); // 阻止 WebView 默认导航到文件
+    setFileOver(false);
+    void (async () => {
+      const files = await readMarkdownDrop(e.dataTransfer);
+      if (files.length > 0) await importNotesFromFiles(files); // 不指定分组 → 默认分组
+    })();
+  };
 
   // 第二侧边栏宽度可拖动并持久化(默认 224,范围 160–460)
   const [navWidth, setNavWidth] = useState(() =>
@@ -130,7 +158,19 @@ export default function NotesView() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div
+      className={`relative flex min-h-0 flex-1 ${fileOver ? "ring-2 ring-inset ring-accent" : ""}`}
+      onDragOver={onAreaDragOver}
+      onDragLeave={onAreaDragLeave}
+      onDrop={onAreaDrop}
+    >
+      {fileOver && (
+        <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-accent/5">
+          <span className="rounded-md bg-popup px-3 py-1.5 text-sm font-medium text-text-1 shadow-lg ring-1 ring-divider">
+            {t("S.X.DropMdToImport")}
+          </span>
+        </div>
+      )}
       {collapsed ? (
         // 收起态:对齐主侧栏,只剩一列图标(新建便签 + 各便签),底部展开按钮
         <aside className="flex w-12 shrink-0 flex-col border-r border-sidebar-border bg-sidebar">

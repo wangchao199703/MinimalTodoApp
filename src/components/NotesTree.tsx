@@ -9,6 +9,7 @@ import { ChevronRight, FilePlus2, FileText, Folder, Palette, Trash2, X } from "l
 import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
+import { readMarkdownDrop } from "../lib/markdownIO";
 import { t } from "../lib/i18n";
 import { ipc, type Note, type NoteGroup } from "../lib/tauri-ipc";
 import { confirm } from "./ui/ConfirmDialog";
@@ -111,6 +112,27 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
   const [colorOpen, setColorOpen] = useState(false);
   // 拖便签到分组头 = 移入该分组(对齐旧版 NotesDropHandler)
   const { ref: dropRef, isOver } = useNoteGroupDrop(group.id);
+  // 从资源管理器拖入 .md 到分组头 = 导入便签并归类到该分组(网页 File API,与内部排序拖拽互不干扰)
+  const importNotesFromFiles = useAppStore((s) => s.importNotesFromFiles);
+  const [fileOver, setFileOver] = useState(false);
+  const isFileDrag = (e: React.DragEvent) => e.dataTransfer.types.includes("Files");
+  const onFileDragOver = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation(); // 命中分组:不冒泡到便签区容器(否则会落到默认分组)
+    e.dataTransfer.dropEffect = "copy";
+    if (!fileOver) setFileOver(true);
+  };
+  const onFileDrop = (e: React.DragEvent) => {
+    if (!isFileDrag(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setFileOver(false);
+    void (async () => {
+      const files = await readMarkdownDrop(e.dataTransfer);
+      if (files.length > 0) await importNotesFromFiles(files, group.id);
+    })();
+  };
   // 分组图标颜色:默认无色,右键自定义(持久化 notegroup_color_<id>),分组下便签继承
   const color = noteGroupColor(settings, group.id);
 
@@ -132,8 +154,11 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
             e.preventDefault();
             setMenu({ x: e.clientX, y: e.clientY });
           }}
+          onDragOver={onFileDragOver}
+          onDragLeave={() => setFileOver(false)}
+          onDrop={onFileDrop}
           className={`flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-            isOver
+            isOver || fileOver
               ? "bg-sidebar-selected ring-1 ring-accent"
               : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
           }`}

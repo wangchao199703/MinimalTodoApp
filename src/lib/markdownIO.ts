@@ -38,6 +38,32 @@ export function buildExportMarkdown(groups: Group[], tasks: Task[]): string {
   return lines.join("\n");
 }
 
+// 便签导入:从资源管理器拖入的 .md/.markdown 文件 → { 文件名(去扩展名), Markdown 文本 }
+const MD_EXT = /\.(md|markdown)$/i;
+
+/** 判断是否为可导入便签的 Markdown 文件(按扩展名,大小写不敏感) */
+export function isMarkdownFile(file: File): boolean {
+  return MD_EXT.test(file.name);
+}
+
+/** 文件名去扩展名,作为便签标题 */
+export function stripMdExt(name: string): string {
+  return name.replace(MD_EXT, "");
+}
+
+/**
+ * 从一次拖放的 DataTransfer 里读出所有 Markdown 文件的文本。
+ * 用网页 File API(file.text()),不依赖文件路径,与 Tauri OS 拖放无关。
+ */
+export async function readMarkdownDrop(
+  dt: DataTransfer | null,
+): Promise<{ name: string; content: string }[]> {
+  const files = Array.from(dt?.files ?? []).filter(isMarkdownFile);
+  return Promise.all(
+    files.map(async (f) => ({ name: stripMdExt(f.name), content: await f.text() })),
+  );
+}
+
 export interface ParsedTask {
   group: string;
   title: string;
