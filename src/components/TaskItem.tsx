@@ -140,6 +140,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         {
           "--lvl": task.indent_level,
           "--pri": PRIORITY_COLOR[task.priority],
+          "--pct": `${progress}%`,
         } as React.CSSProperties
       }
       className={`task-item group relative flex items-center gap-2 rounded-lg border border-divider bg-card py-2 pr-3 pl-1.5 transition-colors hover:bg-card-hover ${
@@ -166,7 +167,9 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         onClick={completeWithEffects}
         className={`task-check flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
           task.is_completed ? "is-done" : ""
-        } ${indeterminate ? "is-indeterminate" : ""}`}
+        } ${indeterminate ? "is-indeterminate" : ""} ${
+          totalChildren > 0 && !task.is_completed ? "is-parent" : ""
+        }`}
       >
         {task.is_completed ? (
           <Check size={10} strokeWidth={3} />
@@ -237,14 +240,6 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
               <span className="task-subcount text-muted">
                 {doneChildren}/{totalChildren}
               </span>
-            )}
-            {/* 子任务进度圆环(仅「圆环」进度模式显示,CSS 控制) */}
-            {totalChildren > 0 && (
-              <span
-                className="task-progress-ring shrink-0"
-                style={{ "--pct": `${progress}%` } as React.CSSProperties}
-                title={`${doneChildren}/${totalChildren}`}
-              />
             )}
           </span>
         )}

@@ -403,4 +403,7 @@
   - `themes.ts`:`CustomDesign` 加 `progress` 维度;`applyProgress(mode)` 切 `html.pg-{count,bar,ring}` class;`resolveDesign`/`applyActiveDesign` 带上 progress;`PROGRESS_MODES`/`PROGRESS_LABEL_KEY`。
   - store:`editCheckbox` 的 dim 加 `"progress"`,派生的自定义版式带 `progress:""`。
   - `index.css`:`.task-progress-ring` 基线 + `html.pg-*` 三套强制规则(特异性高于版式默认,只显一种)。
-  - `TaskItem`:meta 行渲染圆环元素。`SettingsPanel`:外观→「进度」4 按钮(跟随版式/数字/直线/圆环),改即派生;自定义版式摘要带进度。i18n 双语 `S.X.Progress.*`。`npm run build` 通过。`(本轮)`
+  - `TaskItem`:meta 行渲染圆环元素。`SettingsPanel`:外观→「进度」4 按钮(跟随版式/数字/直线/圆环),改即派生;自定义版式摘要带进度。i18n 双语 `S.X.Progress.*`。`npm run build` 通过。`b536585`
+
+**提示词:** 完成百分比不要单独弄圆环,直接用勾选框填充。
+- 去掉独立的 `.task-progress-ring` 元素;`--pct` 移到容器、父任务勾选框加 `is-parent` 类;「圆环」进度模式改为 `html.pg-ring .task-check.is-parent { background: conic-gradient(accent var(--pct), transparent 0) }`——**父任务勾选框内部按完成比例饼形填充**,并隐藏数字/进度条与半满标记。`npm run build` 通过。`(本轮)`
