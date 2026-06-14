@@ -156,6 +156,8 @@ interface AppState {
   // ---- 剪贴板 ----
   setClipFilterTag: (tagId: number | null) => void;
   removeClip: (id: number) => Promise<void>;
+  /** 清空某剪切板标签下的所有剪贴项 */
+  clearClipTagItems: (tagId: number) => Promise<void>;
   toggleClipPin: (clip: ClipItem) => Promise<void>;
   addClipTag: (name: string) => Promise<void>;
   renameClipTag: (id: number, name: string) => Promise<void>;
@@ -835,6 +837,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   removeClip: async (id) => {
     await ipc.deleteClip(id);
     set((s) => ({ clips: s.clips.filter((c) => c.id !== id) }));
+  },
+
+  clearClipTagItems: async (tagId) => {
+    // 清空某剪切板标签下的所有剪贴项
+    const ids = get()
+      .clips.filter((c) => c.tag_ids.includes(tagId))
+      .map((c) => c.id);
+    for (const id of ids) {
+      try {
+        await ipc.deleteClip(id);
+      } catch {
+        /* 忽略 */
+      }
+    }
+    set((s) => ({ clips: s.clips.filter((c) => !c.tag_ids.includes(tagId)) }));
   },
 
   toggleClipPin: async (clip) => {

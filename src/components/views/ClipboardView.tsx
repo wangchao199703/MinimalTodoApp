@@ -8,6 +8,7 @@ import {
   CheckSquare,
   Clipboard as ClipboardIcon,
   Copy,
+  Eraser,
   NotebookPen,
   Palette,
   PanelLeftClose,
@@ -244,6 +245,7 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
   const renameClipTag = useAppStore((s) => s.renameClipTag);
   const setClipTagColor = useAppStore((s) => s.setClipTagColor);
   const removeClipTag = useAppStore((s) => s.removeClipTag);
+  const clearClipTagItems = useAppStore((s) => s.clearClipTagItems);
   const setClipItemTag = useAppStore((s) => s.setClipItemTag);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [editing, setEditing] = useState(false);
@@ -280,6 +282,12 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
   const confirmDelete = async () => {
     if (await confirm({ title: t("S.Tag.Delete"), message: f("S.X.ConfirmDeleteClipTag", tag.name) })) {
       void removeClipTag(tag.id);
+    }
+  };
+
+  const confirmClear = async () => {
+    if (await confirm({ title: t("S.X.Clear"), message: f("S.X.ConfirmClearClipTag", tag.name) })) {
+      void clearClipTagItems(tag.id);
     }
   };
 
@@ -354,6 +362,15 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
             >
               <Palette size={13} />
               {t("S.Group.ChangeColor")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                void confirmClear();
+              }}
+            >
+              <Eraser size={13} />
+              {t("S.X.Clear")}
             </MenuItem>
             <div className="my-1 h-px bg-divider" />
             <MenuItem
