@@ -459,4 +459,8 @@
 **提示词:** 所有待办无法拖动排序,修复一下 → 重启后仍不行,是 bug。
 - 先排查前端全链路(拖源 `useSortableItem`、列表 `monitorForElements`、`reorderIds`/`reorderTasks`)均完好,排除 JS 全局 `dragstart` 拦截 / `-webkit-user-drag` / 烟花画布遮挡 / 排序模式;清理重启 dev 也无效。
 - **根因**:Tauri v2 窗口默认 `dragDropEnabled: true`,WebView2 的 OS 级拖放处理器会**拦截并吞掉页面内的 HTML5 drag**(pragmatic-drag-and-drop 依赖原生 HTML5 DnD)→ 全应用拖拽排序(待办/标签/便签/侧栏)全失效。
-- **修法**:`src-tauri/tauri.conf.json` 主窗口加 `"dragDropEnabled": false`,把 DnD 交还 Web 层。应用未监听任何 OS 文件拖放(图片走文件选择器),关掉无副作用。改的是 Tauri 配置,`tauri dev` 监视 `src-tauri` 自动重建。`(本轮)`
+- **修法**:`src-tauri/tauri.conf.json` 主窗口加 `"dragDropEnabled": false`,把 DnD 交还 Web 层。应用未监听任何 OS 文件拖放(图片走文件选择器),关掉无副作用。改的是 Tauri 配置,`tauri dev` 监视 `src-tauri` 自动重建。`474a44a`
+
+**提示词:** 子待办除了字体变小,高度也等比缩小。
+- 根因:行高主要由各版式**固定垂直 padding** 撑着,`--ds` 没作用到它。
+- 修法:9 套版式的 `padding: Vy Vx` 收敛为 `--pad-y: Vy + padding-inline: Vx`,基线 `.task-item` 统一 `padding-top/bottom = calc(var(--pad-y) * var(--ds))`(横向 padding 不动 → 宽度不变,仅高度随层级缩)。`npm run build` 通过。`(本轮)`
