@@ -53,7 +53,7 @@ function useReminderLoop() {
           pushToast(f("S.Fmt.ReminderToastTitle", t.title));
           const st = useAppStore.getState().settings;
           if ((st["reminder_sound_enabled"] ?? "1") === "1") {
-            playReminder(normalizeSoundStyle(st["sound_style"]));
+            playReminder(normalizeSoundStyle(st["reminder_sound_style"] || st["sound_style"]));
           }
           void patchTask({ id: t.id, last_reminded_at: nowText() });
         }

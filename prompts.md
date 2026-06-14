@@ -565,3 +565,7 @@
 ### 202606141900.md —— 提示音/周期提醒音生成多套可选风格 + 设置选项
 
 参考 提示音.md,对提示音和周期提示音优化,生成多个提示音,设置增加选项让用户自己选择,开 agent 去干
+
+**提示词:** 完成提示音和周期提醒音不要组合,各自可自由单独选择,给用户更多选择。
+- 把 agent 做的「单一 `sound_style` 同步驱动完成+提醒」拆成**两个独立设置**:`complete_sound_style`(完成音)、`reminder_sound_style`(提醒音),各 4 套任选、自由组合(4×4)。
+- `SettingsPanel` 提示音区改为**两个独立选择器**(完成提示音 / 周期提醒音),每项一个试听按钮;`TaskItem` 完成音读 `complete_sound_style`、`App.tsx` 提醒音读 `reminder_sound_style`(均回退旧 `sound_style` 兼容)。i18n 加 `CompleteTitle/ReminderTitle/Preview` 双语。`applyRemoteSetting` 对任意 key 都并入 settings,跨窗口同步自动生效。`npm run build` 通过。`(本轮)`

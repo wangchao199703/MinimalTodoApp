@@ -186,49 +186,59 @@ export default function SettingsPanel() {
               checked={flag("reminder_sound_enabled", true)}
               onChange={setFlag("reminder_sound_enabled")}
             />
-            {/* 提示音风格:完成音 + 提醒音同步切换(音色家族一致);每项带「完成/提醒」试听 */}
+            {/* 完成提示音 / 周期提醒音:各自独立选择(4 套任选,自由组合),每项可试听 */}
             {(() => {
-              const cur = normalizeSoundStyle(settings["sound_style"]);
-              return (
-                <div className="mt-1 mb-1">
-                  <p className="mb-2 text-sm text-text-1">{t("S.Settings.SoundStyle.Title")}</p>
-                  <p className="mb-2 text-xs text-muted">{t("S.Settings.SoundStyle.Desc")}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {SOUND_STYLES.map((sty) => (
-                      <div
-                        key={sty}
-                        className={`flex flex-col gap-1.5 rounded-lg border px-3 py-2 transition-colors ${
-                          cur === sty ? "border-accent bg-selected" : "border-divider hover:bg-card-hover"
-                        }`}
-                      >
-                        <button
-                          onClick={() => saveSetting("sound_style", sty)}
-                          className="text-left text-sm text-text-1"
+              const renderPicker = (
+                key: string,
+                titleKey: string,
+                preview: (s: (typeof SOUND_STYLES)[number]) => void,
+              ) => {
+                const cur = normalizeSoundStyle(settings[key] || settings["sound_style"]);
+                return (
+                  <div className="mt-1 mb-1">
+                    <p className="mb-2 text-sm text-text-1">{t(titleKey)}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {SOUND_STYLES.map((sty) => (
+                        <div
+                          key={sty}
+                          className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition-colors ${
+                            cur === sty
+                              ? "border-accent bg-selected"
+                              : "border-divider hover:bg-card-hover"
+                          }`}
                         >
-                          {t(SOUND_STYLE_LABEL_KEY[sty])}
-                        </button>
-                        <div className="flex gap-1.5">
                           <button
-                            onClick={() => playComplete(sty)}
-                            title={t("S.Settings.SoundStyle.PreviewComplete")}
-                            className="flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1 text-[11px] text-text-2 ring-1 ring-divider hover:bg-card-hover"
+                            onClick={() => saveSetting(key, sty)}
+                            className="flex-1 text-left text-sm text-text-1"
                           >
-                            <Volume2 size={12} />
-                            {t("S.Settings.SoundStyle.Complete")}
+                            {t(SOUND_STYLE_LABEL_KEY[sty])}
                           </button>
                           <button
-                            onClick={() => playReminder(sty)}
-                            title={t("S.Settings.SoundStyle.PreviewReminder")}
-                            className="flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1 text-[11px] text-text-2 ring-1 ring-divider hover:bg-card-hover"
+                            onClick={() => preview(sty)}
+                            title={t("S.Settings.SoundStyle.Preview")}
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-text-2 ring-1 ring-divider hover:bg-card-hover"
                           >
                             <Volume2 size={12} />
-                            {t("S.Settings.SoundStyle.Reminder")}
                           </button>
                         </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                );
+              };
+              return (
+                <>
+                  {renderPicker(
+                    "complete_sound_style",
+                    "S.Settings.SoundStyle.CompleteTitle",
+                    playComplete,
+                  )}
+                  {renderPicker(
+                    "reminder_sound_style",
+                    "S.Settings.SoundStyle.ReminderTitle",
+                    playReminder,
+                  )}
+                </>
               );
             })()}
             <div className="my-1 h-px bg-divider" />
