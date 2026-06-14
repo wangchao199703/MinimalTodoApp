@@ -3,7 +3,7 @@ import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
 import { useAppStore } from "./store/useAppStore";
 import { parseDue, nowText } from "./lib/date";
 import { applyFontSettings } from "./lib/font";
-import { playReminderDing } from "./lib/effects";
+import { playReminder, normalizeSoundStyle } from "./lib/effects";
 import { f } from "./lib/i18n";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
@@ -51,8 +51,9 @@ function useReminderLoop() {
         const base = t.last_reminded_at ?? t.created_at;
         if (now - parseDue(base).getTime() >= t.reminder_interval_minutes * 60000) {
           pushToast(f("S.Fmt.ReminderToastTitle", t.title));
-          if ((useAppStore.getState().settings["reminder_sound_enabled"] ?? "1") === "1") {
-            playReminderDing();
+          const st = useAppStore.getState().settings;
+          if ((st["reminder_sound_enabled"] ?? "1") === "1") {
+            playReminder(normalizeSoundStyle(st["sound_style"]));
           }
           void patchTask({ id: t.id, last_reminded_at: nowText() });
         }

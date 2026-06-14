@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, Volume2 } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../../store/useAppStore";
 import { ipc } from "../../lib/tauri-ipc";
@@ -15,6 +15,20 @@ import {
   migratePriorityStyle,
 } from "../../lib/themes";
 import { confirm } from "../ui/ConfirmDialog";
+import {
+  SOUND_STYLES,
+  normalizeSoundStyle,
+  playComplete,
+  playReminder,
+} from "../../lib/effects";
+
+// 提示音风格 → i18n 文案键
+const SOUND_STYLE_LABEL_KEY: Record<string, string> = {
+  minimal: "S.Settings.SoundStyle.Minimal",
+  game: "S.Settings.SoundStyle.Game",
+  zen: "S.Settings.SoundStyle.Zen",
+  cute: "S.Settings.SoundStyle.Cute",
+};
 
 function Toggle(props: {
   label: string;
@@ -172,6 +186,51 @@ export default function SettingsPanel() {
               checked={flag("reminder_sound_enabled", true)}
               onChange={setFlag("reminder_sound_enabled")}
             />
+            {/* 提示音风格:完成音 + 提醒音同步切换(音色家族一致);每项带「完成/提醒」试听 */}
+            {(() => {
+              const cur = normalizeSoundStyle(settings["sound_style"]);
+              return (
+                <div className="mt-1 mb-1">
+                  <p className="mb-2 text-sm text-text-1">{t("S.Settings.SoundStyle.Title")}</p>
+                  <p className="mb-2 text-xs text-muted">{t("S.Settings.SoundStyle.Desc")}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SOUND_STYLES.map((sty) => (
+                      <div
+                        key={sty}
+                        className={`flex flex-col gap-1.5 rounded-lg border px-3 py-2 transition-colors ${
+                          cur === sty ? "border-accent bg-selected" : "border-divider hover:bg-card-hover"
+                        }`}
+                      >
+                        <button
+                          onClick={() => saveSetting("sound_style", sty)}
+                          className="text-left text-sm text-text-1"
+                        >
+                          {t(SOUND_STYLE_LABEL_KEY[sty])}
+                        </button>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => playComplete(sty)}
+                            title={t("S.Settings.SoundStyle.PreviewComplete")}
+                            className="flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1 text-[11px] text-text-2 ring-1 ring-divider hover:bg-card-hover"
+                          >
+                            <Volume2 size={12} />
+                            {t("S.Settings.SoundStyle.Complete")}
+                          </button>
+                          <button
+                            onClick={() => playReminder(sty)}
+                            title={t("S.Settings.SoundStyle.PreviewReminder")}
+                            className="flex flex-1 items-center justify-center gap-1 rounded-md px-1 py-1 text-[11px] text-text-2 ring-1 ring-divider hover:bg-card-hover"
+                          >
+                            <Volume2 size={12} />
+                            {t("S.Settings.SoundStyle.Reminder")}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <div className="my-1 h-px bg-divider" />
             <Toggle
               label={t("S.X.QuadrantHighOnly")}

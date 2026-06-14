@@ -561,3 +561,7 @@
 - 给主题系统的 CSS 变量配色(非布局版式),每套含 window/card/text/accent/sidebar 全套 token,`--selected-item-bg` = 背景与 accent 的 12% 叠加,对比度过 WCAG AA:
   - **OLED Geek**(纯黑 #000 + 赛博青 #06B6D4)、**Notion Gray**(暖灰 #F7F6F3 侧栏 + 炭黑 #37352F 字 + #2383E2)、**Things Light**(冷白 + 亮蓝 #1183FE)、**TickTick Blue**(#F8F9FA + 靛蓝 #5C7CFA)、**Linear Dark**(紫灰深底 #1A1B1E + 紫罗兰 #5E6AD2)。
 - 附预览色块 JSON(name/bg/accent/sidebar),供设置页主题网格渲染。
+
+### 202606141900.md —— 提示音/周期提醒音生成多套可选风格 + 设置选项
+
+参考 提示音.md,对提示音和周期提示音优化,生成多个提示音,设置增加选项让用户自己选择,开 agent 去干

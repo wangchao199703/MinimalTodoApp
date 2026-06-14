@@ -22,7 +22,7 @@ import { useSortableItem } from "../hooks/useSortableItem";
 import { childStats } from "../lib/sort";
 import { dueState, countdownText, formatDue } from "../lib/date";
 import { isRoundCheckbox } from "../lib/themes";
-import { fireworksAt, playCelebration } from "../lib/effects";
+import { fireworksAt, playComplete, normalizeSoundStyle } from "../lib/effects";
 import { t } from "../lib/i18n";
 import type { Task } from "../lib/tauri-ipc";
 import { Popover, MenuItem } from "./ui/Popover";
@@ -89,7 +89,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
     }
     const s = useAppStore.getState().settings;
     if ((s["effects_enabled"] ?? "1") === "1") fireworksAt(e.clientX, e.clientY);
-    if (s["sound_enabled"] === "1") playCelebration();
+    if (s["sound_enabled"] === "1") playComplete(normalizeSoundStyle(s["sound_style"]));
     const parent = task.parent_id ? tasks.find((t) => t.id === task.parent_id) : null;
     const isLiveChild = !!parent && !parent.is_completed;
     if (isLiveChild) {

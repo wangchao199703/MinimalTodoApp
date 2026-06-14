@@ -42,6 +42,7 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
 ## 四、近期已提交的大事(committed,均未 push)
 
+- **提示音风格(4 套成对)**:`src/lib/effects.ts` 新增 `playComplete(style)`/`playReminder(style)` + 合成原语 `tone`/`bowl`/`drop`,4 套风格 `minimal`/`game`/`zen`/`cute`(`SOUND_STYLES`、`normalizeSoundStyle`)。完成音与提醒音跟随同一设置键 `sound_style`(默认 `minimal`,贴近原完成音)。触发处:`TaskItem.tsx`(完成)、`App.tsx` 提醒轮询(提醒)按 `sound_style` 分发;原 `sound_enabled`/`reminder_sound_enabled` 开关保留。设置→待办 加「提示音风格」网格,每项带「完成/提醒」试听按钮(`SettingsPanel.tsx`)。i18n `S.Settings.SoundStyle.*` 双语已加(`src/i18n/{zh,en}.json`)。`npm run build` 通过。注:`playCelebration`/`playReminderDing` 旧导出仍保留未删(无引用,可后续清理)。
 - `0b9a598` 侧栏彩色化与收起图标化 + 设置面板重排 + 便签字体双开关。
 - `ccc3478` 标签/便签改回独立第二侧边栏 + 支持调宽与收起(注:标签第二侧栏在 §三 中又被移除)。
 - `1df529a` 主题精简重做为 15 套 + 新增 `docs/tech-stack.md`。
