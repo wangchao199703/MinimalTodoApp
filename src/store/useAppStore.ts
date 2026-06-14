@@ -686,9 +686,9 @@ export function selectVisibleTasks(
   const rootDone = (t: Task) => rootOfTask(byId, t).is_completed;
 
   if (s.view.kind === "completed") {
-    return s.tasks
-      .filter((t) => t.is_completed && rootDone(t))
-      .sort((a, b) => a.order_index - b.order_index);
+    // 走 sortTree 构树 + 尊重折叠(否则已完成视图里展开/折叠子任务无效)
+    const done = s.tasks.filter((t) => t.is_completed && rootDone(t));
+    return sortTree(done, s.sortMode);
   }
 
   // 未完成视图:根未完成的任务(已完成的活子任务也在其中,TaskItem 按 is_completed 划线)

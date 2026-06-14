@@ -450,4 +450,8 @@
 
 **提示词:** 从回收站还原任务时,子任务都需要取消勾选,修复一下。
 - 根因:`toggleComplete` 取消完成分支只翻自身 `is_completed:false`,后代仍是勾选态;但完成是整族一起完成,还原也应整族还原。
-- 修法:取消完成分支改为 `[task.id, ...descendantIds(tasks, task.id)]` 逐个 `setUndone`(已是未完成的跳过),与 `completeWithDescendants` 对称。`npm run build` 通过。`(本轮)`
+- 修法:取消完成分支改为 `[task.id, ...descendantIds(tasks, task.id)]` 逐个 `setUndone`(已是未完成的跳过),与 `completeWithDescendants` 对称。`npm run build` 通过。`b5a756d`
+
+**提示词:** 回收站(已完成视图)展开折叠子任务无效,修复一下。
+- 根因:`selectVisibleTasks` 已完成分支只 `filter + order_index 排序`,绕过了 `sortTree`,而折叠隐藏是在 `sortTree`(`is_collapsed` 时不递归子)里做的 → 已完成视图折叠无效。
+- 修法:已完成分支改走 `sortTree(done, sortMode)`(已完成族整族 done,构树正确);`npm run build` 通过。`(本轮)`
