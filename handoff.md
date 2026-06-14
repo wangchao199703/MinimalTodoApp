@@ -2,7 +2,7 @@
 
 > 写给接手的人/Claude:开工前**先读完本文 + 根目录 `CLAUDE.md` + `docs/tech-stack.md`**。
 > 旧版功能迁移早已完成,现处于「按用户逐轮反馈持续打磨 UI」阶段。
-> 最后更新:2026-06-13。
+> 最后更新:2026-06-14。
 
 ---
 
@@ -25,7 +25,20 @@
 
 ## 三、当前进度(均已本地提交,未 push)
 
-### 最近一轮:resize/最大化重绘改自动 + 修复贴边隐藏回归(v2.0.0,未升版)
+### 最近一轮:补齐「重新安装/修复当前版本」(对齐 WPF)(v2.0.0,未升版)
+
+- **背景/动机**:Tauri 版自动更新(`src/lib/updater.ts` + `src-tauri/src/updater.rs`)只检测「更高版本→升级」,缺 WPF `UpdateService.FetchReleaseByTagAsync(tag)` 那条「按当前版本 tag 重新拉取同一 Release、重装同版本」用于修复损坏/卡顿的路径。
+- **做法(只改前端,Rust 零改动)**:
+  - `updater.ts` 新增 `export async function fetchReinstallInfo()`:拼 `tag = "v" + 当前版本` → fetch `https://api.github.com/repos/<REPO_SLUG>/releases/tags/<tag>`(owner/repo 沿用既有常量,已抽成 `REPO_SLUG`)→ 取末尾 `.exe` 便携资产 → 返回 `UpdateInfo{version=currentVersion, currentVersion, reinstall:true}`;失败/无资产弹 `S.Update.CheckFailed`/`S.Update.NoAsset` Toast 返回 null。**不做版本比较**。
+  - 抽出共享 `GithubRelease` 类型、`pickExeAsset(release)` 选资产、`REPO_SLUG` 常量;`checkForUpdate` 改用之(行为不变)。`UpdateInfo` 加可选 `reinstall?: boolean`。
+  - **下载+重启完全复用既有 `downloadAndApply`**(流式下载 → `new Uint8Array` → 原始 IPC `invoke("apply_update", bytes, {headers:{"x-file-name":...}})`),Rust `apply_update`/`cleanup_after_update` 对「同名/同版本」exe 天然适用,**未改一行 Rust**。
+  - `UpdateDialog.tsx` 加 `reinstall` 模式(`props.info.reinstall===true`):标题正文用 `f("S.Update.Reinstall", version)` 替代 `NewVersion`;隐藏「跳过此版本」(重装无此语义);取消钮文案 `S.Update.Close`、主按钮文案 `S.Settings.ReinstallBtn`。升级模式行为不变。
+  - **入口**:`SettingsPanel.tsx` 关于(about)段,自动更新开关下加一行「重新安装当前版本」+ 描述 + 按钮(`S.Settings.Reinstall*`);点按钮 → `startReinstall()`(`reinstallBusy` 防重入 + `S.Update.Checking` Toast)→ `fetchReinstallInfo()` → 成功则 `setReinstallInfo` 打开同一 `<UpdateDialog>`(带进度条)。
+- **i18n**:`S.Settings.Reinstall`/`ReinstallDesc`/`ReinstallBtn`、`S.Update.Reinstall`、`S.Update.Close` **此前已在 zh/en 双语就位**(本轮无新增 key)。
+- **改了**:`src/lib/updater.ts`、`src/components/dialogs/UpdateDialog.tsx`、`src/components/dialogs/SettingsPanel.tsx`。`npm run build`(tsc 严格 + vite)通过。**未启动 dev、未 kill 任何进程**(任务约束)。未碰 `dragDropEnabled`/`transparent`/拖拽排序。
+- **需运行时验证(无法在 dev 完整走通)**:真正重装需有「与当前运行版本号完全一致的真实 GitHub Release 且含便携 .exe 资产」。当前 dev 跑的是 2.0.0,若 GitHub 上无 `v2.0.0` Release 或其无 .exe 资产,点按钮只会弹 `检查更新失败`/`暂无安装包` Toast——这是预期保护,非 bug。完整链路(下载→bat 换壳→`--updated-from` 重启→回收旧 exe)须**打包成便携 exe 后**配真实同版本 Release 实测。可先验:点按钮能触发 `检查更新…` Toast、且关于段 UI 正常。
+
+### 上一轮:resize/最大化重绘改自动 + 修复贴边隐藏回归(v2.0.0,未升版)
 
 - **Bug B(贴边自动隐藏失效,回归)根因**:上一轮 `f90f46d` 给 `show_main` 加的强制重绘 `set_size(w+1,h)→还原`(原第 58–61 行)是一处**无 `moving` 守卫的尺寸变更**;它在托盘「显示并居中」/单实例唤起时跑,会触发 `Resized`(以及 Windows 上 set_size 改变窗口原点带来的 `Moved`),干扰贴边轮询/`Moved` 监听,导致拖到边缘不再自动隐藏。**修复=移除该 nudge**(重绘职责改由前端承担,见 Bug A),贴边逻辑不再被自身尺寸抖动误扰。`show_main` 的「显示→`moving` 守卫下居中→清贴边态(`edge=NONE/hidden=false/pending=false`+持久化 `dock_edge=0`)」逻辑**保留不变**,「显示并居中」仍工作且不被贴边误收。`app.manage(Arc<DockState>)` 与 `setup_dock` 的 Moved/轮询逻辑均未动(经核对,二者非回归源)。
 - **Bug A(resize/最大化后透桌)自动修复,改前端**:不再用 Rust `set_size` 一次性 nudge。`App.tsx` 新增 effect 监听 `getCurrentWindow().onResized()`(resize 拖边、最大化、还原都会触发)→ **防抖 120ms** → **纯 DOM 重绘**:根节点瞬时 `transform: translateZ(0)` + 读 `offsetHeight` 强制 reflow + `requestAnimationFrame` 撤回。

@@ -594,3 +594,9 @@
 - **Bug A(resize/最大化透出桌面自动修复)**:透明窗(`transparent:true`)WebView2 在尺寸变化时不重绘新暴露区→透桌(已知 artifact)。改前端自动兜底:`App.tsx` 监听 `getCurrentWindow().onResized()`(resize/最大化/还原均触发)→ 防抖 120ms → **纯 DOM 重绘**(根 `transform: translateZ(0)` + 强制 reflow + rAF 撤回)。选前端不选 Rust `set_size`:`set_size` 在最大化时会取消最大化、且自身又触发 `Resized` 成反馈环;纯 DOM 对 OS 尺寸零副作用、与最大化无关、不触发 `Resized`(天然防反馈环)、不与贴边 `Moved/Resized` 互扰。
 - **Bug B(贴边自动隐藏回归)**:根因=上轮 `f90f46d` 给 `show_main` 加的 `set_size(w+1,h)→还原` 强制重绘是**无 `moving` 守卫的尺寸变更**,会触发 `Resized/Moved` 干扰贴边轮询。**移除该 nudge**(重绘职责已交前端),贴边逻辑不再被自身尺寸抖动误扰;`show_main` 居中/清贴边态逻辑保留不变。
 - 改 `src-tauri/src/window.rs`(删 nudge + 删无用 `PhysicalSize` 引入)与 `src/App.tsx`(新增 onResized 重绘 effect)。`cargo check`、`npm run build` 通过。未升版本(2.0.0)。`(本轮)`
+
+**提示词:** 当前没有更新当前版本的功能,对齐 wpf 补齐重新安装当前版本的功能。
+- 对齐 WPF `UpdateService.FetchReleaseByTagAsync(tag)`:Tauri 版只检测「更高版本」,缺「重新安装/修复当前版本」。
+- `updater.ts` 新增 `fetchReinstallInfo()`:按当前版本对应 tag(`v<当前版本>`)拉 `releases/tags/<tag>` Release,取便携 exe 资产,返回 `UpdateInfo{reinstall:true, version=currentVersion}`;抽出共享 `pickExeAsset`/`GithubRelease`/`REPO_SLUG`,**完全复用既有 `downloadAndApply`**(下载字节→原始 IPC `apply_update`→bat 换壳带 `--updated-from` 重启),Rust 侧零改动。
+- `UpdateDialog.tsx` 支持 reinstall 模式:标题用 `S.Update.Reinstall`(替代 NewVersion),隐藏「跳过此版本」、按钮文案改「重新安装/关闭」。
+- 入口:设置→关于,自动更新开关下加「重新安装当前版本」一行 + 按钮,点了 `fetchReinstallInfo` → 打开同一 `UpdateDialog` 走下载进度+重启。i18n 键(`S.Settings.Reinstall*`/`S.Update.Reinstall`/`S.Update.Close`)双语已就位,无需新增。`npm run build` 通过。未升版本(2.0.0)。
