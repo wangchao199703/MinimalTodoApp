@@ -65,7 +65,7 @@ if ($LASTEXITCODE -ne 0) { throw "git push failed" }
 
 # ---- create release ----
 $notesPath = Join-Path $root "release-notes.md"
-$notes = if (Test-Path $notesPath) { Get-Content $notesPath -Raw -Encoding utf8 } else { "" }
+$notes = if (Test-Path $notesPath) { [System.IO.File]::ReadAllText($notesPath) } else { "" }
 $body = @{
     tag_name = $tag
     name     = $tag
