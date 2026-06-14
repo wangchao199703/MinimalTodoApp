@@ -428,4 +428,7 @@
 - conic+::before 仍渲染异常(seam/太厚)。**回到 SVG 进度环**(此前圆框版本用户已认可),并**按形状渲染 `<circle>` 或圆角 `<rect>`**:`themes.ts` 加 `DESIGN_ROUND` 表 + `isRoundCheckbox(design, customs)`(cb 形状覆盖优先);TaskItem 读 `design`/`customDesigns`,圆框渲染 `<circle>`(rotate -90 从 12 点)、方框渲染 `<rect rx=5>`;`stroke-dasharray=var(--pct-num) 100` + `pathLength=100`,track 浅灰整圈 + fill 强调色弧。`npm run build` 通过。`140e301`
 
 **提示词:** 各版式默认进度:苹果/可爱/流体/白玻/微色调=勾选框,粗野=直线。
-- `themes.ts` 加 `DESIGN_PROGRESS_DEFAULT` 表(linear=count, apple/cute/fluent/frost/tinted=ring, notion=count, panel=bar, brutal=bar);`applyActiveDesign` 在进度覆盖为空(跟随版式)时采用该表 → 每个版式有自己的默认进度模式。`npm run build` 通过。`(本轮)`
+- `themes.ts` 加 `DESIGN_PROGRESS_DEFAULT` 表(linear=count, apple/cute/fluent/frost/tinted=ring, notion=count, panel=bar, brutal=bar);`applyActiveDesign` 在进度覆盖为空(跟随版式)时采用该表 → 每个版式有自己的默认进度模式。`npm run build` 通过。`9f6c45c`
+
+**提示词:** 苹果、可爱、白玻、微色调、双层面板 参考流体,子任务前加竖线。
+- 把苹果原来的 1.5px hover 显现引导线改成与流体一致(**1px `--divider` 浅灰常驻**),并同样加给 可爱/纯净白玻/微色调/双层面板(合并到一条 `.design-* .task-item:not([data-level=0])::before` 规则)。`npm run build` 通过。`(本轮)`

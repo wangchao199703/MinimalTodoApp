@@ -906,18 +906,20 @@ body {
   width: 1px;
   background: var(--divider);
 }
-.design-apple .task-item:not([data-level="0"])::before {
+/* 苹果/可爱/白玻/微色调/双层面板:子任务前竖线引导(对齐流体:1px 浅灰常驻) */
+.design-apple .task-item:not([data-level="0"])::before,
+.design-cute .task-item:not([data-level="0"])::before,
+.design-frost .task-item:not([data-level="0"])::before,
+.design-tinted .task-item:not([data-level="0"])::before,
+.design-panel .task-item:not([data-level="0"])::before {
   content: "";
   position: absolute;
   left: -6px;
   top: 0;
   bottom: 0;
-  width: 1.5px;
+  width: 1px;
   background: var(--divider);
-  opacity: 0;
-  transition: opacity 0.15s;
 }
-.design-apple .task-item:hover::before { opacity: 1; }
 
 /* 折叠箭头:苹果/极客平时隐藏、hover 整行才显现(防误触);可爱/经典常驻 */
 .design-apple .task-collapse,
