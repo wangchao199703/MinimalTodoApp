@@ -329,4 +329,7 @@
   - **克制缩进**:经典 18px/级,三套新版式收紧到 12px/级(`--lvl` + calc)。
   - **树状引导线**:极客常驻、苹果 hover 显现(缩进行 `::before` 竖线);可爱靠卡片不画线。
   - **折叠箭头悬浮显现**:苹果/极客平时隐藏、hover 整行才显(防误触);可爱/经典常驻。
-- TaskItem 加 `--lvl`/`data-level` + `indeterminate`/`progress` + `.task-collapse/.task-half/.task-progress/.task-subcount`;`index.css` 末尾加多级块。`npm run build` 通过。`(本轮)`
+- TaskItem 加 `--lvl`/`data-level` + `indeterminate`/`progress` + `.task-collapse/.task-half/.task-progress/.task-subcount`;`index.css` 末尾加多级块。`npm run build` 通过。`92aaf9d`
+
+**提示词:** 将所有的折叠按钮放到右边边,左边的勾选框往左边靠。
+- 所有版式:折叠箭头从**左侧**(勾选框前)移到**行右边缘**(删除按钮之后);删掉左侧折叠/占位块,勾选框自然靠左(约左移 20px)。`.task-collapse` 的 hover 显隐逻辑与位置无关,仍生效(苹果/极客 hover 才显,经典/可爱常驻)。`npm run build` 通过。`(本轮)`

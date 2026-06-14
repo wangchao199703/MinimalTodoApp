@@ -147,18 +147,6 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
         />
       )}
 
-      {totalChildren > 0 ? (
-        <button
-          title={task.is_collapsed ? t("S.X.Expand") : t("S.X.Collapse")}
-          onClick={() => void toggleCollapse(task)}
-          className="task-collapse -ml-1 flex h-4 w-4 shrink-0 items-center justify-center text-muted transition-opacity hover:text-text-1"
-        >
-          {task.is_collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-        </button>
-      ) : (
-        task.indent_level === 0 && <span className="-ml-1 w-4 shrink-0" />
-      )}
-
       {/* 优先级信号图标:仅「极客」版式前置展示(CSS 控制可见) */}
       {!task.is_completed && (
         <span className="task-pri-icon shrink-0" style={{ color: "var(--pri)" }}>
@@ -261,6 +249,17 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       >
         <X size={13} />
       </button>
+
+      {/* 折叠箭头:统一放行右边缘(勾选框靠左,防误触);苹果/极客 hover 才显,经典/可爱常驻 */}
+      {totalChildren > 0 && (
+        <button
+          title={task.is_collapsed ? t("S.X.Expand") : t("S.X.Collapse")}
+          onClick={() => void toggleCollapse(task)}
+          className="task-collapse flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted transition-opacity hover:text-text-1"
+        >
+          {task.is_collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+        </button>
+      )}
 
       {dueAnchor && (
         <DuePicker
