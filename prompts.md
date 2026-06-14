@@ -386,4 +386,7 @@
 - 其余 3 套玻璃只做材质,优先级仍走 prio-* 设置;各套复用 task-* hook(半满态/进度条)。`themes.ts` DESIGNS 加 frost/darkglass/tinted/panel + LABEL/DESC/CHECKBOX_DEFAULT;i18n 双语;`index.css` 加 4 套 `.design-*`。`npm run build` 通过。`6b9cf24`
 
 **提示词:** 移除暗玻主题,其他保留。
-- 移除「深邃暗玻 darkglass」:从 `themes.ts` DESIGNS/LABEL/DESC/CHECKBOX_DEFAULT 删除、删 `index.css` 的 `.design-darkglass` 块、删 i18n 双语键。保留 纯净白玻/微色调/双层面板;共 9 套版式。`npm run build` 通过。`(本轮)`
+- 移除「深邃暗玻 darkglass」:从 `themes.ts` DESIGNS/LABEL/DESC/CHECKBOX_DEFAULT 删除、删 `index.css` 的 `.design-darkglass` 块、删 i18n 双语键。保留 纯净白玻/微色调/双层面板;共 9 套版式。`npm run build` 通过。`f149129`
+
+**提示词:** 流体的子任务前面的线太粗了,参考极客和文档,浅一点细一点。
+- 流体引导线由 2px 强调色 + 外发光,改为与极客/文档一致:**1px + `--divider` 浅灰、无发光、贯通全高**(`.design-fluent .task-item:not([data-level=0])::before`)。`npm run build` 通过。`(本轮)`

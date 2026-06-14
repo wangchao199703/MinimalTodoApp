@@ -1011,13 +1011,11 @@ body {
 .design-fluent .task-item:not([data-level="0"])::before {
   content: "";
   position: absolute;
-  left: -5px;
-  top: 3px;
-  bottom: 3px;
-  width: 2px;
-  border-radius: 2px;
-  background: color-mix(in srgb, var(--accent) 55%, white);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 60%, transparent);
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--divider);
 }
 .design-fluent .task-collapse { opacity: 0; }
 .design-fluent .task-item:hover .task-collapse { opacity: 1; }
