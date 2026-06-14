@@ -59,11 +59,12 @@ const FONTS = [
   "system-ui",
 ];
 
-/** 分组键(对齐旧版 S.Settings.Nav.*,收集箱在新版叫便签;字体已并入通用) */
-type Section = "general" | "todo" | "notes" | "about";
+/** 分组键(通用 / 外观(界面样式+字体)/ 待办 / 便签 / 关于) */
+type Section = "general" | "appearance" | "todo" | "notes" | "about";
 
 const SECTIONS: { key: Section; labelKey: string }[] = [
   { key: "general", labelKey: "S.Settings.Nav.General" },
+  { key: "appearance", labelKey: "S.X.Appearance" },
   { key: "todo", labelKey: "S.Settings.Nav.Todo" },
   { key: "notes", labelKey: "S.X.Notes" },
   { key: "about", labelKey: "S.Settings.Nav.About" },
@@ -246,7 +247,7 @@ export default function SettingsPanel() {
           </>
         )}
 
-        {section === "general" && (
+        {section === "appearance" && (
           <>
             {/* 界面版式:内置 7 套 + 自定义版式(改了勾选框自动派生),选中即广播给主窗口 */}
             <p className="mb-2 text-sm text-text-1">{t("S.X.Design.Title")}</p>
@@ -405,23 +406,7 @@ export default function SettingsPanel() {
               })}
             </div>
             <div className="my-2 h-px bg-divider" />
-            <Toggle
-              label={t("S.Settings.AutoStart")}
-              desc={t("S.Settings.AutoStartDesc")}
-              checked={autostart}
-              onChange={(v) => {
-                setAutostart(v);
-                void ipc.setAutostart(v).catch(() => setAutostart(!v));
-              }}
-            />
-            <Toggle
-              label={t("S.Settings.Holidays")}
-              desc={t("S.Settings.HolidaysDesc")}
-              checked={flag("show_holidays", true)}
-              onChange={setFlag("show_holidays")}
-            />
-            <div className="my-2 h-px bg-divider" />
-            {/* 字体(原独立「字体」页并入通用) */}
+            {/* 字体(并入外观) */}
             <p className="mb-1 text-sm text-text-1">{t("S.Settings.Font")}</p>
             <p className="mb-3 text-xs text-muted">{t("S.Settings.FontDesc")}</p>
             <label className="mb-2 flex items-center gap-2">
@@ -454,6 +439,26 @@ export default function SettingsPanel() {
               />
               <span className="w-8 text-right text-xs text-muted">{lineSpacing.toFixed(2)}</span>
             </label>
+          </>
+        )}
+
+        {section === "general" && (
+          <>
+            <Toggle
+              label={t("S.Settings.AutoStart")}
+              desc={t("S.Settings.AutoStartDesc")}
+              checked={autostart}
+              onChange={(v) => {
+                setAutostart(v);
+                void ipc.setAutostart(v).catch(() => setAutostart(!v));
+              }}
+            />
+            <Toggle
+              label={t("S.Settings.Holidays")}
+              desc={t("S.Settings.HolidaysDesc")}
+              checked={flag("show_holidays", true)}
+              onChange={setFlag("show_holidays")}
+            />
             <div className="my-2 h-px bg-divider" />
             <div className="flex items-start justify-between gap-3 py-2">
               <span className="min-w-0">

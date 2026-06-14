@@ -365,4 +365,7 @@
 
 **提示词:** 大小和粗细跟随版式的置灰需要显示出真实的值。
 - 「跟随版式」(滑块置灰)时显示该版式**真实勾选框值**而非 "—":设置窗口无任务卡、拿不到 getComputedStyle,故在 `themes.ts` 建 `DESIGN_CHECKBOX_DEFAULT`(各内置版式 size/width px,与 index.css 对应)。
-- SettingsPanel 取当前生效版式的基础版式默认值:置灰时滑块值/数值显示该真实值;关掉「跟随版式」时从该真实值起步(`editCheckbox("size", String(defs.size))`)。`npm run build` 通过。`(本轮)`
+- SettingsPanel 取当前生效版式的基础版式默认值:置灰时滑块值/数值显示该真实值;关掉「跟随版式」时从该真实值起步(`editCheckbox("size", String(defs.size))`)。`npm run build` 通过。`33c3602`
+
+**提示词:** 将界面样式和字体抽取一个分组叫做外观,放在通用下面。
+- 设置新增分组 **「外观」**(`SettingsPanel` Section 加 `appearance`,排在 `general` 之后):把 界面版式 + 勾选框 + 优先级展示 + 字体 从「通用」移入「外观」;「通用」只留 开机自启 / 显示节假日 / 恢复默认。i18n 双语 `S.X.Appearance`。`npm run build` 通过。`(本轮)`
