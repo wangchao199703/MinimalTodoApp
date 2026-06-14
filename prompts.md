@@ -355,4 +355,10 @@
   - **复选框环着色**:去掉高优先级 `!`,只留复选框圆环按优先级着色(删 `prio-apple` 的 task-pri-mark 规则)。
   - **左侧竖线**:仅改名,行为不变。
   - **圆点着色**:去掉标题文字着色,只留标题前优先级小圆点(删 `prio-notion` 的 task-title 着色规则,留 task-pri-dot)。
-- i18n 双语改 `S.X.Prio.{Apple,Linear,Notion}` 标签。`npm run build` 通过。`(本轮)`
+- i18n 双语改 `S.X.Prio.{Apple,Linear,Notion}` 标签。`npm run build` 通过。`ff62d6e`
+
+**提示词:** 新增设置项目:勾选框样式(圆环/方框)、勾选框大小、勾选框线条粗细 →(改方向)勾选框不对全局生效,如果修改了某个版式的设置,自动生成一个自定义版式并写上基于什么版式而来。(确认:每次从内置版式改都新建一个,带删除按钮)
+- 勾选框 3 项(形状/大小/粗细)**不全局生效**,而是绑定到「自定义版式」:在内置版式上改任意一项 → **派生一个新自定义版式**(记录 base),切过去;已在自定义版式上改则就地更新。
+- 机制:`themes.ts` 加 `applyCheckbox`(在 `<html>` 切 `cb-*` class + 写 `--check-radius/size/bw` 变量)、`CustomDesign` 类型 + `parseCustomDesigns`/`resolveDesign`/`applyActiveDesign`(active design = 基础版式 class + 勾选框覆盖);`index.css` 加 `html.cb-* .task-check`(特异性 0,2,1 > 版式 0,2,0,故仅自定义生效时覆盖)。
+- store:`design` 改 string(可为 `custom:<id>`)+ `customDesigns` 状态;新增 `editCheckbox(dim,value)`(派生/更新)与 `deleteCustomDesign(id)`;init/initSettingsWindow/applyRemoteSetting 改用 `applyActiveDesign`(含 `custom_designs` key 跨窗口同步)。
+- 设置→通用→界面版式:网格列出内置 7 套 + 自定义版式(标「自定义·基于X」+ 覆盖摘要 + 右上角 × 删除);新增「勾选框」三组控件(形状按钮、大小/粗细 跟随版式开关+滑块)。i18n 双语 `S.X.Checkbox.*`/`S.X.Design.Custom`。`npm run build` 通过。`(本轮)`

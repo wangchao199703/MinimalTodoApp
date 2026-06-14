@@ -138,6 +138,60 @@ export function migrateDesign(saved: string | undefined): Design {
   return (DESIGNS as readonly string[]).includes(saved ?? "") ? (saved as Design) : DEFAULT_DESIGN;
 }
 
+// ============ 自定义版式:在内置版式基础上改了勾选框就派生一个,记录基于哪套 ============
+// 存于 settings.custom_designs(JSON 数组);active design 值可为内置键或 "custom:<id>"。
+export interface CustomDesign {
+  id: string;
+  /** 基于哪个内置版式 */
+  base: Design;
+  /** 勾选框覆盖(空串=该维度跟随版式) */
+  shape: string;
+  size: string;
+  width: string;
+}
+
+export function parseCustomDesigns(raw: string | undefined): CustomDesign[] {
+  try {
+    const arr = JSON.parse(raw || "[]");
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter(
+        (d) =>
+          d &&
+          typeof d.id === "string" &&
+          (DESIGNS as readonly string[]).includes(d.base),
+      )
+      .map((d) => ({
+        id: d.id,
+        base: d.base as Design,
+        shape: typeof d.shape === "string" ? d.shape : "",
+        size: typeof d.size === "string" ? d.size : "",
+        width: typeof d.width === "string" ? d.width : "",
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/** 解析 active design 值 → 基础版式 + 勾选框覆盖(内置则无覆盖) */
+export function resolveDesign(
+  designValue: string,
+  customs: CustomDesign[],
+): { base: Design; shape: string; size: string; width: string } {
+  if (designValue.startsWith("custom:")) {
+    const c = customs.find((x) => x.id === designValue.slice(7));
+    if (c) return { base: c.base, shape: c.shape, size: c.size, width: c.width };
+  }
+  return { base: migrateDesign(designValue), shape: "", size: "", width: "" };
+}
+
+/** 应用 active design:基础版式 class + 勾选框覆盖(内置 → 清空覆盖) */
+export function applyActiveDesign(designValue: string, customsRaw: string | undefined) {
+  const r = resolveDesign(designValue, parseCustomDesigns(customsRaw));
+  applyDesign(r.base);
+  applyCheckbox(r.shape, r.size, r.width);
+}
+
 // ============ 优先级展示(priority_style):与版式正交的「优先级怎么显示」轴 ============
 // 在 <html> 挂 prio-<key>。apple=复选框圆环着色+高优先级 ! / linear=行左 gutter 竖线 /
 // notion=标题文字着色+小圆点 / none=不展示。容器上的 data-pri / --pri 供 CSS 取用。
@@ -162,4 +216,16 @@ export function migratePriorityStyle(saved: string | undefined): PriorityStyle {
   return (PRIORITY_STYLES as readonly string[]).includes(saved ?? "")
     ? (saved as PriorityStyle)
     : DEFAULT_PRIORITY_STYLE;
+}
+
+// ============ 勾选框三项设置(形状/大小/粗细):空串=跟随版式,设了才覆盖版式默认 ============
+// 在 <html> 按「是否设置」切 cb-* class + 写 CSS 变量;配合 index.css 的 html.cb-* .task-check 覆盖规则。
+export function applyCheckbox(shape: string, size: string, width: string) {
+  const r = document.documentElement;
+  r.classList.toggle("cb-shape", !!shape);
+  if (shape) r.style.setProperty("--check-radius", shape === "square" ? "0.25rem" : "9999px");
+  r.classList.toggle("cb-size", !!size);
+  if (size) r.style.setProperty("--check-size", `${size}px`);
+  r.classList.toggle("cb-width", !!width);
+  if (width) r.style.setProperty("--check-bw", `${width}px`);
 }

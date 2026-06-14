@@ -1093,3 +1093,8 @@ body {
 
 /* 信号强度:左侧前置信号图标(低1/中2/高3 格),按 --pri 着色;勾选框环保持中性 */
 .prio-signal .task-pri-icon { display: flex; }
+
+/* 勾选框自定义(自定义版式生效时):html.cb-* 特异性高于版式 .design-* .task-check,故覆盖之 */
+html.cb-size .task-check { width: var(--check-size); height: var(--check-size); }
+html.cb-shape .task-check { border-radius: var(--check-radius); }
+html.cb-width .task-check { border-width: var(--check-bw); }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../../store/useAppStore";
 import { ipc } from "../../lib/tauri-ipc";
@@ -8,7 +9,6 @@ import {
   DESIGNS,
   DESIGN_LABEL_KEY,
   DESIGN_DESC_KEY,
-  migrateDesign,
   PRIORITY_STYLES,
   PRIORITY_STYLE_LABEL_KEY,
   migratePriorityStyle,
@@ -73,6 +73,11 @@ export default function SettingsPanel() {
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
   const resetSettings = useAppStore((s) => s.resetSettings);
+  const design = useAppStore((s) => s.design);
+  const customDesigns = useAppStore((s) => s.customDesigns);
+  const setDesign = useAppStore((s) => s.setDesign);
+  const editCheckbox = useAppStore((s) => s.editCheckbox);
+  const deleteCustomDesign = useAppStore((s) => s.deleteCustomDesign);
   const [section, setSection] = useState<Section>("general");
   const [autostart, setAutostart] = useState(false);
   const [version, setVersion] = useState("");
@@ -242,29 +247,136 @@ export default function SettingsPanel() {
 
         {section === "general" && (
           <>
-            {/* 界面版式:4 套换肤,选中即广播给主窗口实时切换 */}
+            {/* 界面版式:内置 7 套 + 自定义版式(改了勾选框自动派生),选中即广播给主窗口 */}
             <p className="mb-2 text-sm text-text-1">{t("S.X.Design.Title")}</p>
             <div className="mb-3 grid grid-cols-2 gap-2">
-              {DESIGNS.map((d) => {
-                const active = migrateDesign(settings["design"]) === d;
+              {DESIGNS.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDesign(d)}
+                  className={`flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors ${
+                    design === d ? "border-accent bg-selected" : "border-divider hover:bg-card-hover"
+                  }`}
+                >
+                  <span className="text-sm text-text-1">{t(DESIGN_LABEL_KEY[d])}</span>
+                  <span className="text-[11px] leading-tight text-muted">
+                    {t(DESIGN_DESC_KEY[d])}
+                  </span>
+                </button>
+              ))}
+              {/* 自定义版式:右上角 × 删除;描述展示基于哪套 + 勾选框覆盖摘要 */}
+              {customDesigns.map((c) => {
+                const val = `custom:${c.id}`;
+                const parts = [
+                  c.shape && (c.shape === "square" ? t("S.X.Checkbox.Square") : t("S.X.Checkbox.Round")),
+                  c.size && `${c.size}px`,
+                  c.width && `${c.width}px`,
+                ].filter(Boolean);
                 return (
-                  <button
-                    key={d}
-                    onClick={() => saveSetting("design", d)}
-                    className={`flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 text-left transition-colors ${
-                      active
-                        ? "border-accent bg-selected"
-                        : "border-divider hover:bg-card-hover"
+                  <div
+                    key={c.id}
+                    className={`relative flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2 ${
+                      design === val ? "border-accent bg-selected" : "border-divider hover:bg-card-hover"
                     }`}
                   >
-                    <span className="text-sm text-text-1">{t(DESIGN_LABEL_KEY[d])}</span>
-                    <span className="text-[11px] leading-tight text-muted">
-                      {t(DESIGN_DESC_KEY[d])}
-                    </span>
-                  </button>
+                    <button onClick={() => setDesign(val)} className="min-w-0 pr-4 text-left">
+                      <span className="block truncate text-sm text-text-1">
+                        {t("S.X.Design.Custom")} · {t(DESIGN_LABEL_KEY[c.base])}
+                      </span>
+                      <span className="block truncate text-[11px] leading-tight text-muted">
+                        {parts.join(" · ") || t("S.X.Checkbox.FollowVersion")}
+                      </span>
+                    </button>
+                    <button
+                      title={t("S.X.Delete")}
+                      onClick={() => deleteCustomDesign(c.id)}
+                      className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded text-muted hover:text-overdue"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
                 );
               })}
             </div>
+
+            {/* 勾选框:在当前版式上改任意一项即派生「自定义版式」(不影响内置版式) */}
+            <p className="mb-2 text-sm text-text-1">{t("S.X.Checkbox.Title")}</p>
+            {(() => {
+              const ac = design.startsWith("custom:")
+                ? customDesigns.find((c) => c.id === design.slice(7))
+                : null;
+              const cbShape = ac?.shape ?? "";
+              const cbSize = ac?.size ?? "";
+              const cbWidth = ac?.width ?? "";
+              const shapeOpts: { v: string; key: string }[] = [
+                { v: "", key: "S.X.Checkbox.FollowVersion" },
+                { v: "round", key: "S.X.Checkbox.Round" },
+                { v: "square", key: "S.X.Checkbox.Square" },
+              ];
+              return (
+                <div className="mb-3">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="w-12 shrink-0 text-xs text-text-2">{t("S.X.Checkbox.Shape")}</span>
+                    <div className="flex flex-1 gap-1.5">
+                      {shapeOpts.map((o) => (
+                        <button
+                          key={o.v}
+                          onClick={() => editCheckbox("shape", o.v)}
+                          className={`flex-1 rounded-md border px-1 py-1 text-xs transition-colors ${
+                            cbShape === o.v
+                              ? "border-accent bg-selected text-text-1"
+                              : "border-divider text-text-2 hover:bg-card-hover"
+                          }`}
+                        >
+                          {t(o.key)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* 大小:跟随版式开关 + 滑块(14–28) */}
+                  <Toggle
+                    label={`${t("S.X.Checkbox.Size")} · ${t("S.X.Checkbox.FollowVersion")}`}
+                    checked={cbSize === ""}
+                    onChange={(v) => editCheckbox("size", v ? "" : "18")}
+                  />
+                  <label className={`mt-1 mb-2 flex items-center gap-2 ${cbSize === "" ? "opacity-50" : ""}`}>
+                    <span className="w-12 shrink-0 text-xs text-text-2">{t("S.X.Checkbox.Size")}</span>
+                    <input
+                      type="range"
+                      min={14}
+                      max={28}
+                      step={1}
+                      disabled={cbSize === ""}
+                      value={cbSize || "18"}
+                      onChange={(e) => editCheckbox("size", e.target.value)}
+                      className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
+                    />
+                    <span className="w-10 text-right text-xs text-muted">{cbSize || "—"}</span>
+                  </label>
+                  {/* 粗细:跟随版式开关 + 滑块(1–4) */}
+                  <Toggle
+                    label={`${t("S.X.Checkbox.Width")} · ${t("S.X.Checkbox.FollowVersion")}`}
+                    checked={cbWidth === ""}
+                    onChange={(v) => editCheckbox("width", v ? "" : "2")}
+                  />
+                  <label className={`mt-1 flex items-center gap-2 ${cbWidth === "" ? "opacity-50" : ""}`}>
+                    <span className="w-12 shrink-0 text-xs text-text-2">{t("S.X.Checkbox.Width")}</span>
+                    <input
+                      type="range"
+                      min={1}
+                      max={4}
+                      step={0.5}
+                      disabled={cbWidth === ""}
+                      value={cbWidth || "2"}
+                      onChange={(e) => editCheckbox("width", e.target.value)}
+                      className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
+                    />
+                    <span className="w-10 text-right text-xs text-muted">{cbWidth || "—"}</span>
+                  </label>
+                </div>
+              );
+            })()}
+
             {/* 优先级展示:与版式正交,选 苹果/极客/文档/无 */}
             <p className="mb-2 text-sm text-text-1">{t("S.X.Prio.Title")}</p>
             <div className="mb-3 grid grid-cols-2 gap-2">

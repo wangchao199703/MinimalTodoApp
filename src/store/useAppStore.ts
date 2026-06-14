@@ -16,12 +16,13 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   applyTheme,
   migrateThemeKey,
-  applyDesign,
   migrateDesign,
+  applyActiveDesign,
+  parseCustomDesigns,
   applyPriorityStyle,
   migratePriorityStyle,
   type Theme,
-  type Design,
+  type CustomDesign,
   type PriorityStyle,
 } from "../lib/themes";
 import { setLang, type Lang } from "../lib/i18n";
@@ -49,7 +50,9 @@ interface AppState {
   settings: Record<string, string>;
   view: View;
   theme: Theme;
-  design: Design;
+  /** 当前生效版式:内置键(如 "apple")或自定义 "custom:<id>" */
+  design: string;
+  customDesigns: CustomDesign[];
   priorityStyle: PriorityStyle;
   language: Lang;
   sortMode: SortMode;
@@ -79,7 +82,12 @@ interface AppState {
   setScheduleOpen: (open: boolean) => void;
   setView: (v: View) => void;
   setTheme: (key: Theme) => void;
-  setDesign: (key: Design) => void;
+  /** 切换生效版式(内置键或 "custom:<id>") */
+  setDesign: (value: string) => void;
+  /** 编辑勾选框某维度:当前是内置版式则派生新自定义版式;已是自定义则就地更新 */
+  editCheckbox: (dim: "shape" | "size" | "width", value: string) => void;
+  /** 删除某自定义版式(若正生效则退回其基础版式) */
+  deleteCustomDesign: (id: string) => void;
   setPriorityStyle: (key: PriorityStyle) => void;
   setLanguage: (lang: Lang) => void;
   setSortMode: (m: SortMode) => void;
@@ -137,6 +145,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   view: { kind: "all" },
   theme: "light-classic",
   design: "classic",
+  customDesigns: [],
   priorityStyle: "apple",
   language: "zh-CN",
   sortMode: "custom",
@@ -165,8 +174,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const theme = migrateThemeKey(settings["theme"]);
     if (settings["theme"] !== theme) void ipc.setSetting("theme", theme);
     applyTheme(theme);
-    const design = migrateDesign(settings["design"]);
-    applyDesign(design);
+    const design = settings["design"] || "classic";
+    const customDesigns = parseCustomDesigns(settings["custom_designs"]);
+    applyActiveDesign(design, settings["custom_designs"]);
     const priorityStyle = migratePriorityStyle(settings["priority_style"]);
     applyPriorityStyle(priorityStyle);
     applyFontSettings(
@@ -192,6 +202,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       settings,
       theme,
       design,
+      customDesigns,
       priorityStyle,
       language,
       view,
@@ -210,8 +221,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     setLang(language);
     const theme = migrateThemeKey(settings["theme"]);
     applyTheme(theme);
-    const design = migrateDesign(settings["design"]);
-    applyDesign(design);
+    const design = settings["design"] || "classic";
+    const customDesigns = parseCustomDesigns(settings["custom_designs"]);
+    applyActiveDesign(design, settings["custom_designs"]);
     const priorityStyle = migratePriorityStyle(settings["priority_style"]);
     applyPriorityStyle(priorityStyle);
     applyFontSettings(
@@ -219,7 +231,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       Number(settings["font_size"] || "14"),
       Number(settings["line_spacing"] || "1.1"),
     );
-    set({ settings, theme, design, priorityStyle, language, loaded: true });
+    set({ settings, theme, design, customDesigns, priorityStyle, language, loaded: true });
   },
 
   applyRemoteSetting: (key, value) => {
@@ -231,10 +243,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       const th = migrateThemeKey(value);
       applyTheme(th);
       patch.theme = th;
-    } else if (key === "design") {
-      const dg = migrateDesign(value);
-      applyDesign(dg);
-      patch.design = dg;
+    } else if (key === "design" || key === "custom_designs") {
+      // 版式或自定义版式表变更:用合并后的设置重新解析并应用
+      applyActiveDesign(settings["design"] || "classic", settings["custom_designs"]);
+      patch.design = settings["design"] || "classic";
+      patch.customDesigns = parseCustomDesigns(settings["custom_designs"]);
     } else if (key === "priority_style") {
       const ps = migratePriorityStyle(value);
       applyPriorityStyle(ps);
@@ -324,10 +337,51 @@ export const useAppStore = create<AppState>((set, get) => ({
     get().saveSetting("theme", key);
   },
 
-  setDesign: (key) => {
-    applyDesign(key);
-    set({ design: key });
-    get().saveSetting("design", key);
+  setDesign: (value) => {
+    const customsRaw = get().settings["custom_designs"];
+    applyActiveDesign(value, customsRaw);
+    set({ design: value });
+    get().saveSetting("design", value);
+  },
+
+  editCheckbox: (dim, value) => {
+    const { design, customDesigns } = get();
+    let nextDesign = design;
+    let next: CustomDesign[];
+    if (design.startsWith("custom:")) {
+      // 已是自定义版式:就地更新该维度
+      const id = design.slice(7);
+      next = customDesigns.map((c) => (c.id === id ? { ...c, [dim]: value } : c));
+    } else {
+      // 当前是内置版式:派生一个新的自定义版式(每次都新建)
+      const id = `d${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`;
+      const created: CustomDesign = {
+        id,
+        base: migrateDesign(design),
+        shape: "",
+        size: "",
+        width: "",
+        [dim]: value,
+      };
+      next = [...customDesigns, created];
+      nextDesign = `custom:${id}`;
+    }
+    set({ customDesigns: next, design: nextDesign });
+    get().saveSetting("custom_designs", JSON.stringify(next));
+    if (nextDesign !== design) get().saveSetting("design", nextDesign);
+    applyActiveDesign(nextDesign, JSON.stringify(next));
+  },
+
+  deleteCustomDesign: (id) => {
+    const { design, customDesigns } = get();
+    const target = customDesigns.find((c) => c.id === id);
+    const next = customDesigns.filter((c) => c.id !== id);
+    // 若删的是当前生效版式,退回其基础版式
+    const nextDesign = design === `custom:${id}` ? (target?.base ?? "classic") : design;
+    set({ customDesigns: next, design: nextDesign });
+    get().saveSetting("custom_designs", JSON.stringify(next));
+    if (nextDesign !== design) get().saveSetting("design", nextDesign);
+    applyActiveDesign(nextDesign, JSON.stringify(next));
   },
 
   setPriorityStyle: (key) => {
