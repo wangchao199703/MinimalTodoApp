@@ -495,7 +495,14 @@
 
 **提示词:** 勾选框和第一行对齐了,但优先级圆点着色没和勾选框在一行。
 - 根因:优先级圆点(notion 圆点着色)在 `task-title-row` 里,该行原 `items-center`;标题换行后整行变高,圆点被居中挤到中间,脱离第一行。
-- 修法:① `task-title-row` `items-center` → `items-start`(子元素贴首行);② `.task-pri-dot` 加 `margin-top: calc((1.25rem - 0.5rem)/2 * var(--ds))`——与勾选框同 1.25rem 基准,圆点圆心落首行中线,和勾选框一条线。`npm run build` 通过。`(本轮)`
+- 修法:① `task-title-row` `items-center` → `items-start`(子元素贴首行);② `.task-pri-dot` 加 `margin-top: calc((1.25rem - 0.5rem)/2 * var(--ds))`——与勾选框同 1.25rem 基准,圆点圆心落首行中线,和勾选框一条线。`npm run build` 通过。`a7fa2b1`
+
+**提示词:** 待办拖动要支持子待办——拖到两条待办之间后,层级变为和下面那条一致。
+- 新增 store `moveTask(sourceId, targetId, edge)`(替换 `TaskList` 监听里原来的纯 `reorderIds` 重排):
+  - 用 `selectVisibleTasks` 渲染顺序定位「落点下面那条」待办,被拖任务的 `parent_id`/`indent_level` 取它的值(末尾落点→顶层);
+  - 被拖任务**连带整棵子树**移动,子孙 `indent_level` 同步 `+delta`(clamp 0–6);防环(不能落到自己子孙上);
+  - 全局 `order_index` 里把「source+子树块」整体移到下面那条之前,再 `reorderTasks` 重排;parent_id `""`=顶层(沿用三态约定)。
+- 已知取舍(match-below 语义固有):想把某子任务拖成「父的最后一个子」时,若其下一条层级更浅,会按下面那条变浅——这是「层级和下面一致」规则的直接结果;精细层级仍可用 indent/outdent。`npm run build` 通过。`(本轮)`
 
 ---
 

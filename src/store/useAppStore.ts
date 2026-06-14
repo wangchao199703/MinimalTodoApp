@@ -121,6 +121,8 @@ interface AppState {
   outdentTask: (task: Task) => Promise<void>;
   /** ids 为新的全局任务顺序(order_index 重排) */
   reorderTasks: (ids: string[]) => Promise<void>;
+  /** 拖拽移动:把 source 放到 target 的上/下边,并让其层级=落点「下面那条」待办(支持改父级,连带子树) */
+  moveTask: (sourceId: string, targetId: string, edge: "top" | "bottom") => Promise<void>;
   /** 清空全部已完成任务(对齐旧版「清空已完成」) */
   clearCompleted: () => Promise<void>;
 
@@ -594,6 +596,57 @@ export const useAppStore = create<AppState>((set, get) => ({
       const c = get().tasks.find((t) => t.id === cid);
       if (c) await get().patchTask({ id: cid, indent_level: Math.max(0, c.indent_level - 1) });
     }
+  },
+
+  moveTask: async (sourceId, targetId, edge) => {
+    const s = get();
+    if (sourceId === targetId) return;
+    const byId = new Map(s.tasks.map((t) => [t.id, t]));
+    const source = byId.get(sourceId);
+    if (!source) return;
+    // 被拖任务带整棵子树;不能落到自己的子孙上(否则成环)
+    const descSet = new Set(descendantIds(s.tasks, sourceId));
+    if (descSet.has(targetId)) return;
+
+    // 1) 用可见渲染顺序定位「落点下面那条」待办,决定新层级/父级
+    const visible = selectVisibleTasks({ tasks: s.tasks, view: s.view, sortMode: s.sortMode });
+    const visRest = visible.filter((t) => t.id !== sourceId && !descSet.has(t.id));
+    const tIdx = visRest.findIndex((t) => t.id === targetId);
+    if (tIdx === -1) return;
+    const insertAt = edge === "bottom" ? tIdx + 1 : tIdx;
+    const below = visRest[insertAt] ?? null; // 下面那条;落到末尾则无 → 顶层
+    const newParentId = below ? below.parent_id : null;
+    const newLevel = below ? below.indent_level : 0;
+    const delta = newLevel - source.indent_level;
+
+    // 2) 全局顺序里把 source「子树块」整体移到 below 之前(无 below 则移到末尾)
+    const flat = [...s.tasks].sort((a, b) => a.order_index - b.order_index);
+    // 块 = source 在前,子孙按现有顺序在后(不依赖 order_index 是否严格 DFS 连续)
+    const block = [sourceId, ...flat.filter((t) => descSet.has(t.id)).map((t) => t.id)];
+    const blockSet = new Set(block);
+    const rest = flat.filter((t) => !blockSet.has(t.id)).map((t) => t.id);
+    let pos = below ? rest.indexOf(below.id) : rest.length;
+    if (pos === -1) pos = rest.length;
+    const newIds = [...rest.slice(0, pos), ...block, ...rest.slice(pos)];
+
+    // 3) 落库:先改 source(及子孙)的层级/父级,再整体重排 order_index
+    await s.patchTask({
+      id: sourceId,
+      parent_id: newParentId ?? "",
+      indent_level: newLevel,
+    });
+    if (delta !== 0) {
+      for (const cid of descSet) {
+        const c = get().tasks.find((t) => t.id === cid);
+        if (c) {
+          await get().patchTask({
+            id: cid,
+            indent_level: Math.max(0, Math.min(6, c.indent_level + delta)),
+          });
+        }
+      }
+    }
+    await get().reorderTasks(newIds);
   },
 
   reorderTasks: async (ids) => {

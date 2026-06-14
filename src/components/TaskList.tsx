@@ -4,7 +4,6 @@ import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/ad
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import { ArrowUpDown, Check, Trash2 } from "lucide-react";
 import { useAppStore, selectVisibleTasks } from "../store/useAppStore";
-import { reorderIds } from "../lib/dnd";
 import { SORT_OPTIONS } from "../lib/sort";
 import { t } from "../lib/i18n";
 import TaskItem from "./TaskItem";
@@ -27,32 +26,28 @@ export default function TaskList() {
   const groups = useAppStore((s) => s.groups);
   const sortMode = useAppStore((s) => s.sortMode);
   const setSortMode = useAppStore((s) => s.setSortMode);
-  const reorderTasks = useAppStore((s) => s.reorderTasks);
+  const moveTask = useAppStore((s) => s.moveTask);
   const clearCompleted = useAppStore((s) => s.clearCompleted);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
   const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
   const now = useNowTick();
 
-  // 任务拖拽重排:把可见列表的移动映射回全局 order_index 顺序
+  // 任务拖拽:重排 + 改父级(落点「下面那条」待办决定新层级)
   useEffect(() => {
     return monitorForElements({
       canMonitor: ({ source }) => source.data.type === "task",
       onDrop: ({ source, location }) => {
         const target = location.current.dropTargets[0];
         if (!target) return;
-        const all = [...useAppStore.getState().tasks].sort(
-          (a, b) => a.order_index - b.order_index,
-        );
-        const ids = reorderIds(
-          all.map((t) => t.id),
+        const edge = extractClosestEdge(target.data);
+        void moveTask(
           source.data.id as string,
           target.data.id as string,
-          extractClosestEdge(target.data),
+          edge === "top" ? "top" : "bottom",
         );
-        void reorderTasks(ids);
       },
     });
-  }, [reorderTasks]);
+  }, [moveTask]);
 
   const visible = selectVisibleTasks({ tasks, view, sortMode });
   const title =
