@@ -31,7 +31,8 @@
         "enable": true,
         "scope": [
           "$HOME/AppData/Roaming/MinimalTodoApp/note-images/**",
-          "$HOME/AppData/Roaming/MinimalTodoApp/group-icons/**"
+          "$HOME/AppData/Roaming/MinimalTodoApp/group-icons/**",
+          "$HOME/AppData/Roaming/MinimalTodoApp/clipboard-images/**"
         ]
       }
     }

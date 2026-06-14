@@ -16,6 +16,7 @@ import QuickAdd from "./components/QuickAdd";
 import QuadrantView from "./components/views/QuadrantView";
 import TagBoardView from "./components/views/TagBoardView";
 import NotesView from "./components/views/NotesView";
+import ClipboardView from "./components/views/ClipboardView";
 import CalendarView from "./components/views/CalendarView";
 import Toasts from "./components/ui/Toasts";
 import { ConfirmHost } from "./components/ui/ConfirmDialog";
@@ -297,7 +298,7 @@ export default function App() {
     window.addEventListener("mouseup", up);
   };
 
-  const calOpen = scheduleOpen && view.kind !== "notes";
+  const calOpen = scheduleOpen && view.kind !== "notes" && view.kind !== "clipboard";
 
   return (
     // key=language:切换语言时整树重建,所有 t() 文案即时刷新。
@@ -331,6 +332,8 @@ export default function App() {
               </div>
             ) : view.kind === "notes" ? (
               <NotesView />
+            ) : view.kind === "clipboard" ? (
+              <ClipboardView />
             ) : view.kind === "group" ? (
               // 具体标签:第二侧边栏常驻 + 该标签的任务列表
               <div className="flex min-h-0 flex-1">

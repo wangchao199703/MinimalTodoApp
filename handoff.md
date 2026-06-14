@@ -143,3 +143,32 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 - **验证**:`npm run build` + `cargo check` 均过。未升版本(2.0.0)。
 - **下一步可选**:目前系统通知点击无跳转动作(纯展示);若要点通知唤起主窗口/定位任务,可加 `onAction` 监听 + `window::show_main`。是否做交用户定。
 - **运行时验证点**:跑起来 → 建一个开了周期提醒、间隔很短(如 1 分钟)的待办 → 最小化窗口 → 等提醒触发 → 看 Windows 右下角是否弹系统通知;再不最小化时确认只弹 app 内 toast、不弹系统通知。
+
+---
+
+## 交接:侧栏剪贴板功能(搬迁 ShellPicker · v2.0.0)
+
+**背景**:把 ShellPicker(`D:\BaiduSyncdisk\code\ShellPicker\app`,只读参考)的剪贴板核心搬进本 app 侧栏。
+
+**已完成(前后端)**:
+- 后端:`clipboard.rs`(监听,默认开启)、`database.rs`(迁移 v4 三表 + `clipboard_images_dir()` + `clip_insert`/`clip_latest_hash`)、`commands.rs`(剪贴板读取/删除/置顶/标签 CRUD/打标签 + `get_clip_impl`)、`models.rs`(ClipItem/ClipTag/NewClip)、`lib.rs`(注册模块/start_watching/11 命令)、`Cargo.toml`、`tauri.conf.json`(asset 作用域)。
+- 前端:`views/ClipboardView.tsx`、`tauri-ipc.ts`、`useAppStore.ts`(clipboard 视图 + 状态 + clip-added 监听 + clipToTask/clipToNote find-or-create)、`Sidebar.tsx`(入口 + 默认顺序 + 老顺序补位)、`App.tsx`、`i18n.ts`。
+
+**关键设计**:
+- 数据根目录出口集中在 `database::clipboard_images_dir()`(从 `data_dir()` 推导),任务2「数据位置可配置」时只改这一处的根即可。
+- 剪贴板标签独立成套(`clip_tags_def`),不复用待办「标签/分组」(groups),互不干扰。
+- clips 用自增整型主键(append-only 高频写入),与 app 其余 UUID 表无引用关系。
+- 「剪切板」待办标签/便签分组用 find-or-create(兼容中英名),参照 store 既有 `importNotesToImportGroup`。
+- `clip-added` 监听在模块层注册一次(`setupClipboardListener`,仅主窗口),避免 StrictMode/HMR 丢监听或重复插入。
+
+**验证状态**:`npm run build` + `cargo check` + `cargo test --lib`(39 passed)全过。未升版本(2.0.0)。**未运行 tauri dev**(本机多 worktree 并行,按任务要求不启动 dev、不 kill 进程)。
+
+**需运行时验证点(交用户走查)**:
+1. 复制一段文本 / 一张图片 → 切到侧栏「剪切板」,看是否实时进列表(文本显示文本、图片显示缩略图);连续复制同一内容只记一次。
+2. 剪贴项右键「加入待办」→ 待办里出现该条且打了「剪切板」标签(标签看板里有「剪切板」标签);右键「加入便签」→ 便签「剪切板」分组下出现该便签(图片便签能显示图)。
+3. 第二侧栏:新建剪切板标签、给剪贴项打标签、点标签过滤、改名/改色/删标签;侧栏宽度拖动/收起持久化。
+4. 侧栏顺序:新用户默认 所有待办/已完成/标签/四象限/剪切板/便签;老用户(已有 sidebar_order)升级后「剪切板」补位到四象限后、便签前,既有相对顺序不乱;导航项仍可拖动重排并持久化。
+
+**未决/取舍**:
+- 监听用 `clipboard-rs`(ShellPicker 用名,crate 名带连字符);默认开启(有意覆盖「新功能默认关」约定,用户明确要默认开)。当前未做「关闭监听」开关——如需可加设置项 + 监听线程读 settings 判断是否记录。
+- 列表上限 500 条(`get_clips` LIMIT 500),未做自动清理/容量上限 GC,后续可加。

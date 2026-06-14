@@ -4,6 +4,7 @@ import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/ad
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import {
   CheckCircle2,
+  Clipboard,
   Inbox,
   Kanban,
   LayoutGrid,
@@ -23,13 +24,22 @@ function viewKey(v: View): string {
   return v.kind === "group" ? `group:${v.groupId}` : v.kind;
 }
 
-/** 可自由拖动排序的五个内置导航项(顺序持久化在 settings.sidebar_order) */
-const NAV_KEYS = ["all", "quadrant", "tagboard", "notes", "completed"] as const;
+/**
+ * 可自由拖动排序的内置导航项(顺序持久化在 settings.sidebar_order)。
+ * DEFAULT_ORDER 即新用户的默认顺序:所有待办、已完成、标签、四象限、剪切板、便签。
+ * NAV_KEYS 仅作「合法键集合」用(成员与 DEFAULT_ORDER 相同,顺序不参与默认值)。
+ */
+const DEFAULT_ORDER = ["all", "completed", "tagboard", "quadrant", "clipboard", "notes"] as const;
+const NAV_KEYS = DEFAULT_ORDER;
 type NavKey = (typeof NAV_KEYS)[number];
 
 /** 内置项图标颜色默认无色(单色),由用户右键自定义,持久化在 settings.nav_color_<key> */
 
-/** 解析持久化顺序:过滤未知键、去重,缺失的按内置默认顺序补全(向后兼容) */
+/**
+ * 解析持久化顺序:过滤未知键、去重;缺失的键(如老用户没有「剪切板」)按 DEFAULT_ORDER
+ * 的相对位置「补位」回去——即把缺失键插到「其在默认顺序里的后继键」之前,
+ * 没有后继则追加末尾。这样新增的剪切板会落在四象限之后、便签之前,而非粗暴塞到最后。
+ */
 function parseNavOrder(raw: string | undefined): NavKey[] {
   const known = new Set<string>(NAV_KEYS);
   const seen = new Set<string>();
@@ -40,7 +50,21 @@ function parseNavOrder(raw: string | undefined): NavKey[] {
       seen.add(k);
     }
   }
-  for (const k of NAV_KEYS) if (!seen.has(k)) result.push(k);
+  // 按默认顺序补全缺失键,插到其默认「后继且已存在」的键之前(保留老用户既有相对顺序)
+  for (let i = 0; i < DEFAULT_ORDER.length; i++) {
+    const k = DEFAULT_ORDER[i];
+    if (seen.has(k)) continue;
+    let insertAt = result.length;
+    for (let j = i + 1; j < DEFAULT_ORDER.length; j++) {
+      const idx = result.indexOf(DEFAULT_ORDER[j]);
+      if (idx !== -1) {
+        insertAt = idx;
+        break;
+      }
+    }
+    result.splice(insertAt, 0, k);
+    seen.add(k);
+  }
   return result;
 }
 
@@ -121,6 +145,7 @@ export default function Sidebar() {
   const groups = useAppStore((s) => s.groups);
   const tasks = useAppStore((s) => s.tasks);
   const notes = useAppStore((s) => s.notes);
+  const clips = useAppStore((s) => s.clips);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
@@ -237,6 +262,20 @@ export default function Sidebar() {
             color={navColor("tagboard")}
             onContextMenu={(e) => openMenu(e, "tagboard")}
             onClick={() => setView({ kind: "tagboard" })}
+          />
+        );
+      case "clipboard":
+        // 「剪切板」:切到剪贴板视图,该视图展开第二侧边栏(剪切板标签)+ 剪贴项列表
+        return (
+          <NavRow
+            icon={<Clipboard size={14} className="shrink-0" />}
+            label={t("S.X.Clipboard")}
+            count={clips.length}
+            active={activeKey === "clipboard"}
+            collapsed={collapsed}
+            color={navColor("clipboard")}
+            onContextMenu={(e) => openMenu(e, "clipboard")}
+            onClick={() => setView({ kind: "clipboard" })}
           />
         );
       case "notes":

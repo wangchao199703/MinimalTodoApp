@@ -106,6 +106,31 @@ export interface UpdateNoteRequest {
   group_id?: string;
 }
 
+/** 剪贴板记录(字段与 Rust serde 输出 snake_case 一致) */
+export interface ClipItem {
+  id: number;
+  /** "text" | "image" */
+  kind: "text" | "image";
+  text: string | null;
+  /** 图片绝对路径(asset 协议读原图用) */
+  image_path: string | null;
+  /** data:image/png;base64,... 内嵌缩略图(列表始终可渲染) */
+  thumbnail_b64: string | null;
+  hash: string;
+  /** 毫秒时间戳 */
+  created_at: number;
+  pinned: boolean;
+  /** 关联的剪贴板标签 id */
+  tag_ids: number[];
+}
+
+/** 剪贴板标签(独立于待办标签) */
+export interface ClipTag {
+  id: number;
+  name: string;
+  color: string;
+}
+
 export const ipc = {
   getGroups: () => invoke<Group[]>("get_groups"),
   createGroup: (name: string) => invoke<Group>("create_group", { name }),
@@ -158,4 +183,19 @@ export const ipc = {
   openSettingsWindow: () => invoke<void>("open_settings_window"),
   /** 恢复默认设置(保留语言) */
   resetSettings: () => invoke<void>("reset_settings"),
+
+  // ---- 剪贴板 ----
+  getClips: () => invoke<ClipItem[]>("get_clips"),
+  deleteClip: (id: number) => invoke<void>("delete_clip", { id }),
+  pinClip: (id: number, pinned: boolean) => invoke<void>("pin_clip", { id, pinned }),
+  getClipTags: () => invoke<ClipTag[]>("get_clip_tags"),
+  createClipTag: (name: string) => invoke<ClipTag>("create_clip_tag", { name }),
+  renameClipTag: (id: number, name: string) => invoke<void>("rename_clip_tag", { id, name }),
+  setClipTagColor: (id: number, color: string) =>
+    invoke<void>("set_clip_tag_color", { id, color }),
+  deleteClipTag: (id: number) => invoke<void>("delete_clip_tag", { id }),
+  addClipTag: (clipId: number, tagId: number) =>
+    invoke<void>("add_clip_tag", { clip_id: clipId, tag_id: tagId }),
+  removeClipTag: (clipId: number, tagId: number) =>
+    invoke<void>("remove_clip_tag", { clip_id: clipId, tag_id: tagId }),
 };

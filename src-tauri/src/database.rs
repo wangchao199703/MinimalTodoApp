@@ -12,6 +12,15 @@ pub fn data_dir() -> PathBuf {
     PathBuf::from(appdata).join("MinimalTodoApp")
 }
 
+/// 剪贴板图片目录,与 note-images/group-icons 同级,从「数据根目录」(data_dir)推导。
+/// 注:后续若让数据位置可配置(任务2),只需把这里的根从 data_dir() 换成集中配置的
+/// 数据根即可,调用方都走这一个出口,无需四处改路径。
+pub fn clipboard_images_dir() -> PathBuf {
+    let dir = data_dir().join("clipboard-images");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
 pub fn init() -> rusqlite::Result<Connection> {
     let dir = data_dir();
     std::fs::create_dir_all(&dir).expect("无法创建数据目录");
@@ -93,6 +102,28 @@ fn create_inbox_group(conn: &Connection) -> rusqlite::Result<String> {
 #[cfg(test)]
 pub(crate) fn migrate_for_test(conn: &Connection) -> rusqlite::Result<()> {
     migrate(conn)
+}
+
+// ---- 剪贴板低层写入(供监听线程与命令共用)----
+
+/// 最近一条剪贴记录的 hash,用于连续复制去重
+pub fn clip_latest_hash(conn: &Connection) -> Option<String> {
+    conn.query_row("SELECT hash FROM clips ORDER BY id DESC LIMIT 1", [], |r| r.get(0))
+        .ok()
+}
+
+/// 插入一条剪贴记录,返回新行 id
+pub fn clip_insert(conn: &Connection, c: &crate::models::NewClip) -> rusqlite::Result<i64> {
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0);
+    conn.execute(
+        "INSERT INTO clips (kind, text, image_path, thumbnail_b64, hash, created_at, pinned)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0)",
+        rusqlite::params![c.kind, c.text, c.image_path, c.thumbnail_b64, c.hash, now_ms],
+    )?;
+    Ok(conn.last_insert_rowid())
 }
 
 /// 版本化迁移:user_version 记录当前模式版本,只向前追加
@@ -196,6 +227,42 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         )?;
     }
 
+    if version < 4 {
+        // 剪贴板:后台监听系统剪贴板,文本/图片入库;剪贴板标签独立成套(clip_tags 关联)。
+        // clips 用自增整型主键(append-only 高频写入,无需跨表 UUID 引用)。
+        conn.execute_batch(
+            r#"
+            BEGIN;
+            CREATE TABLE IF NOT EXISTS clips (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                kind          TEXT    NOT NULL,
+                text          TEXT,
+                image_path    TEXT,
+                thumbnail_b64 TEXT,
+                hash          TEXT    NOT NULL,
+                created_at    INTEGER NOT NULL,
+                pinned        INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE INDEX IF NOT EXISTS idx_clips_created ON clips(created_at DESC);
+
+            CREATE TABLE IF NOT EXISTS clip_tags_def (
+                id    INTEGER PRIMARY KEY AUTOINCREMENT,
+                name  TEXT NOT NULL UNIQUE,
+                color TEXT NOT NULL DEFAULT ''
+            );
+
+            CREATE TABLE IF NOT EXISTS clip_tags (
+                clip_id INTEGER NOT NULL,
+                tag_id  INTEGER NOT NULL,
+                PRIMARY KEY (clip_id, tag_id)
+            );
+
+            PRAGMA user_version = 4;
+            COMMIT;
+            "#,
+        )?;
+    }
+
     Ok(())
 }
 
@@ -214,10 +281,10 @@ mod tests {
     #[test]
     fn migrate_is_idempotent() {
         let conn = mem_db();
-        // 再跑一次不应报错(版本已是 3,各分支跳过)
+        // 再跑一次不应报错(版本已是 4,各分支跳过)
         migrate(&conn).unwrap();
         let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 3);
+        assert_eq!(v, 4);
     }
 
     #[test]

@@ -1,3 +1,4 @@
+mod clipboard;
 mod commands;
 mod database;
 mod import;
@@ -38,6 +39,8 @@ pub fn run() {
         .setup(|app| {
             window::setup_tray(app.handle())?;
             window::setup_dock(app.handle());
+            // 后台剪贴板监听(默认开启):独立线程跑阻塞式 watcher,变化即入库 + emit
+            clipboard::start_watching(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -72,6 +75,16 @@ pub fn run() {
             commands::save_group_icon,
             commands::list_group_icons,
             commands::export_file,
+            commands::get_clips,
+            commands::delete_clip,
+            commands::pin_clip,
+            commands::get_clip_tags,
+            commands::create_clip_tag,
+            commands::rename_clip_tag,
+            commands::set_clip_tag_color,
+            commands::delete_clip_tag,
+            commands::add_clip_tag,
+            commands::remove_clip_tag,
             window::set_acrylic,
             window::set_autostart,
             window::get_autostart,

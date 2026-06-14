@@ -87,3 +87,13 @@
 - **按窗口可见性区分**:仅当窗口 `!isVisible() || isMinimized()`(app 内 toast 看不见)时才发 OS 通知,可见时只保留 toast 避免重复打扰;窗口状态获取失败时保守发(保证「最小化必弹」不漏)。
 - 通知标题 = `S.Fmt.ReminderToastTitle`(「待办:{title}」),正文对齐旧版气泡(`S.Fmt.ReminderMsgWithDue` 带截止 / `S.Fmt.ReminderMsg` + 间隔 `IntervalHours`/`IntervalMinutes`)。首次发通知前按需请求权限(权限结果缓存,避免每次 IPC)。失败静默,不影响提醒主流程。
 - 验证:`npm run build` 通过,`cargo check --manifest-path src-tauri/Cargo.toml` 通过(`tauri-plugin-notification v2.3.3` 编入)。版本号保持 2.0.0。
+
+## v2.0.0 — 侧栏新增剪贴板(搬迁 ShellPicker)
+
+- **后台剪贴板监听(默认开启)**:新增 `src-tauri/src/clipboard.rs`,用 `clipboard-rs` 在独立线程跑阻塞式 watcher(主线程不阻塞),系统剪贴板一变化即入库——文本直接存,图片存 PNG 到 `%AppData%\MinimalTodoApp\clipboard-images\` + 库存绝对路径 + 内嵌 base64 缩略图;按「与上一条 hash 相同则跳过」去重;emit `clip-added` 让前端实时插入。移植自 ShellPicker `clipboard.rs`,逻辑/去重一致。
+- **存储**:`database.rs` 迁移 **v4** 新增 `clips`(自增整型主键,append-only)、`clip_tags_def`(剪贴板标签,独立于待办标签)、`clip_tags`(关联)三表;图片目录经新增的 `clipboard_images_dir()` 从 `data_dir()` 推导(集中出口,为后续「数据位置可配置」预留)。`tauri.conf.json` asset 作用域加 `clipboard-images/**`。
+- **剪贴板视图 + 第二侧栏**:新增 `view.kind==="clipboard"` 与 `ClipboardView.tsx`——第二侧栏(剪切板标签:全部入口 + 各标签,可点选过滤、双击改名、右键改色/删,可拖宽/收起,复用便签/标签第二侧栏版式)+ 剪贴项列表(文本/图片缩略图 + 标签点 + 置顶/删除 + 右键菜单)。
+- **右键加入待办 / 便签**:剪贴项右键「加入待办」用文本建待办并打「剪切板」待办标签(分组没有则 find-or-create,兼容中英);「加入便签」把内容建成便签放「剪切板」便签分组(没有则 find-or-create);图片项加入便签时正文用 Markdown 图片引用 asset 路径。
+- **侧栏入口 + 重排**:`Sidebar.tsx` 加「剪切板」导航项;默认顺序改为 所有待办 / 已完成 / 标签 / 四象限 / 剪切板 / 便签。导航项仍可拖动排序且持久化;老用户已有顺序里没有「剪切板」时,按默认顺序的相对位置「补位」插入(落在四象限后、便签前),不丢失既有排序。
+- **依赖**:`Cargo.toml` 加 `clipboard-rs=0.3.4`、`sha2`、`base64`、`image(png)`、`anyhow`;`time` 仍钉 0.3.47,无 E0119 冲突。
+- 验证:`npm run build`(tsc 严格)+ `cargo check` + `cargo test --lib`(39 passed,含 4 个新测试)全过。版本保持 2.0.0。

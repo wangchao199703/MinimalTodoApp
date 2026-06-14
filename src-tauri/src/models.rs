@@ -121,3 +121,40 @@ pub struct UpdateGroupRequest {
     pub icon_image: Option<String>,
     pub is_collapsed: Option<bool>,
 }
+
+/// 剪贴板记录(后台监听系统剪贴板自动入库)。
+/// 文本类直接存 text;图片类把 PNG 存到 clipboard-images/ 目录,image_path 存绝对路径,
+/// thumbnail_b64 内嵌缩略图(data: 形式,前端始终可渲染,不依赖 asset 作用域)。
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClipItem {
+    pub id: i64,
+    /// "text" | "image"
+    pub kind: String,
+    pub text: Option<String>,
+    pub image_path: Option<String>,
+    pub thumbnail_b64: Option<String>,
+    /// 内容 SHA256,用于「与上一条相同则跳过」去重
+    pub hash: String,
+    /// 毫秒时间戳(剪贴板项高频、轻量,沿用 ShellPicker 的整型时间)
+    pub created_at: i64,
+    pub pinned: bool,
+    /// 关联的剪贴板标签 id 列表(由 clip_tags 填充)
+    pub tag_ids: Vec<i64>,
+}
+
+/// 剪贴板标签(独立于待办「标签/分组」,自成一套,挂在剪贴板第二侧栏)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClipTag {
+    pub id: i64,
+    pub name: String,
+    pub color: String,
+}
+
+/// 待插入的新剪贴记录(监听线程构造)
+pub struct NewClip {
+    pub kind: String,
+    pub text: Option<String>,
+    pub image_path: Option<String>,
+    pub thumbnail_b64: Option<String>,
+    pub hash: String,
+}

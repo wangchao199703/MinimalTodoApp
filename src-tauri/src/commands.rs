@@ -756,6 +756,198 @@ pub fn list_group_icons() -> Vec<String> {
     entries.into_iter().map(|(_, n)| n).collect()
 }
 
+// ---------- 剪贴板 ----------
+//
+// 剪贴项由后台监听线程写入(见 clipboard.rs);这里只提供读取/删除/打标签/置顶,
+// 以及把剪贴项「加入待办 / 加入便签」(find-or-create「剪切板」标签/分组)。
+
+fn row_to_clip(row: &Row) -> rusqlite::Result<ClipItem> {
+    Ok(ClipItem {
+        id: row.get("id")?,
+        kind: row.get("kind")?,
+        text: row.get("text")?,
+        image_path: row.get("image_path")?,
+        thumbnail_b64: row.get("thumbnail_b64")?,
+        hash: row.get("hash")?,
+        created_at: row.get("created_at")?,
+        pinned: row.get::<_, i64>("pinned")? != 0,
+        tag_ids: Vec::new(),
+    })
+}
+
+/// 给一批剪贴项批量填充 tag_ids(单次查询 clip_tags 后合并)
+fn attach_clip_tags(conn: &Connection, clips: &mut [ClipItem]) -> CmdResult<()> {
+    if clips.is_empty() {
+        return Ok(());
+    }
+    let mut map: HashMap<i64, Vec<i64>> = HashMap::new();
+    let mut stmt = conn.prepare("SELECT clip_id, tag_id FROM clip_tags").map_err(err)?;
+    let rows = stmt
+        .query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, i64>(1)?)))
+        .map_err(err)?;
+    for row in rows {
+        let (c, t) = row.map_err(err)?;
+        map.entry(c).or_default().push(t);
+    }
+    for clip in clips.iter_mut() {
+        if let Some(ts) = map.get(&clip.id) {
+            clip.tag_ids = ts.clone();
+        }
+    }
+    Ok(())
+}
+
+/// 取单条剪贴项(含 tag_ids),供监听线程入库后回读 emit
+pub(crate) fn get_clip_impl(conn: &Connection, id: i64) -> CmdResult<Option<ClipItem>> {
+    let mut clip = conn
+        .query_row("SELECT * FROM clips WHERE id = ?1", params![id], row_to_clip)
+        .ok();
+    if let Some(c) = clip.as_mut() {
+        attach_clip_tags(conn, std::slice::from_mut(c))?;
+    }
+    Ok(clip)
+}
+
+#[tauri::command]
+pub fn get_clips(db: State<Db>) -> CmdResult<Vec<ClipItem>> {
+    let conn = db.0.lock().map_err(err)?;
+    get_clips_impl(&conn)
+}
+
+pub(crate) fn get_clips_impl(conn: &Connection) -> CmdResult<Vec<ClipItem>> {
+    // 置顶在前,其余按时间倒序
+    let mut stmt = conn
+        .prepare("SELECT * FROM clips ORDER BY pinned DESC, id DESC LIMIT 500")
+        .map_err(err)?;
+    let rows = stmt.query_map([], row_to_clip).map_err(err)?;
+    let mut clips = rows.collect::<Result<Vec<_>, _>>().map_err(err)?;
+    attach_clip_tags(conn, &mut clips)?;
+    Ok(clips)
+}
+
+#[tauri::command]
+pub fn delete_clip(db: State<Db>, id: i64) -> CmdResult<()> {
+    let removed = {
+        let conn = db.0.lock().map_err(err)?;
+        delete_clip_impl(&conn, id)?
+    };
+    // 无其它记录引用的图片文件一并删除,避免幽灵文件
+    if let Some(path) = removed {
+        let _ = std::fs::remove_file(path);
+    }
+    Ok(())
+}
+
+/// 删除剪贴项(连带其标签关联);若是图片且无其它记录引用同一文件,返回该路径供删文件
+pub(crate) fn delete_clip_impl(conn: &Connection, id: i64) -> CmdResult<Option<String>> {
+    let image_path: Option<String> = conn
+        .query_row("SELECT image_path FROM clips WHERE id = ?1", params![id], |r| r.get(0))
+        .ok()
+        .flatten();
+    conn.execute("DELETE FROM clip_tags WHERE clip_id = ?1", params![id]).map_err(err)?;
+    conn.execute("DELETE FROM clips WHERE id = ?1", params![id]).map_err(err)?;
+    if let Some(path) = image_path {
+        let still: i64 = conn
+            .query_row("SELECT COUNT(*) FROM clips WHERE image_path = ?1", params![path], |r| r.get(0))
+            .map_err(err)?;
+        if still == 0 {
+            return Ok(Some(path));
+        }
+    }
+    Ok(None)
+}
+
+#[tauri::command]
+pub fn pin_clip(db: State<Db>, id: i64, pinned: bool) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("UPDATE clips SET pinned = ?1 WHERE id = ?2", params![pinned as i64, id])
+        .map_err(err)?;
+    Ok(())
+}
+
+// ---- 剪贴板标签 ----
+
+fn row_to_clip_tag(row: &Row) -> rusqlite::Result<ClipTag> {
+    Ok(ClipTag { id: row.get(0)?, name: row.get(1)?, color: row.get(2)? })
+}
+
+#[tauri::command]
+pub fn get_clip_tags(db: State<Db>) -> CmdResult<Vec<ClipTag>> {
+    let conn = db.0.lock().map_err(err)?;
+    get_clip_tags_impl(&conn)
+}
+
+pub(crate) fn get_clip_tags_impl(conn: &Connection) -> CmdResult<Vec<ClipTag>> {
+    let mut stmt = conn
+        .prepare("SELECT id, name, color FROM clip_tags_def ORDER BY name COLLATE NOCASE")
+        .map_err(err)?;
+    let rows = stmt.query_map([], row_to_clip_tag).map_err(err)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(err)
+}
+
+#[tauri::command]
+pub fn create_clip_tag(db: State<Db>, name: String) -> CmdResult<ClipTag> {
+    let conn = db.0.lock().map_err(err)?;
+    create_clip_tag_impl(&conn, &name)
+}
+
+pub(crate) fn create_clip_tag_impl(conn: &Connection, name: &str) -> CmdResult<ClipTag> {
+    // 同名已存在则复用(find-or-create)
+    conn.execute(
+        "INSERT OR IGNORE INTO clip_tags_def (name, color) VALUES (?1, '')",
+        params![name],
+    )
+    .map_err(err)?;
+    conn.query_row("SELECT id, name, color FROM clip_tags_def WHERE name = ?1", params![name], row_to_clip_tag)
+        .map_err(err)
+}
+
+#[tauri::command]
+pub fn rename_clip_tag(db: State<Db>, id: i64, name: String) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("UPDATE clip_tags_def SET name = ?1 WHERE id = ?2", params![name, id])
+        .map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn set_clip_tag_color(db: State<Db>, id: i64, color: String) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("UPDATE clip_tags_def SET color = ?1 WHERE id = ?2", params![color, id])
+        .map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn delete_clip_tag(db: State<Db>, id: i64) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("DELETE FROM clip_tags WHERE tag_id = ?1", params![id]).map_err(err)?;
+    conn.execute("DELETE FROM clip_tags_def WHERE id = ?1", params![id]).map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn add_clip_tag(db: State<Db>, clip_id: i64, tag_id: i64) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute(
+        "INSERT OR IGNORE INTO clip_tags (clip_id, tag_id) VALUES (?1, ?2)",
+        params![clip_id, tag_id],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command(rename_all = "snake_case")]
+pub fn remove_clip_tag(db: State<Db>, clip_id: i64, tag_id: i64) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute(
+        "DELETE FROM clip_tags WHERE clip_id = ?1 AND tag_id = ?2",
+        params![clip_id, tag_id],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -804,12 +996,15 @@ mod tests {
     // ---- 迁移 / 模式 ----
 
     #[test]
-    fn migration_sets_version_3_and_creates_tables() {
+    fn migration_sets_version_4_and_creates_tables() {
         let conn = mem_db();
         let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 3);
-        // 六张表都在
-        for t in ["groups", "tasks", "note_groups", "notes", "custom_themes", "settings"] {
+        assert_eq!(v, 4);
+        // 既有六表 + 剪贴板三表都在
+        for t in [
+            "groups", "tasks", "note_groups", "notes", "custom_themes", "settings",
+            "clips", "clip_tags_def", "clip_tags",
+        ] {
             let n: i64 = conn
                 .query_row(
                     "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",
@@ -1140,5 +1335,68 @@ mod tests {
         assert_eq!(patch(None), None);
         assert_eq!(patch(Some("".into())), Some(None));
         assert_eq!(patch(Some("x".into())), Some(Some("x".to_string())));
+    }
+
+    // ---- 剪贴板 ----
+
+    fn insert_text_clip(conn: &Connection, text: &str, hash: &str) -> i64 {
+        crate::database::clip_insert(
+            conn,
+            &NewClip {
+                kind: "text".into(),
+                text: Some(text.into()),
+                image_path: None,
+                thumbnail_b64: None,
+                hash: hash.into(),
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn clip_insert_list_and_latest_hash() {
+        let conn = mem_db();
+        insert_text_clip(&conn, "a", "ha");
+        let id_b = insert_text_clip(&conn, "b", "hb");
+        let clips = get_clips_impl(&conn).unwrap();
+        assert_eq!(clips.len(), 2);
+        // 默认按 id 倒序:最新的 b 在最前
+        assert_eq!(clips[0].id, id_b);
+        assert_eq!(clips[0].text.as_deref(), Some("b"));
+        assert_eq!(crate::database::clip_latest_hash(&conn).as_deref(), Some("hb"));
+    }
+
+    #[test]
+    fn clip_tag_crud_and_attach() {
+        let conn = mem_db();
+        let cid = insert_text_clip(&conn, "x", "h1");
+        let tag = create_clip_tag_impl(&conn, "工作").unwrap();
+        // 同名复用同一 id
+        assert_eq!(create_clip_tag_impl(&conn, "工作").unwrap().id, tag.id);
+        conn.execute(
+            "INSERT INTO clip_tags (clip_id, tag_id) VALUES (?1, ?2)",
+            params![cid, tag.id],
+        )
+        .unwrap();
+        let clips = get_clips_impl(&conn).unwrap();
+        assert_eq!(clips[0].tag_ids, vec![tag.id]);
+        assert_eq!(get_clip_tags_impl(&conn).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn delete_clip_drops_tag_links() {
+        let conn = mem_db();
+        let cid = insert_text_clip(&conn, "x", "h1");
+        let tag = create_clip_tag_impl(&conn, "t").unwrap();
+        conn.execute(
+            "INSERT INTO clip_tags (clip_id, tag_id) VALUES (?1, ?2)",
+            params![cid, tag.id],
+        )
+        .unwrap();
+        // 纯文本删除返回 None(无图片文件需清理)
+        assert_eq!(delete_clip_impl(&conn, cid).unwrap(), None);
+        let n: i64 = conn.query_row("SELECT COUNT(*) FROM clip_tags", [], |r| r.get(0)).unwrap();
+        assert_eq!(n, 0);
+        assert_eq!(get_clips_impl(&conn).unwrap().len(), 0);
     }
 }

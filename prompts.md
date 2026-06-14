@@ -610,3 +610,14 @@
 **提示词:** 新建待办的功能对齐 wpf,新建后上面弹窗,可以修改优先级、截止时间、周期提醒。
 - `addTask` 现返回创建的 `Task`(原 `Promise<void>` → `Promise<Task | undefined>`)。`QuickAdd.tsx` 在新建一条待办后,锚定底部输入栏弹出 `Popover`(复用 `ui/Popover`),内含优先级(高/中/低段控)/ 截止时间(复用 `DuePicker`)/ 周期提醒(复用 `ReminderPicker`),改动直接调 `setPriority`/`setDue`/`patchTask` 落到这条新任务上。非阻塞:输入框保持焦点可连续新建,ESC / 点外部 / 「完成」按钮关闭。
 - **可选/可跳过**:新增持久化设置 `quick_add_popup`(默认关闭,不改老用户行为),设置面板「待办」分区加开关;关闭时新建行为与原来完全一致。i18n 双语同步(`S.X.QuickSetTitle`/`QuickSetDone`/`QuickAddPopup`/`QuickAddPopupDesc`)。未升版本(2.0.0)。`(本轮)`
+
+---
+
+## 侧栏新增剪贴板功能(搬迁 ShellPicker · v2.0.0)
+
+**提示词:** 侧栏新增剪贴板功能,参考 ShellPicker 整个搬迁过来,有第二侧栏可放标签,剪切项右键加入待办或便签;导入待办打剪切板标签没有则创建,导入便签放剪切板分组没有则创建;并把侧栏顺序更新为 所有待办/已完成/标签/四象限/剪切板/便签。
+
+**本轮改动(移植自 ShellPicker `app/`,只读不改它):**
+- **后端**:新增 `src-tauri/src/clipboard.rs`(`clipboard-rs` 后台线程监听系统剪贴板,默认开启;文本入库、图片存 PNG 文件 + 内嵌缩略图 base64;与上一条 hash 相同则去重;emit `clip-added`)。`database.rs` 加迁移 **v4**(`clips` / `clip_tags_def` / `clip_tags` 三表)+ `clipboard_images_dir()`(从 `data_dir()` 推导,为任务2 数据位置可配置预留集中出口)+ `clip_insert`/`clip_latest_hash`。`commands.rs` 加剪贴板读取/删除/置顶/标签 CRUD/打标签命令;`models.rs` 加 `ClipItem`/`ClipTag`/`NewClip`;`lib.rs` 注册模块 + setup 里 `start_watching` + 注册 11 个命令。`Cargo.toml` 加 `clipboard-rs=0.3.4`/`sha2`/`base64`/`image(png)`/`anyhow`(time 仍 0.3.47,无冲突)。`tauri.conf.json` asset 作用域加 `clipboard-images/**`。
+- **前端**:新增 `src/components/views/ClipboardView.tsx`(第二侧栏=剪切板标签可过滤/改名/改色/删 + 剪贴项列表,右键加入待办/便签、打标签、置顶、删除)。`tauri-ipc.ts` 加类型与方法;`useAppStore.ts` 加 `clipboard` 视图、clips/clipTags/clipFilterTagId 状态、`clip-added` 模块层监听、clipToTask/clipToNote(find-or-create「剪切板」待办标签/便签分组)等动作;`Sidebar.tsx` 加「剪切板」入口 + 默认顺序改为 all/completed/tagboard/quadrant/clipboard/notes + 老用户持久化顺序按默认相对位置补位「剪切板」;`App.tsx` 渲染 ClipboardView(日历不在此视图弹出);i18n 双语补键。
+- 验证:`npm run build`(tsc 严格)通过;`cargo check` + `cargo test --lib`(39 passed,含 4 个新剪贴板/迁移测试)通过。未升版本(2.0.0)。

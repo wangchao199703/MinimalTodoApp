@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import {
   ipc,
+  type ClipItem,
+  type ClipTag,
   type Group,
   type Note,
   type NoteGroup,
@@ -26,7 +28,7 @@ import {
   type CustomDesign,
   type PriorityStyle,
 } from "../lib/themes";
-import { setLang, type Lang } from "../lib/i18n";
+import { setLang, t, type Lang } from "../lib/i18n";
 import { applyFontSettings } from "../lib/font";
 import { ensureGroupIconDir } from "../components/ui/TagIcon";
 
@@ -37,6 +39,7 @@ export type View =
   | { kind: "quadrant" }
   | { kind: "tagboard" }
   | { kind: "notes" }
+  | { kind: "clipboard" }
   | { kind: "group"; groupId: string };
 
 export interface Toast {
@@ -61,6 +64,12 @@ interface AppState {
   notes: Note[];
   noteGroups: NoteGroup[];
   selectedNoteId: string | null;
+  /** 剪贴板记录(后台监听写入,init 拉取 + clip-added 事件追加) */
+  clips: ClipItem[];
+  /** 剪贴板标签 */
+  clipTags: ClipTag[];
+  /** 剪贴板第二侧栏当前选中的标签过滤(null = 全部) */
+  clipFilterTagId: number | null;
   scheduleOpen: boolean;
   /** 打开日历瞬间锁定的待办列宽度(点击时同步读取,确保待办不缩) */
   lockedTaskWidth: number;
@@ -139,6 +148,21 @@ interface AppState {
   patchGroup: (req: UpdateGroupRequest) => Promise<void>;
   removeGroup: (id: string) => Promise<void>;
   reorderGroups: (ids: string[]) => Promise<void>;
+
+  // ---- 剪贴板 ----
+  setClipFilterTag: (tagId: number | null) => void;
+  removeClip: (id: number) => Promise<void>;
+  toggleClipPin: (clip: ClipItem) => Promise<void>;
+  addClipTag: (name: string) => Promise<void>;
+  renameClipTag: (id: number, name: string) => Promise<void>;
+  setClipTagColor: (id: number, color: string) => Promise<void>;
+  removeClipTag: (id: number) => Promise<void>;
+  /** 给剪贴项打/取消标签 */
+  toggleClipItemTag: (clipId: number, tagId: number) => Promise<void>;
+  /** 剪贴项「加入待办」:建待办并打「剪切板」标签(分组没有则创建) */
+  clipToTask: (clip: ClipItem) => Promise<void>;
+  /** 剪贴项「加入便签」:建便签放「剪切板」便签分组(没有则创建) */
+  clipToNote: (clip: ClipItem) => Promise<void>;
 }
 
 function replaceTask(tasks: Task[], next: Task): Task[] {
@@ -175,19 +199,27 @@ export const useAppStore = create<AppState>((set, get) => ({
   notes: [],
   noteGroups: [],
   selectedNoteId: null,
+  clips: [],
+  clipTags: [],
+  clipFilterTagId: null,
   scheduleOpen: false,
   lockedTaskWidth: 420,
 
   init: async () => {
-    const [tasks, groups, settings, notes, noteGroups] = await Promise.all([
+    const [tasks, groups, settings, notes, noteGroups, clips, clipTags] = await Promise.all([
       ipc.getTasks(),
       ipc.getGroups(),
       ipc.getSettings(),
       ipc.getNotes(),
       ipc.getNoteGroups(),
+      ipc.getClips(),
+      ipc.getClipTags(),
       // 预取分组自定义图标目录,确保侧栏首帧能解析 groupicon:// 图片
       ensureGroupIconDir(),
     ]);
+
+    // 后台监听到的新剪贴项:实时插到列表最前(模块层注册一次,避免 StrictMode/HMR 重复)
+    setupClipboardListener();
 
     const language: Lang = settings["language"] === "en" ? "en" : "zh-CN";
     setLang(language);
@@ -217,7 +249,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     // 恢复上次选中的视图(标签第二侧栏/具体标签已移除,具体标签回退到全部,标签看板保留)
     let view: View = { kind: "all" };
     const saved = settings["selected_group_id"];
-    if (saved === "completed" || saved === "quadrant" || saved === "tagboard" || saved === "notes")
+    if (
+      saved === "completed" ||
+      saved === "quadrant" ||
+      saved === "tagboard" ||
+      saved === "notes" ||
+      saved === "clipboard"
+    )
       view = { kind: saved };
 
     set({
@@ -234,6 +272,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       notes,
       noteGroups,
       selectedNoteId: notes[0]?.id ?? null,
+      clips,
+      clipTags,
       scheduleOpen: settings["schedule_open"] === "1",
       loaded: true,
     });
@@ -752,6 +792,106 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
     await ipc.reorderGroups(ids);
   },
+
+  // ---- 剪贴板 ----
+
+  setClipFilterTag: (clipFilterTagId) => set({ clipFilterTagId }),
+
+  removeClip: async (id) => {
+    await ipc.deleteClip(id);
+    set((s) => ({ clips: s.clips.filter((c) => c.id !== id) }));
+  },
+
+  toggleClipPin: async (clip) => {
+    const pinned = !clip.pinned;
+    await ipc.pinClip(clip.id, pinned);
+    // 置顶项排在最前(对齐后端 ORDER BY pinned DESC, id DESC)
+    set((s) => {
+      const next = s.clips.map((c) => (c.id === clip.id ? { ...c, pinned } : c));
+      return {
+        clips: [...next].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.id - a.id),
+      };
+    });
+  },
+
+  addClipTag: async (name) => {
+    const tag = await ipc.createClipTag(name);
+    set((s) => (s.clipTags.some((t) => t.id === tag.id) ? {} : { clipTags: [...s.clipTags, tag] }));
+  },
+
+  renameClipTag: async (id, name) => {
+    await ipc.renameClipTag(id, name);
+    set((s) => ({ clipTags: s.clipTags.map((t) => (t.id === id ? { ...t, name } : t)) }));
+  },
+
+  setClipTagColor: async (id, color) => {
+    await ipc.setClipTagColor(id, color);
+    set((s) => ({ clipTags: s.clipTags.map((t) => (t.id === id ? { ...t, color } : t)) }));
+  },
+
+  removeClipTag: async (id) => {
+    await ipc.deleteClipTag(id);
+    set((s) => ({
+      clipTags: s.clipTags.filter((t) => t.id !== id),
+      // 各剪贴项剔除该标签关联
+      clips: s.clips.map((c) => ({ ...c, tag_ids: c.tag_ids.filter((tid) => tid !== id) })),
+      clipFilterTagId: s.clipFilterTagId === id ? null : s.clipFilterTagId,
+    }));
+  },
+
+  toggleClipItemTag: async (clipId, tagId) => {
+    const clip = get().clips.find((c) => c.id === clipId);
+    if (!clip) return;
+    const has = clip.tag_ids.includes(tagId);
+    if (has) await ipc.removeClipTag(clipId, tagId);
+    else await ipc.addClipTag(clipId, tagId);
+    set((s) => ({
+      clips: s.clips.map((c) =>
+        c.id === clipId
+          ? { ...c, tag_ids: has ? c.tag_ids.filter((t) => t !== tagId) : [...c.tag_ids, tagId] }
+          : c,
+      ),
+    }));
+  },
+
+  clipToTask: async (clip) => {
+    // 图片项无文本:用占位标题(运行时极少触发,加入待办主要面向文本)
+    const title = (clip.text ?? "").trim() || "[图片]";
+    const s = get();
+    // find-or-create「剪切板」待办标签(兼容中英),参照 importNotesToImportGroup
+    let group =
+      s.groups.find((g) => g.name.trim() === "剪切板" || g.name.trim() === "Clipboard") ?? null;
+    if (!group) {
+      group = await ipc.createGroup(s.language === "en" ? "Clipboard" : "剪切板");
+      set((st) => ({ groups: [...st.groups, group as Group] }));
+    }
+    await get().addTask(title, { group_id: group.id });
+    get().pushToast(t("S.X.ClipAddedToTask"));
+  },
+
+  clipToNote: async (clip) => {
+    const s = get();
+    // find-or-create「剪切板」便签分组(兼容中英)
+    let group =
+      s.noteGroups.find((g) => g.name.trim() === "剪切板" || g.name.trim() === "Clipboard") ?? null;
+    if (!group) {
+      group = await ipc.createNoteGroup(s.language === "en" ? "Clipboard" : "剪切板");
+      set((st) => ({ noteGroups: [...st.noteGroups, group as NoteGroup] }));
+    }
+    // 图片项:正文用 Markdown 图片引用 asset 路径;文本项:正文=文本
+    const content =
+      clip.kind === "image" && clip.image_path
+        ? `![](${clip.image_path})`
+        : (clip.text ?? "");
+    const blank = await ipc.createNote(group.id);
+    const next = await ipc.updateNote({
+      id: blank.id,
+      content,
+      title: deriveTitle(content),
+    });
+    set((st) => ({ notes: [next, ...st.notes] }));
+    get().pushToast(t("S.X.ClipAddedToNote"));
+  },
 }));
 
 /**
@@ -759,6 +899,28 @@ export const useAppStore = create<AppState>((set, get) => ({
  * 不放进 React effect——避免 StrictMode/HMR/组件重挂导致监听丢失或重复,
  * 这是「设置窗口改了主窗口不实时刷新」的根因。主窗口与设置窗口都调用一次即可。
  */
+/**
+ * 后台剪贴板监听 → 前端实时插入。
+ * 模块层注册一次(不放 React effect,避免 StrictMode/HMR 丢监听或重复插入)。
+ * 只在主窗口生效:设置窗口不展示剪贴板,无需监听。
+ */
+let clipboardListenerSetup = false;
+function setupClipboardListener(): void {
+  if (clipboardListenerSetup) return;
+  if (getCurrentWindow().label === "settings") return;
+  clipboardListenerSetup = true;
+  void listen<ClipItem>("clip-added", (e) => {
+    const clip = e.payload;
+    useAppStore.setState((s) => {
+      if (s.clips.some((c) => c.id === clip.id)) return {} as Partial<AppState>;
+      // 新项插到「非置顶区」最前(置顶项始终在最上)
+      const pinned = s.clips.filter((c) => c.pinned);
+      const rest = s.clips.filter((c) => !c.pinned);
+      return { clips: [...pinned, clip, ...rest] };
+    });
+  });
+}
+
 let settingsSyncSetup = false;
 export function setupSettingsSync(): void {
   if (settingsSyncSetup) return;
