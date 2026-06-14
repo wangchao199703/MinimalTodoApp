@@ -776,7 +776,8 @@ body {
   height: 1.25rem;
   border-width: 1.5px;
   border-color: var(--muted-text);
-  margin-top: 0.1rem;
+  /* 居中对齐标题行(1.25rem):随勾选框尺寸自适应,调大调小圆心始终落在文字中线 */
+  margin-top: calc((1.25rem - var(--check-size, 1.25rem)) / 2);
 }
 .design-apple .task-check.is-done { border-color: var(--accent); }
 .design-apple .task-title { font-weight: 500; }
@@ -830,7 +831,7 @@ body {
   width: 1.5rem;
   height: 1.5rem;
   border-width: 2px;
-  margin-top: 0.05rem;
+  margin-top: calc((1.25rem - var(--check-size, 1.5rem)) / 2);
 }
 .design-cute .task-title { font-weight: 700; }
 .design-cute .task-tag {
@@ -947,7 +948,7 @@ body {
   border-radius: 3px;
   border-width: 1px;
   border-color: var(--muted-text);
-  margin-top: 0.15rem;
+  margin-top: calc((1.25rem - var(--check-size, 1.05rem)) / 2);
 }
 .design-notion .task-check .task-half { display: none; }
 .design-notion .task-check.is-indeterminate::after {
@@ -992,7 +993,7 @@ body {
   width: 1.25rem;
   height: 1.25rem;
   border-color: color-mix(in srgb, white 45%, var(--divider));
-  margin-top: 0.1rem;
+  margin-top: calc((1.25rem - var(--check-size, 1.25rem)) / 2);
 }
 .design-fluent .task-check .task-half {
   display: block;
@@ -1047,7 +1048,7 @@ body {
   border-radius: 0;
   border-width: 2px;
   border-color: var(--primary-text);
-  margin-top: 0.1rem;
+  margin-top: calc((1.25rem - var(--check-size, 1.25rem)) / 2);
 }
 .design-brutal .task-check.is-done { background: var(--accent); border-color: var(--primary-text); }
 .design-brutal .task-check .task-half { display: block; color: var(--primary-text); }

@@ -431,4 +431,8 @@
 - `themes.ts` 加 `DESIGN_PROGRESS_DEFAULT` 表(linear=count, apple/cute/fluent/frost/tinted=ring, notion=count, panel=bar, brutal=bar);`applyActiveDesign` 在进度覆盖为空(跟随版式)时采用该表 → 每个版式有自己的默认进度模式。`npm run build` 通过。`9f6c45c`
 
 **提示词:** 苹果、可爱、白玻、微色调、双层面板 参考流体,子任务前加竖线。
-- 把苹果原来的 1.5px hover 显现引导线改成与流体一致(**1px `--divider` 浅灰常驻**),并同样加给 可爱/纯净白玻/微色调/双层面板(合并到一条 `.design-* .task-item:not([data-level=0])::before` 规则)。`npm run build` 通过。`(本轮)`
+- 把苹果原来的 1.5px hover 显现引导线改成与流体一致(**1px `--divider` 浅灰常驻**),并同样加给 可爱/纯净白玻/微色调/双层面板(合并到一条 `.design-* .task-item:not([data-level=0])::before` 规则)。`npm run build` 通过。`f6338e1`
+
+**提示词:** 勾选框大小调整后,圆心没有和文字高度的中间对齐。
+- 根因:apple/cute/notion/fluent/brutal 用 `align-items: flex-start` + **固定 `margin-top`**,边距不随勾选框尺寸变,调大就把圆心顶偏(items-center 的 linear/frost/tinted/panel 靠 flex 居中,本就无此问题)。
+- 修法:5 套 flex-start 版式的固定 margin-top 改为 **`calc((1.25rem - var(--check-size, 版式默认尺寸)) / 2)`**——按标题行高(text-sm=1.25rem)居中,`var(--check-size, 默认)` 同时覆盖「跟随版式默认尺寸」与「自定义尺寸」两种情形,圆心恒落文字中线。`npm run build` 通过。`(本轮)`
