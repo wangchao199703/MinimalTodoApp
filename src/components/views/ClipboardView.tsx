@@ -247,6 +247,8 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
   const removeClipTag = useAppStore((s) => s.removeClipTag);
   const clearClipTagItems = useAppStore((s) => s.clearClipTagItems);
   const setClipItemTag = useAppStore((s) => s.setClipItemTag);
+  // 该分组下的剪贴项数量(与「默认」分组的计数显示保持一致)
+  const count = useAppStore((s) => s.clips.filter((c) => c.tag_ids.includes(tag.id)).length);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(tag.name);
@@ -329,6 +331,7 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
         >
           <Tag size={14} className="shrink-0" style={tag.color ? { color: tag.color } : undefined} />
           <span className="min-w-0 flex-1 truncate">{tag.name}</span>
+          <span className="text-xs text-sidebar-muted group-hover:hidden">{count}</span>
           <button
             title={t("S.Tag.Delete")}
             onClick={(e) => {
@@ -404,8 +407,24 @@ export default function ClipboardView() {
   const clipFilterTagId = useAppStore((s) => s.clipFilterTagId);
   const setClipFilterTag = useAppStore((s) => s.setClipFilterTag);
   const addClipTag = useAppStore((s) => s.addClipTag);
+  const setClipItemTag = useAppStore((s) => s.setClipItemTag);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
+
+  // 「默认」分组也作为放置目标:把剪贴项拖到「默认」= 移出当前分组(归回默认)
+  const defaultDropRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    const el = defaultDropRef.current;
+    if (!el) return;
+    return dropTargetForElements({
+      element: el,
+      canDrop: ({ source }) => source.data.type === CLIP_DRAG,
+      onDrop: ({ source }) => {
+        const clipId = source.data.clipId;
+        if (typeof clipId === "number") void setClipItemTag(clipId, null);
+      },
+    });
+  }, [setClipItemTag]);
 
   // 搜索关键词(仅前端过滤已加载列表,量小够用;参照 ShellPicker)
   const [query, setQuery] = useState("");
@@ -435,13 +454,19 @@ export default function ClipboardView() {
   const collapsed = settings["clip_sidebar_collapsed"] === "1";
   const toggleCollapsed = () => saveSetting("clip_sidebar_collapsed", collapsed ? "0" : "1");
 
-  // 过滤:标签筛选 + 文本搜索(标签匹配 c.tag_ids.includes,数据/类型对齐,打标签后能筛出)
+  // 过滤:分组筛选 + 文本搜索。null = 「默认」分组 = 未归入任何自定义分组的剪贴项;
+  // 选中某分组 = 该分组下的剪贴项。剪贴项单分组,移到别的分组后即从「默认」消失。
   const q = query.trim().toLowerCase();
   const filtered = clips.filter((c) => {
-    if (clipFilterTagId != null && !c.tag_ids.includes(clipFilterTagId)) return false;
+    if (clipFilterTagId == null) {
+      if (c.tag_ids.length > 0) return false; // 默认 = 未分组
+    } else if (!c.tag_ids.includes(clipFilterTagId)) {
+      return false;
+    }
     if (q && !(c.text ?? "").toLowerCase().includes(q)) return false;
     return true;
   });
+  const ungroupedCount = clips.filter((c) => c.tag_ids.length === 0).length;
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -450,7 +475,7 @@ export default function ClipboardView() {
           <div data-tauri-drag-region className="h-9 shrink-0" />
           <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-x-hidden overflow-y-auto p-1 pt-0">
             <button
-              title={t("S.X.ClipAll")}
+              title={t("S.X.ClipDefault")}
               onClick={() => setClipFilterTag(null)}
               className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
                 clipFilterTagId == null
@@ -497,6 +522,7 @@ export default function ClipboardView() {
           </div>
           <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-2 pt-0">
             <button
+              ref={defaultDropRef}
               onClick={() => setClipFilterTag(null)}
               className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium ${
                 clipFilterTagId == null
@@ -505,8 +531,8 @@ export default function ClipboardView() {
               }`}
             >
               <ClipboardIcon size={14} className="shrink-0" />
-              <span className="min-w-0 flex-1 truncate text-left">{t("S.X.ClipAll")}</span>
-              <span className="text-xs text-sidebar-muted">{clips.length}</span>
+              <span className="min-w-0 flex-1 truncate text-left">{t("S.X.ClipDefault")}</span>
+              <span className="text-xs text-sidebar-muted">{ungroupedCount}</span>
             </button>
             {clipTags.map((tg) => (
               <ClipTagRow key={tg.id} tag={tg} active={clipFilterTagId === tg.id} />

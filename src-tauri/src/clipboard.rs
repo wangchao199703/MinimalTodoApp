@@ -15,6 +15,9 @@ use clipboard_rs::{
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Emitter, Manager};
 
+/// 图片捕获开关:图片监听暂有问题,先停用(只记录文本)。修好后改回 true 即可恢复。
+const IMAGE_CAPTURE_ENABLED: bool = false;
+
 /// 启动剪贴板监听:在独立线程里运行阻塞式 watcher(主线程不受影响)。
 pub fn start_watching(app: AppHandle) {
     std::thread::spawn(move || {
@@ -57,7 +60,7 @@ impl ClipWatcher {
         // 就已经触发。此刻立即调 `has(Image)`/`get_image` 会读到「无图」,于是落进 text 分支
         // 被当文本吞掉 → 图片永远进不了列表。文本(CF_UNICODETEXT)一般同步渲染,所以不受影响。
         // 解决:短时轮询探测图片是否到位(最多约 250ms),到位再走图片分支,否则才回退文本。
-        if self.image_ready() {
+        if IMAGE_CAPTURE_ENABLED && self.image_ready() {
             self.handle_image()
         } else if let Ok(text) = self.ctx.get_text() {
             if text.trim().is_empty() {
