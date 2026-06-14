@@ -141,13 +141,14 @@ export function migrateDesign(saved: string | undefined): Design {
 // ============ 优先级展示(priority_style):与版式正交的「优先级怎么显示」轴 ============
 // 在 <html> 挂 prio-<key>。apple=复选框圆环着色+高优先级 ! / linear=行左 gutter 竖线 /
 // notion=标题文字着色+小圆点 / none=不展示。容器上的 data-pri / --pri 供 CSS 取用。
-export const PRIORITY_STYLES = ["apple", "linear", "notion", "none"] as const;
+export const PRIORITY_STYLES = ["apple", "linear", "signal", "notion", "none"] as const;
 export type PriorityStyle = (typeof PRIORITY_STYLES)[number];
 export const DEFAULT_PRIORITY_STYLE: PriorityStyle = "apple";
 
 export const PRIORITY_STYLE_LABEL_KEY: Record<PriorityStyle, string> = {
   apple: "S.X.Prio.Apple",
   linear: "S.X.Prio.Linear",
+  signal: "S.X.Prio.Signal",
   notion: "S.X.Prio.Notion",
   none: "S.X.Prio.None",
 };

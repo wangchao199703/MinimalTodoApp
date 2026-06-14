@@ -1101,3 +1101,6 @@ body {
 .prio-notion .task-item[data-pri="2"] .task-title { color: var(--warning-text); }
 
 /* 无:不展示优先级(基线已中性,无需额外规则) */
+
+/* 信号强度:左侧前置信号图标(低1/中2/高3 格),按 --pri 着色;勾选框环保持中性 */
+.prio-signal .task-pri-icon { display: flex; }

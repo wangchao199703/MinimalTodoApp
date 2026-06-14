@@ -11,6 +11,9 @@ import {
   Pencil,
   Pin,
   PinOff,
+  SignalHigh,
+  SignalLow,
+  SignalMedium,
   Trash2,
   X,
 } from "lucide-react";
@@ -37,6 +40,13 @@ export const PRIORITY_KEY: Record<number, string> = {
   1: "S.Priority.Low",
   2: "S.Priority.Medium",
   3: "S.Priority.High",
+};
+
+/** 优先级信号强度图标(「信号强度」优先级展示用,低 1 格 / 中 2 格 / 高 3 格) */
+const PRIORITY_ICON: Record<number, typeof SignalHigh> = {
+  1: SignalLow,
+  2: SignalMedium,
+  3: SignalHigh,
 };
 
 const DUE_CLASS: Record<string, string> = {
@@ -87,6 +97,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const [doneChildren, totalChildren] = childStats(tasks, task.id);
   const ds = dueState(task.due_date, task.is_completed, now);
   const group = task.group_id ? groups.find((g) => g.id === task.group_id) : null;
+  const PriIcon = PRIORITY_ICON[task.priority] ?? SignalMedium;
   // 半满态:有子任务且部分(非全部)完成,父本身未完成 —— 复选框显示「➖/圆点」
   const indeterminate =
     !task.is_completed && totalChildren > 0 && doneChildren > 0 && doneChildren < totalChildren;
@@ -134,6 +145,13 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
             closestEdge === "top" ? "-top-1" : "-bottom-1"
           }`}
         />
+      )}
+
+      {/* 优先级信号图标:仅「信号强度」优先级展示显示(CSS 控制),按 --pri 着色 */}
+      {!task.is_completed && (
+        <span className="task-pri-icon shrink-0" style={{ color: "var(--pri)" }}>
+          <PriIcon size={14} />
+        </span>
       )}
 
       <button

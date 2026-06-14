@@ -345,4 +345,7 @@
 - **回撤** 上一轮「优先级按版式寄生上色」提交(`git reset --hard` 去掉 8b0483b:含 cute 马卡龙/fluent 光晕/brutal 色块等)。
 - **新增「优先级展示」设置轴**(与版式正交,`<html>.prio-*`,4 选项):**苹果**(复选框圆环着色 + 高优先级标题后红 `!`)/ **极客**(行最左 2px gutter 竖线)/ **文档**(标题文字着色 高红中黄 + 小圆点)/ **无**(不展示)。
 - 解耦:基线勾选框环色改**中性** `--muted-text`(原为 `--pri`),去掉版式耦合的优先级指示(`.design-apple .task-pri-dot`、`.design-linear .task-pri-icon` 删除),TaskItem 移除信号图标元素 + 加 `.task-pri-mark`;优先级表达全部改由 `prio-*` 按 `data-pri`/`--pri` 叠加。
-- `themes.ts` 加 PRIORITY_STYLES + applyPriorityStyle/migratePriorityStyle;store priorityStyle 状态 + setter + init/initSettingsWindow 应用 + applyRemoteSetting 跨窗口同步;设置→通用 新增「优先级展示」选择器;i18n 双语 `S.X.Prio.*`;默认 apple。`npm run build` 通过。`(本轮)`
+- `themes.ts` 加 PRIORITY_STYLES + applyPriorityStyle/migratePriorityStyle;store priorityStyle 状态 + setter + init/initSettingsWindow 应用 + applyRemoteSetting 跨窗口同步;设置→通用 新增「优先级展示」选择器;i18n 双语 `S.X.Prio.*`;默认 apple。`npm run build` 通过。`29e1348`
+
+**提示词:** 优先级展示设置项加上移除的信号强度。
+- 「优先级展示」加回 **信号强度** 选项(原 linear 版式移除的 Signal 图标):TaskItem 重新加回 `task-pri-icon`(SignalLow/Med/High,按 `--pri` 着色,放复选框前);`prio-signal` 显示之、勾选框环保持中性。PRIORITY_STYLES 加 `signal`,i18n 双语 `S.X.Prio.Signal`。共 5 选项(苹果/极客/信号强度/文档/无)。`npm run build` 通过。`(本轮)`
