@@ -644,3 +644,6 @@
 - 根因:Windows 剪贴板「延迟渲染」竞态。`on_clipboard_change`(WM_CLIPBOARDUPDATE)往往在图片格式(CF_DIB/CF_PNG,尤其从 CF_BITMAP 合成的 DIB)真正落到剪贴板**之前**就触发,此刻 `has(ContentFormat::Image)`/`get_image` 读到「无图」,于是落进 text 分支被当文本吞掉。文本(CF_UNICODETEXT)同步渲染,所以文本正常、图片失败。逐行对照 ShellPicker 可用版,handle/handle_image 调用序列与库版本(clipboard-rs 0.3.4、image 0.25.10)完全一致,确认非移植丢行,而是该竞态在不同机器/复制源上的暴露差异。
 - 修复:新增 `image_ready()` 短时轮询(最多 5 次、退避 50ms,约 250ms 上限),以「has(Image) 且 get_image 真能取到」为最终判据;到位才走图片分支,否则才回退文本。不打补丁、不改前端、不动 commands/database。
 - 验证:`cargo check`(冷 target)通过。版本保持 2.0.0。
+## 剪贴板视图 5 项打磨(右键编辑/复制·拖拽打标签·标签过滤·单标签·搜索)
+
+剪切板右键可编辑/复制,编辑打开类便签的文本编辑器独立弹窗、不跳便签窗口、手动保存、未保存提示;剪切板项要能拖到标签打标签;打了标签在对应标签分组看不到;只能打一个标签;搜索功能没搬过来

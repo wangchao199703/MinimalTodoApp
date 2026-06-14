@@ -223,3 +223,32 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 3. 快速连续复制不同图片,均能捕获(竞态退避足够)。
 
 **取舍/风险**:250ms 上限是经验值,极慢的延迟渲染源理论上仍可能超时回退文本;真出现可调大轮询次数。每次图片复制最多多花约 250ms 在 watcher 线程(独立线程,不阻塞 UI),可接受。
+## 本轮(2026-06-15):剪贴板视图 5 项打磨
+
+**背景**:剪贴板视图(`ClipboardView.tsx` + 后台监听 `clipboard.rs`)已落地。本轮按用户反馈打磨 5 点:右键编辑/复制、拖拽打标签、标签过滤、单标签、搜索。**`clipboard.rs` 是另一 agent 的地盘,本轮全程未碰**。
+
+**做了什么**:
+1. 右键「复制」:`copy_clip` 命令(commands.rs)用 `clipboard-rs` 写回系统剪贴板(文本/图片)。
+2. 右键「编辑」:独立原生窗口 `clip-editor`(便签式 Markdown,左编辑右预览,手动保存,未保存关闭三选确认)。
+   - 建窗 `open_clip_editor_window`(**async**,避免主线程死锁);待编辑 id 经 `ClipEditorTarget(Mutex)` 暂存 + `take_clip_editor_target` 取走(不用 URL query);复用经 `clip-editor-target` 事件;保存经 `clip-updated` 回同步主窗口。
+   - 前端 `main.tsx` 按 label 路由到新组件 `ClipEditorWindow.tsx`;capabilities 加 `clip-editor` 窗口 + `allow-destroy`。
+3. 拖拽打标签:`ClipRow` 拖源(type `clip-item`)、标签行/收起按钮 dropTarget(`canDrop` 只认 `clip-item`),落下即单标签。
+4. 单标签:`set_clip_item_tag`(先清后写,至多 1);store `setClipItemTag` 替换 `toggleClipItemTag`;菜单加「无标签」清空项。
+5. 搜索:列表上方搜索框,按 `clip.text` 前端过滤(与标签筛选叠加)。
+
+**task3 过滤根因结论**:`main` 上菜单路径的过滤逻辑本就正确(number 比较、includes 对齐、乐观更新本地 tag_ids),无可复现 bug;本轮统一单标签后过滤与之一致,菜单/拖拽打标签后点该标签都能筛出。若用户仍复现「看不到」,优先怀疑后台监听把同内容重新入库成**新 id**(新项无标签),需结合 clipboard.rs owner 排查。
+
+**验证**:`npm run build`(tsc 严格)+ `cargo check` + `cargo test --lib`(40 passed)全过;time 仍 0.3.47;版本仍 2.0.0;未启动 dev。
+
+**运行时验证点**(需跑起来走查):
+1. 文本项右键「编辑」→ 弹独立窗口;改文字 → 关闭弹三选;点「保存并关闭」→ 主窗口该项文本更新;「不保存关闭」→ 不变;「取消」→ 留在编辑窗。点底部「保存」后直接关窗不应再弹确认。
+2. 右键「复制」:文本/图片项复制后,去别处 Ctrl+V 应得到该内容(注意会作为新项回到列表顶部)。
+3. 拖拽:把某剪贴项拖到第二侧栏某标签(展开/收起态都试)→ 打上该标签且替换原标签(单标签)。
+4. 单标签:右键标签菜单选 A 再选 B → 只剩 B;选「无标签」→ 清空。
+5. 过滤:打标签后点侧栏该标签 → 能筛出该项。
+6. 搜索:输入关键词 → 按文本过滤;清除恢复;与标签筛选可叠加。
+7. 图片项:右键无「编辑」(仅文本可编辑);编辑窗对图片项显示提示文案。
+
+**未决/取舍**:
+- 复制写回会触发后台监听把同内容重新入库置顶(与 ShellPicker 一致),可接受;若不想置顶需在 clipboard.rs 侧加「自写忽略」(非本轮范围)。
+- 编辑窗口载入用 `getClips()` 全量按 id 找(无单条命令),列表上限 500,量小可接受。

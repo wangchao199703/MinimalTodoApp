@@ -161,8 +161,10 @@ interface AppState {
   renameClipTag: (id: number, name: string) => Promise<void>;
   setClipTagColor: (id: number, color: string) => Promise<void>;
   removeClipTag: (id: number) => Promise<void>;
-  /** 给剪贴项打/取消标签 */
-  toggleClipItemTag: (clipId: number, tagId: number) => Promise<void>;
+  /** 单标签语义:给剪贴项设标签(再次点同标签=取消,点别的标签=替换);tagId 传 null 清空 */
+  setClipItemTag: (clipId: number, tagId: number | null) => Promise<void>;
+  /** 把剪贴项内容写回系统剪贴板(右键复制) */
+  copyClip: (clip: ClipItem) => Promise<void>;
   /** 剪贴项「加入待办」:建待办并打「剪切板」标签(分组没有则创建) */
   clipToTask: (clip: ClipItem) => Promise<void>;
   /** 剪贴项「加入便签」:建便签放「剪切板」便签分组(没有则创建) */
@@ -872,19 +874,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  toggleClipItemTag: async (clipId, tagId) => {
+  setClipItemTag: async (clipId, tagId) => {
     const clip = get().clips.find((c) => c.id === clipId);
     if (!clip) return;
-    const has = clip.tag_ids.includes(tagId);
-    if (has) await ipc.removeClipTag(clipId, tagId);
-    else await ipc.addClipTag(clipId, tagId);
+    // 单标签:再点当前已选标签 = 取消;tagId 为 null 也按清空处理
+    const next = tagId != null && !clip.tag_ids.includes(tagId) ? tagId : null;
+    // 后端单标签命令:先清该剪贴项全部关联,再(可选)写一个。tag_id<=0 = 清空
+    await ipc.setClipItemTag(clipId, next ?? 0);
     set((s) => ({
       clips: s.clips.map((c) =>
-        c.id === clipId
-          ? { ...c, tag_ids: has ? c.tag_ids.filter((t) => t !== tagId) : [...c.tag_ids, tagId] }
-          : c,
+        c.id === clipId ? { ...c, tag_ids: next == null ? [] : [next] } : c,
       ),
     }));
+  },
+
+  copyClip: async (clip) => {
+    await ipc.copyClip(clip.id);
+    get().pushToast(t("S.X.ClipCopied"));
   },
 
   clipToTask: async (clip) => {
@@ -951,6 +957,13 @@ function setupClipboardListener(): void {
       const rest = s.clips.filter((c) => !c.pinned);
       return { clips: [...pinned, clip, ...rest] };
     });
+  });
+  // 独立编辑窗口保存后:同步该剪贴项文本到主窗口列表
+  void listen<{ id: number; text: string }>("clip-updated", (e) => {
+    const { id, text } = e.payload;
+    useAppStore.setState((s) => ({
+      clips: s.clips.map((c) => (c.id === id ? { ...c, text } : c)),
+    }));
   });
 }
 

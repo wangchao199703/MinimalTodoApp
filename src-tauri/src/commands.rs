@@ -948,6 +948,67 @@ pub fn remove_clip_tag(db: State<Db>, clip_id: i64, tag_id: i64) -> CmdResult<()
     Ok(())
 }
 
+/// 单标签语义:一条剪贴项最多打一个标签。先清掉该剪贴项已有的全部关联,再(可选)写入新标签。
+/// tag_id <= 0 表示「清空标签」(不写新关联),供取消/清除用。
+/// 替换菜单与拖拽两条路径里旧的「toggle 可多标签」逻辑,保证 tag_ids 至多 1 个。
+#[tauri::command(rename_all = "snake_case")]
+pub fn set_clip_item_tag(db: State<Db>, clip_id: i64, tag_id: i64) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    set_clip_item_tag_impl(&conn, clip_id, tag_id)
+}
+
+pub(crate) fn set_clip_item_tag_impl(conn: &Connection, clip_id: i64, tag_id: i64) -> CmdResult<()> {
+    conn.execute("DELETE FROM clip_tags WHERE clip_id = ?1", params![clip_id]).map_err(err)?;
+    if tag_id > 0 {
+        conn.execute(
+            "INSERT OR IGNORE INTO clip_tags (clip_id, tag_id) VALUES (?1, ?2)",
+            params![clip_id, tag_id],
+        )
+        .map_err(err)?;
+    }
+    Ok(())
+}
+
+/// 编辑剪贴项文本(独立编辑窗口手动保存时调用)。只改文本类记录的 text 字段;
+/// 不重算 hash(hash 仅供监听线程做连续去重,改历史项不影响它),也不动图片项。
+#[tauri::command(rename_all = "snake_case")]
+pub fn update_clip_text(db: State<Db>, clip_id: i64, text: String) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute(
+        "UPDATE clips SET text = ?1 WHERE id = ?2 AND kind = 'text'",
+        params![text, clip_id],
+    )
+    .map_err(err)?;
+    Ok(())
+}
+
+/// 把某条剪贴项内容写回系统剪贴板(右键「复制」)。
+/// 文本 → 写文本;图片 → 读原图文件写图片。复用 clipboard.rs 已引入的 clipboard-rs(不碰 clipboard.rs)。
+/// 注:写回会被后台监听线程当作一次新复制再入库到顶部——与 ShellPicker「粘贴即置顶」一致,可接受。
+#[tauri::command(rename_all = "snake_case")]
+pub fn copy_clip(db: State<Db>, clip_id: i64) -> CmdResult<()> {
+    use clipboard_rs::{Clipboard, ClipboardContext};
+    let (kind, text, image_path): (String, Option<String>, Option<String>) = {
+        let conn = db.0.lock().map_err(err)?;
+        conn.query_row(
+            "SELECT kind, text, image_path FROM clips WHERE id = ?1",
+            params![clip_id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .map_err(err)?
+    };
+    let ctx = ClipboardContext::new().map_err(err)?;
+    if kind == "image" {
+        use clipboard_rs::common::RustImage;
+        let path = image_path.ok_or("CLIP_NO_IMAGE")?;
+        let img = clipboard_rs::RustImageData::from_path(&path).map_err(err)?;
+        ctx.set_image(img).map_err(err)?;
+    } else {
+        ctx.set_text(text.unwrap_or_default()).map_err(err)?;
+    }
+    Ok(())
+}
+
 // ---------- 数据存储位置(可配置数据根 + 迁移)----------
 
 /// 当前数据根目录(绝对路径),供设置 UI 显示。
@@ -1444,6 +1505,23 @@ mod tests {
         let clips = get_clips_impl(&conn).unwrap();
         assert_eq!(clips[0].tag_ids, vec![tag.id]);
         assert_eq!(get_clip_tags_impl(&conn).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn set_clip_item_tag_is_single() {
+        let conn = mem_db();
+        let cid = insert_text_clip(&conn, "x", "h1");
+        let t1 = create_clip_tag_impl(&conn, "A").unwrap();
+        let t2 = create_clip_tag_impl(&conn, "B").unwrap();
+        // 设 t1
+        set_clip_item_tag_impl(&conn, cid, t1.id).unwrap();
+        assert_eq!(get_clips_impl(&conn).unwrap()[0].tag_ids, vec![t1.id]);
+        // 设 t2:替换(单标签),不叠加
+        set_clip_item_tag_impl(&conn, cid, t2.id).unwrap();
+        assert_eq!(get_clips_impl(&conn).unwrap()[0].tag_ids, vec![t2.id]);
+        // 清空(tag_id<=0)
+        set_clip_item_tag_impl(&conn, cid, 0).unwrap();
+        assert!(get_clips_impl(&conn).unwrap()[0].tag_ids.is_empty());
     }
 
     #[test]

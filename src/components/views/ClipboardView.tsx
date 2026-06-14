@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import {
+  draggable,
+  dropTargetForElements,
+} from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import {
   CheckSquare,
   Clipboard as ClipboardIcon,
+  Copy,
   NotebookPen,
   Palette,
   PanelLeftClose,
@@ -11,28 +16,45 @@ import {
   Pin,
   PinOff,
   Plus,
+  Search,
   Tag,
   Trash2,
   X,
 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { f, t } from "../../lib/i18n";
-import type { ClipItem, ClipTag } from "../../lib/tauri-ipc";
+import { ipc, type ClipItem, type ClipTag } from "../../lib/tauri-ipc";
 import { Popover, MenuItem } from "../ui/Popover";
 import { confirm } from "../ui/ConfirmDialog";
 import ColorDialog from "../dialogs/ColorDialog";
 
-// 剪贴板视图 = 第二侧边栏(剪切板标签,可过滤/改色/改名/删)+ 剪贴项列表(右键加入待办/便签、打标签)
+// 拖拽数据 type:剪贴项拖到标签上打标签(单独 type,与待办/分组排序互不干扰)
+const CLIP_DRAG = "clip-item";
 
-/** 单行剪贴项:文本/图片缩略图 + 标签点 + 置顶/删除按钮 + 右键菜单 */
+/** 单行剪贴项:文本/图片缩略图 + 标签点 + 置顶/删除按钮 + 右键菜单 + 可拖到标签打标签 */
 function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
   const removeClip = useAppStore((s) => s.removeClip);
   const toggleClipPin = useAppStore((s) => s.toggleClipPin);
-  const toggleClipItemTag = useAppStore((s) => s.toggleClipItemTag);
+  const setClipItemTag = useAppStore((s) => s.setClipItemTag);
+  const copyClip = useAppStore((s) => s.copyClip);
   const clipToTask = useAppStore((s) => s.clipToTask);
   const clipToNote = useAppStore((s) => s.clipToNote);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [tagMenu, setTagMenu] = useState<{ x: number; y: number } | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+
+  // 拖源:把该剪贴项拖到第二侧栏标签上 → 打该标签(单标签语义)
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+    return draggable({
+      element: el,
+      getInitialData: () => ({ type: CLIP_DRAG, clipId: clip.id }),
+      onDragStart: () => setDragging(true),
+      onDrop: () => setDragging(false),
+    });
+  }, [clip.id]);
 
   // 缩略图优先用内嵌 base64(始终可渲染),回退 asset 协议读原图
   const imgSrc =
@@ -40,14 +62,18 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
       ? clip.thumbnail_b64 ?? (clip.image_path ? convertFileSrc(clip.image_path) : undefined)
       : undefined;
   const clipTags = tags.filter((tg) => clip.tag_ids.includes(tg.id));
+  const isText = clip.kind !== "image";
 
   return (
     <div
+      ref={rowRef}
       onContextMenu={(e) => {
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
-      className="group flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text-1 hover:bg-card-hover"
+      className={`group flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text-1 hover:bg-card-hover ${
+        dragging ? "opacity-40" : ""
+      }`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {clip.kind === "image" ? (
@@ -108,6 +134,27 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
             <MenuItem
               onClick={() => {
                 setMenu(null);
+                void copyClip(clip);
+              }}
+            >
+              <Copy size={13} />
+              {t("S.X.ClipCopy")}
+            </MenuItem>
+            {isText && (
+              <MenuItem
+                onClick={() => {
+                  setMenu(null);
+                  void ipc.openClipEditorWindow(clip.id);
+                }}
+              >
+                <Pencil size={13} />
+                {t("S.X.ClipEdit")}
+              </MenuItem>
+            )}
+            <div className="my-1 h-px bg-divider" />
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
                 void clipToTask(clip);
               }}
             >
@@ -153,10 +200,28 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
       {tagMenu && (
         <Popover at={tagMenu} anchor={null} onClose={() => setTagMenu(null)} zIndex={200}>
           <div className="max-h-64 w-44 overflow-y-auto">
+            {/* 单标签:点某标签即设为该标签(替换原标签);「无标签」清空 */}
+            <MenuItem
+              onClick={() => {
+                setTagMenu(null);
+                void setClipItemTag(clip.id, null);
+              }}
+            >
+              <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider" />
+              <span className="min-w-0 flex-1 truncate opacity-70">{t("S.X.ClipNoTag")}</span>
+              {clip.tag_ids.length === 0 && <CheckSquare size={12} className="text-accent" />}
+            </MenuItem>
+            <div className="my-1 h-px bg-divider" />
             {tags.map((tg) => {
               const on = clip.tag_ids.includes(tg.id);
               return (
-                <MenuItem key={tg.id} onClick={() => void toggleClipItemTag(clip.id, tg.id)}>
+                <MenuItem
+                  key={tg.id}
+                  onClick={() => {
+                    setTagMenu(null);
+                    void setClipItemTag(clip.id, tg.id);
+                  }}
+                >
                   <span
                     className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider"
                     style={{ background: tg.color || "transparent" }}
@@ -173,16 +238,37 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
   );
 }
 
-/** 第二侧栏里的剪切板标签行:点击过滤,右键改名/改色/删 */
+/** 第二侧栏里的剪切板标签行:点击过滤,右键改名/改色/删;作为剪贴项放置目标(拖到此打标签) */
 function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
   const setClipFilterTag = useAppStore((s) => s.setClipFilterTag);
   const renameClipTag = useAppStore((s) => s.renameClipTag);
   const setClipTagColor = useAppStore((s) => s.setClipTagColor);
   const removeClipTag = useAppStore((s) => s.removeClipTag);
+  const setClipItemTag = useAppStore((s) => s.setClipItemTag);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(tag.name);
   const [colorOpen, setColorOpen] = useState(false);
+  const [dropOver, setDropOver] = useState(false);
+  const dropRef = useRef<HTMLDivElement | null>(null);
+
+  // 放置目标:剪贴项拖到此 → 打该标签(单标签)。canDrop 只认 clip-item,
+  // 本行不参与排序、无其它 dropTarget,不存在重复注册问题。
+  useEffect(() => {
+    const el = dropRef.current;
+    if (!el) return;
+    return dropTargetForElements({
+      element: el,
+      canDrop: ({ source }) => source.data.type === CLIP_DRAG,
+      onDragEnter: () => setDropOver(true),
+      onDragLeave: () => setDropOver(false),
+      onDrop: ({ source }) => {
+        setDropOver(false);
+        const clipId = source.data.clipId;
+        if (typeof clipId === "number") void setClipItemTag(clipId, tag.id);
+      },
+    });
+  }, [tag.id, setClipItemTag]);
 
   const commit = () => {
     setEditing(false);
@@ -198,7 +284,7 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
   };
 
   return (
-    <div className="group relative">
+    <div className="group relative" ref={dropRef}>
       {editing ? (
         <input
           autoFocus
@@ -226,9 +312,11 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
             setMenu({ x: e.clientX, y: e.clientY });
           }}
           className={`flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
-            active
-              ? "bg-sidebar-selected text-sidebar-selected-fg"
-              : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+            dropOver
+              ? "bg-sidebar-selected text-sidebar-selected-fg ring-1 ring-accent"
+              : active
+                ? "bg-sidebar-selected text-sidebar-selected-fg"
+                : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
           }`}
         >
           <Tag size={14} className="shrink-0" style={tag.color ? { color: tag.color } : undefined} />
@@ -302,6 +390,9 @@ export default function ClipboardView() {
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
 
+  // 搜索关键词(仅前端过滤已加载列表,量小够用;参照 ShellPicker)
+  const [query, setQuery] = useState("");
+
   // 第二侧边栏宽度可拖动并持久化(对齐便签/标签第二侧栏:默认 224,范围 160–460)
   const [navWidth, setNavWidth] = useState(() =>
     Math.min(460, Math.max(160, Number(settings["clip_sidebar_width"]) || 224)),
@@ -327,8 +418,13 @@ export default function ClipboardView() {
   const collapsed = settings["clip_sidebar_collapsed"] === "1";
   const toggleCollapsed = () => saveSetting("clip_sidebar_collapsed", collapsed ? "0" : "1");
 
-  const filtered =
-    clipFilterTagId == null ? clips : clips.filter((c) => c.tag_ids.includes(clipFilterTagId));
+  // 过滤:标签筛选 + 文本搜索(标签匹配 c.tag_ids.includes,数据/类型对齐,打标签后能筛出)
+  const q = query.trim().toLowerCase();
+  const filtered = clips.filter((c) => {
+    if (clipFilterTagId != null && !c.tag_ids.includes(clipFilterTagId)) return false;
+    if (q && !(c.text ?? "").toLowerCase().includes(q)) return false;
+    return true;
+  });
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -348,18 +444,7 @@ export default function ClipboardView() {
               <ClipboardIcon size={16} />
             </button>
             {clipTags.map((tg) => (
-              <button
-                key={tg.id}
-                title={tg.name}
-                onClick={() => setClipFilterTag(tg.id)}
-                className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
-                  clipFilterTagId === tg.id
-                    ? "bg-sidebar-selected text-sidebar-selected-fg"
-                    : "text-sidebar-strong hover:bg-sidebar-hover"
-                }`}
-              >
-                <Tag size={15} style={tg.color ? { color: tg.color } : undefined} />
-              </button>
+              <CollapsedTagButton key={tg.id} tag={tg} active={clipFilterTagId === tg.id} />
             ))}
           </div>
           <div className="shrink-0 p-1">
@@ -423,14 +508,37 @@ export default function ClipboardView() {
         </aside>
       )}
 
-      {/* 右侧:剪贴项列表 */}
+      {/* 右侧:搜索框 + 剪贴项列表 */}
       <div className="flex min-w-0 flex-1 flex-col">
+        <div className="shrink-0 p-2 pb-1">
+          <div className="relative">
+            <Search
+              size={14}
+              className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("S.X.ClipSearch")}
+              className="w-full rounded-md border border-divider bg-card py-1.5 pr-7 pl-8 text-sm text-text-1 outline-none focus:border-accent"
+            />
+            {query && (
+              <button
+                title={t("S.Clear")}
+                onClick={() => setQuery("")}
+                className="absolute top-1/2 right-1.5 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-muted hover:bg-card-hover"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
         {filtered.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-sm text-muted">
             {t("S.X.ClipEmpty")}
           </div>
         ) : (
-          <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2">
+          <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2 pt-1">
             {filtered.map((clip) => (
               <ClipRow key={clip.id} clip={clip} tags={clipTags} />
             ))}
@@ -438,5 +546,46 @@ export default function ClipboardView() {
         )}
       </div>
     </div>
+  );
+}
+
+/** 收起态的标签按钮:同样作为剪贴项放置目标(拖到此打标签) */
+function CollapsedTagButton({ tag, active }: { tag: ClipTag; active: boolean }) {
+  const setClipFilterTag = useAppStore((s) => s.setClipFilterTag);
+  const setClipItemTag = useAppStore((s) => s.setClipItemTag);
+  const [dropOver, setDropOver] = useState(false);
+  const ref = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    return dropTargetForElements({
+      element: el,
+      canDrop: ({ source }) => source.data.type === CLIP_DRAG,
+      onDragEnter: () => setDropOver(true),
+      onDragLeave: () => setDropOver(false),
+      onDrop: ({ source }) => {
+        setDropOver(false);
+        const clipId = source.data.clipId;
+        if (typeof clipId === "number") void setClipItemTag(clipId, tag.id);
+      },
+    });
+  }, [tag.id, setClipItemTag]);
+
+  return (
+    <button
+      ref={ref}
+      title={tag.name}
+      onClick={() => setClipFilterTag(tag.id)}
+      className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+        dropOver
+          ? "bg-sidebar-selected text-sidebar-selected-fg ring-1 ring-accent"
+          : active
+            ? "bg-sidebar-selected text-sidebar-selected-fg"
+            : "text-sidebar-strong hover:bg-sidebar-hover"
+      }`}
+    >
+      <Tag size={15} style={tag.color ? { color: tag.color } : undefined} />
+    </button>
   );
 }

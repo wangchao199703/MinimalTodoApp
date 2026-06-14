@@ -206,4 +206,19 @@ export const ipc = {
     invoke<void>("add_clip_tag", { clip_id: clipId, tag_id: tagId }),
   removeClipTag: (clipId: number, tagId: number) =>
     invoke<void>("remove_clip_tag", { clip_id: clipId, tag_id: tagId }),
+  /** 单标签语义:替换该剪贴项的标签(tagId<=0 清空) */
+  setClipItemTag: (clipId: number, tagId: number) =>
+    invoke<void>("set_clip_item_tag", { clip_id: clipId, tag_id: tagId }),
+  /** 编辑剪贴项文本(独立编辑窗手动保存) */
+  updateClipText: (clipId: number, text: string) =>
+    invoke<void>("update_clip_text", { clip_id: clipId, text }),
+  /** 把剪贴项内容写回系统剪贴板(右键复制) */
+  copyClip: (clipId: number) => invoke<void>("copy_clip", { clip_id: clipId }),
+
+  // ---- 剪贴项编辑窗口 ----
+  /** 打开/聚焦独立的剪贴项编辑窗口,编辑指定剪贴项 */
+  openClipEditorWindow: (clipId: number) =>
+    invoke<void>("open_clip_editor_window", { clip_id: clipId }),
+  /** 编辑窗口挂载后取走待编辑的剪贴项 id(并清空) */
+  takeClipEditorTarget: () => invoke<number | null>("take_clip_editor_target"),
 };
