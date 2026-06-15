@@ -350,12 +350,29 @@ pub fn setup_dock(app: &AppHandle) {
             let mp = mon.position();
             let ms = mon.size();
             let Ok(size) = win2.outer_size() else { return };
+            let (w2, h2) = (size.width as i32, size.height as i32);
 
-            let edge = if pos.y <= mp.y + SNAP_PX {
+            // 多屏:若某条边的「外侧」紧挨着另一块显示器(屏间共享边界),禁止贴到这条边。
+            // 否则收起会把窗口滑到邻屏上(那不是真正的屏幕外沿),收起/唤出几何全乱
+            // (用户实测:双屏「左屏的右边 / 右屏的左边」贴边出问题)。只允许贴到桌面外沿。
+            let monitors = win2.available_monitors().unwrap_or_default();
+            let on_other_screen = |x: i32, y: i32| {
+                monitors.iter().any(|m| {
+                    let p = m.position();
+                    let s = m.size();
+                    x >= p.x && x < p.x + s.width as i32 && y >= p.y && y < p.y + s.height as i32
+                })
+            };
+            let vy = pos.y + h2 / 2; // 窗口纵向中点:探测左右边外侧是否压着邻屏
+            let hx = pos.x + w2 / 2; // 窗口横向中点:探测上边外侧是否压着邻屏
+
+            let edge = if pos.y <= mp.y + SNAP_PX && !on_other_screen(hx, mp.y - 2) {
                 EDGE_TOP
-            } else if pos.x <= mp.x + SNAP_PX {
+            } else if pos.x <= mp.x + SNAP_PX && !on_other_screen(mp.x - 2, vy) {
                 EDGE_LEFT
-            } else if pos.x + size.width as i32 >= mp.x + ms.width as i32 - SNAP_PX {
+            } else if pos.x + w2 >= mp.x + ms.width as i32 - SNAP_PX
+                && !on_other_screen(mp.x + ms.width as i32 + 2, vy)
+            {
                 EDGE_RIGHT
             } else {
                 EDGE_NONE
