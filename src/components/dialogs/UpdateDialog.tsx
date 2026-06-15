@@ -27,7 +27,11 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
   const reinstall = props.info.reinstall === true;
 
   return (
-    <Modal title={t("S.Update.Title")} onClose={props.onClose} width={400}>
+    <Modal
+      title={reinstall ? t("S.Settings.Reinstall") : t("S.Update.Title")}
+      onClose={props.onClose}
+      width={400}
+    >
       <p className="text-sm font-medium text-text-1">
         {reinstall
           ? f("S.Update.Reinstall", props.info.version)
@@ -79,12 +83,7 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
           >
             {t("S.Update.ManualDownload")}
           </button>
-          <button
-            onClick={props.onClose}
-            className="rounded-md px-2.5 py-1.5 text-xs text-text-2 hover:bg-card-hover"
-          >
-            {reinstall ? t("S.Update.Close") : t("S.Update.Ignore")}
-          </button>
+          {/* 关闭按钮去掉:右上角叉号已可关闭(点叉=不更新/不重装) */}
           <button
             onClick={() => void start()}
             className="rounded-md bg-accent px-3 py-1.5 text-xs text-on-accent hover:opacity-90"

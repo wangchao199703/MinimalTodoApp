@@ -310,3 +310,10 @@
   - `updater.rs`:`pids_holding_file`(RmStartSession/RmRegisterResources/RmGetList,结构体 size=668 本机实测正确)+ `takeover_running_instance`;`lib.rs` 在单实例插件 + `database::init` 之前调用。
   - 关键:**不依赖旧版写过任何 pid 文件**——所以对当前在跑的旧构建也立即生效(它一定锁着 todo.db)。
 - 验证:`cargo check` 无警告;Restart Manager 本机实测能正确找出占用文件的进程(size=668、found self=true)。版本保持 2.0.0。
+
+## v2.0.0 — 重装对话框打磨
+
+- **去掉「正在检查更新」错误提示**:重装地址由命名约定直接拼出(不调接口、瞬时),`startReinstall` 不再弹「正在检查更新」Toast,也去掉了已无意义的「检查中/检查失败」状态(`fetchReinstallInfo` 现在恒返回信息)。
+- **标题改对**:重装对话框标题由「发现新版本」改为「重新安装当前版本」(`S.Settings.Reinstall`);升级对话框仍为「发现新版本」。
+- **移除多余关闭按钮**:对话框右上角叉号已可关闭(点叉=不更新/不重装),底部那个「关闭/忽略」按钮去掉。升级对话框保留「此版本不再提示(跳过)」(语义不同)。
+- 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。

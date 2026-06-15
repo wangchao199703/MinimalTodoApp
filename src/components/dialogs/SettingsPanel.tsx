@@ -245,22 +245,13 @@ export default function SettingsPanel() {
     }
   };
 
-  // 「检查中 / 失败」就地可见(Toast 会自动消失,按钮旁状态持久,对齐 WPF 手动检查的明确反馈)
-  const [reinstallStatus, setReinstallStatus] = useState<"" | "checking" | "failed">("");
+  // 重装地址由命名约定直接拼出(不调接口、瞬时),直接弹对话框,无需「检查更新」提示
   const startReinstall = async () => {
     if (reinstallBusy) return;
     setReinstallBusy(true);
-    setReinstallStatus("checking");
-    pushToast(t("S.Update.Checking"));
     try {
       const info = await fetchReinstallInfo();
-      if (info) {
-        setReinstallStatus("");
-        setReinstallInfo(info);
-      } else {
-        // fetchReinstallInfo 内部已弹失败 Toast;此处留下持久状态(限流/网络失败)
-        setReinstallStatus("failed");
-      }
+      if (info) setReinstallInfo(info);
     } finally {
       setReinstallBusy(false);
     }
@@ -843,21 +834,13 @@ export default function SettingsPanel() {
                   {t("S.Settings.ReinstallDesc")}
                 </span>
               </span>
-              <span className="flex shrink-0 items-center gap-2">
-                {reinstallStatus === "checking" && (
-                  <span className="text-xs text-muted">{t("S.Update.Checking")}</span>
-                )}
-                {reinstallStatus === "failed" && (
-                  <span className="text-xs text-red-500">{t("S.Update.CheckFailed")}</span>
-                )}
-                <button
-                  onClick={() => void startReinstall()}
-                  disabled={reinstallBusy}
-                  className="rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
-                >
-                  {t("S.Settings.ReinstallBtn")}
-                </button>
-              </span>
+              <button
+                onClick={() => void startReinstall()}
+                disabled={reinstallBusy}
+                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
+              >
+                {t("S.Settings.ReinstallBtn")}
+              </button>
             </div>
             {/* 手动下载:用默认浏览器打开最新发布页,手动下载最新版(应用内更新/重装失败时的兜底入口) */}
             <div className="flex items-start justify-between gap-3 py-2">
