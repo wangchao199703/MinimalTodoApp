@@ -28,6 +28,107 @@ const PROCESS_TERMINATE: u32 = 0x0001;
 const SYNCHRONIZE: u32 = 0x0010_0000;
 const WAIT_OBJECT_0: u32 = 0x0000_0000;
 
+// ---- Restart Manager:找出「正占用某文件的进程」,用于接管不配合的旧实例 ----
+// (旧 exe 名任意、没留任何标记,但运行时一定锁着 todo.db。)结构体布局经本机实测 size=668。
+#[repr(C)]
+struct RmUniqueProcess {
+    pid: u32,
+    start_low: u32,
+    start_high: u32,
+}
+#[repr(C)]
+struct RmProcessInfo {
+    process: RmUniqueProcess,
+    app_name: [u16; 256],
+    svc_name: [u16; 64],
+    app_type: u32,
+    app_status: u32,
+    ts_session: u32,
+    restartable: i32,
+}
+#[link(name = "rstrtmgr")]
+extern "system" {
+    fn RmStartSession(session: *mut u32, flags: u32, key: *mut u16) -> u32;
+    fn RmEndSession(session: u32) -> u32;
+    fn RmRegisterResources(
+        session: u32,
+        n_files: u32,
+        files: *const *const u16,
+        n_app: u32,
+        apps: *const u8,
+        n_svc: u32,
+        svc: *const u8,
+    ) -> u32;
+    fn RmGetList(
+        session: u32,
+        needed: *mut u32,
+        count: *mut u32,
+        info: *mut RmProcessInfo,
+        reboot: *mut u32,
+    ) -> u32;
+}
+
+/// 用 Restart Manager 列出正占用 `file` 的进程 pid(失败/无占用返回空)。
+fn pids_holding_file(file: &std::path::Path) -> Vec<u32> {
+    use std::os::windows::ffi::OsStrExt;
+    let mut out = Vec::new();
+    unsafe {
+        let mut session: u32 = 0;
+        let mut key = [0u16; 33]; // CCH_RM_SESSION_KEY+1
+        if RmStartSession(&mut session, 0, key.as_mut_ptr()) != 0 {
+            return out;
+        }
+        let wpath: Vec<u16> = file.as_os_str().encode_wide().chain(std::iter::once(0)).collect();
+        let files = [wpath.as_ptr()];
+        if RmRegisterResources(session, 1, files.as_ptr(), 0, std::ptr::null(), 0, std::ptr::null())
+            == 0
+        {
+            let mut needed: u32 = 0;
+            let mut count: u32 = 0;
+            let mut reboot: u32 = 0;
+            // 先探需要多少条
+            RmGetList(session, &mut needed, &mut count, std::ptr::null_mut(), &mut reboot);
+            if needed > 0 {
+                let mut buf: Vec<RmProcessInfo> = (0..needed).map(|_| std::mem::zeroed()).collect();
+                count = needed;
+                if RmGetList(session, &mut needed, &mut count, buf.as_mut_ptr(), &mut reboot) == 0 {
+                    for item in buf.iter().take(count as usize) {
+                        if item.process.pid != 0 {
+                            out.push(item.process.pid);
+                        }
+                    }
+                }
+            }
+        }
+        RmEndSession(session);
+    }
+    out
+}
+
+/// 启动时**接管已运行的旧实例**:杀掉正占用 `todo.db` 的其它进程(=正在运行的旧实例,
+/// **不论其 exe 名、是否同版本、是否留过标记**——运行时一定锁着库)。**必须在注册单实例插件之前调用、
+/// 且在打开数据库之前**(此刻本进程还没锁库,占用者只有旧实例)。
+///
+/// 解决:双击打开「新下载的 exe」时,旧实例仍占用旧文件、单实例又把新 exe 挡回 → 旧文件删不掉、看到的还是旧版。
+/// 现在新 exe 启动即杀掉旧实例(旧文件随即解除占用、可删),自己成为活动实例。
+pub fn takeover_running_instance() {
+    let db = crate::database::data_dir().join("todo.db");
+    let me = std::process::id();
+    for pid in pids_holding_file(&db) {
+        if pid == me {
+            continue;
+        }
+        unsafe {
+            let h = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, 0, pid);
+            if h != 0 {
+                let _ = TerminateProcess(h, 0);
+                WaitForSingleObject(h, 5000); // 等其彻底退出,库与文件锁随之释放
+                CloseHandle(h);
+            }
+        }
+    }
+}
+
 /// 用系统默认浏览器打开 URL(「手动下载」用):把下载地址交给浏览器自行下载,
 /// 作为应用内自动更新失败时的兜底。explorer.exe 接单个参数,免 cmd 的 `&` 转义坑。
 #[tauri::command]
