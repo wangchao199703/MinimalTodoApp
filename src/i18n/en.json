@@ -326,7 +326,7 @@
  "S.Settings.Reinstall": "Reinstall current version",
  "S.Settings.ReinstallDesc": "Re-download and install the current version (repairs a broken or sluggish install)",
  "S.Settings.ReinstallBtn": "Reinstall",
- "S.Settings.ManualDownloadDesc": "Open the download URL in your browser to grab the installer manually (fallback if in-app update fails)",
+ "S.Settings.ManualDownloadDesc": "Open the releases page in your browser to download the latest version manually (fallback if in-app update fails)",
  "S.Update.Title": "Update available",
  "S.Update.NewVersion": "New version {0} available (current {1})",
  "S.Update.Reinstall": "Reinstall current version {0}",

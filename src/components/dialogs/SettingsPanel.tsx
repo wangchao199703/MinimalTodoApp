@@ -21,7 +21,7 @@ import {
   checkForUpdate,
   fetchReinstallInfo,
   openDownloadUrl,
-  releaseAssetUrl,
+  LATEST_RELEASE_PAGE,
   type UpdateInfo,
 } from "../../lib/updater";
 import {
@@ -780,7 +780,7 @@ export default function SettingsPanel() {
                 </button>
               </span>
             </div>
-            {/* 手动下载:用默认浏览器打开当前版本下载地址自行下载(应用内更新/重装失败时的兜底入口) */}
+            {/* 手动下载:用默认浏览器打开最新发布页,手动下载最新版(应用内更新/重装失败时的兜底入口) */}
             <div className="flex items-start justify-between gap-3 py-2">
               <span className="min-w-0">
                 <span className="block text-sm text-text-1">{t("S.Update.ManualDownload")}</span>
@@ -789,9 +789,8 @@ export default function SettingsPanel() {
                 </span>
               </span>
               <button
-                onClick={() => version && void openDownloadUrl(releaseAssetUrl(version).url)}
-                disabled={!version}
-                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
+                onClick={() => void openDownloadUrl(LATEST_RELEASE_PAGE)}
+                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover"
               >
                 {t("S.Update.ManualDownload")}
               </button>

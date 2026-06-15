@@ -200,3 +200,12 @@
   - `updater.ts` 抽 `releaseAssetUrl(version)` 共用助手(重装与手动下载共用同一命名约定直链),`fetchReinstallInfo` 改用它。
   - i18n 双语 `S.Settings.ManualDownloadDesc`;按钮复用 `S.Update.ManualDownload`。
 - 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。
+
+## v2.0.0 — 区分手动下载目标:对话框内=当前版本,设置内=最新版本
+
+- **需求**:重装/更新对话框内的「手动下载」打开**当前版本**;设置「关于」里独立的「手动下载」打开**最新版本**。
+- **实现**:
+  - 设置内「手动下载」改为打开最新发布页 `LATEST_RELEASE_PAGE`(`https://github.com/{repo}/releases/latest`,GitHub 自动重定向到最新 release)。资产名带版本号、无稳定 latest 直链,故打开发布页让用户在页面下载最新版。
+  - 对话框内「手动下载」不变(仍打开 `info.assetUrl`:重装=当前版本、更新=目标新版,均符合语境)。
+  - i18n 双语 `S.Settings.ManualDownloadDesc` 文案改为「最新版本」。
+- 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。
