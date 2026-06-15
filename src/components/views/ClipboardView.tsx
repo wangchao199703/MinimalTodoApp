@@ -5,6 +5,7 @@ import {
   dropTargetForElements,
 } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import {
+  CalendarDays,
   CheckSquare,
   Clipboard as ClipboardIcon,
   Copy,
@@ -41,6 +42,12 @@ const SIZE_STYLE: Record<ClipSize, { row: string; text: string; thumb: string }>
   md: { row: "py-2", text: "text-sm", thumb: "h-11 w-11" },
   lg: { row: "py-2.5", text: "text-base", thumb: "h-16 w-16" },
 };
+
+/** 本地日期 → YYYY-MM-DD(日期输入框/快捷范围用) */
+function ymd(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 /** 剪贴项时间副标签:今天显示 HH:mm,否则 MM-DD HH:mm(created_at 为毫秒) */
 function clipTimeLabel(ms: number): string {
@@ -530,7 +537,20 @@ export default function ClipboardView() {
   const [kindFilter, setKindFilter] = useState<"all" | "text" | "image">("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  // 筛选面板默认展开(新用户即见全部功能),可手动收起
+  const [filtersOpen, setFiltersOpen] = useState(true);
+  // 日期范围选择 Popover(快捷范围 + 自定义起止)
+  const [dateMenu, setDateMenu] = useState<{ x: number; y: number } | null>(null);
+  // 「重复内容移到最前」开关(与设置同一持久化键,工具栏内快捷切换)
+  const clipDedup = settings["clip_dedup"] !== "0";
+  // 快捷范围:近 N 天(含今天)
+  const setLastDays = (days: number) => {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(from.getDate() - (days - 1));
+    setDateFrom(ymd(from));
+    setDateTo(ymd(to));
+  };
   // 显示大小:持久化设置 clip_item_size(默认中)
   const itemSize: ClipSize =
     settings["clip_item_size"] === "sm" || settings["clip_item_size"] === "lg"
@@ -732,13 +752,13 @@ export default function ClipboardView() {
                 </button>
               ))}
             </div>
-            {/* 筛选器开合(类型 + 日期);有激活筛选时高亮 */}
+            {/* 筛选器开合;有激活筛选 / 展开时高亮(浅主题色填充) */}
             <button
               title={t("S.X.ClipFilters")}
               onClick={() => setFiltersOpen((v) => !v)}
-              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors ${
                 filtersActive || filtersOpen
-                  ? "border-accent text-accent"
+                  ? "border-accent/30 bg-accent/15 text-accent"
                   : "border-divider text-muted hover:bg-card-hover"
               }`}
             >
@@ -746,9 +766,9 @@ export default function ClipboardView() {
             </button>
           </div>
           {filtersOpen && (
-            <div className="flex flex-wrap items-center gap-2 rounded-md border border-divider bg-card/50 p-2">
-              {/* 类型筛选 */}
-              <div className="flex items-center rounded-md border border-divider p-0.5 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {/* 类型筛选:分段控制器(与「大小」同款「浮起」式) */}
+              <div className="flex items-center rounded-md bg-card-hover p-0.5">
                 {(
                   [
                     ["all", t("S.X.ClipKindAll")],
@@ -759,43 +779,127 @@ export default function ClipboardView() {
                   <button
                     key={k}
                     onClick={() => setKindFilter(k)}
-                    className={`rounded px-2 py-1 ${
-                      kindFilter === k ? "bg-accent text-on-accent" : "text-muted hover:bg-card-hover"
+                    className={`rounded px-2.5 py-1 font-medium transition-colors ${
+                      kindFilter === k
+                        ? "bg-card text-text-1 shadow-sm ring-1 ring-divider"
+                        : "text-muted hover:text-text-1"
                     }`}
                   >
                     {label}
                   </button>
                 ))}
               </div>
-              {/* 日期范围 */}
-              <div className="flex items-center gap-1 text-xs text-text-2">
-                <input
-                  type="date"
-                  value={dateFrom}
-                  max={dateTo || undefined}
-                  title={t("S.X.ClipDateStart")}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="rounded-md border border-divider bg-card px-1.5 py-1 text-text-1 outline-none focus:border-accent"
-                />
-                <span className="text-muted">–</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  min={dateFrom || undefined}
-                  title={t("S.X.ClipDateEnd")}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="rounded-md border border-divider bg-card px-1.5 py-1 text-text-1 outline-none focus:border-accent"
-                />
-              </div>
+
+              <span className="h-4 w-px bg-divider" />
+
+              {/* 日期范围:触发按钮 → Popover(快捷范围 + 自定义起止) */}
+              <button
+                onClick={(e) => {
+                  const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                  setDateMenu({ x: r.left, y: r.bottom + 4 });
+                }}
+                className={`flex items-center gap-1.5 rounded-md border px-2 py-1 transition-colors ${
+                  dateFrom || dateTo
+                    ? "border-accent/30 bg-accent/10 text-text-1"
+                    : "border-divider bg-card text-muted hover:bg-card-hover"
+                }`}
+              >
+                <CalendarDays size={13} className="shrink-0" />
+                {dateFrom || dateTo ? (
+                  <span>
+                    {dateFrom || "…"} <span className="text-muted">→</span> {dateTo || "…"}
+                  </span>
+                ) : (
+                  <span>{t("S.X.ClipDateRangePH")}</span>
+                )}
+              </button>
+
+              <span className="h-4 w-px bg-divider" />
+
+              {/* 去重开关:重复项置顶(与设置同一持久化键 clip_dedup) */}
+              <button
+                role="switch"
+                aria-checked={clipDedup}
+                onClick={() => saveSetting("clip_dedup", clipDedup ? "0" : "1")}
+                className="group flex items-center gap-2"
+              >
+                <span
+                  className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                    clipDedup ? "bg-accent" : "bg-divider"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+                      clipDedup ? "left-4.5" : "left-0.5"
+                    }`}
+                  />
+                </span>
+                <span className="text-muted group-hover:text-text-1">{t("S.X.ClipDedupShort")}</span>
+              </button>
+
+              {/* 把「清除」推到最右 */}
+              <span className="flex-1" />
               {filtersActive && (
                 <button
                   onClick={clearFilters}
-                  className="rounded-md px-2 py-1 text-xs text-muted hover:bg-card-hover hover:text-text-1"
+                  className="flex items-center gap-1 rounded-md px-2 py-1 text-muted transition-colors hover:bg-overdue/10 hover:text-overdue"
                 >
+                  <X size={13} />
                   {t("S.X.ClipClearFilters")}
                 </button>
               )}
             </div>
+          )}
+          {dateMenu && (
+            <Popover at={dateMenu} anchor={null} onClose={() => setDateMenu(null)} zIndex={200}>
+              <div className="w-60 space-y-2 p-2">
+                <div className="flex flex-wrap gap-1">
+                  {(
+                    [
+                      [t("S.X.ClipDateToday"), () => { const d = ymd(new Date()); setDateFrom(d); setDateTo(d); }],
+                      [t("S.X.ClipDateLast7"), () => setLastDays(7)],
+                      [t("S.X.ClipDateLast1m"), () => setLastDays(30)],
+                      [t("S.X.ClipDateLast3m"), () => setLastDays(90)],
+                    ] as const
+                  ).map(([label, fn]) => (
+                    <button
+                      key={label}
+                      onClick={fn}
+                      className="rounded-md border border-divider px-2 py-1 text-xs text-text-2 hover:bg-card-hover hover:text-text-1"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1 text-xs">
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    max={dateTo || undefined}
+                    title={t("S.X.ClipDateStart")}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="min-w-0 flex-1 rounded-md border border-divider bg-card px-1.5 py-1 text-text-1 outline-none focus:border-accent"
+                  />
+                  <span className="text-muted">–</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    title={t("S.X.ClipDateEnd")}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="min-w-0 flex-1 rounded-md border border-divider bg-card px-1.5 py-1 text-text-1 outline-none focus:border-accent"
+                  />
+                </div>
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => { setDateFrom(""); setDateTo(""); }}
+                    className="w-full rounded-md px-2 py-1 text-xs text-muted hover:bg-card-hover hover:text-text-1"
+                  >
+                    {t("S.X.ClipDateClearDates")}
+                  </button>
+                )}
+              </div>
+            </Popover>
           )}
         </div>
         {filtered.length === 0 ? (

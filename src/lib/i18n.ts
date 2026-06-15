@@ -196,6 +196,13 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ClipClearFilters": "清除筛选",
     "S.X.ClipFilters": "筛选",
     "S.X.ClipPreviewTitle": "图片预览",
+    "S.X.ClipDedupShort": "重复项置顶",
+    "S.X.ClipDateRangePH": "筛选日期范围…",
+    "S.X.ClipDateLast7": "近 7 天",
+    "S.X.ClipDateLast1m": "近 1 个月",
+    "S.X.ClipDateLast3m": "近 3 个月",
+    "S.X.ClipDateToday": "今天",
+    "S.X.ClipDateClearDates": "清除日期",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -390,6 +397,13 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ClipClearFilters": "Clear filters",
     "S.X.ClipFilters": "Filters",
     "S.X.ClipPreviewTitle": "Image preview",
+    "S.X.ClipDedupShort": "Dedup to top",
+    "S.X.ClipDateRangePH": "Filter date range…",
+    "S.X.ClipDateLast7": "Last 7 days",
+    "S.X.ClipDateLast1m": "Last month",
+    "S.X.ClipDateLast3m": "Last 3 months",
+    "S.X.ClipDateToday": "Today",
+    "S.X.ClipDateClearDates": "Clear dates",
   },
 };
 
