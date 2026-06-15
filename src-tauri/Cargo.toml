@@ -31,6 +31,9 @@ sha2 = "0.10"
 base64 = "0.22"
 image = { version = "0.25", default-features = false, features = ["png"] }
 anyhow = "1"
+# 自动更新资产下载走 Rust(GitHub 资产 CDN 无 CORS 头,前端 fetch 会被拦);
+# native-tls=Windows SChannel,免装 OpenSSL/NASM,便携 exe 构建链路最稳
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "native-tls"] }
 
 [features]
 default = ["custom-protocol"]

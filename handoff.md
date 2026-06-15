@@ -252,3 +252,23 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 **未决/取舍**:
 - 复制写回会触发后台监听把同内容重新入库置顶(与 ShellPicker 一致),可接受;若不想置顶需在 clipboard.rs 侧加「自写忽略」(非本轮范围)。
 - 编辑窗口载入用 `getClips()` 全量按 id 找(无单条命令),列表上限 500,量小可接受。
+
+---
+
+## 修复:「重新安装当前版本」点击后无进度 (v2.0.0)
+
+**背景**:用户报「重新安装当前版本」点击后无进度/无反应。
+
+**根因(已定位)**:资产下载用前端 `fetch(assetUrl)`,但 GitHub 资产直链 302 到 CDN `release-assets.githubusercontent.com`,该域无 CORS 头(实测 `api.github.com` 有 `ACAO:*`、资产 CDN 无),WebView2 拦截 → 下载即抛错。检查接口能跨域所以对话框照开,点「重新安装」后下载死;且设置在独立窗口、无 `<Toasts/>` 宿主,失败 Toast 不可见 → 表现「点击后无进度」。同路径的常规自动更新下载也一并坏。
+
+**改动**:
+- `src-tauri/src/updater.rs`:新增 async 命令 `download_update(url,file_name)`,`spawn_blocking` 里 `reqwest::blocking` 流式下载(64KB/块)+ `emit("update-progress",0~1)`,完成后落盘换壳重启;抽 `swap_and_restart` helper 与 `apply_update`(保留兼容)共用。
+- `Cargo.toml`:加 `reqwest 0.12`(`default-features=false`+`blocking`+`native-tls`/SChannel,免 OpenSSL/NASM);`time` 仍 0.3.47。`lib.rs` 注册 `download_update`。
+- `src/lib/updater.ts`:`downloadAndApply` 改 `listen("update-progress")`+`invoke("download_update",...)`,删前端 fetch/reader。
+- `src/components/dialogs/UpdateDialog.tsx`:下载失败对话框内内联红字(设置窗无 Toast 宿主)。
+
+**验证**:`npm run build` + `cargo check`(reqwest 0.12.28 schannel 编译过、time 仍 0.3.47)全过。版本仍 2.0.0,已本地提交未 push。
+
+**运行时验证点**:设置→关于→「重新安装」→ 对话框点「重新安装」→ 进度条应随下载推进(Rust 侧 emit),完成后应用换壳重启;断网/资产不存在时对话框内出现红字失败提示而非静默。**注意**:此修复要真正生效于「重装」需让目标 release 的 exe 也含本修复——即本次需重新 release 后,新装的版本再点重装才走 Rust 下载;但下载机制(进度/不再被 CORS 拦)对常规自动更新即时生效。
+
+**下一步**:用户通知后重新 release(同步与否由用户定;reinstall 拉取与当前版本同 tag 的 release)。

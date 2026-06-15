@@ -1,6 +1,7 @@
 // 更新检查与下载(前端侧):GitHub releases/latest 轮询 + SemVer 三段比对,
 // 下载便携 exe 后把字节交给 Rust 的 apply_update 完成换壳重启。
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "./i18n";
@@ -126,31 +127,22 @@ export async function fetchReinstallInfo(): Promise<UpdateInfo | null> {
   };
 }
 
-/** 流式下载资产并上报进度(0~1),完成后交给 Rust 换壳重启(成功则进程退出) */
+/**
+ * 下载资产并换壳重启:**下载在 Rust 侧完成**(GitHub 资产 CDN 无 CORS 头,前端 fetch 必失败),
+ * 进度经 `update-progress` 事件回传。成功后应用自行退出重启;失败 invoke 抛错。
+ */
 export async function downloadAndApply(
   info: UpdateInfo,
   onProgress: (ratio: number) => void,
 ): Promise<void> {
-  const resp = await fetch(info.assetUrl);
-  if (!resp.ok || !resp.body) throw new Error(`download failed: ${resp.status}`);
-  const total = Number(resp.headers.get("content-length") ?? "0");
-  const reader = resp.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let received = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    received += value.length;
-    if (total > 0) onProgress(Math.min(1, received / total));
+  const unlisten = await listen<number>("update-progress", (e) =>
+    onProgress(Math.min(1, Math.max(0, e.payload))),
+  );
+  try {
+    // camelCase 键映射 Rust snake_case 形参(Tauri 默认转换);成功后 Rust 触发 bat 重启
+    await invoke("download_update", { url: info.assetUrl, fileName: info.assetName });
+    onProgress(1);
+  } finally {
+    unlisten();
   }
-  const bytes = new Uint8Array(received);
-  let offset = 0;
-  for (const c of chunks) {
-    bytes.set(c, offset);
-    offset += c.length;
-  }
-  onProgress(1);
-  // 原始字节走 IPC,文件名放 header(apply_update 成功后应用将自行退出重启)
-  await invoke("apply_update", bytes, { headers: { "x-file-name": info.assetName } });
 }

@@ -1,8 +1,11 @@
-//! 自动更新落地侧:检查与下载由前端完成(api.github.com 与资产下载均允许跨域),
-//! 本模块负责:接收新版 exe 字节 → 写盘 → bat 换壳重启 → 新版启动后回收旧 exe。
-//! 保留旧版「便携单 exe」分发模型,不走安装包。
+//! 自动更新落地侧:版本检查由前端完成(api.github.com 允许跨域),
+//! 但**资产下载必须走 Rust**——GitHub 资产 CDN(release-assets.githubusercontent.com)
+//! 不返回 CORS 头,前端 fetch 会被 WebView2 拦截(下载立即失败、无任何进度)。
+//! 本模块负责:Rust 侧流式下载新版 exe(带进度事件)→ 写盘 → bat 换壳重启
+//! → 新版启动后回收旧 exe。保留旧版「便携单 exe」分发模型,不走安装包。
 
-use tauri::AppHandle;
+use std::io::Read;
+use tauri::{AppHandle, Emitter};
 
 fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -25,21 +28,10 @@ fn target_dir() -> std::path::PathBuf {
     dir
 }
 
-/// 接收新版 exe 的原始字节(invoke 传 ArrayBuffer,文件名放 header),
-/// 写盘后生成临时 bat:等待本进程退出 → 启动新版(带 --updated-from 指向旧 exe)。
-#[tauri::command]
-pub fn apply_update(app: AppHandle, request: tauri::ipc::Request) -> Result<(), String> {
-    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
-        return Err("expected raw body".into());
-    };
-    let file_name = request
-        .headers()
-        .get("x-file-name")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("MinimalTodoApp-update.exe")
-        .to_string();
-
-    let new_exe = target_dir().join(&file_name);
+/// 把新版 exe 字节写盘,生成临时 bat(等本进程退出 → 启动新版,带 --updated-from 指向旧 exe),
+/// 然后稍后优雅退出本进程。成功返回后应用即将自行重启。
+fn swap_and_restart(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<(), String> {
+    let new_exe = target_dir().join(file_name);
     std::fs::write(&new_exe, bytes).map_err(err)?;
 
     let old_exe = std::env::current_exe().map_err(err)?;
@@ -60,11 +52,73 @@ pub fn apply_update(app: AppHandle, request: tauri::ipc::Request) -> Result<(), 
         .map_err(err)?;
 
     // 给前端一点时间收到返回,再优雅退出
+    let app = app.clone();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(300));
         app.exit(0);
     });
     Ok(())
+}
+
+/// 流式下载新版 exe 并换壳重启:从 `url`(GitHub 资产直链,会 302 到无 CORS 的 CDN,
+/// 故必须在 Rust 侧下载)读取字节,边下边 emit `update-progress`(0~1),完成后写盘 + 重启。
+/// async 命令在后台线程池执行,阻塞下载放进 spawn_blocking,绝不卡主线程消息循环。
+#[tauri::command]
+pub async fn download_update(app: AppHandle, url: String, file_name: String) -> Result<(), String> {
+    let app2 = app.clone();
+    let bytes = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
+        let client = reqwest::blocking::Client::builder()
+            .user_agent("MinimalTodoApp-update")
+            .build()
+            .map_err(err)?;
+        let mut resp = client.get(&url).send().map_err(err)?;
+        if !resp.status().is_success() {
+            return Err(format!("HTTP {}", resp.status()));
+        }
+        let total = resp.content_length().unwrap_or(0);
+        let mut buf: Vec<u8> = Vec::with_capacity(total as usize);
+        let mut chunk = [0u8; 64 * 1024];
+        let mut received: u64 = 0;
+        let mut last_emit = 0.0f64;
+        loop {
+            let n = resp.read(&mut chunk).map_err(err)?;
+            if n == 0 {
+                break;
+            }
+            buf.extend_from_slice(&chunk[..n]);
+            received += n as u64;
+            if total > 0 {
+                let ratio = received as f64 / total as f64;
+                // 节流:每涨 1% 才上报一次(末尾必报)
+                if ratio - last_emit >= 0.01 || ratio >= 1.0 {
+                    last_emit = ratio;
+                    let _ = app2.emit("update-progress", ratio);
+                }
+            }
+        }
+        Ok(buf)
+    })
+    .await
+    .map_err(err)??;
+
+    let _ = app.emit("update-progress", 1.0_f64);
+    swap_and_restart(&app, &file_name, &bytes)
+}
+
+/// 旧的「前端下载 → 传原始字节」入口,保留兼容:接收新版 exe 字节(Raw body + x-file-name header)。
+/// 现网下载已改走 `download_update`(避开资产 CDN 的 CORS),此命令一般不再调用。
+#[tauri::command]
+pub fn apply_update(app: AppHandle, request: tauri::ipc::Request) -> Result<(), String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("expected raw body".into());
+    };
+    let file_name = request
+        .headers()
+        .get("x-file-name")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("MinimalTodoApp-update.exe")
+        .to_string();
+    swap_and_restart(&app, &file_name, bytes)
 }
 
 /// 新版启动时回收旧 exe(由 --updated-from 参数传入)。

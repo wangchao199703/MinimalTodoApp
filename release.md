@@ -128,3 +128,14 @@
 - **搜索**(task5):`ClipboardView` 右侧顶部加搜索框(参照 ShellPicker),按 `clip.text` 前端过滤已加载列表(标签筛选 + 文本搜索叠加),带清除按钮。
 - 新增/改动文件:`commands.rs`(set_clip_item_tag/update_clip_text/copy_clip + 单元测试)、`window.rs`(ClipEditorTarget + open_clip_editor_window/take_clip_editor_target)、`lib.rs`(注册命令 + manage 状态)、`capabilities/default.json`、`ClipEditorWindow.tsx`(新)、`ClipboardView.tsx`、`main.tsx`、`useAppStore.ts`、`tauri-ipc.ts`、`i18n.ts`(双语新键)。**未碰 clipboard.rs**。
 - 验证:`npm run build`(tsc 严格)+ `cargo check` + `cargo test --lib`(40 passed,含 1 个新单标签测试)全过;`time` 仍 0.3.47。版本保持 2.0.0。
+
+## v2.0.0 — 修复:「重新安装当前版本」点击后无进度(资产下载被 CORS 拦)
+
+- **现象**:设置→关于→「重新安装」,点击后无任何进度/反馈。
+- **根因**:资产下载用的是前端 `fetch(assetUrl)`。GitHub 资产直链 302 跳到 CDN `release-assets.githubusercontent.com`,该域**不返回 CORS 头**(实测:`api.github.com` 有 `ACAO:*`、资产 CDN 无),WebView2 按同源策略直接拦截 → 下载瞬间抛错。检查接口(api.github.com)能跨域所以对话框照常打开,但点「重新安装」后下载即死;又因设置在独立窗口、该窗口没有 `<Toasts/>` 宿主,失败 Toast 也不可见 → 表现为「点击后无进度」。同一路径的常规自动更新下载其实也一并坏掉。原 `updater.rs` 注释里「资产下载允许跨域」的假设是错的。
+- **修复(追根因)**:把资产下载移到 Rust(不受 CORS 约束)。
+  - `src-tauri/src/updater.rs`:新增 async 命令 `download_update(url, file_name)`,`spawn_blocking` 里用 `reqwest::blocking` 流式下载(64KB/块),边下边 `emit("update-progress", 0~1)`(每涨 1% 上报),完成后落盘 + 换壳重启。把原「写盘+bat 重启+退出」抽成 `swap_and_restart` helper,`apply_update`(旧前端传字节入口,保留兼容)与新命令共用。
+  - 依赖:`Cargo.toml` 加 `reqwest 0.12`(`default-features=false` + `blocking` + `native-tls`)。native-tls=Windows SChannel,免装 OpenSSL/NASM,构建链路最稳;`time` 仍 0.3.47 未受影响。
+  - 前端 `src/lib/updater.ts`:`downloadAndApply` 改为 `listen("update-progress")` + `invoke("download_update",{url,fileName})`,删掉前端 fetch/reader 与 `apply_update` 原始字节调用。
+  - `src/components/dialogs/UpdateDialog.tsx`:下载失败时在对话框内**内联**显示错误(设置窗口无 Toast 宿主,必须就地可见),不再只靠 Toast。
+- 验证:`npm run build`(tsc 严格)+ `cargo check`(reqwest 0.12.28 经 schannel 编译通过、`time` 仍 0.3.47)全过。版本保持 2.0.0。
