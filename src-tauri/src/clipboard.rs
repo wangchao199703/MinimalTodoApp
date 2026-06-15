@@ -15,8 +15,29 @@ use clipboard_rs::{
 use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Emitter, Manager};
 
-/// 图片捕获开关:图片监听暂有问题,先停用(只记录文本)。修好后改回 true 即可恢复。
-const IMAGE_CAPTURE_ENABLED: bool = false;
+/// 图片捕获开关:已修复延迟渲染竞态(见 image_ready),默认开启,文本/图片都监听。
+const IMAGE_CAPTURE_ENABLED: bool = true;
+
+/// 启动时按「过期时间」设置清理一次未置顶旧剪贴项(运行中由 commit 实时清理)。
+pub fn purge_expired_on_startup(app: &AppHandle) {
+    let orphans = {
+        let db = app.state::<Db>();
+        let conn = match db.0.lock() {
+            Ok(c) => c,
+            Err(_) => return,
+        };
+        match database::read_setting(&conn, "clip_expiry").and_then(|v| database::clip_expiry_ms(&v)) {
+            Some(age) => {
+                let cutoff = database::now_ms().saturating_sub(age);
+                database::clip_purge_expired(&conn, cutoff).map(|(_, o)| o).unwrap_or_default()
+            }
+            None => Vec::new(),
+        }
+    };
+    for p in orphans {
+        let _ = std::fs::remove_file(p);
+    }
+}
 
 /// 启动剪贴板监听:在独立线程里运行阻塞式 watcher(主线程不受影响)。
 pub fn start_watching(app: AppHandle) {
@@ -55,28 +76,29 @@ impl ClipboardHandler for ClipWatcher {
 
 impl ClipWatcher {
     fn handle(&self) -> anyhow::Result<()> {
-        // Windows 剪贴板「延迟渲染」:复制图片时,变化事件(WM_CLIPBOARDUPDATE)往往
-        // 在图片格式(CF_DIB/CF_PNG,尤其是从 CF_BITMAP 合成的 DIB)真正落到剪贴板之前
-        // 就已经触发。此刻立即调 `has(Image)`/`get_image` 会读到「无图」,于是落进 text 分支
-        // 被当文本吞掉 → 图片永远进不了列表。文本(CF_UNICODETEXT)一般同步渲染,所以不受影响。
-        // 解决:短时轮询探测图片是否到位(最多约 250ms),到位再走图片分支,否则才回退文本。
+        // 先按「有文本即文本」:① 富文本复制(网页/Office 常同时带图)优先存文本,
+        // 不把用户复制的文字误存成图;② 纯文本场景立即返回,不进图片轮询(否则每次复制都白等 ~200ms)。
+        if let Ok(text) = self.ctx.get_text() {
+            if !text.trim().is_empty() {
+                let hash = sha256(text.as_bytes());
+                // 去重关时沿用「与最近一条相同则跳过」;开时交给 commit 做「移到最前 + 删历史重复」
+                if !self.dedup_enabled() && self.is_latest(&hash) {
+                    return Ok(());
+                }
+                return self.commit(NewClip {
+                    kind: "text".into(),
+                    text: Some(text),
+                    image_path: None,
+                    thumbnail_b64: None,
+                    hash,
+                });
+            }
+        }
+        // 无文本 → 可能是纯图片。Windows 剪贴板「延迟渲染」:变化事件(WM_CLIPBOARDUPDATE)常在
+        // 图片格式(CF_DIB/CF_PNG,尤其从 CF_BITMAP 合成的 DIB)真正落盘前就触发,故短时轮询
+        // 探测图片是否到位(最多约 250ms),到位再入库,否则放弃。
         if IMAGE_CAPTURE_ENABLED && self.image_ready() {
             self.handle_image()
-        } else if let Ok(text) = self.ctx.get_text() {
-            if text.trim().is_empty() {
-                return Ok(());
-            }
-            let hash = sha256(text.as_bytes());
-            if self.is_duplicate(&hash) {
-                return Ok(());
-            }
-            self.insert_and_emit(NewClip {
-                kind: "text".into(),
-                text: Some(text),
-                image_path: None,
-                thumbnail_b64: None,
-                hash,
-            })
         } else {
             Ok(())
         }
@@ -103,7 +125,7 @@ impl ClipWatcher {
         let png = img.to_png().map_err(|e| anyhow::anyhow!("{e}"))?;
         let bytes = png.get_bytes();
         let hash = sha256(bytes);
-        if self.is_duplicate(&hash) {
+        if !self.dedup_enabled() && self.is_latest(&hash) {
             return Ok(());
         }
 
@@ -125,7 +147,7 @@ impl ClipWatcher {
                 )
             });
 
-        self.insert_and_emit(NewClip {
+        self.commit(NewClip {
             kind: "image".into(),
             text: None,
             image_path: Some(path.to_string_lossy().to_string()),
@@ -134,20 +156,73 @@ impl ClipWatcher {
         })
     }
 
-    /// 与最近一条记录 hash 相同则视为重复(连续复制同一内容只记一次)
-    fn is_duplicate(&self, hash: &str) -> bool {
+    /// 与最近一条记录 hash 相同(连续复制同一内容,去重关时只记一次)
+    fn is_latest(&self, hash: &str) -> bool {
         let db = self.app.state::<Db>();
         let conn = db.0.lock().unwrap();
         database::clip_latest_hash(&conn).as_deref() == Some(hash)
     }
 
-    fn insert_and_emit(&self, new: NewClip) -> anyhow::Result<()> {
-        let item = {
+    /// 「重复内容移到最前」开关:默认开(空/缺省视为开),用户可在设置关闭
+    fn dedup_enabled(&self) -> bool {
+        let db = self.app.state::<Db>();
+        let conn = db.0.lock().unwrap();
+        database::read_setting(&conn, "clip_dedup").as_deref() != Some("0")
+    }
+
+    /// 入库 + 收尾:去重(移到最前,保留原分组标签;已置顶同内容则跳过新增)→ 按设置清理过期 → emit。
+    fn commit(&self, new: NewClip) -> anyhow::Result<()> {
+        let dedup = self.dedup_enabled();
+        let (removed, purged, orphans, item) = {
             let db = self.app.state::<Db>();
             let conn = db.0.lock().unwrap();
+
+            // 去重探查:已有置顶同内容 → 直接跳过(置顶项已在最前,不再新增)
+            let mut removed = Vec::new();
+            let mut carry_tags = Vec::new();
+            if dedup {
+                let info =
+                    database::clip_dup_info(&conn, &new.hash).map_err(|e| anyhow::anyhow!("{e}"))?;
+                if info.has_pinned {
+                    return Ok(());
+                }
+                database::clip_delete_rows(&conn, &info.unpinned_ids)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                removed = info.unpinned_ids;
+                carry_tags = info.tag_ids;
+            }
+
             let id = database::clip_insert(&conn, &new).map_err(|e| anyhow::anyhow!("{e}"))?;
-            crate::commands::get_clip_impl(&conn, id).map_err(|e| anyhow::anyhow!("{e}"))?
+            // 移到最前后保留原分组归属
+            if !carry_tags.is_empty() {
+                database::clip_attach_tags(&conn, id, &carry_tags)
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+            }
+
+            // 按「过期时间」设置清理未置顶旧项(实时,不必等下次启动)
+            let (purged, orphans) = match database::read_setting(&conn, "clip_expiry")
+                .and_then(|v| database::clip_expiry_ms(&v))
+            {
+                Some(age) => {
+                    let cutoff = database::now_ms().saturating_sub(age);
+                    database::clip_purge_expired(&conn, cutoff).unwrap_or_default()
+                }
+                None => (0, Vec::new()),
+            };
+            let item = crate::commands::get_clip_impl(&conn, id).map_err(|e| anyhow::anyhow!("{e}"))?;
+            (removed, purged, orphans, item)
         };
+        // 删去重项后,通知前端把对应行移除
+        for id in removed {
+            let _ = self.app.emit("clip-removed", id);
+        }
+        for p in orphans {
+            let _ = std::fs::remove_file(p);
+        }
+        // 仅当真的清理了过期项才让前端重拉(避免每次复制都无谓刷新整表)
+        if purged > 0 {
+            let _ = self.app.emit("clips-purged", ());
+        }
         if let Some(item) = item {
             let _ = self.app.emit("clip-added", item);
         }

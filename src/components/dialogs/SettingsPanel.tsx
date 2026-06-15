@@ -745,6 +745,34 @@ export default function SettingsPanel() {
               <HotkeyRecorder label={t("S.X.HotkeyAll")} settingKey="hotkey_all" def="Alt+5" />
             </div>
             <div className="my-2 h-px bg-divider" />
+            {/* 剪切板:过期清理时长 + 重复内容移到最前 */}
+            <div className="py-1">
+              <span className="block text-sm text-text-1">{t("S.X.ClipSettings")}</span>
+              <label className="flex items-start justify-between gap-3 py-2">
+                <span className="min-w-0">
+                  <span className="block text-sm text-text-1">{t("S.X.ClipExpiry")}</span>
+                  <span className="mt-0.5 block text-xs text-muted">{t("S.X.ClipExpiryDesc")}</span>
+                </span>
+                <select
+                  value={settings["clip_expiry"] || "never"}
+                  onChange={(e) => saveSetting("clip_expiry", e.target.value)}
+                  className="mt-0.5 shrink-0 rounded-md border border-divider bg-input px-2 py-1 text-xs text-text-1 outline-none focus:border-accent"
+                >
+                  <option value="never">{t("S.X.ClipExpiryNever")}</option>
+                  <option value="7d">{t("S.X.ClipExpiry7d")}</option>
+                  <option value="1m">{t("S.X.ClipExpiry1m")}</option>
+                  <option value="3m">{t("S.X.ClipExpiry3m")}</option>
+                  <option value="1y">{t("S.X.ClipExpiry1y")}</option>
+                </select>
+              </label>
+              <Toggle
+                label={t("S.X.ClipDedup")}
+                desc={t("S.X.ClipDedupDesc")}
+                checked={flag("clip_dedup", true)}
+                onChange={setFlag("clip_dedup")}
+              />
+            </div>
+            <div className="my-2 h-px bg-divider" />
             {/* 数据存储位置:显示当前位置 + 选择新位置(迁移全部数据,需重启) */}
             <div className="flex items-start justify-between gap-3 py-2">
               <span className="min-w-0">

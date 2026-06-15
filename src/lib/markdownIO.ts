@@ -38,31 +38,66 @@ export function buildExportMarkdown(groups: Group[], tasks: Task[]): string {
   return lines.join("\n");
 }
 
-// 便签导入:从资源管理器拖入的 .md/.markdown 文件 → { 文件名(去扩展名), Markdown 文本 }
+// 便签导入:从资源管理器拖入的文本/代码文件 → { 文件名(去扩展名), Markdown 文本 }
 const MD_EXT = /\.(md|markdown)$/i;
+
+// 可导入为便签的纯文本/代码扩展名(md/markdown 单列,作 Markdown 原样导入)。
+// 其余按「代码块」包裹导入,verbatim 保形、不被 Markdown 语法(# / * 等)误解析。
+const TEXT_EXT = new Set([
+  "txt", "text", "log", "csv", "tsv",
+  "sql", "json", "json5", "jsonc", "xml", "yaml", "yml", "toml", "ini", "conf", "env", "properties",
+  "js", "jsx", "ts", "tsx", "mjs", "cjs", "css", "scss", "less", "html", "htm", "vue", "svelte",
+  "py", "rb", "go", "rs", "java", "kt", "c", "h", "cpp", "hpp", "cc", "cs", "php", "swift", "m",
+  "sh", "bash", "zsh", "ps1", "bat", "cmd", "lua", "pl", "r", "dart", "scala", "groovy", "gradle",
+  "dockerfile", "makefile", "diff", "patch", "tex",
+]);
+
+function extOfName(name: string): string {
+  const i = name.lastIndexOf(".");
+  return i >= 0 ? name.slice(i + 1).toLowerCase() : "";
+}
 
 /** 判断是否为可导入便签的 Markdown 文件(按扩展名,大小写不敏感) */
 export function isMarkdownFile(file: File): boolean {
   return MD_EXT.test(file.name);
 }
 
+/** 判断是否为可导入便签的文本/代码文件(md/markdown 或常见文本/代码扩展名) */
+export function isImportableTextFile(file: File): boolean {
+  if (isMarkdownFile(file)) return true;
+  if (TEXT_EXT.has(extOfName(file.name))) return true;
+  // 无扩展名但 MIME 标注为文本(如 text/plain)也放行
+  return !!file.type && file.type.startsWith("text/");
+}
+
 /** 文件名去扩展名,作为便签标题 */
 export function stripMdExt(name: string): string {
-  return name.replace(MD_EXT, "");
+  return name.replace(/\.[^.]+$/, "");
 }
 
 /**
- * 从一次拖放的 DataTransfer 里读出所有 Markdown 文件的文本。
+ * 从一次拖放的 DataTransfer 里读出所有可导入文本文件的内容。
+ * md/markdown 原样作 Markdown;其余文本/代码包成 ```<ext> 代码块,保形不被误解析。
  * 用网页 File API(file.text()),不依赖文件路径,与 Tauri OS 拖放无关。
  */
-export async function readMarkdownDrop(
+export async function readTextDrop(
   dt: DataTransfer | null,
 ): Promise<{ name: string; content: string }[]> {
-  const files = Array.from(dt?.files ?? []).filter(isMarkdownFile);
+  const files = Array.from(dt?.files ?? []).filter(isImportableTextFile);
   return Promise.all(
-    files.map(async (f) => ({ name: stripMdExt(f.name), content: await f.text() })),
+    files.map(async (f) => {
+      const raw = await f.text();
+      if (isMarkdownFile(f)) return { name: stripMdExt(f.name), content: raw };
+      const lang = extOfName(f.name);
+      // 代码块包裹:用 4 个反引号围栏,内容含 ``` 也不破栏
+      const content = `\`\`\`\`${lang}\n${raw.replace(/\s+$/, "")}\n\`\`\`\``;
+      return { name: stripMdExt(f.name), content };
+    }),
   );
 }
+
+/** 兼容旧调用名:等价于 readTextDrop(已支持 md 之外的文本/代码文件) */
+export const readMarkdownDrop = readTextDrop;
 
 export interface ParsedTask {
   group: string;

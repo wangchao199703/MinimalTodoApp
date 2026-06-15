@@ -1003,6 +1003,15 @@ function setupClipboardListener(): void {
       return { clips: [...pinned, clip, ...rest] };
     });
   });
+  // 去重「移到最前」:后台删掉历史里的重复行,前端同步移除对应行
+  void listen<number>("clip-removed", (e) => {
+    const id = e.payload;
+    useAppStore.setState((s) => ({ clips: s.clips.filter((c) => c.id !== id) }));
+  });
+  // 过期批量清理后:重拉一次列表对齐(量小,直接整表刷新最稳)
+  void listen("clips-purged", () => {
+    void ipc.getClips().then((clips) => useAppStore.setState({ clips }));
+  });
   // 独立编辑窗口保存后:同步该剪贴项文本到主窗口列表
   void listen<{ id: number; text: string }>("clip-updated", (e) => {
     const { id, text } = e.payload;

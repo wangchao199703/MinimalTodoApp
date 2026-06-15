@@ -68,6 +68,8 @@ pub fn run() {
             window::setup_dock(app.handle());
             // 按设置注册全局快捷键(默认 Alt+1..5)
             window::register_hotkeys(app.handle());
+            // 启动时按「过期时间」设置清理一次旧剪贴项(运行中由 commit 实时清理)
+            clipboard::purge_expired_on_startup(app.handle());
             // 后台剪贴板监听(默认开启):独立线程跑阻塞式 watcher,变化即入库 + emit
             clipboard::start_watching(app.handle().clone());
             Ok(())

@@ -121,16 +121,119 @@ pub fn clip_latest_hash(conn: &Connection) -> Option<String> {
         .ok()
 }
 
-/// 插入一条剪贴记录,返回新行 id
-pub fn clip_insert(conn: &Connection, c: &crate::models::NewClip) -> rusqlite::Result<i64> {
-    let now_ms = std::time::SystemTime::now()
+/// 读取一项标量设置(供监听线程读「去重 / 过期」开关,不经命令层)
+pub fn read_setting(conn: &Connection, key: &str) -> Option<String> {
+    conn.query_row("SELECT value FROM settings WHERE key = ?1", rusqlite::params![key], |r| r.get(0))
+        .ok()
+}
+
+/// 去重(移到最前)前的探查:同 `hash` 的历史记录里,未置顶行的 id、它们携带的标签(去重并集)、
+/// 以及是否存在「已置顶」的同内容行。
+pub struct ClipDupInfo {
+    /// 待删的未置顶旧行 id
+    pub unpinned_ids: Vec<i64>,
+    /// 这些旧行携带的标签 id(并集,用于移到最前后保留分组归属)
+    pub tag_ids: Vec<i64>,
+    /// 是否已有「置顶」的同内容行(若有则跳过新增,置顶项本就在最前)
+    pub has_pinned: bool,
+}
+
+pub fn clip_dup_info(conn: &Connection, hash: &str) -> rusqlite::Result<ClipDupInfo> {
+    let mut stmt = conn.prepare("SELECT id, pinned FROM clips WHERE hash = ?1")?;
+    let rows: Vec<(i64, i64)> = stmt
+        .query_map(rusqlite::params![hash], |r| Ok((r.get(0)?, r.get(1)?)))?
+        .collect::<Result<_, _>>()?;
+    let has_pinned = rows.iter().any(|(_, p)| *p != 0);
+    let unpinned_ids: Vec<i64> = rows.iter().filter(|(_, p)| *p == 0).map(|(id, _)| *id).collect();
+
+    let mut tag_ids = Vec::new();
+    if !unpinned_ids.is_empty() {
+        let placeholders = unpinned_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let sql = format!("SELECT DISTINCT tag_id FROM clip_tags WHERE clip_id IN ({placeholders})");
+        let mut tstmt = conn.prepare(&sql)?;
+        let params = rusqlite::params_from_iter(unpinned_ids.iter());
+        tag_ids = tstmt.query_map(params, |r| r.get(0))?.collect::<Result<_, _>>()?;
+    }
+    Ok(ClipDupInfo { unpinned_ids, tag_ids, has_pinned })
+}
+
+/// 删掉指定的未置顶旧行(连带标签关联)。故意**不删图片文件**——相同 hash = 相同文件名,
+/// 新插入的记录会复用同一文件,删了会丢图。
+pub fn clip_delete_rows(conn: &Connection, ids: &[i64]) -> rusqlite::Result<()> {
+    for id in ids {
+        conn.execute("DELETE FROM clip_tags WHERE clip_id = ?1", rusqlite::params![id])?;
+        conn.execute("DELETE FROM clips WHERE id = ?1", rusqlite::params![id])?;
+    }
+    Ok(())
+}
+
+/// 给某剪贴行补打一组标签(移到最前时保留原分组归属)
+pub fn clip_attach_tags(conn: &Connection, clip_id: i64, tag_ids: &[i64]) -> rusqlite::Result<()> {
+    for tag in tag_ids {
+        conn.execute(
+            "INSERT OR IGNORE INTO clip_tags (clip_id, tag_id) VALUES (?1, ?2)",
+            rusqlite::params![clip_id, tag],
+        )?;
+    }
+    Ok(())
+}
+
+/// 清理过期(未置顶)剪贴项:删 created_at 早于 `cutoff_ms` 的记录。
+/// 返回 (被删行数, 不再被引用的图片文件路径)——行数 0 时调用方可跳过「通知前端重拉」。
+pub fn clip_purge_expired(conn: &Connection, cutoff_ms: i64) -> rusqlite::Result<(usize, Vec<String>)> {
+    // 先收将被删行里涉及的图片路径,删后再判断哪些文件无人引用
+    let mut stmt = conn.prepare(
+        "SELECT id, image_path FROM clips WHERE pinned = 0 AND created_at < ?1",
+    )?;
+    let rows: Vec<(i64, Option<String>)> = stmt
+        .query_map(rusqlite::params![cutoff_ms], |r| Ok((r.get(0)?, r.get(1)?)))?
+        .collect::<Result<_, _>>()?;
+    let deleted = rows.len();
+    let mut maybe_files = Vec::new();
+    for (id, path) in &rows {
+        conn.execute("DELETE FROM clip_tags WHERE clip_id = ?1", rusqlite::params![id])?;
+        conn.execute("DELETE FROM clips WHERE id = ?1", rusqlite::params![id])?;
+        if let Some(p) = path {
+            maybe_files.push(p.clone());
+        }
+    }
+    let mut orphans = Vec::new();
+    for p in maybe_files {
+        let still: i64 = conn
+            .query_row("SELECT COUNT(*) FROM clips WHERE image_path = ?1", rusqlite::params![p], |r| r.get(0))?;
+        if still == 0 {
+            orphans.push(p);
+        }
+    }
+    Ok((deleted, orphans))
+}
+
+/// 把过期设置键(never/7d/1m/3m/1y)换算成毫秒时长;不过期返回 None
+pub fn clip_expiry_ms(value: &str) -> Option<i64> {
+    const DAY: i64 = 86_400_000;
+    match value {
+        "7d" => Some(7 * DAY),
+        "1m" => Some(30 * DAY),
+        "3m" => Some(90 * DAY),
+        "1y" => Some(365 * DAY),
+        _ => None, // "" / "never" / 未知 → 永不过期
+    }
+}
+
+/// 当前 Unix 毫秒时间戳(剪贴记录 created_at / 过期清理共用)
+pub fn now_ms() -> i64 {
+    std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as i64)
-        .unwrap_or(0);
+        .unwrap_or(0)
+}
+
+/// 插入一条剪贴记录,返回新行 id
+pub fn clip_insert(conn: &Connection, c: &crate::models::NewClip) -> rusqlite::Result<i64> {
     conn.execute(
         "INSERT INTO clips (kind, text, image_path, thumbnail_b64, hash, created_at, pinned)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0)",
-        rusqlite::params![c.kind, c.text, c.image_path, c.thumbnail_b64, c.hash, now_ms],
+        rusqlite::params![c.kind, c.text, c.image_path, c.thumbnail_b64, c.hash, now_ms()],
     )?;
     Ok(conn.last_insert_rowid())
 }

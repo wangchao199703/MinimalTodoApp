@@ -356,3 +356,18 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 **验证**:cargo check 无警告;wa_test 例本机实测 GetMonitorInfo 正确(size=40、work 排任务栏)。本机单屏无法复现双屏交互。
 
 **未决**:需用户在双屏机实测确认贴边收起/唤出(上/左/右边、主屏+副屏)。
+
+---
+
+## 多任务批次:剪切板/便签/更新提示 8 项 (2026-06-15,版本仍 2.0.1,未发布)
+
+**背景**:用户一次性提了 8 个独立需求(更新提示 md 渲染、剪切板过期设置、剪切板监听图片、复制去重移到最前、便签拖入更多文本类型、便签导出 md、便签复制多空行、便签选中文本加待办)。三处产品分叉已与用户确认:过期默认「永不过期」;去重「移到最前+删历史重复,默认开可关」;便签加待办是「选中文本生成待办」(非整篇)。
+
+**进度**:8 项全部实现,`tsc -b` + `cargo check` 通过。改动见 `release.md` 同名小节。关键文件:
+- 后端:`clipboard.rs`(图片开关+handle 重构+commit 去重/过期)、`database.rs`(clip_dup_info/clip_delete_rows/clip_attach_tags/clip_purge_expired/clip_expiry_ms/read_setting/now_ms)、`lib.rs`(启动 purge)。
+- 前端:`MarkdownLite.tsx`(新)、`UpdateDialog.tsx`、`SettingsPanel.tsx`(剪切板设置区)、`markdownIO.ts`(readTextDrop)、`NotesTree.tsx`(NoteRow 右键导出)、`NoteEditor.tsx`(复制序列化+选区加待办)、`useAppStore.ts`(clip-removed/clips-purged 监听)、`i18n.ts`。
+
+**下一步 / 待用户验证**:
+1. 跑起来走查 8 项(尤其:复制图片能否进列表、复制文本是否还多空行、去重开/关行为、过期下拉、拖 txt/sql/json、便签右键导出、选中文本右键加待办)。
+2. 图片监听本机需实测(剪贴板延迟渲染/富文本带图场景);若富文本复制想存图而非文本,需调整 handle() 优先级策略(当前「有文本即文本」)。
+3. 发布前:用户确认后再提版本号(当前 2.0.1 已发布,需 bump 到 2.0.2)并重建 exe、走 release.ps1。

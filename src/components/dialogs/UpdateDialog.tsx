@@ -3,6 +3,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { downloadAndApply, openDownloadUrl, type UpdateInfo } from "../../lib/updater";
 import { t, f } from "../../lib/i18n";
 import Modal from "../ui/Modal";
+import MarkdownLite from "../ui/MarkdownLite";
 
 export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => void }) {
   const saveSetting = useAppStore((s) => s.saveSetting);
@@ -41,9 +42,10 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
       {props.info.notes && (
         <>
           <p className="mt-2 mb-1 text-xs font-medium text-muted">{t("S.Update.WhatsNew")}</p>
-          <div className="max-h-44 overflow-y-auto rounded-md bg-input p-2 text-xs whitespace-pre-wrap text-text-2 select-text">
-            {props.info.notes}
-          </div>
+          <MarkdownLite
+            text={props.info.notes}
+            className="max-h-44 overflow-y-auto rounded-md bg-input p-2 text-xs text-text-2 select-text"
+          />
         </>
       )}
 

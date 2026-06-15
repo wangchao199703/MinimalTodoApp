@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Markdown } from "@tiptap/markdown";
@@ -10,6 +10,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import {
   Baseline,
   Bold,
+  CheckSquare,
   Code,
   Heading,
   Image as ImageIcon,
@@ -19,7 +20,9 @@ import {
   Strikethrough,
 } from "lucide-react";
 import { ipc } from "../lib/tauri-ipc";
+import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
+import { Popover, MenuItem } from "./ui/Popover";
 
 /**
  * 便签所见即所得编辑器(tiptap):输入 Markdown 语法实时生效
@@ -86,6 +89,10 @@ export default function NoteEditor({
 }) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const addTask = useAppStore((s) => s.addTask);
+  const pushToast = useAppStore((s) => s.pushToast);
+  // 选中文本右键菜单(加入待办):仅在有选区时弹出,空选区放行系统默认菜单
+  const [selMenu, setSelMenu] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -101,6 +108,16 @@ export default function NoteEditor({
     contentType: "markdown",
     editorProps: {
       attributes: { class: "note-prose" },
+      // 复制纯文本去掉多余尾部空行:用 ProseMirror 原生取文本(段间 \n\n、软换行 \n),
+      // 再裁掉末尾空白。只影响 text/plain,text/html 仍由 PM 生成,粘到富文本不丢格式。
+      // (此前 @tiptap/markdown 的文本序列化会带一行多余空行,即用户反馈的「复制多一行空格」)
+      clipboardTextSerializer: (slice) =>
+        slice.content
+          .textBetween(0, slice.content.size, "\n\n", (leaf) =>
+            leaf.type.name === "hardBreak" ? "\n" : "",
+          )
+          .replace(/\n{3,}/g, "\n\n")
+          .replace(/[ \t\n]+$/, ""),
       // 粘贴图片:存盘 note-images 后以 noteimg:// 引用插入(对齐旧版 Editor_Pasting)
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []);
@@ -259,9 +276,49 @@ export default function NoteEditor({
           <ImageIcon size={13} />
         </Btn>
       </div>
-      <div style={style} className="note-editor min-h-0 flex-1 overflow-y-auto" onClick={() => editor.chain().focus().run()}>
+      <div
+        style={style}
+        className="note-editor min-h-0 flex-1 overflow-y-auto"
+        onClick={() => editor.chain().focus().run()}
+        onContextMenu={(e) => {
+          // 取当前选区纯文本;有选中才接管右键(加入待办),否则放行浏览器默认菜单
+          const { from, to } = editor.state.selection;
+          if (from === to) return;
+          const text = editor.state.doc
+            .textBetween(from, to, "\n", (leaf) => (leaf.type.name === "hardBreak" ? "\n" : ""))
+            .trim();
+          if (!text) return;
+          e.preventDefault();
+          setSelMenu({ x: e.clientX, y: e.clientY, text });
+        }}
+      >
         <EditorContent editor={editor} />
       </div>
+      {selMenu && (
+        <Popover at={selMenu} anchor={null} onClose={() => setSelMenu(null)} zIndex={200}>
+          <div className="w-44">
+            <MenuItem
+              onClick={() => {
+                const { text } = selMenu;
+                setSelMenu(null);
+                // 选区多行 → 每非空行一条待办;单行 → 一条。加入默认清单(无分组)
+                const lines = text
+                  .split("\n")
+                  .map((l) => l.trim())
+                  .filter(Boolean);
+                const titles = lines.length > 0 ? lines : [text];
+                void (async () => {
+                  for (const title of titles) await addTask(title);
+                  pushToast(t("S.X.NoteAddedToTask"));
+                })();
+              }}
+            >
+              <CheckSquare size={13} />
+              {t("S.X.NoteSelToTask")}
+            </MenuItem>
+          </div>
+        </Popover>
+      )}
     </div>
   );
 }

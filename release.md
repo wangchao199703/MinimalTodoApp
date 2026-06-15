@@ -324,3 +324,42 @@
 - `release-notes.md` 顶部新增 v2.0.1 段(汇总自首个 v2.0.0 以来的全部改动:自动更新/重装重做、全局快捷键、手动下载、检查更新设置入口、贴边修复、永不在任务栏、剪切板/标签看板若干、重装对话框打磨)。
 - **注意**:不能直接复用 2.0.0 构建的 exe——其 FileVersion=2.0.0,而重装/检查更新按内置版本号拼资产名/比对版本,版本号必须与 tag 一致。故同代码**重新构建**得 FileVersion=2.0.1 的 exe,作为 v2.0.1 资产。
 - 内容与 e88c761(最后一个 v2.0.0 构建)完全一致,仅版本号不同。
+
+## v2.0.1 后续(多任务批次,尚未发布;版本号未提升,仍为 2.0.1)
+
+> 用户未要求改版本号,故保持 2.0.1。正式发布前需自行提升版本号并重建 exe(否则与已发布的 v2.0.1 资产同名冲突)。
+
+### 1) 更新提示文本支持 Markdown 渲染
+- 新增 `src/components/ui/MarkdownLite.tsx`:轻量只读 Markdown 渲染(标题 #~####、`-/*` 列表、**粗**、*斜*、`代码`、> 引用、--- 分隔线),纯 React 节点、不注入 HTML、无第三方依赖。
+- `UpdateDialog.tsx`:更新/重装说明从 `whitespace-pre-wrap` 纯文本改为 `<MarkdownLite>` 渲染,`#` 等不再原样显示。
+
+### 2) 剪切板「过期时间」设置
+- 设置 → 通用新增「剪切板」区:过期时长下拉(永不过期[默认]/7天/1月/3月/1年)。设置键 `clip_expiry`(never/7d/1m/3m/1y)。
+- 过期只删**未置顶**项,置顶项永久保留。清理时机:启动各一次(`clipboard::purge_expired_on_startup`)+ 每次新剪贴入库时实时清理(`commit`)。
+- DB:`clip_purge_expired`(返回删除行数 + 孤儿图片路径)、`clip_expiry_ms`、`read_setting`、`now_ms`。仅当真有清理才 emit `clips-purged`(前端重拉),避免每次复制无谓刷新。
+
+### 3) 剪切板支持监听图片
+- `clipboard.rs` `IMAGE_CAPTURE_ENABLED` 改 true。
+- `handle()` 重构为「有文本即文本」优先:富文本复制(网页/Office 带图)存文本不误判为图;纯文本立即返回不进图片轮询(此前每次复制白等 ~200ms)。无文本才走图片延迟渲染轮询(`image_ready`,最多 ~250ms)。
+
+### 4) 复制/重复内容「移到最前 + 删历史重复」
+- 设置 → 剪切板新增开关「重复内容移到最前」(`clip_dedup`,**默认开**,可关)。直接解决「右键复制后又监听出一条一模一样」。
+- `commit`:开时按内容 hash 探查历史同内容(`clip_dup_info`)→ 已有**置顶**同内容则跳过新增;否则删未置顶旧行(`clip_delete_rows`,**保留图片文件**因同 hash 同文件名)并把旧行的**分组标签并集**带到新行(`clip_attach_tags`),即「移到最前且保留分组」。关时沿用「与最近一条相同则跳过」。
+- 前端:新增 `clip-removed` / `clips-purged` 事件监听(store)。
+
+### 5) 便签支持拖入更多文本文件
+- `markdownIO.ts`:新增 `isImportableTextFile` + `readTextDrop`(`readMarkdownDrop` 现为其别名,调用点不变)。md/markdown 原样作 Markdown;txt/sql/json/csv/log/xml/yaml/各类代码等数十种扩展名 + MIME `text/*` → 包成 ```` ```<ext> ```` 代码块导入(verbatim 保形,不被 Markdown 误解析)。标题=文件名去扩展名。
+
+### 6) 便签单篇导出 Markdown
+- `NotesTree.tsx` NoteRow 新增右键菜单(导出为 Markdown / 删除)。导出复用既有 `export_file` 命令(写到桌面),文件名=便签标题,正文=便签 Markdown 原文。
+
+### 7) 便签复制多一行空行修复
+- `NoteEditor.tsx` editorProps 增加 `clipboardTextSerializer`:用 ProseMirror 原生取文本(段间 \n\n、软换行 \n)再裁掉尾部空白,替代 @tiptap/markdown 自带文本序列化(带多余尾行)。只影响 text/plain,text/html 不变(粘到富文本不丢格式)。
+
+### 8) 便签选中文本右键加入待办
+- `NoteEditor.tsx` 编辑区 `onContextMenu`:有选区才接管(无选区放行系统菜单)。菜单「选中文本加入待办」→ 选区多行按非空行拆多条、单行一条,加入默认清单。
+
+### i18n
+- 双语新增:剪切板设置(过期/去重)、便签导出/加入待办、拖入提示文案更新等键(zh + en)。
+
+验证:`npx tsc -b` 通过、`cargo check` 通过。

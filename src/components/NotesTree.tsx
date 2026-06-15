@@ -7,6 +7,7 @@ import {
 import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/closest-edge";
 import {
   ChevronRight,
+  Download,
   Eraser,
   FilePlus2,
   FileText,
@@ -66,13 +67,34 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
   const selectNote = useAppStore((s) => s.selectNote);
   const setView = useAppStore((s) => s.setView);
   const removeNote = useAppStore((s) => s.removeNote);
+  const pushToast = useAppStore((s) => s.pushToast);
   const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("note", note.id);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+
+  const confirmDelete = async () => {
+    if (await confirm({ title: t("S.Note.Delete"), message: t("S.Note.DeleteConfirm") }))
+      void removeNote(note.id);
+  };
+  const exportMd = async () => {
+    try {
+      // 单篇便签导出为 .md(正文已是 Markdown 文本),落到桌面;文件名=便签标题
+      const path = await ipc.exportFile(`${displayTitle(note)}.md`, note.content ?? "");
+      pushToast(`${t("S.X.NoteExported")}:${path}`);
+    } catch {
+      pushToast(t("S.X.NoteExportFailed"));
+    }
+  };
+
   return (
     <div
       ref={ref}
       onClick={() => {
         selectNote(note.id);
         setView({ kind: "notes" });
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setMenu({ x: e.clientX, y: e.clientY });
       }}
       className={`group relative flex cursor-default items-center gap-2 rounded-md py-1.5 pr-1 pl-7 text-sm ${
         active
@@ -93,15 +115,38 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
         title={t("S.X.Delete")}
         onClick={(e) => {
           e.stopPropagation();
-          void (async () => {
-            if (await confirm({ title: t("S.Note.Delete"), message: t("S.Note.DeleteConfirm") }))
-              void removeNote(note.id);
-          })();
+          void confirmDelete();
         }}
         className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-overdue group-hover:flex"
       >
         <X size={12} />
       </button>
+      {menu && (
+        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
+          <div className="w-44">
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                void exportMd();
+              }}
+            >
+              <Download size={13} />
+              {t("S.X.NoteExportMd")}
+            </MenuItem>
+            <div className="my-1 h-px bg-divider" />
+            <MenuItem
+              danger
+              onClick={() => {
+                setMenu(null);
+                void confirmDelete();
+              }}
+            >
+              <Trash2 size={13} />
+              {t("S.X.Delete")}
+            </MenuItem>
+          </div>
+        </Popover>
+      )}
     </div>
   );
 }
