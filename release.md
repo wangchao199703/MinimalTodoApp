@@ -278,3 +278,12 @@
 4. **标签看板容器内「+ 添加」**(参考 WPF 各容器自带 `AddTaskToTag`):标签看板每张卡片底部加输入框,回车以本列标签建一条待办(「无标签」列 → 不归组)。占位文案复用 `S.Tag.AddPlaceholder`。
    - 注:看板只显示有任务的列(空标签列不上板,沿用既有设计),故「+ 添加」出现在已有任务的卡片底部。
 - 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。
+
+## v2.0.0 — 新增:全局快捷键(召唤窗口 + 切换视图,可改)
+
+- **需求**:全局快捷键召唤主窗口并切换第一侧栏视图:Alt+1 便签 / Alt+2 剪切板 / Alt+3 标签看板 / Alt+4 四象限 / Alt+5 全部待办;设置里可改。召唤=从隐藏恢复 + 若在底层则浮到最前,**不居中、不常驻置顶**(点别处会正常退后)。
+- **实现**:
+  - 依赖 `tauri-plugin-global-shortcut`。`window.rs`:`register_hotkeys`(按设置 `hotkey_*` 注册,空则用默认 Alt+1..5;解析失败/被占用则跳过)、`HotkeyMap`(快捷键→视图 反查)、`on_hotkey`(触发→`summon_main`+emit「summon-view」)、`summon_main`(unminimize+show+set_focus,不居中不置顶)、命令 `update_hotkeys`/`pause_hotkeys`。`lib.rs` 注册插件(Pressed 时 `on_hotkey`)+ manage `HotkeyMap` + setup 调 `register_hotkeys`。
+  - 加速键写法实测:`Alt+1`/`Control+Shift+K`/`Alt+F1` 均被 `Shortcut::from_str` 接受。
+  - 前端:`main.tsx` 仅主窗口 `listen("summon-view")`→`setView`;设置「通用」段加 5 个**快捷键录制按钮**(点一下→按组合键即存并重注册;录制期间先 `pause_hotkeys` 放开全局热键,否则按键被系统吞掉录不到;需含 Alt/Ctrl/Shift;Esc/失焦取消)。保存先 `await setSetting` 落库再 `update_hotkeys`,避免读到旧值。i18n 双语。
+- 验证:`npm run build` + `cargo check` 全过;加速键解析本机实测通过。GUI 全局热键触发需运行实测。版本保持 2.0.0。

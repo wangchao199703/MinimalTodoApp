@@ -179,6 +179,10 @@ export const ipc = {
   getAutostart: () => invoke<boolean>("get_autostart"),
   /** 切语言后即时重建托盘菜单 */
   rebuildTray: (en: boolean) => invoke<void>("rebuild_tray", { en }),
+  /** 改了快捷键设置后,按最新设置重新注册全局快捷键 */
+  updateHotkeys: () => invoke<void>("update_hotkeys"),
+  /** 录制快捷键期间暂停全局热键(否则会被系统吞掉,录不到) */
+  pauseHotkeys: () => invoke<void>("pause_hotkeys"),
   /** 打开/聚焦独立的设置窗口(可拖出主窗口) */
   openSettingsWindow: () => invoke<void>("open_settings_window"),
   /** 恢复默认设置(保留语言) */

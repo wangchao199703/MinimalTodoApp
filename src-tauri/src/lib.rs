@@ -45,12 +45,26 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         // 目录选择对话框:数据存储位置「选择新位置」用
         .plugin(tauri_plugin_dialog::init())
+        // 全局快捷键:Alt+1..5 召唤窗口 + 切换视图(按下时触发,松开忽略)
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, shortcut, event| {
+                    if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        window::on_hotkey(app, shortcut);
+                    }
+                })
+                .build(),
+        )
         .manage(database::Db(std::sync::Mutex::new(conn)))
         // 剪贴项编辑窗口的「待编辑目标」:open 时存 clip_id,编辑窗口挂载后 take 走(见 window.rs)
         .manage(window::ClipEditorTarget(std::sync::Mutex::new(None)))
+        // 已注册的全局快捷键 → 目标视图 映射(触发时查表)
+        .manage(window::HotkeyMap(std::sync::Mutex::new(Vec::new())))
         .setup(|app| {
             window::setup_tray(app.handle())?;
             window::setup_dock(app.handle());
+            // 按设置注册全局快捷键(默认 Alt+1..5)
+            window::register_hotkeys(app.handle());
             // 后台剪贴板监听(默认开启):独立线程跑阻塞式 watcher,变化即入库 + emit
             clipboard::start_watching(app.handle().clone());
             Ok(())
@@ -110,6 +124,8 @@ pub fn run() {
             window::get_autostart,
             window::open_settings_window,
             window::rebuild_tray,
+            window::update_hotkeys,
+            window::pause_hotkeys,
             updater::apply_update,
             updater::download_update,
             updater::open_url,

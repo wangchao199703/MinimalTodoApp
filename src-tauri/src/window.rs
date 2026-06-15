@@ -78,6 +78,88 @@ fn write_setting(app: &AppHandle, key: &str, value: &str) {
     drop(guard);
 }
 
+// ============ 全局快捷键(召唤窗口 + 切换视图) ============
+
+/// 5 个快捷键:设置键 / 默认加速键 / 目标视图 key。
+const HOTKEY_DEFS: [(&str, &str, &str); 5] = [
+    ("hotkey_notes", "Alt+1", "notes"),
+    ("hotkey_clipboard", "Alt+2", "clipboard"),
+    ("hotkey_tagboard", "Alt+3", "tagboard"),
+    ("hotkey_quadrant", "Alt+4", "quadrant"),
+    ("hotkey_all", "Alt+5", "all"),
+];
+
+/// 已注册快捷键 → 目标视图 的映射(触发时反查)。
+pub struct HotkeyMap(pub std::sync::Mutex<Vec<(tauri_plugin_global_shortcut::Shortcut, String)>>);
+
+/// 召唤主窗口:从隐藏/最小化恢复并置前(浮到最上层一次),**不居中、不常驻置顶**。
+/// 即:取消隐藏 + 若在其他窗口底层则浮到最前;之后点别处会正常退到后面(不锁定置顶)。
+pub fn summon_main(app: &AppHandle) {
+    let Some(w) = main_window(app) else { return };
+    let _ = w.unminimize();
+    let _ = w.show();
+    let _ = w.set_focus();
+}
+
+/// 按设置注册全局快捷键(默认 Alt+1..5);设置为「none」或解析失败则跳过该项。
+/// 先全清再注册,可在设置改动后重复调用。
+pub fn register_hotkeys(app: &AppHandle) {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+    let gs = app.global_shortcut();
+    let _ = gs.unregister_all();
+    let mut map: Vec<(tauri_plugin_global_shortcut::Shortcut, String)> = Vec::new();
+    for (key, default, view) in HOTKEY_DEFS {
+        let accel = read_setting(app, key)
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .unwrap_or_else(|| default.to_string());
+        if accel.eq_ignore_ascii_case("none") {
+            continue; // 用户清空 = 禁用该项
+        }
+        if let Ok(sc) = accel.parse::<tauri_plugin_global_shortcut::Shortcut>() {
+            if gs.register(sc).is_ok() {
+                map.push((sc, view.to_string()));
+            }
+        }
+    }
+    if let Some(state) = app.try_state::<HotkeyMap>() {
+        if let Ok(mut g) = state.0.lock() {
+            *g = map;
+        }
+    }
+}
+
+/// 全局快捷键触发:查表得目标视图 → 召唤窗口 + emit「summon-view」让前端切换第一侧栏视图。
+pub fn on_hotkey(app: &AppHandle, sc: &tauri_plugin_global_shortcut::Shortcut) {
+    use tauri::Emitter;
+    let view = app.try_state::<HotkeyMap>().and_then(|st| {
+        st.0.lock().ok().and_then(|g| g.iter().find(|(s, _)| s == sc).map(|(_, v)| v.clone()))
+    });
+    if let Some(view) = view {
+        summon_main(app);
+        let _ = app.emit("summon-view", view);
+    }
+}
+
+/// 前端改了快捷键设置后调用:按最新设置重新注册。
+#[tauri::command]
+pub fn update_hotkeys(app: AppHandle) {
+    register_hotkeys(&app);
+}
+
+/// 录制快捷键期间暂时全部注销(否则按 Alt+1 会被系统全局热键吞掉、传不到设置窗口的输入框)。
+/// 录制结束/取消后由前端再调 update_hotkeys 重新注册。
+#[tauri::command]
+pub fn pause_hotkeys(app: AppHandle) {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+    let _ = app.global_shortcut().unregister_all();
+    if let Some(st) = app.try_state::<HotkeyMap>() {
+        if let Ok(mut g) = st.0.lock() {
+            g.clear();
+        }
+    }
+}
+
 // ============ 系统托盘 ============
 
 /// 切语言后即时重建托盘菜单与提示(对齐旧版 LanguageChanged 重建)

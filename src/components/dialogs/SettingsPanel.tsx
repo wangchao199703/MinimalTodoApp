@@ -39,6 +39,74 @@ const SOUND_STYLE_LABEL_KEY: Record<string, string> = {
   cute: "S.Settings.SoundStyle.Cute",
 };
 
+// 浏览器 KeyboardEvent.code → 加速键键名(与 Rust Shortcut::from_str 接受的写法一致)
+function codeToToken(code: string): string | null {
+  const digit = /^Digit([0-9])$/.exec(code);
+  if (digit) return digit[1];
+  const letter = /^Key([A-Z])$/.exec(code);
+  if (letter) return letter[1];
+  if (/^F([1-9]|1[0-9]|2[0-4])$/.test(code)) return code;
+  if (code === "Space") return "Space";
+  return null; // 修饰键本身或不支持的键
+}
+
+/** 单个快捷键录制按钮:点一下进入录制 → 按下「修饰键+键」即保存并重注册;Esc/失焦取消 */
+function HotkeyRecorder({ label, settingKey, def }: { label: string; settingKey: string; def: string }) {
+  const settings = useAppStore((s) => s.settings);
+  const saveSetting = useAppStore((s) => s.saveSetting);
+  const [recording, setRecording] = useState(false);
+  const current = settings[settingKey] ?? def;
+
+  const start = () => {
+    setRecording(true);
+    void ipc.pauseHotkeys(); // 录制期间放开全局热键,按键才能传到这里
+  };
+  const stop = () => {
+    setRecording(false);
+    void ipc.updateHotkeys(); // 重新按设置注册
+  };
+  const onKey = (e: React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === "Escape") {
+      stop();
+      return;
+    }
+    const mods: string[] = [];
+    if (e.ctrlKey) mods.push("Control");
+    if (e.altKey) mods.push("Alt");
+    if (e.shiftKey) mods.push("Shift");
+    if (e.metaKey) mods.push("Super");
+    const token = codeToToken(e.code);
+    if (!token || mods.length === 0) return; // 需「至少一个修饰键 + 一个键」
+    const accel = [...mods, token].join("+");
+    setRecording(false);
+    void (async () => {
+      saveSetting(settingKey, accel); // 本地即时 + 跨窗口同步
+      await ipc.setSetting(settingKey, accel); // 确保库已落盘(saveSetting 内是异步,会与下面重注册抢)
+      await ipc.updateHotkeys(); // 按新设置重注册全局热键
+    })();
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5">
+      <span className="text-sm text-text-1">{label}</span>
+      <button
+        onClick={start}
+        onKeyDown={recording ? onKey : undefined}
+        onBlur={() => recording && stop()}
+        className={`min-w-[88px] rounded-md px-3 py-1.5 text-center text-xs ring-1 ${
+          recording
+            ? "text-accent ring-accent"
+            : "text-text-2 ring-divider hover:bg-card-hover"
+        }`}
+      >
+        {recording ? t("S.X.HotkeyRecording") : current}
+      </button>
+    </div>
+  );
+}
+
 function Toggle(props: {
   label: string;
   desc?: string;
@@ -674,6 +742,17 @@ export default function SettingsPanel() {
               checked={flag("show_holidays", true)}
               onChange={setFlag("show_holidays")}
             />
+            <div className="my-2 h-px bg-divider" />
+            {/* 全局快捷键:召唤窗口 + 切换视图(可改) */}
+            <div className="py-1">
+              <span className="block text-sm text-text-1">{t("S.X.Hotkeys")}</span>
+              <span className="mt-0.5 mb-1 block text-xs text-muted">{t("S.X.HotkeysDesc")}</span>
+              <HotkeyRecorder label={t("S.X.HotkeyNotes")} settingKey="hotkey_notes" def="Alt+1" />
+              <HotkeyRecorder label={t("S.X.HotkeyClipboard")} settingKey="hotkey_clipboard" def="Alt+2" />
+              <HotkeyRecorder label={t("S.X.HotkeyTagboard")} settingKey="hotkey_tagboard" def="Alt+3" />
+              <HotkeyRecorder label={t("S.X.HotkeyQuadrant")} settingKey="hotkey_quadrant" def="Alt+4" />
+              <HotkeyRecorder label={t("S.X.HotkeyAll")} settingKey="hotkey_all" def="Alt+5" />
+            </div>
             <div className="my-2 h-px bg-divider" />
             {/* 数据存储位置:显示当前位置 + 选择新位置(迁移全部数据,需重启) */}
             <div className="flex items-start justify-between gap-3 py-2">
