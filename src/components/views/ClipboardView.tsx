@@ -7,11 +7,14 @@ import {
 import {
   CalendarDays,
   CheckSquare,
+  ChevronDown,
+  ChevronUp,
   Clipboard as ClipboardIcon,
   Copy,
   Download,
   Eraser,
   Eye,
+  Images,
   NotebookPen,
   Palette,
   PanelLeftClose,
@@ -97,6 +100,111 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
       >
         <X size={18} />
       </button>
+    </div>
+  );
+}
+
+/** 浏览模式:一次只看一条剪贴项,图片/文本铺满区域,滚轮 / 方向键翻看(相册式),Esc 退出 */
+function ClipBrowser({
+  clips,
+  index,
+  setIndex,
+  onExit,
+}: {
+  clips: ClipItem[];
+  index: number;
+  setIndex: React.Dispatch<React.SetStateAction<number>>;
+  onExit: () => void;
+}) {
+  const areaRef = useRef<HTMLDivElement | null>(null);
+  const total = clips.length;
+  const clip = clips[index];
+
+  // 滚轮翻看(节流;须用原生非被动监听才能 preventDefault 拦住页面滚动)
+  useEffect(() => {
+    const el = areaRef.current;
+    if (!el) return;
+    let lock = 0;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lock < 160) return;
+      lock = now;
+      setIndex((i) => Math.min(total - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1))));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [total, setIndex]);
+
+  // 方向键翻看 + Esc 退出
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") setIndex((i) => Math.min(total - 1, i + 1));
+      else if (e.key === "ArrowUp" || e.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
+      else if (e.key === "Escape") onExit();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [total, setIndex, onExit]);
+
+  if (total === 0 || !clip) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-sm text-muted">
+        {t("S.X.ClipEmpty")}
+      </div>
+    );
+  }
+
+  const fullImg =
+    clip.kind === "image"
+      ? (clip.image_path ? convertFileSrc(clip.image_path) : clip.thumbnail_b64) ?? undefined
+      : undefined;
+
+  return (
+    <div ref={areaRef} className="relative flex min-h-0 flex-1 select-none flex-col">
+      <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+        {clip.kind === "image" ? (
+          fullImg ? (
+            <img
+              src={fullImg}
+              alt="clip"
+              className="max-h-full max-w-full rounded-lg object-contain shadow-sm"
+            />
+          ) : (
+            <span className="text-muted">[{t("S.X.ClipImage")}]</span>
+          )
+        ) : (
+          <div className="h-full w-full overflow-auto rounded-lg border border-divider bg-card p-6 text-base leading-relaxed break-words whitespace-pre-wrap text-text-1">
+            {(clip.text ?? "").trim() || "(空白)"}
+          </div>
+        )}
+      </div>
+
+      {/* 上一条(↑)/ 下一条(↓)浮层按钮,与滚轮方向一致 */}
+      <button
+        title={t("S.X.ClipBrowsePrev")}
+        disabled={index <= 0}
+        onClick={() => setIndex((i) => Math.max(0, i - 1))}
+        className="absolute top-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-card/80 text-text-2 shadow ring-1 ring-divider backdrop-blur hover:bg-card-hover disabled:opacity-30"
+      >
+        <ChevronUp size={16} />
+      </button>
+      <button
+        title={t("S.X.ClipBrowseNext")}
+        disabled={index >= total - 1}
+        onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
+        className="absolute bottom-11 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-card/80 text-text-2 shadow ring-1 ring-divider backdrop-blur hover:bg-card-hover disabled:opacity-30"
+      >
+        <ChevronDown size={16} />
+      </button>
+
+      <div className="flex shrink-0 items-center justify-center gap-2 border-t border-divider/60 py-1.5 text-xs text-muted">
+        <span className="text-text-2 tabular-nums">
+          {index + 1} / {total}
+        </span>
+        <span>·</span>
+        <span>{t("S.X.ClipBrowseHint")}</span>
+      </div>
     </div>
   );
 }
@@ -598,6 +706,9 @@ export default function ClipboardView() {
   const [dateMenu, setDateMenu] = useState<{ x: number; y: number } | null>(null);
   // 「重复内容移到最前」开关(与设置同一持久化键,工具栏内快捷切换)
   const clipDedup = settings["clip_dedup"] !== "0";
+  // 浏览模式(持久化):一次铺满展示一条,滚轮翻看(相册式)
+  const browseMode = settings["clip_browse_mode"] === "1";
+  const [browseIndex, setBrowseIndex] = useState(0);
   // 快捷范围:近 N 天(含今天)
   const setLastDays = (days: number) => {
     const to = new Date();
@@ -606,12 +717,6 @@ export default function ClipboardView() {
     setDateFrom(ymd(from));
     setDateTo(ymd(to));
   };
-  // 显示大小:持久化设置 clip_item_size(默认中)
-  const itemSize: ClipSize =
-    settings["clip_item_size"] === "sm" || settings["clip_item_size"] === "lg"
-      ? (settings["clip_item_size"] as ClipSize)
-      : "md";
-
   // 第二侧边栏宽度可拖动并持久化(默认 224,范围 60–460;下限按用户要求放到 60)
   const [navWidth, setNavWidth] = useState(() =>
     Math.min(460, Math.max(60, Number(settings["clip_sidebar_width"]) || 224)),
@@ -662,6 +767,12 @@ export default function ClipboardView() {
     setDateFrom("");
     setDateTo("");
   };
+
+  // 浏览模式下:列表变化(过滤/删除)后把当前索引夹在有效范围内
+  useEffect(() => {
+    setBrowseIndex((i) => Math.min(Math.max(0, i), Math.max(0, filtered.length - 1)));
+  }, [filtered.length]);
+  const browseIdx = Math.min(browseIndex, Math.max(0, filtered.length - 1));
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -790,23 +901,19 @@ export default function ClipboardView() {
                 </button>
               )}
             </div>
-            {/* 显示大小:小/中/大(持久化),激活项「浮起」 */}
-            <div className="flex shrink-0 items-center rounded-md bg-card-hover p-0.5">
-              {(["sm", "md", "lg"] as ClipSize[]).map((s) => (
-                <button
-                  key={s}
-                  title={t("S.X.ClipSize")}
-                  onClick={() => saveSetting("clip_item_size", s)}
-                  className={`flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-colors ${
-                    itemSize === s
-                      ? "bg-card text-text-1 shadow-sm ring-1 ring-divider"
-                      : "text-muted hover:text-text-1"
-                  }`}
-                >
-                  {s === "sm" ? t("S.X.ClipSizeS") : s === "md" ? t("S.X.ClipSizeM") : t("S.X.ClipSizeL")}
-                </button>
-              ))}
-            </div>
+            {/* 浏览模式:一次铺满展示一条,滚轮翻看(相册式) */}
+            <button
+              title={t("S.X.ClipBrowse")}
+              onClick={() => saveSetting("clip_browse_mode", browseMode ? "0" : "1")}
+              className={`flex h-7 shrink-0 items-center gap-1.5 rounded-md border px-2 text-xs transition-colors ${
+                browseMode
+                  ? "border-accent/30 bg-accent/15 text-accent"
+                  : "border-divider text-muted hover:bg-card-hover"
+              }`}
+            >
+              <Images size={14} />
+              <span>{t("S.X.ClipBrowse")}</span>
+            </button>
             {/* 筛选器开合;有激活筛选 / 展开时高亮(浅主题色填充) */}
             <button
               title={t("S.X.ClipFilters")}
@@ -957,14 +1064,21 @@ export default function ClipboardView() {
             </Popover>
           )}
         </div>
-        {filtered.length === 0 ? (
+        {browseMode ? (
+          <ClipBrowser
+            clips={filtered}
+            index={browseIdx}
+            setIndex={setBrowseIndex}
+            onExit={() => saveSetting("clip_browse_mode", "0")}
+          />
+        ) : filtered.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-sm text-muted">
             {t("S.X.ClipEmpty")}
           </div>
         ) : (
           <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
             {filtered.map((clip) => (
-              <ClipRow key={clip.id} clip={clip} tags={clipTags} size={itemSize} />
+              <ClipRow key={clip.id} clip={clip} tags={clipTags} size="md" />
             ))}
           </div>
         )}

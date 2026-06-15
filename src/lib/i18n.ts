@@ -207,6 +207,11 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ClipSaveImage": "保存图片到本地",
     "S.X.ClipSaved": "已保存:{0}",
     "S.X.ClipSaveFailed": "保存失败",
+    "S.X.ClipBrowse": "浏览模式",
+    "S.X.ClipBrowseExit": "退出浏览",
+    "S.X.ClipBrowsePrev": "上一条",
+    "S.X.ClipBrowseNext": "下一条",
+    "S.X.ClipBrowseHint": "滚轮 / ↑↓ 翻看,Esc 退出",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -412,6 +417,11 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ClipSaveImage": "Save image to disk",
     "S.X.ClipSaved": "Saved: {0}",
     "S.X.ClipSaveFailed": "Save failed",
+    "S.X.ClipBrowse": "Browse mode",
+    "S.X.ClipBrowseExit": "Exit browse",
+    "S.X.ClipBrowsePrev": "Previous",
+    "S.X.ClipBrowseNext": "Next",
+    "S.X.ClipBrowseHint": "Wheel / ↑↓ to flip, Esc to exit",
   },
 };
 
