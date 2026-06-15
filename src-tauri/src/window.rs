@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, PhysicalPosition, WebviewWindow};
+use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 
 fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -257,6 +257,13 @@ struct DockState {
     moving: AtomicBool,
     /// 刚贴边(拖拽中/启动恢复),等左键松开后立即对齐收起(对齐旧版 DockTo→HideToEdge)
     pending: AtomicBool,
+    /// 上次成功读到的显示器几何(x,y,w,h)。w=0 表示尚无缓存。
+    /// current_monitor() 在窗口收起(大部分移出屏幕)时偶发返回 None,直接 continue 会让整拍
+    /// 被跳过、reveal/hide 不响应 → 贴边隐藏「间歇失灵」。成功即缓存、失败用缓存,消除漏拍。
+    mon_x: AtomicI32,
+    mon_y: AtomicI32,
+    mon_w: AtomicI32,
+    mon_h: AtomicI32,
 }
 
 /// 旧版 CubicEase EaseInOut(收起用)
@@ -314,6 +321,10 @@ pub fn setup_dock(app: &AppHandle) {
         // 启动时若上次处于贴边状态:标记 pending,由轮询线程首拍对齐并收起
         // (setup 时 current_monitor 常不可用,不能在此直接定位)
         pending: AtomicBool::new(saved_edge != EDGE_NONE),
+        mon_x: AtomicI32::new(0),
+        mon_y: AtomicI32::new(0),
+        mon_w: AtomicI32::new(0),
+        mon_h: AtomicI32::new(0),
     });
     // 注册为 Tauri 托管状态,供 show_main(托盘「显示并居中」)复用同一忽略标志居中
     app.manage(state.clone());
@@ -370,18 +381,36 @@ pub fn setup_dock(app: &AppHandle) {
                     continue;
                 }
                 let Some(win) = main_window(&app) else { continue };
-                let (Ok(cursor), Ok(pos), Ok(size), Ok(Some(mon))) = (
-                    app.cursor_position(),
-                    win.outer_position(),
-                    win.outer_size(),
-                    win.current_monitor(),
-                ) else {
+                let (Ok(cursor), Ok(pos), Ok(size)) =
+                    (app.cursor_position(), win.outer_position(), win.outer_size())
+                else {
                     continue;
+                };
+                // 显示器几何:current_monitor() 在窗口收起时偶发 None。成功即缓存,失败用缓存,
+                // 绝不因此跳过整拍(否则 reveal/hide 漏拍 = 贴边隐藏间歇失灵)。
+                let (mp, ms) = if let Ok(Some(mon)) = win.current_monitor() {
+                    let p = *mon.position();
+                    let s = *mon.size();
+                    state.mon_x.store(p.x, Ordering::SeqCst);
+                    state.mon_y.store(p.y, Ordering::SeqCst);
+                    state.mon_w.store(s.width as i32, Ordering::SeqCst);
+                    state.mon_h.store(s.height as i32, Ordering::SeqCst);
+                    (p, s)
+                } else {
+                    let cw = state.mon_w.load(Ordering::SeqCst);
+                    if cw <= 0 {
+                        continue; // 还没成功读过任何显示器(刚启动、窗口尚未定位)
+                    }
+                    (
+                        PhysicalPosition::new(
+                            state.mon_x.load(Ordering::SeqCst),
+                            state.mon_y.load(Ordering::SeqCst),
+                        ),
+                        PhysicalSize::new(cw as u32, state.mon_h.load(Ordering::SeqCst) as u32),
+                    )
                 };
                 let (cx, cy) = (cursor.x as i32, cursor.y as i32);
                 let (w, h) = (size.width as i32, size.height as i32);
-                let mp = mon.position();
-                let ms = mon.size();
                 let hidden = state.hidden.load(Ordering::SeqCst);
 
                 // 从 (x,y) 向贴附边滑出隐藏(旧版 HideToEdge:220ms CubicEase EaseInOut)
@@ -439,12 +468,18 @@ pub fn setup_dock(app: &AppHandle) {
                         }
                     }
                 } else {
-                    // 收起态:鼠标顶到屏幕边缘且在窗口投影范围内 → 滑出唤醒
-                    // (旧版 ShowFromEdge:220ms CubicEase EaseOut)
+                    // 收起态:鼠标进入「贴附边的可见条」且在窗口投影范围内 → 滑出唤醒
+                    // (旧版 ShowFromEdge:220ms CubicEase EaseOut)。触发带 = 可见条宽 REVEAL_PX,
+                    // 比原来的硬边缘 2~3px 更宽容:鼠标停在露出的细条上即唤出,不必精确顶到屏幕边
+                    // (双屏共享边等"软边界"处鼠标会越界到邻屏、顶不住边,原阈值会偶发唤不出)。
                     let at_edge = match edge {
-                        EDGE_TOP => cy <= mp.y + 2 && cx >= pos.x && cx <= pos.x + w,
-                        EDGE_LEFT => cx <= mp.x + 2 && cy >= pos.y && cy <= pos.y + h,
-                        _ => cx >= mp.x + ms.width as i32 - 3 && cy >= pos.y && cy <= pos.y + h,
+                        EDGE_TOP => cy <= mp.y + REVEAL_PX && cx >= pos.x && cx <= pos.x + w,
+                        EDGE_LEFT => cx <= mp.x + REVEAL_PX && cy >= pos.y && cy <= pos.y + h,
+                        _ => {
+                            cx >= mp.x + ms.width as i32 - REVEAL_PX
+                                && cy >= pos.y
+                                && cy <= pos.y + h
+                        }
                     };
                     if at_edge {
                         let target = match edge {

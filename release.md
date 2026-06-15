@@ -226,3 +226,11 @@
   4. **回收旧 exe**(`cleanup_after_update` ← WPF `CleanupAfterUpdate`):旧进程消失后删旧 exe(带重试)。
 - **删除**自创的 `swap_and_restart`/`spawn_restart_bat`(就地改名 + bat)。`download_update`/`apply_update` 改调 `start_new_and_exit`;`lib.rs` 在单实例插件注册前调 `takeover_old_instance`。
 - **本机实测**:takeover 端到端跑通——OLD 拉起 NEW、NEW 等 3s 后强杀 OLD、确认 `old_alive_after=false`、NEW(子进程)在父被杀后仍存活并完成。正常路径下旧实例 ~400ms 优雅退出,无需强杀。`cargo check` 无警告。版本保持 2.0.0。
+
+## v2.0.0 — 修复:贴边隐藏间歇失灵(轮询漏拍 + 唤出触发带过窄)
+
+- **现象**:贴边自动隐藏/唤出偶发不响应。
+- **两处根因/加固**(`window.rs` 贴边轮询线程):
+  1. **轮询漏拍**:原 tick 把 `current_monitor()` 一并解构,返回 `None`/`Err` 即 `continue` 跳过**整拍**——收起态(窗口大部移出屏幕)下它偶发取不到显示器,于是 reveal/hide 那拍不执行 → 间歇失灵。改为:显示器几何**成功即缓存(mon_x/y/w/h)、失败用缓存**,绝不因取不到显示器跳过整拍。
+  2. **唤出触发带过窄**:原唤出要求鼠标顶到屏幕硬边缘 2~3px;但露出的可见条宽 `REVEAL_PX`(4px),且双屏共享边等"软边界"处鼠标会越界到邻屏、顶不住边 → 偶发唤不出。改为触发带 = 可见条宽 `REVEAL_PX`:鼠标停在露出的细条上即唤出,更稳更直观。
+- **说明**:GUI 贴边交互无法在无头环境复现,本次为针对两处最可能成因的稳健性修复,需运行实测确认。`cargo check` 无警告。版本保持 2.0.0。
