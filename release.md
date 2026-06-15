@@ -192,3 +192,11 @@
   - 后端命令 `open_url`(`updater.rs`):仅放行 http(s),`explorer.exe <url>` 调默认浏览器(单参数,免 cmd 的 `&` 转义坑);`lib.rs` 注册。
   - 前端 `updater.ts` `openDownloadUrl` 封装;`UpdateDialog.tsx` 加按钮;i18n 双语 `S.Update.ManualDownload`(手动下载/Download manually)。
 - 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。
+
+## v2.0.0 — 「手动下载」加设置内独立入口(关于段)
+
+- **需求**:除更新对话框内的手动下载外,设置「关于」也放一份可直接点击的「手动下载」。
+- **实现**:`SettingsPanel.tsx` 关于段(检查更新/重新安装下方)新增「手动下载」行,点击用默认浏览器打开**当前版本**资产直链自行下载。
+  - `updater.ts` 抽 `releaseAssetUrl(version)` 共用助手(重装与手动下载共用同一命名约定直链),`fetchReinstallInfo` 改用它。
+  - i18n 双语 `S.Settings.ManualDownloadDesc`;按钮复用 `S.Update.ManualDownload`。
+- 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。

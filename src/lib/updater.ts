@@ -85,18 +85,20 @@ export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null
  * 不调 GitHub API**——既不消耗匿名接口 60 次/小时配额,也能在接口被限流(403)时照常重装。
  * 真实下载在 Rust 侧(避开资产 CDN 的 CORS);资产不存在则 Rust 下载报 HTTP 404,对话框内可见。
  */
+/** 某版本便携 exe 的 GitHub 资产直链(release.ps1 命名约定):重装与「手动下载」共用。 */
+export function releaseAssetUrl(version: string): { url: string; name: string } {
+  const name = `MinimalTodoApp-v${version}-win-x64.exe`;
+  return { url: `https://github.com/${REPO_SLUG}/releases/download/v${version}/${name}`, name };
+}
+
 export async function fetchReinstallInfo(): Promise<UpdateInfo | null> {
   const current = await getVersion();
-  const tag = `v${current}`;
-  const assetName = `MinimalTodoApp-${tag}-win-x64.exe`;
-  const assetUrl =
-    `https://github.com/${REPO_SLUG}/releases/download/${tag}/${assetName}`;
-
+  const { url, name } = releaseAssetUrl(current);
   return {
     version: current,
     notes: "",
-    assetUrl,
-    assetName,
+    assetUrl: url,
+    assetName: name,
     currentVersion: current,
     reinstall: true,
   };
