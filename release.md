@@ -372,3 +372,13 @@
 - **显示大小**:工具栏 小/中/大 分段(持久化 `clip_item_size`,默认中),影响文本字号/行高与缩略图尺寸。
 - **日期筛选器**:工具栏日期范围(起/止,含当天),按 `created_at` 过滤;「清除筛选」一键复位。
 - i18n 双语补齐(筛选/大小/预览键)。tsc + cargo check 通过。
+
+### 10) 剪切板 UI 优化(参考 Gemini 稿)+ 设置「剪切板」独立分组(版本仍 2.0.1)
+- **参考桌面 md(Gemini 重设计稿)**:其类名是 shadcn/Radix 语义 token(bg-background/bg-muted/bg-primary/text-destructive…),本项目无这些 token,**未照抄**,仅把设计意图映射到项目 token 系统落地。
+- **设置「剪切板」独立成分组**:`SettingsPanel` Section 增 `clipboard`(导航第 5 项,标签复用 S.X.ClipSettings),过期时间 + 重复去重从「通用」迁入;通用里对应块移除。
+- **ClipboardView UI**:
+  - 列表项「降噪」:默认无边框 → 悬停浮现圆角(rounded-lg)边框 + 背景 + 操作按钮;**置顶项常显高亮**(border-accent/30 + bg-accent/5,置顶按钮常显)。
+  - 中/大号显示**时间副标签**(今天 HH:mm,否则 MM-DD HH:mm);缩略图加大(md h-11 / lg h-16)。
+  - 大小切换改「浮起」式分段(激活项 bg-card + shadow + ring)。
+  - 工具栏与列表间加分隔线;侧栏改宽把手热区加宽(w-1→w-2)。
+- 配色全用项目 token(bg-card/text-text-*/text-muted/border-divider/bg-accent/text-on-accent),12 套主题通吃。tsc 通过、HMR 无报错。

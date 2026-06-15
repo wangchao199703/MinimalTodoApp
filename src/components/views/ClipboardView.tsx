@@ -38,9 +38,22 @@ const CLIP_DRAG = "clip-item";
 type ClipSize = "sm" | "md" | "lg";
 const SIZE_STYLE: Record<ClipSize, { row: string; text: string; thumb: string }> = {
   sm: { row: "py-1", text: "text-xs", thumb: "h-7 w-7" },
-  md: { row: "py-2", text: "text-sm", thumb: "h-10 w-10" },
-  lg: { row: "py-3", text: "text-base", thumb: "h-16 w-16" },
+  md: { row: "py-2", text: "text-sm", thumb: "h-11 w-11" },
+  lg: { row: "py-2.5", text: "text-base", thumb: "h-16 w-16" },
 };
+
+/** 剪贴项时间副标签:今天显示 HH:mm,否则 MM-DD HH:mm(created_at 为毫秒) */
+function clipTimeLabel(ms: number): string {
+  const d = new Date(ms);
+  const p = (n: number) => String(n).padStart(2, "0");
+  const hm = `${p(d.getHours())}:${p(d.getMinutes())}`;
+  const now = new Date();
+  const sameDay =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  return sameDay ? hm : `${p(d.getMonth() + 1)}-${p(d.getDate())} ${hm}`;
+}
 
 /** 图片预览灯箱:全屏暗底 + 居中原图,点任意处 / Esc 关闭 */
 function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
@@ -113,6 +126,10 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
   const clipTags = tags.filter((tg) => clip.tag_ids.includes(tg.id));
   const isText = clip.kind !== "image";
 
+  const primaryText = isText
+    ? (clip.text ?? "").replace(/\s+/g, " ").trim() || "(空白)"
+    : t("S.X.ClipImage");
+
   return (
     <div
       ref={rowRef}
@@ -120,62 +137,66 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
-      className={`group flex items-center gap-2 rounded-md px-3 text-text-1 hover:bg-card-hover ${sz.row} ${sz.text} ${
-        dragging ? "opacity-40" : ""
-      }`}
+      className={`group relative flex items-center gap-2.5 rounded-lg border px-2.5 text-text-1 transition-colors ${sz.row} ${sz.text} ${
+        clip.pinned
+          ? "border-accent/30 bg-accent/5"
+          : "border-transparent hover:border-divider hover:bg-card-hover"
+      } ${dragging ? "opacity-40" : ""}`}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        {clip.kind === "image" ? (
-          <>
-            {imgSrc ? (
-              <img
-                src={imgSrc}
-                alt="clip"
-                onDoubleClick={() => setPreview(true)}
-                className={`${sz.thumb} shrink-0 cursor-zoom-in rounded border border-divider object-cover`}
-              />
-            ) : (
-              <span className="opacity-70">[{t("S.X.ClipImage")}]</span>
-            )}
-            <span className="truncate opacity-70">{t("S.X.ClipImage")}</span>
-          </>
+      {clip.kind === "image" &&
+        (imgSrc ? (
+          <img
+            src={imgSrc}
+            alt="clip"
+            onDoubleClick={() => setPreview(true)}
+            className={`${sz.thumb} shrink-0 cursor-zoom-in rounded-md border border-divider object-cover`}
+          />
         ) : (
-          <span className="truncate">
-            {(clip.text ?? "").replace(/\s+/g, " ").trim() || "(空白)"}
+          <span className="shrink-0 opacity-70">[{t("S.X.ClipImage")}]</span>
+        ))}
+
+      <div className="flex min-w-0 flex-1 flex-col justify-center">
+        <span className={`truncate leading-tight ${isText ? "" : "opacity-70"}`}>{primaryText}</span>
+        {size !== "sm" && (
+          <span className="mt-0.5 truncate text-xs leading-tight text-muted">
+            {clipTimeLabel(clip.created_at)}
           </span>
         )}
-        {clipTags.map((tg) => (
-          <span
-            key={tg.id}
-            className="shrink-0 rounded px-1.5 py-0.5 text-[11px]"
-            style={
-              tg.color
-                ? { background: `${tg.color}22`, color: tg.color }
-                : { background: "var(--card-hover)", color: "var(--text-2)" }
-            }
-          >
-            {tg.name}
-          </span>
-        ))}
       </div>
+
+      {clipTags.map((tg) => (
+        <span
+          key={tg.id}
+          className="shrink-0 rounded px-1.5 py-0.5 text-[11px]"
+          style={
+            tg.color
+              ? { background: `${tg.color}22`, color: tg.color }
+              : { background: "var(--card-hover)", color: "var(--text-2)" }
+          }
+        >
+          {tg.name}
+        </span>
+      ))}
 
       <button
         type="button"
         title={clip.pinned ? t("S.X.Unpin") : t("S.X.Pin")}
         onClick={() => void toggleClipPin(clip)}
-        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:bg-card-hover ${
-          clip.pinned ? "opacity-100 text-accent" : "opacity-0 group-hover:opacity-100"
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors ${
+          clip.pinned
+            ? "text-accent opacity-100 hover:bg-card-hover"
+            : "text-muted opacity-0 hover:bg-card-hover group-hover:opacity-100"
         }`}
       >
-        {clip.pinned ? <PinOff size={13} /> : <Pin size={13} />}
+        {clip.pinned ? <PinOff size={14} /> : <Pin size={14} />}
       </button>
       <button
         type="button"
         title={t("S.X.Delete")}
         onClick={() => void removeClip(clip.id)}
-        className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted opacity-0 hover:bg-card-hover hover:text-overdue group-hover:opacity-100"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted opacity-0 transition-colors hover:bg-card-hover hover:text-overdue group-hover:opacity-100"
       >
-        <X size={13} />
+        <X size={14} />
       </button>
 
       {menu && (
@@ -605,7 +626,7 @@ export default function ClipboardView() {
         >
           <div
             onMouseDown={startResize}
-            className="absolute top-0 -right-0.5 z-10 h-full w-1 cursor-col-resize hover:bg-accent/40"
+            className="absolute top-0 -right-1 z-10 h-full w-2 cursor-col-resize transition-colors hover:bg-accent/40"
           />
           <div className="flex h-9 shrink-0 items-center justify-between pr-2 pl-3">
             <span className="text-xs font-semibold text-sidebar-strong">
@@ -671,7 +692,7 @@ export default function ClipboardView() {
 
       {/* 右侧:搜索/筛选工具栏 + 剪贴项列表 */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="shrink-0 space-y-1.5 p-2 pb-1">
+        <div className="shrink-0 space-y-1.5 border-b border-divider/60 p-2">
           <div className="flex items-center gap-1.5">
             <div className="relative min-w-0 flex-1">
               <Search
@@ -694,17 +715,17 @@ export default function ClipboardView() {
                 </button>
               )}
             </div>
-            {/* 显示大小:小/中/大(持久化) */}
-            <div className="flex shrink-0 items-center rounded-md border border-divider p-0.5">
+            {/* 显示大小:小/中/大(持久化),激活项「浮起」 */}
+            <div className="flex shrink-0 items-center rounded-md bg-card-hover p-0.5">
               {(["sm", "md", "lg"] as ClipSize[]).map((s) => (
                 <button
                   key={s}
                   title={t("S.X.ClipSize")}
                   onClick={() => saveSetting("clip_item_size", s)}
-                  className={`flex h-6 w-6 items-center justify-center rounded text-xs ${
+                  className={`flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-colors ${
                     itemSize === s
-                      ? "bg-accent text-on-accent"
-                      : "text-muted hover:bg-card-hover"
+                      ? "bg-card text-text-1 shadow-sm ring-1 ring-divider"
+                      : "text-muted hover:text-text-1"
                   }`}
                 >
                   {s === "sm" ? t("S.X.ClipSizeS") : s === "md" ? t("S.X.ClipSizeM") : t("S.X.ClipSizeL")}
@@ -782,7 +803,7 @@ export default function ClipboardView() {
             {t("S.X.ClipEmpty")}
           </div>
         ) : (
-          <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2 pt-1">
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2">
             {filtered.map((clip) => (
               <ClipRow key={clip.id} clip={clip} tags={clipTags} size={itemSize} />
             ))}
