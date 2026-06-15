@@ -22,6 +22,7 @@
         "transparent": true,
         "maximizable": false,
         "center": true,
+        "skipTaskbar": true,
         "dragDropEnabled": false
       }
     ],
