@@ -589,7 +589,8 @@ pub fn setup_dock(app: &AppHandle) {
                             (pos.x.clamp(mp.x, hi), mp.y)
                         }
                         EDGE_LEFT => (mp.x, pos.y.max(mp.y)),
-                        _ => (mp.x + ms.width as i32 - w, pos.y.max(mp.y)),
+                        // 右贴边:窗口比工作区宽时,起点钉在本屏左缘(.max),不落到左邻屏
+                        _ => ((mp.x + ms.width as i32 - w).max(mp.x), pos.y.max(mp.y)),
                     };
                     // 先瞬时对齐到边的完整可见位置(旧版 DockTo 先归位再动画,避免斜向飞跃)
                     state.moving.store(true, Ordering::SeqCst);
@@ -635,7 +636,8 @@ pub fn setup_dock(app: &AppHandle) {
                         let target = match edge {
                             EDGE_TOP => PhysicalPosition::new(pos.x, mp.y),
                             EDGE_LEFT => PhysicalPosition::new(mp.x, pos.y),
-                            _ => PhysicalPosition::new(mp.x + ms.width as i32 - w, pos.y),
+                            // 右贴边唤出目标同样钉在本屏左缘(窗口宽过工作区时)
+                            _ => PhysicalPosition::new((mp.x + ms.width as i32 - w).max(mp.x), pos.y),
                         };
                         slide_window(&win, &state, PhysicalPosition::new(pos.x, pos.y), target, ease_out);
                         state.hidden.store(false, Ordering::SeqCst);

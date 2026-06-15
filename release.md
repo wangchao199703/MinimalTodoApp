@@ -413,3 +413,6 @@
 ### 15) 修复贴边线程 clamp panic(版本仍 2.0.1)
 - `window.rs` EDGE_TOP 对齐用 `pos.x.clamp(mp.x, mp.x + ms.width - w)`,当窗口比显示器工作区还宽(窄副屏 / DPI 异常)时 `min > max`,`clamp` panic → 贴边轮询线程崩、自动隐藏失灵。
 - 修复:上限取 `(mp.x + ms.width - w).max(mp.x)`,保证 ≥ 下限(此时窗口钉到左边),不再 panic。cargo check 通过。
+
+### 16) 贴边右边缘对称兜底(版本仍 2.0.1)
+- 承上:右贴边的窗口起点 `mp.x + ms.width - w`(window.rs 对齐与唤出两处),在窗口比工作区宽时会算到本屏左缘之外(落入左邻屏)。两处均加 `.max(mp.x)` 钉回本屏左缘。正常窄窗口零影响。cargo check 通过。
