@@ -76,9 +76,13 @@ export default function TitleBar() {
 
   const manualCheck = () => {
     pushToast(t("S.Update.Checking"));
-    void checkForUpdate(true).then((info) => {
-      if (info) setUpdateInfo(info);
-    });
+    // 三态反馈:有新版弹对话框;已是最新 / 检查失败各给明确 Toast(对齐 WPF 手动检查)
+    void checkForUpdate(true)
+      .then((info) => {
+        if (info) setUpdateInfo(info);
+        else pushToast(t("S.Update.UpToDate"));
+      })
+      .catch(() => pushToast(t("S.Update.CheckFailed")));
   };
 
   const scheduleOpen = useAppStore((s) => s.scheduleOpen);

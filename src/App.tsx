@@ -29,15 +29,26 @@ function useUpdateCheck(loaded: boolean) {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   useEffect(() => {
     if (!loaded) return;
+    // 后台静默检查:失败(限流/网络)直接吞掉,绝不打扰;成功有新版才弹对话框
     const check = () => {
-      void checkForUpdate(false).then((info) => {
-        if (info) setUpdateInfo(info);
-      });
+      void checkForUpdate(false)
+        .then((info) => {
+          if (info) setUpdateInfo(info);
+        })
+        .catch(() => {});
     };
-    const initial = setTimeout(check, 4000);
-    const interval = setInterval(check, 12 * 3600 * 1000);
+    // 启动检查节流:上次检查不足 1 小时就跳过本次启动检查,避免频繁重启白耗
+    // GitHub 匿名接口 60 次/小时配额(长时运行仍由下方 12 小时定时覆盖)。
+    const KEY = "last_auto_update_check";
+    const tick = () => {
+      localStorage.setItem(KEY, String(Date.now()));
+      check();
+    };
+    const sinceLast = Date.now() - Number(localStorage.getItem(KEY) ?? "0");
+    const initial = sinceLast >= 3600_000 ? setTimeout(tick, 4000) : undefined;
+    const interval = setInterval(tick, 12 * 3600 * 1000);
     return () => {
-      clearTimeout(initial);
+      if (initial) clearTimeout(initial);
       clearInterval(interval);
     };
   }, [loaded]);

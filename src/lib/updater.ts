@@ -4,7 +4,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../store/useAppStore";
-import { t } from "./i18n";
 
 const REPO_SLUG = "wangchao199703/MinimalTodoApp";
 const RELEASES_LATEST =
@@ -45,40 +44,31 @@ function newer(a: [number, number, number], b: [number, number, number]): boolea
 }
 
 /**
- * 检查更新。manual=false 时尊重 auto_update_enabled 与 ignored_update_version;
- * 返回 null 表示无更新(或被跳过/检查失败,手动模式下会弹 Toast 告知)。
+ * 检查更新(对齐 WPF UpdateService.CheckAsync 的三态契约,**调用方据此给反馈**):
+ * - 返回 `UpdateInfo`:有比当前更新的可下载版本;
+ * - 返回 `null`:**确实已是最新**(或最新版无资产 / 被「忽略此版本」跳过);
+ * - **抛异常**:检查未成功(网络错误、HTTP 非 2xx 如匿名接口 403 限流)——不可误报成「已是最新」。
+ * manual=true 时无视 auto_update_enabled 与 ignored_update_version(手动检查必查、必显示结果)。
  */
 export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null> {
   const s = useAppStore.getState();
   if (!manual && s.settings["auto_update_enabled"] === "0") return null;
 
-  let release: GithubRelease;
-  try {
-    const resp = await fetch(RELEASES_LATEST, {
-      headers: { Accept: "application/vnd.github+json" },
-    });
-    if (!resp.ok) throw new Error(String(resp.status));
-    release = await resp.json();
-  } catch {
-    if (manual) s.pushToast(t("S.Update.CheckFailed"));
-    return null;
-  }
+  const resp = await fetch(RELEASES_LATEST, {
+    headers: { Accept: "application/vnd.github+json" },
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`); // 非 2xx=检查失败,抛给调用方
+  const release: GithubRelease = await resp.json();
 
   const remote = parseSemver(release.tag_name ?? "");
   const current = parseSemver(await getVersion());
-  if (!remote || !current || !newer(remote, current)) {
-    if (manual) s.pushToast(t("S.Update.UpToDate"));
-    return null;
-  }
+  if (!remote || !current || !newer(remote, current)) return null; // 已是最新
 
   const version = remote.join(".");
   if (!manual && s.settings["ignored_update_version"] === version) return null;
 
   const asset = pickExeAsset(release);
-  if (!asset) {
-    if (manual) s.pushToast(t("S.Update.NoAsset"));
-    return null;
-  }
+  if (!asset) return null; // 最新版暂无可下载资产 → 视为无可用更新
 
   return {
     version,

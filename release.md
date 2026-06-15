@@ -152,3 +152,13 @@
   - **重装按钮旁内联状态**(`SettingsPanel.tsx`):「检查中…」/「检查更新失败,请稍后再试」持久显示(Toast 会自动消失,对齐 WPF 手动检查的明确持久反馈)。
   - 下载仍走上一轮的 Rust `download_update`(reqwest,绕开资产 CDN 的 CORS),与 WPF 的服务端 HttpClient 下载同理。
 - 验证:`npm run build`(tsc 严格)+ dev-release 构建通过;桌面验证 exe 已生成。版本保持 2.0.0。
+
+## v2.0.0 — 检查更新:加设置内入口 + 三态明确反馈 + 启动检查节流(对齐 WPF)
+
+- **背景/答疑**:原「检查更新」只在标题栏 ☰ 菜单(主窗口),结果靠 Toast(已是最新/失败),有新版才弹对话框;设置里没有入口。且 `checkForUpdate` 把「已是最新」与「检查失败」都collapse成 `null`,反馈不精确(限流时可能被当成"已是最新")。
+- **改动(抄 WPF SettingsDialog 的 StatusText 范式)**:
+  - **`checkForUpdate` 改三态契约**(对齐 WPF `CheckAsync`):返回 `UpdateInfo`=有新版;`null`=确实已是最新(或无资产/被忽略);**抛异常**=检查未成功(网络/HTTP 非 2xx 如 403 限流)。不再自吞 Toast,交调用方反馈。
+  - **设置「关于」新增「检查更新」行**(`SettingsPanel.tsx`):按钮 + 持久状态行(检查中… / 已是最新 / 检查失败),有新版弹 `UpdateDialog`。复用既有 `S.Settings.CheckUpdate(Desc)` i18n 键(原已定义未用)。
+  - **标题栏菜单「检查更新」**(`TitleBar.tsx`):三态各给明确 Toast(有新版弹框 / 已是最新 / 检查失败),失败不再被误报成已是最新。
+  - **启动检查节流**(`App.tsx`):上次自动检查不足 1 小时则跳过本次启动检查(localStorage 记时间戳),避免频繁重启白耗 GitHub 匿名接口 60 次/小时配额;长时运行仍由 12 小时定时覆盖;后台检查失败一律静默。
+- 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。

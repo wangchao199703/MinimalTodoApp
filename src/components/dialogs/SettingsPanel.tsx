@@ -17,7 +17,7 @@ import {
 import { confirm } from "../ui/ConfirmDialog";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import UpdateDialog from "./UpdateDialog";
-import { fetchReinstallInfo, type UpdateInfo } from "../../lib/updater";
+import { checkForUpdate, fetchReinstallInfo, type UpdateInfo } from "../../lib/updater";
 import {
   SOUND_STYLES,
   normalizeSoundStyle,
@@ -103,6 +103,10 @@ export default function SettingsPanel() {
   // 「重新安装当前版本」:拉取同 tag Release → 复用更新对话框走下载+换壳重启
   const [reinstallInfo, setReinstallInfo] = useState<UpdateInfo | null>(null);
   const [reinstallBusy, setReinstallBusy] = useState(false);
+  // 「检查更新」:三态状态行(检查中/已是最新/检查失败)+ 有新版弹更新对话框(对齐 WPF SettingsDialog)
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [checkBusy, setCheckBusy] = useState(false);
+  const [checkStatus, setCheckStatus] = useState<"" | "checking" | "latest" | "failed">("");
   const pushToast = useAppStore((s) => s.pushToast);
   // 数据存储位置:当前数据根目录 + 迁移中状态
   const [dataDir, setDataDir] = useState("");
@@ -144,6 +148,26 @@ export default function SettingsPanel() {
       pushToast(f("S.X.DataLocationFailed", String(e)));
     } finally {
       setMigrating(false);
+    }
+  };
+
+  // 手动检查更新:三态契约(info=有新版 / null=已是最新 / 抛错=检查失败),状态行就地持久显示
+  const startCheckUpdate = async () => {
+    if (checkBusy) return;
+    setCheckBusy(true);
+    setCheckStatus("checking");
+    try {
+      const info = await checkForUpdate(true);
+      if (info) {
+        setCheckStatus("");
+        setUpdateInfo(info);
+      } else {
+        setCheckStatus("latest");
+      }
+    } catch {
+      setCheckStatus("failed");
+    } finally {
+      setCheckBusy(false);
     }
   };
 
@@ -699,6 +723,33 @@ export default function SettingsPanel() {
               checked={flag("auto_update_enabled", true)}
               onChange={setFlag("auto_update_enabled")}
             />
+            {/* 手动检查更新:三态状态行(检查中/已是最新/检查失败),有新版弹更新对话框 */}
+            <div className="flex items-start justify-between gap-3 py-2">
+              <span className="min-w-0">
+                <span className="block text-sm text-text-1">{t("S.Settings.CheckUpdate")}</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  {t("S.Settings.CheckUpdateDesc")}
+                </span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                {checkStatus === "checking" && (
+                  <span className="text-xs text-muted">{t("S.Update.Checking")}</span>
+                )}
+                {checkStatus === "latest" && (
+                  <span className="text-xs text-text-2">{t("S.Update.UpToDate")}</span>
+                )}
+                {checkStatus === "failed" && (
+                  <span className="text-xs text-red-500">{t("S.Update.CheckFailed")}</span>
+                )}
+                <button
+                  onClick={() => void startCheckUpdate()}
+                  disabled={checkBusy}
+                  className="rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
+                >
+                  {t("S.Settings.CheckUpdate")}
+                </button>
+              </span>
+            </div>
             {/* 重新安装/修复当前版本:按当前版本 tag 重新下载同一发布并换壳重启 */}
             <div className="flex items-start justify-between gap-3 py-2">
               <span className="min-w-0">
@@ -728,6 +779,9 @@ export default function SettingsPanel() {
       </div>
       {reinstallInfo && (
         <UpdateDialog info={reinstallInfo} onClose={() => setReinstallInfo(null)} />
+      )}
+      {updateInfo && (
+        <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />
       )}
     </div>
   );

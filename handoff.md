@@ -291,3 +291,19 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 - 当前那 60/h 配额是被本轮 curl + 反复启动打空的,顶格整点重置;reinstall 已不依赖 API,但**常规自动更新检查仍走 api.github.com**,正常使用一小时 60 次足够。
 - dev-release exe 与正式 release 同共用单实例锁:验证前必须先退掉桌面上正在运行的旧验证 exe(否则新的启动即被吞)。
 - WPF 重启用 Process.Start+命名事件握手(规避锁定机 PS 脚本静默失败);本应用用「bat 等旧 PID 退出再启动新版」绕开单实例冲突,普通机器可用,未采纳握手方案(如遇企业锁定机再议)。
+
+---
+
+## 检查更新:设置内入口 + 三态反馈 + 启动节流 (v2.0.0)
+
+**答疑**:原「检查更新」仅在标题栏 ☰ 菜单(主窗口),已是最新/失败靠 Toast、有新版才弹框;设置内无入口。`checkForUpdate` 把"已最新"与"失败"都返 null,反馈不准。
+
+**改动(抄 WPF SettingsDialog StatusText)**:
+- `src/lib/updater.ts` `checkForUpdate` 改三态契约:info=有新版 / null=已最新 / 抛异常=检查失败(不再自吞 Toast)。删了未用的 `t` 导入。
+- `src/components/dialogs/SettingsPanel.tsx`:关于段新增「检查更新」行(按钮 + 检查中/已是最新/检查失败 持久状态行 + 有新版弹 UpdateDialog)。复用既有 i18n 键。
+- `src/components/TitleBar.tsx`:菜单检查三态各给明确 Toast。
+- `src/App.tsx`:启动检查节流(localStorage `last_auto_update_check`,<1h 跳过启动检查;12h 定时不变;后台失败静默)。
+
+**验证**:`npm run build` 通过。本轮纯前端改动(无 Rust 改),需重建 exe 嵌入新 dist。
+
+**给接手人**:三处「检查更新」入口现共用同一三态契约;设置窗口已挂 <Toasts/>(上一轮),故标题栏/设置两处反馈都可见。限流(403)现明确显示"检查失败"而非误报最新。
