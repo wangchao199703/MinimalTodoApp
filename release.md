@@ -170,3 +170,17 @@
 - **修复**:命令内直接用 **reqwest 异步客户端**(`client.get(url).send().await` + `resp.chunk().await` 流式读取并 emit 进度),不再 `spawn_blocking`/`blocking`。`Cargo.toml` 的 reqwest 特性从 `["blocking","native-tls"]` 改为 `["native-tls"]`(异步客户端 + Windows SChannel)。
 - **顺带**:`UpdateDialog` 下载失败时把**真实错误**挂到红字的 `title`(悬停可见),便于定位(HTTP 码 / TLS / 网络)。
 - 验证:`npm run build` + `cargo check`(reqwest 0.12.28 异步 + schannel 编译通过)全过。版本保持 2.0.0,待用户验证后重新 release。
+
+## v2.0.0 — 修复:重新安装下载完成后装不上(写盘覆盖运行中的 exe 被文件锁挡下)
+
+- **实测定位(本机)**:下载本身没问题(`reqwest` 异步流式实测 200、字节完整)。卡在**安装写盘**:
+  - `swap_and_restart` 旧逻辑把新版写到 `target_dir/资产名` = `<exe目录>/MinimalTodoApp-v2.0.0-win-x64.exe`;当用户运行的正是同名已发布 exe 时,该路径**就是正在运行的 exe**。
+  - 本机实测覆盖/删除正在运行的 exe:`fs::write` → `os error 32(另一个程序正在使用此文件)`、`remove_file` → `os error 5(拒绝访问)`;但 `rename`(改名挪开)可行、同目录写新文件可行。
+  - 故下载到 100% 后写盘即失败 → 报「更新失败」。(dev 下 exe 名为 `minimal-todo.exe`、与资产名不同,不冲突,所以开发时看不出来。)
+- **修复(就地替换,只用实测可行的操作)**:`swap_and_restart` 改为——
+  1. 把**正在运行的 exe 改名挪开**(`xxx.exe` → `xxx.exe.old-<pid>`);
+  2. 原路径**写入新版字节**(此时原路径已空);
+  3. bat 等旧进程退出 → **删掉挪开的旧文件(带重试)** → **启动原路径新版** → 自删。
+  - 新版与旧版**同路径同名**,便携模型不变,且与资产文件名无关。写新版失败会**回滚改名**,绝不把应用弄成缺文件。
+  - 目录不可写等极端情况**兜底**:写到 `%LOCALAPPDATA%\MinimalTodoApp` 并从那启动,`--updated-from` 回收旧 exe(沿用原机制)。
+- **验证**:写了端到端实测(改名挪开→原路径写新版→bat 等退出→删旧→重启),本机跑通:重启起来的新版写出 marker(`RESTARTED OK`)、挪开的旧文件被清理。`cargo check` 无警告。版本保持 2.0.0。

@@ -102,6 +102,11 @@ export async function fetchReinstallInfo(): Promise<UpdateInfo | null> {
   };
 }
 
+/** 「手动下载」:用系统默认浏览器打开下载地址,交浏览器自行下载(应用内自动更新失败时的兜底)。 */
+export async function openDownloadUrl(url: string): Promise<void> {
+  await invoke("open_url", { url });
+}
+
 /**
  * 下载资产并换壳重启:**下载在 Rust 侧完成**(GitHub 资产 CDN 无 CORS 头,前端 fetch 必失败),
  * 进度经 `update-progress` 事件回传。成功后应用自行退出重启;失败 invoke 抛错。

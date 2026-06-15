@@ -109,6 +109,7 @@ pub fn run() {
             window::rebuild_tray,
             updater::apply_update,
             updater::download_update,
+            updater::open_url,
         ])
         .run(tauri::generate_context!())
         .expect("应用启动失败");

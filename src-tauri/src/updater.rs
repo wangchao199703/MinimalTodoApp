@@ -10,41 +10,47 @@ fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
 
-/// 更新文件落盘目录:exe 同目录优先,不可写则退到 %LOCALAPPDATA%\MinimalTodoApp
-fn target_dir() -> std::path::PathBuf {
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
-            let probe = dir.join(".write_probe");
-            if std::fs::write(&probe, b"x").is_ok() {
-                let _ = std::fs::remove_file(&probe);
-                return dir.to_path_buf();
-            }
-        }
+/// 用系统默认浏览器打开 URL(「手动下载」用):把下载地址交给浏览器自行下载,
+/// 作为应用内自动更新失败时的兜底。explorer.exe 接单个参数,免 cmd 的 `&` 转义坑。
+#[tauri::command]
+pub fn open_url(url: String) -> Result<(), String> {
+    // 仅允许 http(s),避免被诱导打开任意本地程序/协议
+    if !(url.starts_with("https://") || url.starts_with("http://")) {
+        return Err("invalid url".into());
     }
-    let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
-    let dir = std::path::PathBuf::from(local).join("MinimalTodoApp");
-    let _ = std::fs::create_dir_all(&dir);
-    dir
+    std::process::Command::new("explorer")
+        .arg(&url)
+        .spawn()
+        .map_err(err)?;
+    Ok(())
 }
 
-/// 把新版 exe 字节写盘,生成临时 bat(等本进程退出 → 启动新版,带 --updated-from 指向旧 exe),
-/// 然后稍后优雅退出本进程。成功返回后应用即将自行重启。
-fn swap_and_restart(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<(), String> {
-    let new_exe = target_dir().join(file_name);
-    std::fs::write(&new_exe, bytes).map_err(err)?;
-
-    let old_exe = std::env::current_exe().map_err(err)?;
+/// 写 bat 并执行:等本进程(pid)退出后,删掉 `to_delete`(若有),启动 `launch`(可带参数),自删。
+/// chcp 65001 防中文路径乱码;轮询等待旧进程退出再动手(规避运行中文件锁与单实例冲突)。
+fn spawn_restart_bat(
+    app: &AppHandle,
+    launch: &std::path::Path,
+    launch_args: &str,
+    to_delete: Option<&std::path::Path>,
+) -> Result<(), String> {
     let pid = std::process::id();
+    let del_line = match to_delete {
+        // 删旧版可能因句柄释放滞后而短暂失败,重试几次
+        Some(p) => format!(
+            "set i=0\r\n:del\r\ndel /f /q \"{p}\" >nul 2>nul\r\nif exist \"{p}\" if %i% lss 10 (set /a i+=1 & timeout /t 1 /nobreak >nul & goto del)\r\n",
+            p = p.display()
+        ),
+        None => String::new(),
+    };
     let bat = std::env::temp_dir().join("minimal-todo-update.bat");
-    // chcp 65001 防中文路径乱码;轮询等待旧进程退出后再启动新版
     let script = format!(
-        "@echo off\r\nchcp 65001 >nul\r\n:wait\r\ntasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto wait\r\n)\r\nstart \"\" \"{new}\" --updated-from \"{old}\"\r\ndel \"%~f0\"\r\n",
+        "@echo off\r\nchcp 65001 >nul\r\n:wait\r\ntasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto wait\r\n)\r\n{del_line}start \"\" \"{launch}\"{args}\r\ndel \"%~f0\"\r\n",
         pid = pid,
-        new = new_exe.display(),
-        old = old_exe.display(),
+        del_line = del_line,
+        launch = launch.display(),
+        args = launch_args,
     );
     std::fs::write(&bat, script).map_err(err)?;
-
     std::process::Command::new("cmd")
         .args(["/C", bat.to_str().unwrap_or_default()])
         .spawn()
@@ -57,6 +63,41 @@ fn swap_and_restart(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<()
         app.exit(0);
     });
     Ok(())
+}
+
+/// 用新版 exe 字节替换当前运行的 exe,并重启。
+///
+/// **要点(经本机实测确认):正在运行的 exe 无法被覆盖/删除(os error 32/5),但可被改名。**
+/// 故首选「就地替换」:把运行中的 exe 改名挪开 → 原路径写入新版 → bat 等旧进程退出后删掉挪开的旧文件并启动新版。
+/// 这样新版与旧版同路径同名(便携模型不变),且不依赖资产文件名。
+/// 若就地替换不可行(目录不可写等),回退到「写入 %LOCALAPPDATA% 并从那启动、用 --updated-from 回收旧 exe」。
+fn swap_and_restart(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<(), String> {
+    let cur = std::env::current_exe().map_err(err)?;
+
+    // ---- 方案 A:就地替换(改名挪开运行中的 exe → 原路径写新版)----
+    let aside = cur.with_file_name(format!(
+        "{}.old-{}",
+        cur.file_name().and_then(|s| s.to_str()).unwrap_or("app.exe"),
+        std::process::id()
+    ));
+    if std::fs::rename(&cur, &aside).is_ok() {
+        match std::fs::write(&cur, bytes) {
+            Ok(()) => return spawn_restart_bat(app, &cur, "", Some(&aside)),
+            Err(_) => {
+                // 写新版失败:务必把挪开的旧 exe 改回原位,绝不能让应用变成"缺文件"
+                let _ = std::fs::rename(&aside, &cur);
+            }
+        }
+    }
+
+    // ---- 方案 B(兜底):写到 %LOCALAPPDATA% 并从那启动新版,--updated-from 回收旧 exe ----
+    let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
+    let dir = std::path::PathBuf::from(local).join("MinimalTodoApp");
+    let _ = std::fs::create_dir_all(&dir);
+    let new_exe = dir.join(file_name);
+    std::fs::write(&new_exe, bytes).map_err(err)?;
+    let args = format!(" --updated-from \"{}\"", cur.display());
+    spawn_restart_bat(app, &new_exe, &args, None)
 }
 
 /// 流式下载新版 exe 并换壳重启:从 `url`(GitHub 资产直链,会 302 到无 CORS 的 CDN,
