@@ -178,12 +178,15 @@ pub fn clip_attach_tags(conn: &Connection, clip_id: i64, tag_ids: &[i64]) -> rus
     Ok(())
 }
 
-/// 清理过期(未置顶)剪贴项:删 created_at 早于 `cutoff_ms` 的记录。
+/// 清理过期剪贴项:只针对**默认分组**(未打任何分组标签)且**未置顶**、created_at 早于 `cutoff_ms` 的记录。
 /// 返回 (被删行数, 不再被引用的图片文件路径)——行数 0 时调用方可跳过「通知前端重拉」。
 pub fn clip_purge_expired(conn: &Connection, cutoff_ms: i64) -> rusqlite::Result<(usize, Vec<String>)> {
-    // 先收将被删行里涉及的图片路径,删后再判断哪些文件无人引用
+    // 先收将被删行里涉及的图片路径,删后再判断哪些文件无人引用。
+    // `id NOT IN (clip_tags.clip_id)` = 未归入任何分组 = 默认分组,过期清理只动这里。
     let mut stmt = conn.prepare(
-        "SELECT id, image_path FROM clips WHERE pinned = 0 AND created_at < ?1",
+        "SELECT id, image_path FROM clips
+         WHERE pinned = 0 AND created_at < ?1
+           AND id NOT IN (SELECT clip_id FROM clip_tags)",
     )?;
     let rows: Vec<(i64, Option<String>)> = stmt
         .query_map(rusqlite::params![cutoff_ms], |r| Ok((r.get(0)?, r.get(1)?)))?

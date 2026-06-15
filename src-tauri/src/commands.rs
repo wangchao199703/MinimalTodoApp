@@ -656,15 +656,31 @@ fn safe_file_name(file_name: &str) -> String {
         .collect()
 }
 
+/// 桌面目录(无桌面则用户目录);各种「导出到桌面」共用
+fn desktop_dir() -> CmdResult<std::path::PathBuf> {
+    let home = std::env::var("USERPROFILE").map_err(err)?;
+    let desktop = std::path::Path::new(&home).join("Desktop");
+    Ok(if desktop.is_dir() { desktop } else { std::path::PathBuf::from(&home) })
+}
+
 /// 把文本写到桌面(无桌面则用户目录),返回完整路径(导出 Markdown 用,免引入 dialog 插件)
 #[tauri::command(rename_all = "snake_case")]
 pub fn export_file(file_name: String, content: String) -> CmdResult<String> {
-    let home = std::env::var("USERPROFILE").map_err(err)?;
-    let desktop = std::path::Path::new(&home).join("Desktop");
-    let dir = if desktop.is_dir() { desktop } else { std::path::PathBuf::from(&home) };
+    let dir = desktop_dir()?;
     let safe = safe_file_name(&file_name);
     let path = dir.join(if safe.is_empty() { "export.md".into() } else { safe });
     std::fs::write(&path, content).map_err(err)?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+/// 把剪贴项图片(`src_path` 为库内 PNG 绝对路径)复制到桌面为 `file_name`,返回完整路径。
+/// 图片是二进制,不能走 export_file(写文本),单独提供拷贝命令。
+#[tauri::command(rename_all = "snake_case")]
+pub fn save_clip_image(src_path: String, file_name: String) -> CmdResult<String> {
+    let dir = desktop_dir()?;
+    let safe = safe_file_name(&file_name);
+    let path = dir.join(if safe.is_empty() { "clip-image.png".into() } else { safe });
+    std::fs::copy(&src_path, &path).map_err(err)?;
     Ok(path.to_string_lossy().into_owned())
 }
 

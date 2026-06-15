@@ -162,6 +162,10 @@ export const ipc = {
   exportFile: (fileName: string, content: string) =>
     invoke<string>("export_file", { file_name: fileName, content }),
 
+  /** 把剪贴项图片(库内 PNG 绝对路径)复制到桌面,返回完整路径 */
+  saveClipImage: (srcPath: string, fileName: string) =>
+    invoke<string>("save_clip_image", { src_path: srcPath, file_name: fileName }),
+
   /** 便签图片:原始字节走 IPC,扩展名放 header;返回仓库内文件名 */
   saveNoteImage: (bytes: Uint8Array, ext: string) =>
     invoke<string>("save_note_image", bytes, { headers: { "x-ext": ext } }),

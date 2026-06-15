@@ -106,6 +106,7 @@ pub fn run() {
             commands::save_group_icon,
             commands::list_group_icons,
             commands::export_file,
+            commands::save_clip_image,
             commands::get_data_dir,
             commands::migrate_data_dir,
             commands::restart_app,

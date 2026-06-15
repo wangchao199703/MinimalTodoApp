@@ -9,6 +9,7 @@ import {
   CheckSquare,
   Clipboard as ClipboardIcon,
   Copy,
+  Download,
   Eraser,
   Eye,
   NotebookPen,
@@ -47,6 +48,13 @@ const SIZE_STYLE: Record<ClipSize, { row: string; text: string; thumb: string }>
 function ymd(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** 导出文件名时间戳:YYYYMMDD-HHmmss(避免同名覆盖) */
+function fileStamp(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
 /** 剪贴项时间副标签:今天显示 HH:mm,否则 MM-DD HH:mm(created_at 为毫秒) */
@@ -101,6 +109,7 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
   const copyClip = useAppStore((s) => s.copyClip);
   const clipToTask = useAppStore((s) => s.clipToTask);
   const clipToNote = useAppStore((s) => s.clipToNote);
+  const pushToast = useAppStore((s) => s.pushToast);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [tagMenu, setTagMenu] = useState<{ x: number; y: number } | null>(null);
   const [preview, setPreview] = useState(false);
@@ -133,6 +142,25 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
   const clipTags = tags.filter((tg) => clip.tag_ids.includes(tg.id));
   const isText = clip.kind !== "image";
 
+  // 右键「另存为」:文本 → 桌面 .txt;图片 → 桌面 .png(库内 PNG 拷贝)
+  const saveAsTxt = async () => {
+    try {
+      const path = await ipc.exportFile(`剪贴文本-${fileStamp()}.txt`, clip.text ?? "");
+      pushToast(f("S.X.ClipSaved", path));
+    } catch {
+      pushToast(t("S.X.ClipSaveFailed"));
+    }
+  };
+  const saveImage = async () => {
+    if (!clip.image_path) return;
+    try {
+      const path = await ipc.saveClipImage(clip.image_path, `剪贴图片-${fileStamp()}.png`);
+      pushToast(f("S.X.ClipSaved", path));
+    } catch {
+      pushToast(t("S.X.ClipSaveFailed"));
+    }
+  };
+
   const primaryText = isText
     ? (clip.text ?? "").replace(/\s+/g, " ").trim() || "(空白)"
     : t("S.X.ClipImage");
@@ -155,7 +183,11 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
           <img
             src={imgSrc}
             alt="clip"
-            onDoubleClick={() => setPreview(true)}
+            title={t("S.X.ClipPreview")}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPreview(true);
+            }}
             className={`${sz.thumb} shrink-0 cursor-zoom-in rounded-md border border-divider object-cover`}
           />
         ) : (
@@ -239,6 +271,29 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
                 <Pencil size={13} />
                 {t("S.X.ClipEdit")}
               </MenuItem>
+            )}
+            {isText ? (
+              <MenuItem
+                onClick={() => {
+                  setMenu(null);
+                  void saveAsTxt();
+                }}
+              >
+                <Download size={13} />
+                {t("S.X.ClipSaveAsTxt")}
+              </MenuItem>
+            ) : (
+              clip.image_path && (
+                <MenuItem
+                  onClick={() => {
+                    setMenu(null);
+                    void saveImage();
+                  }}
+                >
+                  <Download size={13} />
+                  {t("S.X.ClipSaveImage")}
+                </MenuItem>
+              )
             )}
             <div className="my-1 h-px bg-divider" />
             <MenuItem
