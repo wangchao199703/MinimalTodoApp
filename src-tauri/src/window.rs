@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::Arc;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, PhysicalPosition, WebviewWindow};
+use tauri::{AppHandle, Manager, PhysicalPosition, PhysicalSize, WebviewWindow};
 
 fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -257,31 +257,13 @@ struct DockState {
     moving: AtomicBool,
     /// 刚贴边(拖拽中/启动恢复),等左键松开后立即对齐收起(对齐旧版 DockTo→HideToEdge)
     pending: AtomicBool,
-    /// **贴附屏幕的工作区**(物理像素 left/top/right/bottom),贴边那一刻捕获、收起/唤出全程复用。
-    /// 对齐旧版 WPF `_dockedWa`:窗口收起后会滑过显示器边界、跨到邻屏,
-    /// 此时再实时取窗口所在屏会取到**邻屏**(几何全错 → 多屏下贴边完全失灵),
-    /// 故必须用贴边时光标所在屏(`MonitorFromPoint`)的工作区,记下来一直用。`right>left` 表示已捕获。
-    wa_l: AtomicI32,
-    wa_t: AtomicI32,
-    wa_r: AtomicI32,
-    wa_b: AtomicI32,
-}
-
-impl DockState {
-    fn set_wa(&self, (l, t, r, b): (i32, i32, i32, i32)) {
-        self.wa_l.store(l, Ordering::SeqCst);
-        self.wa_t.store(t, Ordering::SeqCst);
-        self.wa_r.store(r, Ordering::SeqCst);
-        self.wa_b.store(b, Ordering::SeqCst);
-    }
-    /// 已捕获的贴附屏工作区 (left, top, right, bottom);未捕获返回 None。
-    fn wa(&self) -> Option<(i32, i32, i32, i32)> {
-        let l = self.wa_l.load(Ordering::SeqCst);
-        let t = self.wa_t.load(Ordering::SeqCst);
-        let r = self.wa_r.load(Ordering::SeqCst);
-        let b = self.wa_b.load(Ordering::SeqCst);
-        (r > l && b > t).then_some((l, t, r, b))
-    }
+    /// 上次成功读到的显示器几何(x,y,w,h)。w=0 表示尚无缓存。
+    /// current_monitor() 在窗口收起(大部分移出屏幕)时偶发返回 None,直接 continue 会让整拍
+    /// 被跳过、reveal/hide 不响应 → 贴边隐藏「间歇失灵」。成功即缓存、失败用缓存,消除漏拍。
+    mon_x: AtomicI32,
+    mon_y: AtomicI32,
+    mon_w: AtomicI32,
+    mon_h: AtomicI32,
 }
 
 /// 旧版 CubicEase EaseInOut(收起用)
@@ -319,71 +301,13 @@ fn slide_window(
     state.moving.store(false, Ordering::SeqCst);
 }
 
-// 左键是否按下 + 取「点/光标所在屏幕」工作区(user32 直链,免新增依赖)。
-// 对齐旧版 WPF:用 MonitorFromPoint + GetMonitorInfo.rcWork(排除任务栏)做多屏几何,
-// 而非窗口的 current_monitor——后者在窗口收起跨屏后会取到邻屏。
-#[repr(C)]
-struct Point32 {
-    x: i32,
-    y: i32,
-}
-#[repr(C)]
-struct Rect32 {
-    left: i32,
-    top: i32,
-    right: i32,
-    bottom: i32,
-}
-#[repr(C)]
-struct MonitorInfo {
-    cb_size: u32,
-    rc_monitor: Rect32,
-    rc_work: Rect32,
-    dw_flags: u32,
-}
+// 左键是否按下(判定拖拽是否结束;user32 直链,免新增依赖)
 #[link(name = "user32")]
 extern "system" {
     fn GetAsyncKeyState(v_key: i32) -> i16;
-    fn GetCursorPos(p: *mut Point32) -> i32;
-    fn MonitorFromPoint(pt: Point32, flags: u32) -> isize;
-    fn GetMonitorInfoW(hmon: isize, mi: *mut MonitorInfo) -> i32;
 }
-const MONITOR_DEFAULTTONEAREST: u32 = 2;
-
 fn lbutton_down() -> bool {
     unsafe { (GetAsyncKeyState(0x01) as u16) & 0x8000 != 0 }
-}
-
-/// 点 (x,y) 所在屏幕的工作区 (left, top, right, bottom),物理像素、排除任务栏。
-fn point_work_area(x: i32, y: i32) -> Option<(i32, i32, i32, i32)> {
-    unsafe {
-        let mon = MonitorFromPoint(Point32 { x, y }, MONITOR_DEFAULTTONEAREST);
-        if mon == 0 {
-            return None;
-        }
-        let mut mi = MonitorInfo {
-            cb_size: std::mem::size_of::<MonitorInfo>() as u32,
-            rc_monitor: Rect32 { left: 0, top: 0, right: 0, bottom: 0 },
-            rc_work: Rect32 { left: 0, top: 0, right: 0, bottom: 0 },
-            dw_flags: 0,
-        };
-        if GetMonitorInfoW(mon, &mut mi) == 0 {
-            return None;
-        }
-        let w = mi.rc_work;
-        Some((w.left, w.top, w.right, w.bottom))
-    }
-}
-
-/// 当前光标所在屏幕的工作区(对齐 WPF GetCursorScreenWorkArea)。
-fn cursor_work_area() -> Option<(i32, i32, i32, i32)> {
-    unsafe {
-        let mut p = Point32 { x: 0, y: 0 };
-        if GetCursorPos(&mut p) == 0 {
-            return None;
-        }
-        point_work_area(p.x, p.y)
-    }
 }
 
 pub fn setup_dock(app: &AppHandle) {
@@ -397,11 +321,10 @@ pub fn setup_dock(app: &AppHandle) {
         // 启动时若上次处于贴边状态:标记 pending,由轮询线程首拍对齐并收起
         // (setup 时 current_monitor 常不可用,不能在此直接定位)
         pending: AtomicBool::new(saved_edge != EDGE_NONE),
-        // 工作区贴边时再捕获(启动恢复时由首拍用窗口位置补捕获)
-        wa_l: AtomicI32::new(0),
-        wa_t: AtomicI32::new(0),
-        wa_r: AtomicI32::new(0),
-        wa_b: AtomicI32::new(0),
+        mon_x: AtomicI32::new(0),
+        mon_y: AtomicI32::new(0),
+        mon_w: AtomicI32::new(0),
+        mon_h: AtomicI32::new(0),
     });
     // 注册为 Tauri 托管状态,供 show_main(托盘「显示并居中」)复用同一忽略标志居中
     app.manage(state.clone());
@@ -418,16 +341,16 @@ pub fn setup_dock(app: &AppHandle) {
             if state.moving.load(Ordering::SeqCst) || state.hidden.load(Ordering::SeqCst) {
                 return;
             }
-            // 多屏关键:用「光标所在屏幕」工作区做贴边判定(对齐 WPF TryDockAfterDrag),
-            // 不要用窗口的 current_monitor()。拖动时光标在标题栏上 → 即窗口所在屏。
-            let Some((wl, wt, wr, wb)) = cursor_work_area() else { return };
+            let Ok(Some(mon)) = win2.current_monitor() else { return };
+            let mp = mon.position();
+            let ms = mon.size();
             let Ok(size) = win2.outer_size() else { return };
 
-            let edge = if pos.y <= wt + SNAP_PX {
+            let edge = if pos.y <= mp.y + SNAP_PX {
                 EDGE_TOP
-            } else if pos.x <= wl + SNAP_PX {
+            } else if pos.x <= mp.x + SNAP_PX {
                 EDGE_LEFT
-            } else if pos.x + size.width as i32 >= wr - SNAP_PX {
+            } else if pos.x + size.width as i32 >= mp.x + ms.width as i32 - SNAP_PX {
                 EDGE_RIGHT
             } else {
                 EDGE_NONE
@@ -438,10 +361,6 @@ pub fn setup_dock(app: &AppHandle) {
                 // 拖入贴边区:松开左键后立即对齐收起(旧版 DockTo→HideToEdge 语义);
                 // 拖离贴边区:取消待收起
                 state.pending.store(edge != EDGE_NONE, Ordering::SeqCst);
-                // 记下贴附屏工作区(收起/唤出全程复用;窗口滑出跨屏后不能再实时取)
-                if edge != EDGE_NONE {
-                    state.set_wa((wl, wt, wr, wb));
-                }
             }
         });
     }
@@ -467,35 +386,39 @@ pub fn setup_dock(app: &AppHandle) {
                 else {
                     continue;
                 };
+                // 显示器几何:current_monitor() 在窗口收起时偶发 None。成功即缓存,失败用缓存,
+                // 绝不因此跳过整拍(否则 reveal/hide 漏拍 = 贴边隐藏间歇失灵)。
+                let (mp, ms) = if let Ok(Some(mon)) = win.current_monitor() {
+                    let p = *mon.position();
+                    let s = *mon.size();
+                    state.mon_x.store(p.x, Ordering::SeqCst);
+                    state.mon_y.store(p.y, Ordering::SeqCst);
+                    state.mon_w.store(s.width as i32, Ordering::SeqCst);
+                    state.mon_h.store(s.height as i32, Ordering::SeqCst);
+                    (p, s)
+                } else {
+                    let cw = state.mon_w.load(Ordering::SeqCst);
+                    if cw <= 0 {
+                        continue; // 还没成功读过任何显示器(刚启动、窗口尚未定位)
+                    }
+                    (
+                        PhysicalPosition::new(
+                            state.mon_x.load(Ordering::SeqCst),
+                            state.mon_y.load(Ordering::SeqCst),
+                        ),
+                        PhysicalSize::new(cw as u32, state.mon_h.load(Ordering::SeqCst) as u32),
+                    )
+                };
                 let (cx, cy) = (cursor.x as i32, cursor.y as i32);
                 let (w, h) = (size.width as i32, size.height as i32);
                 let hidden = state.hidden.load(Ordering::SeqCst);
 
-                // 贴附屏工作区(left,top,right,bottom):贴边那一刻捕获、收起/唤出全程复用(对齐 WPF _dockedWa)。
-                // 窗口收起后会滑过显示器边界跨到邻屏,绝不能再实时取窗口所在屏(会取到邻屏 → 多屏全错)。
-                // 启动恢复尚未捕获时:用窗口当前位置(此刻仍可见)所在屏补捕获;取不到就下拍再试。
-                let (wl, wt, wr, wb) = match state.wa() {
-                    Some(v) => v,
-                    None => {
-                        if hidden {
-                            continue;
-                        }
-                        match point_work_area(pos.x + w / 2, pos.y + h / 2) {
-                            Some(v) => {
-                                state.set_wa(v);
-                                v
-                            }
-                            None => continue,
-                        }
-                    }
-                };
-
                 // 从 (x,y) 向贴附边滑出隐藏(旧版 HideToEdge:220ms CubicEase EaseInOut)
                 let hide_to = |x: i32, y: i32, animate: bool| {
                     let target = match edge {
-                        EDGE_TOP => PhysicalPosition::new(x, wt - h + REVEAL_PX),
-                        EDGE_LEFT => PhysicalPosition::new(wl - w + REVEAL_PX, y),
-                        _ => PhysicalPosition::new(wr - REVEAL_PX, y),
+                        EDGE_TOP => PhysicalPosition::new(x, mp.y - h + REVEAL_PX),
+                        EDGE_LEFT => PhysicalPosition::new(mp.x - w + REVEAL_PX, y),
+                        _ => PhysicalPosition::new(mp.x + ms.width as i32 - REVEAL_PX, y),
                     };
                     if animate {
                         slide_window(&win, &state, PhysicalPosition::new(x, y), target, ease_in_out);
@@ -516,9 +439,12 @@ pub fn setup_dock(app: &AppHandle) {
                     state.pending.store(false, Ordering::SeqCst);
                     let animate = !boot_restore.swap(false, Ordering::SeqCst);
                     let (ax, ay) = match edge {
-                        EDGE_TOP => (pos.x.clamp(wl, (wr - w).max(wl)), wt),
-                        EDGE_LEFT => (wl, pos.y.clamp(wt, (wb - h).max(wt))),
-                        _ => (wr - w, pos.y.clamp(wt, (wb - h).max(wt))),
+                        EDGE_TOP => (
+                            pos.x.clamp(mp.x, mp.x + ms.width as i32 - w),
+                            mp.y,
+                        ),
+                        EDGE_LEFT => (mp.x, pos.y.max(mp.y)),
+                        _ => (mp.x + ms.width as i32 - w, pos.y.max(mp.y)),
                     };
                     // 先瞬时对齐到边的完整可见位置(旧版 DockTo 先归位再动画,避免斜向飞跃)
                     state.moving.store(true, Ordering::SeqCst);
@@ -547,30 +473,19 @@ pub fn setup_dock(app: &AppHandle) {
                     // 比原来的硬边缘 2~3px 更宽容:鼠标停在露出的细条上即唤出,不必精确顶到屏幕边
                     // (双屏共享边等"软边界"处鼠标会越界到邻屏、顶不住边,原阈值会偶发唤不出)。
                     let at_edge = match edge {
-                        EDGE_TOP => {
-                            cy >= wt - 1
-                                && cy <= wt + REVEAL_PX + 2
-                                && cx >= pos.x - 2
-                                && cx <= pos.x + w + 2
-                        }
-                        EDGE_LEFT => {
-                            cx >= wl - 1
-                                && cx <= wl + REVEAL_PX + 2
-                                && cy >= pos.y - 2
-                                && cy <= pos.y + h + 2
-                        }
+                        EDGE_TOP => cy <= mp.y + REVEAL_PX && cx >= pos.x && cx <= pos.x + w,
+                        EDGE_LEFT => cx <= mp.x + REVEAL_PX && cy >= pos.y && cy <= pos.y + h,
                         _ => {
-                            cx >= wr - REVEAL_PX - 2
-                                && cx <= wr + 1
-                                && cy >= pos.y - 2
-                                && cy <= pos.y + h + 2
+                            cx >= mp.x + ms.width as i32 - REVEAL_PX
+                                && cy >= pos.y
+                                && cy <= pos.y + h
                         }
                     };
                     if at_edge {
                         let target = match edge {
-                            EDGE_TOP => PhysicalPosition::new(pos.x, wt),
-                            EDGE_LEFT => PhysicalPosition::new(wl, pos.y),
-                            _ => PhysicalPosition::new(wr - w, pos.y),
+                            EDGE_TOP => PhysicalPosition::new(pos.x, mp.y),
+                            EDGE_LEFT => PhysicalPosition::new(mp.x, pos.y),
+                            _ => PhysicalPosition::new(mp.x + ms.width as i32 - w, pos.y),
                         };
                         slide_window(&win, &state, PhysicalPosition::new(pos.x, pos.y), target, ease_out);
                         state.hidden.store(false, Ordering::SeqCst);
