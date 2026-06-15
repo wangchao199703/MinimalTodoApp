@@ -123,9 +123,9 @@ export default function NotesView() {
     })();
   };
 
-  // 第二侧边栏宽度可拖动并持久化(默认 224,范围 160–460)
+  // 第二侧边栏宽度可拖动并持久化(默认 224,范围 60–460;下限按用户要求放到 60)
   const [navWidth, setNavWidth] = useState(() =>
-    Math.min(460, Math.max(160, Number(settings["notes_sidebar_width"]) || 224)),
+    Math.min(460, Math.max(60, Number(settings["notes_sidebar_width"]) || 224)),
   );
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -133,7 +133,7 @@ export default function NotesView() {
     const startW = navWidth;
     let w = startW;
     const move = (ev: MouseEvent) => {
-      w = Math.min(460, Math.max(160, startW + ev.clientX - startX));
+      w = Math.min(460, Math.max(60, startW + ev.clientX - startX));
       setNavWidth(w);
     };
     const up = () => {

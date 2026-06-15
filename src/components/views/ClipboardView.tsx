@@ -408,8 +408,22 @@ export default function ClipboardView() {
   const setClipFilterTag = useAppStore((s) => s.setClipFilterTag);
   const addClipTag = useAppStore((s) => s.addClipTag);
   const setClipItemTag = useAppStore((s) => s.setClipItemTag);
+  const clearUngroupedClips = useAppStore((s) => s.clearUngroupedClips);
   const settings = useAppStore((s) => s.settings);
   const saveSetting = useAppStore((s) => s.saveSetting);
+
+  // 「默认」分组右键菜单(清空未分组剪贴项)
+  const [defaultMenu, setDefaultMenu] = useState<{ x: number; y: number } | null>(null);
+  const confirmClearDefault = async () => {
+    if (
+      await confirm({
+        title: t("S.X.Clear"),
+        message: f("S.X.ConfirmClearClipTag", t("S.X.ClipDefault")),
+      })
+    ) {
+      void clearUngroupedClips();
+    }
+  };
 
   // 「默认」分组也作为放置目标:把剪贴项拖到「默认」= 移出当前分组(归回默认)
   const defaultDropRef = useRef<HTMLButtonElement | null>(null);
@@ -429,9 +443,9 @@ export default function ClipboardView() {
   // 搜索关键词(仅前端过滤已加载列表,量小够用;参照 ShellPicker)
   const [query, setQuery] = useState("");
 
-  // 第二侧边栏宽度可拖动并持久化(对齐便签/标签第二侧栏:默认 224,范围 160–460)
+  // 第二侧边栏宽度可拖动并持久化(默认 224,范围 60–460;下限按用户要求放到 60)
   const [navWidth, setNavWidth] = useState(() =>
-    Math.min(460, Math.max(160, Number(settings["clip_sidebar_width"]) || 224)),
+    Math.min(460, Math.max(60, Number(settings["clip_sidebar_width"]) || 224)),
   );
   const startResize = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -439,7 +453,7 @@ export default function ClipboardView() {
     const startW = navWidth;
     let w = startW;
     const move = (ev: MouseEvent) => {
-      w = Math.min(460, Math.max(160, startW + ev.clientX - startX));
+      w = Math.min(460, Math.max(60, startW + ev.clientX - startX));
       setNavWidth(w);
     };
     const up = () => {
@@ -524,6 +538,10 @@ export default function ClipboardView() {
             <button
               ref={defaultDropRef}
               onClick={() => setClipFilterTag(null)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setDefaultMenu({ x: e.clientX, y: e.clientY });
+              }}
               className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium ${
                 clipFilterTagId == null
                   ? "bg-sidebar-selected text-sidebar-selected-fg"
@@ -534,6 +552,21 @@ export default function ClipboardView() {
               <span className="min-w-0 flex-1 truncate text-left">{t("S.X.ClipDefault")}</span>
               <span className="text-xs text-sidebar-muted">{ungroupedCount}</span>
             </button>
+            {defaultMenu && (
+              <Popover at={defaultMenu} anchor={null} onClose={() => setDefaultMenu(null)} zIndex={200}>
+                <div className="w-36">
+                  <MenuItem
+                    onClick={() => {
+                      setDefaultMenu(null);
+                      void confirmClearDefault();
+                    }}
+                  >
+                    <Eraser size={13} />
+                    {t("S.X.Clear")}
+                  </MenuItem>
+                </div>
+              </Popover>
+            )}
             {clipTags.map((tg) => (
               <ClipTagRow key={tg.id} tag={tg} active={clipFilterTagId === tg.id} />
             ))}

@@ -49,11 +49,20 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
   const group = useAppStore((s) => s.groups.find((g) => g.id === col.id));
   const renameGroup = useAppStore((s) => s.renameGroup);
   const removeGroup = useAppStore((s) => s.removeGroup);
+  const addTask = useAppStore((s) => s.addTask);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [colorOpen, setColorOpen] = useState(false);
   const [iconOpen, setIconOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(col.name);
+  // 容器内「+ 添加」:回车以本列标签建一条待办(对齐旧版 AddTaskToTag;无标签列 → 不归组)
+  const [newText, setNewText] = useState("");
+  const submitNew = () => {
+    const title = newText.trim();
+    if (!title) return;
+    void addTask(title, { group_id: col.id ?? undefined });
+    setNewText("");
+  };
 
   const commitRename = () => {
     setEditing(false);
@@ -145,6 +154,16 @@ function BoardCard({ col, tasks, now }: { col: Column; tasks: Task[]; now: Date 
           ))}
         </div>
       </div>
+      {/* 容器内「+ 添加」输入(对齐 WPF 标签看板:每个容器底部自带);回车以本列标签建待办 */}
+      <input
+        value={newText}
+        onChange={(e) => setNewText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submitNew();
+        }}
+        placeholder={t("S.Tag.AddPlaceholder")}
+        className="mt-2 w-full rounded-md border border-divider bg-input px-2 py-1 text-[13px] text-text-1 outline-none placeholder:text-muted focus:border-accent"
+      />
 
       {menu && group && (
         <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>

@@ -158,6 +158,8 @@ interface AppState {
   removeClip: (id: number) => Promise<void>;
   /** 清空某剪切板标签下的所有剪贴项 */
   clearClipTagItems: (tagId: number) => Promise<void>;
+  /** 清空「默认」分组(未归入任何分组)的所有剪贴项 */
+  clearUngroupedClips: () => Promise<void>;
   toggleClipPin: (clip: ClipItem) => Promise<void>;
   addClipTag: (name: string) => Promise<void>;
   renameClipTag: (id: number, name: string) => Promise<void>;
@@ -857,6 +859,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({ clips: s.clips.filter((c) => !c.tag_ids.includes(tagId)) }));
   },
 
+  clearUngroupedClips: async () => {
+    // 清空「默认」分组(无任何标签)的剪贴项
+    const ids = get()
+      .clips.filter((c) => c.tag_ids.length === 0)
+      .map((c) => c.id);
+    for (const id of ids) {
+      try {
+        await ipc.deleteClip(id);
+      } catch {
+        /* 忽略 */
+      }
+    }
+    set((s) => ({ clips: s.clips.filter((c) => c.tag_ids.length > 0) }));
+  },
+
   toggleClipPin: async (clip) => {
     const pinned = !clip.pinned;
     await ipc.pinClip(clip.id, pinned);
@@ -870,7 +887,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   addClipTag: async (name) => {
-    const tag = await ipc.createClipTag(name);
+    // 同名会被后端拒绝 → 客户端自动加序号:新分组 / 新分组2 / 新分组3 …
+    const existing = new Set(get().clipTags.map((t) => t.name));
+    let unique = name;
+    let n = 2;
+    while (existing.has(unique)) {
+      unique = `${name}${n}`;
+      n += 1;
+    }
+    const tag = await ipc.createClipTag(unique);
     set((s) => (s.clipTags.some((t) => t.id === tag.id) ? {} : { clipTags: [...s.clipTags, tag] }));
   },
 
