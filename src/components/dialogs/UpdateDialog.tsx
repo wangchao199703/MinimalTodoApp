@@ -8,17 +8,18 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
   const saveSetting = useAppStore((s) => s.saveSetting);
   const pushToast = useAppStore((s) => s.pushToast);
   const [progress, setProgress] = useState<number | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failMsg, setFailMsg] = useState<string>("");
 
   const start = async () => {
-    setFailed(false);
+    setFailMsg("");
     setProgress(0);
     try {
       await downloadAndApply(props.info, setProgress);
       // 成功后应用会退出重启,走不到这里
-    } catch {
+    } catch (e) {
       setProgress(null);
-      setFailed(true); // 设置窗口无 Toast 宿主,失败必须在对话框内可见
+      // 设置窗口无 Toast 宿主,失败必须在对话框内可见;附带真实原因便于定位
+      setFailMsg(String((e as Error)?.message ?? e) || t("S.Update.DownloadFailed"));
       pushToast(t("S.Update.DownloadFailed"));
     }
   };
@@ -54,8 +55,10 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
         </div>
       ) : (
         <div className="mt-3 flex items-center justify-end gap-2">
-          {failed && (
-            <span className="mr-auto text-xs text-red-500">{t("S.Update.DownloadFailed")}</span>
+          {failMsg && (
+            <span className="mr-auto max-w-56 truncate text-xs text-red-500" title={failMsg}>
+              {t("S.Update.DownloadFailed")}
+            </span>
           )}
           {/* 重装当前版本时无「跳过此版本」语义,只保留取消 + 立即重装 */}
           {!reinstall && (

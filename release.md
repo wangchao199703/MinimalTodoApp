@@ -162,3 +162,11 @@
   - **标题栏菜单「检查更新」**(`TitleBar.tsx`):三态各给明确 Toast(有新版弹框 / 已是最新 / 检查失败),失败不再被误报成已是最新。
   - **启动检查节流**(`App.tsx`):上次自动检查不足 1 小时则跳过本次启动检查(localStorage 记时间戳),避免频繁重启白耗 GitHub 匿名接口 60 次/小时配额;长时运行仍由 12 小时定时覆盖;后台检查失败一律静默。
 - 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。
+
+## v2.0.0 — 修复:更新/重装下载卡 0% 后失败(异步命令内误用 reqwest::blocking)
+
+- **现象**:检查更新发现 v2.0.0 / 或重装,点下载后进度条卡 0%,随即「更新失败」。
+- **根因**:`download_update` 是 `async` 命令(跑在 Tauri 的 tokio 运行时上),却在 `spawn_blocking` 里用 **`reqwest::blocking`**——阻塞客户端会在异步运行时内再起一个阻塞运行时,下载尚未开始即失败(故进度永远 0%、随后抛错)。这是我上一版的实现错误。
+- **修复**:命令内直接用 **reqwest 异步客户端**(`client.get(url).send().await` + `resp.chunk().await` 流式读取并 emit 进度),不再 `spawn_blocking`/`blocking`。`Cargo.toml` 的 reqwest 特性从 `["blocking","native-tls"]` 改为 `["native-tls"]`(异步客户端 + Windows SChannel)。
+- **顺带**:`UpdateDialog` 下载失败时把**真实错误**挂到红字的 `title`(悬停可见),便于定位(HTTP 码 / TLS / 网络)。
+- 验证:`npm run build` + `cargo check`(reqwest 0.12.28 异步 + schannel 编译通过)全过。版本保持 2.0.0,待用户验证后重新 release。

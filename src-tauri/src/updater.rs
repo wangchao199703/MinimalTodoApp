@@ -4,7 +4,6 @@
 //! 本模块负责:Rust 侧流式下载新版 exe(带进度事件)→ 写盘 → bat 换壳重启
 //! → 新版启动后回收旧 exe。保留旧版「便携单 exe」分发模型,不走安装包。
 
-use std::io::Read;
 use tauri::{AppHandle, Emitter};
 
 fn err<E: std::fmt::Display>(e: E) -> String {
@@ -65,44 +64,34 @@ fn swap_and_restart(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<()
 /// async 命令在后台线程池执行,阻塞下载放进 spawn_blocking,绝不卡主线程消息循环。
 #[tauri::command]
 pub async fn download_update(app: AppHandle, url: String, file_name: String) -> Result<(), String> {
-    let app2 = app.clone();
-    let bytes = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
-        let client = reqwest::blocking::Client::builder()
-            .user_agent("MinimalTodoApp-update")
-            .build()
-            .map_err(err)?;
-        let mut resp = client.get(&url).send().map_err(err)?;
-        if !resp.status().is_success() {
-            return Err(format!("HTTP {}", resp.status()));
-        }
-        let total = resp.content_length().unwrap_or(0);
-        let mut buf: Vec<u8> = Vec::with_capacity(total as usize);
-        let mut chunk = [0u8; 64 * 1024];
-        let mut received: u64 = 0;
-        let mut last_emit = 0.0f64;
-        loop {
-            let n = resp.read(&mut chunk).map_err(err)?;
-            if n == 0 {
-                break;
-            }
-            buf.extend_from_slice(&chunk[..n]);
-            received += n as u64;
-            if total > 0 {
-                let ratio = received as f64 / total as f64;
-                // 节流:每涨 1% 才上报一次(末尾必报)
-                if ratio - last_emit >= 0.01 || ratio >= 1.0 {
-                    last_emit = ratio;
-                    let _ = app2.emit("update-progress", ratio);
-                }
+    // 命令本身是 async,直接用 reqwest 异步客户端跑在 Tauri 的 tokio 运行时上;
+    // 切忌在此用 reqwest::blocking(它会在异步运行时内再起阻塞运行时,导致下载未开始即失败)。
+    let client = reqwest::Client::builder()
+        .user_agent("MinimalTodoApp-update")
+        .build()
+        .map_err(err)?;
+    let mut resp = client.get(&url).send().await.map_err(err)?;
+    if !resp.status().is_success() {
+        return Err(format!("HTTP {}", resp.status()));
+    }
+    let total = resp.content_length().unwrap_or(0);
+    let mut buf: Vec<u8> = Vec::with_capacity(total as usize);
+    let mut received: u64 = 0;
+    let mut last_emit = 0.0f64;
+    while let Some(chunk) = resp.chunk().await.map_err(err)? {
+        buf.extend_from_slice(&chunk);
+        received += chunk.len() as u64;
+        if total > 0 {
+            let ratio = received as f64 / total as f64;
+            // 节流:每涨 1% 才上报一次(末尾必报)
+            if ratio - last_emit >= 0.01 || ratio >= 1.0 {
+                last_emit = ratio;
+                let _ = app.emit("update-progress", ratio);
             }
         }
-        Ok(buf)
-    })
-    .await
-    .map_err(err)??;
-
+    }
     let _ = app.emit("update-progress", 1.0_f64);
-    swap_and_restart(&app, &file_name, &bytes)
+    swap_and_restart(&app, &file_name, &buf)
 }
 
 /// 旧的「前端下载 → 传原始字节」入口,保留兼容:接收新版 exe 字节(Raw body + x-file-name header)。
