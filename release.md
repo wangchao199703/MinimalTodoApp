@@ -409,3 +409,7 @@
 - **翻看方向改左右**:index 0(最新)在最左,往右更旧。滚轮(纵/横向皆可)、方向键 ←→(↑↓作别名)翻看,左右边缘改为 ← / → 浮层按钮;提示文案更新「最左为最新」。
 - **浏览模式支持右键**:抽出共享 `ClipMenu`(预览/复制/编辑/另存为/加入待办·便签/分组/删除 + 标签二级菜单),列表与浏览模式共用;浏览区右键当前条即弹同款菜单,「预览」开灯箱。
 - 重构:`ClipRow` 原内联菜单与 `saveAsTxt/saveImage` 迁入 `ClipMenu`,消除重复。tsc 通过、HMR 无报错。
+
+### 15) 修复贴边线程 clamp panic(版本仍 2.0.1)
+- `window.rs` EDGE_TOP 对齐用 `pos.x.clamp(mp.x, mp.x + ms.width - w)`,当窗口比显示器工作区还宽(窄副屏 / DPI 异常)时 `min > max`,`clamp` panic → 贴边轮询线程崩、自动隐藏失灵。
+- 修复:上限取 `(mp.x + ms.width - w).max(mp.x)`,保证 ≥ 下限(此时窗口钉到左边),不再 panic。cargo check 通过。

@@ -582,10 +582,12 @@ pub fn setup_dock(app: &AppHandle) {
                     state.pending.store(false, Ordering::SeqCst);
                     let animate = !boot_restore.swap(false, Ordering::SeqCst);
                     let (ax, ay) = match edge {
-                        EDGE_TOP => (
-                            pos.x.clamp(mp.x, mp.x + ms.width as i32 - w),
-                            mp.y,
-                        ),
+                        EDGE_TOP => {
+                            // 上限须 ≥ 下限:窗口比工作区还宽时(窄副屏/DPI 异常)直接钉到左边,
+                            // 否则 clamp(min, max) 在 min>max 时会 panic(贴边线程崩、自动隐藏失灵)。
+                            let hi = (mp.x + ms.width as i32 - w).max(mp.x);
+                            (pos.x.clamp(mp.x, hi), mp.y)
+                        }
                         EDGE_LEFT => (mp.x, pos.y.max(mp.y)),
                         _ => (mp.x + ms.width as i32 - w, pos.y.max(mp.y)),
                     };
