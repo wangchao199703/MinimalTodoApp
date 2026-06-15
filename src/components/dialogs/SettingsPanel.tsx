@@ -147,13 +147,22 @@ export default function SettingsPanel() {
     }
   };
 
+  // 「检查中 / 失败」就地可见(Toast 会自动消失,按钮旁状态持久,对齐 WPF 手动检查的明确反馈)
+  const [reinstallStatus, setReinstallStatus] = useState<"" | "checking" | "failed">("");
   const startReinstall = async () => {
     if (reinstallBusy) return;
     setReinstallBusy(true);
+    setReinstallStatus("checking");
     pushToast(t("S.Update.Checking"));
     try {
       const info = await fetchReinstallInfo();
-      if (info) setReinstallInfo(info);
+      if (info) {
+        setReinstallStatus("");
+        setReinstallInfo(info);
+      } else {
+        // fetchReinstallInfo 内部已弹失败 Toast;此处留下持久状态(限流/网络失败)
+        setReinstallStatus("failed");
+      }
     } finally {
       setReinstallBusy(false);
     }
@@ -698,13 +707,21 @@ export default function SettingsPanel() {
                   {t("S.Settings.ReinstallDesc")}
                 </span>
               </span>
-              <button
-                onClick={() => void startReinstall()}
-                disabled={reinstallBusy}
-                className="shrink-0 rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
-              >
-                {t("S.Settings.ReinstallBtn")}
-              </button>
+              <span className="flex shrink-0 items-center gap-2">
+                {reinstallStatus === "checking" && (
+                  <span className="text-xs text-muted">{t("S.Update.Checking")}</span>
+                )}
+                {reinstallStatus === "failed" && (
+                  <span className="text-xs text-red-500">{t("S.Update.CheckFailed")}</span>
+                )}
+                <button
+                  onClick={() => void startReinstall()}
+                  disabled={reinstallBusy}
+                  className="rounded-md px-3 py-1.5 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-50"
+                >
+                  {t("S.Settings.ReinstallBtn")}
+                </button>
+              </span>
             </div>
           </>
         )}

@@ -6,6 +6,7 @@ import { t } from "../lib/i18n";
 import SettingsPanel from "./dialogs/SettingsPanel";
 import ResizeBorders from "./ResizeBorders";
 import { ConfirmHost } from "./ui/ConfirmDialog";
+import Toasts from "./ui/Toasts";
 
 /**
  * 独立设置窗口(URL 带 ?window=settings,由 main.tsx 路由):
@@ -56,6 +57,8 @@ export default function SettingsWindow() {
       </div>
       {/* 设置窗口自带确认框宿主(恢复默认等需要二次确认) */}
       <ConfirmHost />
+      {/* 设置窗口自带 Toast 宿主:检查更新失败/数据迁移等反馈必须就地可见(否则按钮像没反应) */}
+      <Toasts />
     </div>
   );
 }

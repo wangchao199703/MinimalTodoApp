@@ -139,3 +139,16 @@
   - 前端 `src/lib/updater.ts`:`downloadAndApply` 改为 `listen("update-progress")` + `invoke("download_update",{url,fileName})`,删掉前端 fetch/reader 与 `apply_update` 原始字节调用。
   - `src/components/dialogs/UpdateDialog.tsx`:下载失败时在对话框内**内联**显示错误(设置窗口无 Toast 宿主,必须就地可见),不再只靠 Toast。
 - 验证:`npm run build`(tsc 严格)+ `cargo check`(reqwest 0.12.28 经 schannel 编译通过、`time` 仍 0.3.47)全过。版本保持 2.0.0。
+
+## v2.0.0 — 修复:重新安装点击后无弹窗/进度(抄 WPF 更新逻辑)
+
+- **现象**:点「重新安装」既不弹对话框也无进度。
+- **根因**(两层):
+  1. **GitHub 匿名 API 限流**:`fetchReinstallInfo` 要先调 `api.github.com/.../releases/tags/v{ver}` 拿资产。匿名接口 60 次/小时/IP,反复测试(启动即自动检查 + 多次手动)把配额打空 → 返回 **403** → 抛错 → 不弹对话框。
+  2. **设置独立窗口无 `<Toasts/>` 宿主**:失败 Toast(「检查更新失败,请稍后再试」)根本不显示 → 按钮像死的。对照 WPF:手动检查会**明确提示**「检查失败」,本应用却把反馈吞了。
+- **修复(抄 WPF「服务端拉取 + 明确反馈」)**:
+  - **重装直接拼直链、不调 API**(`src/lib/updater.ts` `fetchReinstallInfo`):资产名/地址由 release.ps1 命名约定完全确定(tag=`v{ver}`、`MinimalTodoApp-v{ver}-win-x64.exe`),直接构造 `github.com/{repo}/releases/download/{tag}/{asset}`。既不耗 API 配额、也能在限流时照常重装;资产真不存在则 Rust 下载报 HTTP 404、对话框内可见。重装无需 Release notes 故不再解析。
+  - **设置窗口挂 `<Toasts/>` 宿主**(`SettingsWindow.tsx`):检查更新/数据迁移等所有 `pushToast` 反馈就地可见(此前数据迁移提示也一并不可见,本次一并修)。
+  - **重装按钮旁内联状态**(`SettingsPanel.tsx`):「检查中…」/「检查更新失败,请稍后再试」持久显示(Toast 会自动消失,对齐 WPF 手动检查的明确持久反馈)。
+  - 下载仍走上一轮的 Rust `download_update`(reqwest,绕开资产 CDN 的 CORS),与 WPF 的服务端 HttpClient 下载同理。
+- 验证:`npm run build`(tsc 严格)+ dev-release 构建通过;桌面验证 exe 已生成。版本保持 2.0.0。

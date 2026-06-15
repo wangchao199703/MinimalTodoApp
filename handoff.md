@@ -272,3 +272,22 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 **运行时验证点**:设置→关于→「重新安装」→ 对话框点「重新安装」→ 进度条应随下载推进(Rust 侧 emit),完成后应用换壳重启;断网/资产不存在时对话框内出现红字失败提示而非静默。**注意**:此修复要真正生效于「重装」需让目标 release 的 exe 也含本修复——即本次需重新 release 后,新装的版本再点重装才走 Rust 下载;但下载机制(进度/不再被 CORS 拦)对常规自动更新即时生效。
 
 **下一步**:用户通知后重新 release(同步与否由用户定;reinstall 拉取与当前版本同 tag 的 release)。
+
+---
+
+## 重新安装点击后无弹窗/进度 — 抄 WPF (v2.0.0)
+
+**根因**:(1) GitHub 匿名 API 限流(60/h/IP),反复测试打空配额 → reinstall 的 tag 查询返 403 → 不弹框;(2) 设置独立窗口无 `<Toasts/>` 宿主,失败提示被吞 → 按钮像死的(WPF 手动检查会明确提示失败,本应用没有)。
+
+**改动**:
+- `src/lib/updater.ts` `fetchReinstallInfo`:**不再调 API**,直接按 release.ps1 命名约定拼直链(`github.com/{repo}/releases/download/v{ver}/MinimalTodoApp-v{ver}-win-x64.exe`)。不耗配额、限流时也能装;资产缺失则 Rust 下载报 404、对话框内可见。
+- `src/components/SettingsWindow.tsx`:挂 `<Toasts/>` 宿主(连带修好数据迁移等所有设置窗 Toast 此前不可见的问题)。
+- `src/components/dialogs/SettingsPanel.tsx`:重装按钮旁内联「检查中…/检查失败」持久状态。
+- 下载仍走上一轮 Rust `download_update`(reqwest,绕 CORS)。
+
+**验证**:`npm run build` + dev-release 构建通过。桌面验证 exe:`MinimalTodoApp-v2.0.0-修复重装验证-v2.exe`。
+
+**给用户/接手人注意**:
+- 当前那 60/h 配额是被本轮 curl + 反复启动打空的,顶格整点重置;reinstall 已不依赖 API,但**常规自动更新检查仍走 api.github.com**,正常使用一小时 60 次足够。
+- dev-release exe 与正式 release 同共用单实例锁:验证前必须先退掉桌面上正在运行的旧验证 exe(否则新的启动即被吞)。
+- WPF 重启用 Process.Start+命名事件握手(规避锁定机 PS 脚本静默失败);本应用用「bat 等旧 PID 退出再启动新版」绕开单实例冲突,普通机器可用,未采纳握手方案(如遇企业锁定机再议)。

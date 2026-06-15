@@ -90,38 +90,23 @@ export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null
 }
 
 /**
- * 「重新安装当前版本」:按当前版本对应 tag 拉取同一 Release,取便携 exe 资产,
- * 返回带 reinstall=true 的 UpdateInfo(不做版本比较)。失败/无资产返回 null 并弹 Toast。
- * 后续下载+换壳重启完全复用 downloadAndApply(同升级路径)。
+ * 「重新安装当前版本」:资产名/下载地址由 release.ps1 的命名约定**完全确定**
+ * (tag=`v{version}`、资产 `MinimalTodoApp-v{version}-win-x64.exe`),故**直接拼直链、
+ * 不调 GitHub API**——既不消耗匿名接口 60 次/小时配额,也能在接口被限流(403)时照常重装。
+ * 真实下载在 Rust 侧(避开资产 CDN 的 CORS);资产不存在则 Rust 下载报 HTTP 404,对话框内可见。
  */
 export async function fetchReinstallInfo(): Promise<UpdateInfo | null> {
-  const s = useAppStore.getState();
   const current = await getVersion();
-  // tag 约定带 v 前缀(release.ps1 打的 tag),与 latest 解析逻辑一致
   const tag = `v${current}`;
-  const url = `https://api.github.com/repos/${REPO_SLUG}/releases/tags/${encodeURIComponent(tag)}`;
-
-  let release: GithubRelease;
-  try {
-    const resp = await fetch(url, { headers: { Accept: "application/vnd.github+json" } });
-    if (!resp.ok) throw new Error(String(resp.status));
-    release = await resp.json();
-  } catch {
-    s.pushToast(t("S.Update.CheckFailed"));
-    return null;
-  }
-
-  const asset = pickExeAsset(release);
-  if (!asset) {
-    s.pushToast(t("S.Update.NoAsset"));
-    return null;
-  }
+  const assetName = `MinimalTodoApp-${tag}-win-x64.exe`;
+  const assetUrl =
+    `https://github.com/${REPO_SLUG}/releases/download/${tag}/${assetName}`;
 
   return {
     version: current,
-    notes: release.body ?? "",
-    assetUrl: asset.browser_download_url,
-    assetName: asset.name,
+    notes: "",
+    assetUrl,
+    assetName,
     currentVersion: current,
     reinstall: true,
   };
