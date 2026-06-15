@@ -109,11 +109,15 @@ fn start_new_and_exit(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<
         .spawn()
         .map_err(err)?;
 
-    // 给前端收到返回的时间,然后优雅退出(SQLite 已逐操作持久化,无需额外保存)
+    // 给前端收到返回的时间,然后退出旧进程(SQLite 已逐操作持久化,WAL 下硬退也不丢/不损)。
+    // 先优雅退出;若没退干净(设置弹窗的 webview/在途 IPC 会卡住优雅关闭,导致旧进程及其
+    // 设置弹窗残留在新版之上——正是用户所见),1.2s 兜底**硬退出**,确保旧进程及其所有窗口立即消失。
     let app = app.clone();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(400));
         app.exit(0);
+        std::thread::sleep(std::time::Duration::from_millis(1200));
+        std::process::exit(0);
     });
     Ok(())
 }
