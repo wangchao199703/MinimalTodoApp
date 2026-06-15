@@ -363,3 +363,12 @@
 - 双语新增:剪切板设置(过期/去重)、便签导出/加入待办、拖入提示文案更新等键(zh + en)。
 
 验证:`npx tsc -b` 通过、`cargo check` 通过。
+
+### 9) 复制图片文件(CF_HDROP)支持 + 剪切板筛选/预览/尺寸(版本仍 2.0.1)
+- **根因定位**:用户「复制图片」其实是在资源管理器里 Ctrl+C 一个图片**文件**,剪贴板放的是 `CF_HDROP`/`FileNameW`(文件引用),既无位图也无文本,clipboard-rs `has(Image)/has(Text)` 全 false → 之前什么都没抓到。用 Win32 `EnumClipboardFormats` 诊断确认。
+- **修复(对齐 Ditto CF_HDropAggregator)**:`clipboard.rs` `handle()` 在文本之后、位图轮询之前增 `get_files()` 分支(`handle_files`):图片文件用 `RustImageData::from_path` 解码 → 走 `store_image` 存成图片项(PNG+缩略图);非图片文件把路径汇成文本项。`handle_image` 抽出 `store_image` 与之共用。位图延迟渲染轮询(`image_ready`)保留。
+- **图片右键预览**:`ClipboardView` 新增 `ImageLightbox`(全屏暗底原图,点击/Esc 关),图片项右键「预览」+ 缩略图双击预览。
+- **类型筛选器**:工具栏「全部/文字/图片」分段筛选(临时态)。
+- **显示大小**:工具栏 小/中/大 分段(持久化 `clip_item_size`,默认中),影响文本字号/行高与缩略图尺寸。
+- **日期筛选器**:工具栏日期范围(起/止,含当天),按 `created_at` 过滤;「清除筛选」一键复位。
+- i18n 双语补齐(筛选/大小/预览键)。tsc + cargo check 通过。

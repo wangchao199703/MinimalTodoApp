@@ -9,6 +9,7 @@ import {
   Clipboard as ClipboardIcon,
   Copy,
   Eraser,
+  Eye,
   NotebookPen,
   Palette,
   PanelLeftClose,
@@ -18,6 +19,7 @@ import {
   PinOff,
   Plus,
   Search,
+  SlidersHorizontal,
   Tag,
   Trash2,
   X,
@@ -32,8 +34,47 @@ import ColorDialog from "../dialogs/ColorDialog";
 // 拖拽数据 type:剪贴项拖到标签上打标签(单独 type,与待办/分组排序互不干扰)
 const CLIP_DRAG = "clip-item";
 
+// 显示大小(持久化设置 clip_item_size):影响文本字号/行高与图片缩略图尺寸
+type ClipSize = "sm" | "md" | "lg";
+const SIZE_STYLE: Record<ClipSize, { row: string; text: string; thumb: string }> = {
+  sm: { row: "py-1", text: "text-xs", thumb: "h-7 w-7" },
+  md: { row: "py-2", text: "text-sm", thumb: "h-10 w-10" },
+  lg: { row: "py-3", text: "text-base", thumb: "h-16 w-16" },
+};
+
+/** 图片预览灯箱:全屏暗底 + 居中原图,点任意处 / Esc 关闭 */
+function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div
+      onClick={onClose}
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-8"
+      role="dialog"
+      aria-label={t("S.X.ClipPreviewTitle")}
+    >
+      <img
+        src={src}
+        alt={t("S.X.ClipPreviewTitle")}
+        onClick={(e) => e.stopPropagation()}
+        className="max-h-full max-w-full rounded-md object-contain shadow-2xl ring-1 ring-white/10"
+      />
+      <button
+        title={t("S.Close")}
+        onClick={onClose}
+        className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+      >
+        <X size={18} />
+      </button>
+    </div>
+  );
+}
+
 /** 单行剪贴项:文本/图片缩略图 + 标签点 + 置顶/删除按钮 + 右键菜单 + 可拖到标签打标签 */
-function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
+function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: ClipSize }) {
   const removeClip = useAppStore((s) => s.removeClip);
   const toggleClipPin = useAppStore((s) => s.toggleClipPin);
   const setClipItemTag = useAppStore((s) => s.setClipItemTag);
@@ -42,8 +83,15 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
   const clipToNote = useAppStore((s) => s.clipToNote);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [tagMenu, setTagMenu] = useState<{ x: number; y: number } | null>(null);
+  const [preview, setPreview] = useState(false);
   const [dragging, setDragging] = useState(false);
   const rowRef = useRef<HTMLDivElement | null>(null);
+  const sz = SIZE_STYLE[size] ?? SIZE_STYLE.md;
+  // 预览/查看大图用原图(asset 协议),回退内嵌缩略图
+  const fullImgSrc =
+    clip.kind === "image"
+      ? (clip.image_path ? convertFileSrc(clip.image_path) : clip.thumbnail_b64) ?? undefined
+      : undefined;
 
   // 拖源:把该剪贴项拖到第二侧栏标签上 → 打该标签(单标签语义)
   useEffect(() => {
@@ -72,7 +120,7 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
-      className={`group flex items-center gap-2 rounded-md px-3 py-2 text-sm text-text-1 hover:bg-card-hover ${
+      className={`group flex items-center gap-2 rounded-md px-3 text-text-1 hover:bg-card-hover ${sz.row} ${sz.text} ${
         dragging ? "opacity-40" : ""
       }`}
     >
@@ -83,7 +131,8 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
               <img
                 src={imgSrc}
                 alt="clip"
-                className="h-10 w-10 shrink-0 rounded border border-divider object-cover"
+                onDoubleClick={() => setPreview(true)}
+                className={`${sz.thumb} shrink-0 cursor-zoom-in rounded border border-divider object-cover`}
               />
             ) : (
               <span className="opacity-70">[{t("S.X.ClipImage")}]</span>
@@ -132,6 +181,17 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
       {menu && (
         <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
           <div className="w-40">
+            {clip.kind === "image" && fullImgSrc && (
+              <MenuItem
+                onClick={() => {
+                  setMenu(null);
+                  setPreview(true);
+                }}
+              >
+                <Eye size={13} />
+                {t("S.X.ClipPreview")}
+              </MenuItem>
+            )}
             <MenuItem
               onClick={() => {
                 setMenu(null);
@@ -234,6 +294,9 @@ function ClipRow({ clip, tags }: { clip: ClipItem; tags: ClipTag[] }) {
             })}
           </div>
         </Popover>
+      )}
+      {preview && fullImgSrc && (
+        <ImageLightbox src={fullImgSrc} onClose={() => setPreview(false)} />
       )}
     </div>
   );
@@ -442,6 +505,16 @@ export default function ClipboardView() {
 
   // 搜索关键词(仅前端过滤已加载列表,量小够用;参照 ShellPicker)
   const [query, setQuery] = useState("");
+  // 类型筛选(全部/文字/图片)与日期范围筛选:临时态,与搜索一致(切视图重置)
+  const [kindFilter, setKindFilter] = useState<"all" | "text" | "image">("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // 显示大小:持久化设置 clip_item_size(默认中)
+  const itemSize: ClipSize =
+    settings["clip_item_size"] === "sm" || settings["clip_item_size"] === "lg"
+      ? (settings["clip_item_size"] as ClipSize)
+      : "md";
 
   // 第二侧边栏宽度可拖动并持久化(默认 224,范围 60–460;下限按用户要求放到 60)
   const [navWidth, setNavWidth] = useState(() =>
@@ -471,16 +544,28 @@ export default function ClipboardView() {
   // 过滤:分组筛选 + 文本搜索。null = 「默认」分组 = 未归入任何自定义分组的剪贴项;
   // 选中某分组 = 该分组下的剪贴项。剪贴项单分组,移到别的分组后即从「默认」消失。
   const q = query.trim().toLowerCase();
+  // 日期范围 → 毫秒边界(含当天:起始取 00:00,结束取次日 00:00)
+  const fromMs = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : null;
+  const toMs = dateTo ? new Date(`${dateTo}T00:00:00`).getTime() + 86_400_000 : null;
   const filtered = clips.filter((c) => {
     if (clipFilterTagId == null) {
       if (c.tag_ids.length > 0) return false; // 默认 = 未分组
     } else if (!c.tag_ids.includes(clipFilterTagId)) {
       return false;
     }
+    if (kindFilter !== "all" && c.kind !== kindFilter) return false;
+    if (fromMs != null && c.created_at < fromMs) return false;
+    if (toMs != null && c.created_at >= toMs) return false;
     if (q && !(c.text ?? "").toLowerCase().includes(q)) return false;
     return true;
   });
   const ungroupedCount = clips.filter((c) => c.tag_ids.length === 0).length;
+  const filtersActive = kindFilter !== "all" || !!dateFrom || !!dateTo;
+  const clearFilters = () => {
+    setKindFilter("all");
+    setDateFrom("");
+    setDateTo("");
+  };
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -584,30 +669,113 @@ export default function ClipboardView() {
         </aside>
       )}
 
-      {/* 右侧:搜索框 + 剪贴项列表 */}
+      {/* 右侧:搜索/筛选工具栏 + 剪贴项列表 */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="shrink-0 p-2 pb-1">
-          <div className="relative">
-            <Search
-              size={14}
-              className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"
-            />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t("S.X.ClipSearch")}
-              className="w-full rounded-md border border-divider bg-card py-1.5 pr-7 pl-8 text-sm text-text-1 outline-none focus:border-accent"
-            />
-            {query && (
-              <button
-                title={t("S.Clear")}
-                onClick={() => setQuery("")}
-                className="absolute top-1/2 right-1.5 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-muted hover:bg-card-hover"
-              >
-                <X size={13} />
-              </button>
-            )}
+        <div className="shrink-0 space-y-1.5 p-2 pb-1">
+          <div className="flex items-center gap-1.5">
+            <div className="relative min-w-0 flex-1">
+              <Search
+                size={14}
+                className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-muted"
+              />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("S.X.ClipSearch")}
+                className="w-full rounded-md border border-divider bg-card py-1.5 pr-7 pl-8 text-sm text-text-1 outline-none focus:border-accent"
+              />
+              {query && (
+                <button
+                  title={t("S.Clear")}
+                  onClick={() => setQuery("")}
+                  className="absolute top-1/2 right-1.5 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded text-muted hover:bg-card-hover"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+            {/* 显示大小:小/中/大(持久化) */}
+            <div className="flex shrink-0 items-center rounded-md border border-divider p-0.5">
+              {(["sm", "md", "lg"] as ClipSize[]).map((s) => (
+                <button
+                  key={s}
+                  title={t("S.X.ClipSize")}
+                  onClick={() => saveSetting("clip_item_size", s)}
+                  className={`flex h-6 w-6 items-center justify-center rounded text-xs ${
+                    itemSize === s
+                      ? "bg-accent text-on-accent"
+                      : "text-muted hover:bg-card-hover"
+                  }`}
+                >
+                  {s === "sm" ? t("S.X.ClipSizeS") : s === "md" ? t("S.X.ClipSizeM") : t("S.X.ClipSizeL")}
+                </button>
+              ))}
+            </div>
+            {/* 筛选器开合(类型 + 日期);有激活筛选时高亮 */}
+            <button
+              title={t("S.X.ClipFilters")}
+              onClick={() => setFiltersOpen((v) => !v)}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
+                filtersActive || filtersOpen
+                  ? "border-accent text-accent"
+                  : "border-divider text-muted hover:bg-card-hover"
+              }`}
+            >
+              <SlidersHorizontal size={14} />
+            </button>
           </div>
+          {filtersOpen && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border border-divider bg-card/50 p-2">
+              {/* 类型筛选 */}
+              <div className="flex items-center rounded-md border border-divider p-0.5 text-xs">
+                {(
+                  [
+                    ["all", t("S.X.ClipKindAll")],
+                    ["text", t("S.X.ClipKindText")],
+                    ["image", t("S.X.ClipKindImage")],
+                  ] as const
+                ).map(([k, label]) => (
+                  <button
+                    key={k}
+                    onClick={() => setKindFilter(k)}
+                    className={`rounded px-2 py-1 ${
+                      kindFilter === k ? "bg-accent text-on-accent" : "text-muted hover:bg-card-hover"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {/* 日期范围 */}
+              <div className="flex items-center gap-1 text-xs text-text-2">
+                <input
+                  type="date"
+                  value={dateFrom}
+                  max={dateTo || undefined}
+                  title={t("S.X.ClipDateStart")}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="rounded-md border border-divider bg-card px-1.5 py-1 text-text-1 outline-none focus:border-accent"
+                />
+                <span className="text-muted">–</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  min={dateFrom || undefined}
+                  title={t("S.X.ClipDateEnd")}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="rounded-md border border-divider bg-card px-1.5 py-1 text-text-1 outline-none focus:border-accent"
+                />
+              </div>
+              {filtersActive && (
+                <button
+                  onClick={clearFilters}
+                  className="rounded-md px-2 py-1 text-xs text-muted hover:bg-card-hover hover:text-text-1"
+                >
+                  {t("S.X.ClipClearFilters")}
+                </button>
+              )}
+            </div>
+          )}
         </div>
         {filtered.length === 0 ? (
           <div className="flex flex-1 items-center justify-center text-sm text-muted">
@@ -616,7 +784,7 @@ export default function ClipboardView() {
         ) : (
           <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto p-2 pt-1">
             {filtered.map((clip) => (
-              <ClipRow key={clip.id} clip={clip} tags={clipTags} />
+              <ClipRow key={clip.id} clip={clip} tags={clipTags} size={itemSize} />
             ))}
           </div>
         )}

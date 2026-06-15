@@ -18,6 +18,18 @@ use tauri::{AppHandle, Emitter, Manager};
 /// 图片捕获开关:已修复延迟渲染竞态(见 image_ready),默认开启,文本/图片都监听。
 const IMAGE_CAPTURE_ENABLED: bool = true;
 
+/// 可作为图片解析的文件扩展名(clipboard-rs 内置 image 在 Windows 支持 png/jpeg/bmp,
+/// 其余尝试解码失败时回退为「路径文本」)。从资源管理器复制图片文件走 CF_HDROP,这里据此识别。
+const IMAGE_FILE_EXTS: &[&str] = &["png", "jpg", "jpeg", "bmp", "gif", "webp", "tif", "tiff", "ico"];
+
+fn is_image_path(path: &str) -> bool {
+    let ext = std::path::Path::new(path)
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_ascii_lowercase());
+    matches!(ext, Some(e) if IMAGE_FILE_EXTS.contains(&e.as_str()))
+}
+
 /// 启动时按「过期时间」设置清理一次未置顶旧剪贴项(运行中由 commit 实时清理)。
 pub fn purge_expired_on_startup(app: &AppHandle) {
     let orphans = {
@@ -94,7 +106,16 @@ impl ClipWatcher {
                 });
             }
         }
-        // 无文本 → 可能是纯图片。Windows 剪贴板「延迟渲染」:变化事件(WM_CLIPBOARDUPDATE)常在
+        // 从资源管理器复制文件(CF_HDROP,无文本/无位图,clipboard-rs 的 has(Image) 也为 false):
+        // 对齐 Ditto 的 CF_HDropAggregator —— 读出文件路径,图片文件存成图片项(显示缩略图),
+        // 其余文件把路径存成文本项。必须在图片轮询之前判定,否则白等 ~250ms。
+        if let Ok(files) = self.ctx.get_files() {
+            let files: Vec<String> = files.into_iter().filter(|f| !f.trim().is_empty()).collect();
+            if !files.is_empty() {
+                return self.handle_files(files);
+            }
+        }
+        // 无文本/无文件 → 可能是纯位图。Windows 剪贴板「延迟渲染」:变化事件(WM_CLIPBOARDUPDATE)常在
         // 图片格式(CF_DIB/CF_PNG,尤其从 CF_BITMAP 合成的 DIB)真正落盘前就触发,故短时轮询
         // 探测图片是否到位(最多约 250ms),到位再入库,否则放弃。
         if IMAGE_CAPTURE_ENABLED && self.image_ready() {
@@ -102,6 +123,36 @@ impl ClipWatcher {
         } else {
             Ok(())
         }
+    }
+
+    /// 处理「复制的文件」(CF_HDROP):图片文件→图片项(读文件解码存 PNG + 缩略图);
+    /// 非图片文件→把路径汇成一条文本项。对齐 Ditto:把剪贴板里实际有的内容如实记下。
+    fn handle_files(&self, files: Vec<String>) -> anyhow::Result<()> {
+        let mut others = Vec::new();
+        for path in files {
+            if is_image_path(&path) {
+                match clipboard_rs::RustImageData::from_path(&path) {
+                    Ok(img) => self.store_image(img)?,
+                    Err(_) => others.push(path), // 解码失败(如 webp 无解码器)→ 退回路径文本
+                }
+            } else {
+                others.push(path);
+            }
+        }
+        if !others.is_empty() {
+            let text = others.join("\n");
+            let hash = sha256(text.as_bytes());
+            if self.dedup_enabled() || !self.is_latest(&hash) {
+                self.commit(NewClip {
+                    kind: "text".into(),
+                    text: Some(text),
+                    image_path: None,
+                    thumbnail_b64: None,
+                    hash,
+                })?;
+            }
+        }
+        Ok(())
     }
 
     /// 短时轮询「剪贴板里是否已有可读图片」,化解延迟渲染竞态。
@@ -122,6 +173,12 @@ impl ClipWatcher {
 
     fn handle_image(&self) -> anyhow::Result<()> {
         let img = self.ctx.get_image().map_err(|e| anyhow::anyhow!("{e}"))?;
+        self.store_image(img)
+    }
+
+    /// 把一张图(位图复制或图片文件解码所得)存成图片项:转 PNG 落盘 + 内嵌缩略图 + 入库 emit。
+    /// 位图监听与「复制图片文件」(CF_HDROP)共用此路径。
+    fn store_image(&self, img: clipboard_rs::RustImageData) -> anyhow::Result<()> {
         let png = img.to_png().map_err(|e| anyhow::anyhow!("{e}"))?;
         let bytes = png.get_bytes();
         let hash = sha256(bytes);
