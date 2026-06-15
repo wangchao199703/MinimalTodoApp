@@ -339,6 +339,7 @@
  "S.Update.UpToDate": "已是最新版本.",
  "S.Update.CheckFailed": "检查更新失败，请稍后再试.",
  "S.Update.DownloadFailed": "下载更新失败，请稍后再试.",
+ "S.Update.ManualDownload": "手动下载",
  "S.Update.LaunchFailed.Title": "新版本未能自动启动",
  "S.Update.LaunchFailed.Message": "新版本已下载，但未能自动启动。请到下面的位置手动运行：",
  "S.Update.OpenFolder": "打开所在文件夹",

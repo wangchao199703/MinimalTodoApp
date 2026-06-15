@@ -184,3 +184,11 @@
   - 新版与旧版**同路径同名**,便携模型不变,且与资产文件名无关。写新版失败会**回滚改名**,绝不把应用弄成缺文件。
   - 目录不可写等极端情况**兜底**:写到 `%LOCALAPPDATA%\MinimalTodoApp` 并从那启动,`--updated-from` 回收旧 exe(沿用原机制)。
 - **验证**:写了端到端实测(改名挪开→原路径写新版→bat 等退出→删旧→重启),本机跑通:重启起来的新版写出 marker(`RESTARTED OK`)、挪开的旧文件被清理。`cargo check` 无警告。版本保持 2.0.0。
+
+## v2.0.0 — 新增:更新对话框「手动下载」(打开下载地址兜底)
+
+- **需求**:抄 WPF 加手动下载——用户澄清为「手动打开下载地址」的功能。
+- **实现**:更新/重装对话框新增「手动下载」按钮,用系统默认浏览器打开该版本资产直链(`info.assetUrl`),交浏览器自行下载,作为应用内自动更新失败时的兜底。
+  - 后端命令 `open_url`(`updater.rs`):仅放行 http(s),`explorer.exe <url>` 调默认浏览器(单参数,免 cmd 的 `&` 转义坑);`lib.rs` 注册。
+  - 前端 `updater.ts` `openDownloadUrl` 封装;`UpdateDialog.tsx` 加按钮;i18n 双语 `S.Update.ManualDownload`(手动下载/Download manually)。
+- 验证:`npm run build`(tsc 严格)通过。版本保持 2.0.0。

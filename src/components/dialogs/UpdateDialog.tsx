@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAppStore } from "../../store/useAppStore";
-import { downloadAndApply, type UpdateInfo } from "../../lib/updater";
+import { downloadAndApply, openDownloadUrl, type UpdateInfo } from "../../lib/updater";
 import { t, f } from "../../lib/i18n";
 import Modal from "../ui/Modal";
 
@@ -72,6 +72,13 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
               {t("S.Update.SkipThis")}
             </button>
           )}
+          {/* 手动下载:用默认浏览器打开下载地址自行下载(应用内更新失败时的兜底) */}
+          <button
+            onClick={() => void openDownloadUrl(props.info.assetUrl)}
+            className="rounded-md px-2.5 py-1.5 text-xs text-text-2 hover:bg-card-hover"
+          >
+            {t("S.Update.ManualDownload")}
+          </button>
           <button
             onClick={props.onClose}
             className="rounded-md px-2.5 py-1.5 text-xs text-text-2 hover:bg-card-hover"

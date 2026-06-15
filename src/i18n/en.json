@@ -339,6 +339,7 @@
  "S.Update.UpToDate": "You are on the latest version.",
  "S.Update.CheckFailed": "Update check failed, please try again later.",
  "S.Update.DownloadFailed": "Download failed, please try again later.",
+ "S.Update.ManualDownload": "Download manually",
  "S.Update.LaunchFailed.Title": "Couldn't start the new version",
  "S.Update.LaunchFailed.Message": "The new version was downloaded but couldn't start automatically. Please run it manually from the location below:",
  "S.Update.OpenFolder": "Open folder",
