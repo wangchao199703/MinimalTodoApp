@@ -338,7 +338,12 @@ pub fn setup_dock(app: &AppHandle) {
         let state = state.clone();
         win.on_window_event(move |event| {
             let tauri::WindowEvent::Moved(pos) = event else { return };
-            if state.moving.load(Ordering::SeqCst) || state.hidden.load(Ordering::SeqCst) {
+            // 对齐 WPF:贴边检测只在「用户按住左键拖动窗口」时进行(WPF 是 DragMove 结束后才 TryDockAfterDrag)。
+            // 程序自身的对齐/滑入滑出 set_position 都发生在左键松开状态,据此天然排除——否则收起动画
+            // 尾随的自移动 Moved 会漏过 moving/hidden 守卫(置 false 与置 hidden 之间有缝)被误判为用户拖动、
+            // 把 edge 改错;多隐藏几次累积 → 贴边卡死(显示并居中重置 edge/hidden 才恢复,正是用户所见)。
+            if !lbutton_down() || state.moving.load(Ordering::SeqCst) || state.hidden.load(Ordering::SeqCst)
+            {
                 return;
             }
             let Ok(Some(mon)) = win2.current_monitor() else { return };

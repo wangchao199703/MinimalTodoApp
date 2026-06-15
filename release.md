@@ -252,3 +252,10 @@
 - **动作**:`git checkout dfaa7e0 -- src-tauri/src/window.rs`,把贴边代码退回到「偶尔失灵但能自动隐藏」的可用版本(current_monitor + 显示器缓存 + REVEAL_PX 唤出带,全程用 Tauri 同一坐标空间)。其余所有修复(重装照搬 WPF、skipTaskbar、手动下载等)保持不变。
 - **后续**:多屏修复方向(工作区)本身是对的,但需在真机(尤其带 DPI 缩放的双屏)上测过坐标空间再上;不再盲改盲发。
 - 验证:`cargo check` 无警告。版本保持 2.0.0。
+
+## v2.0.0 — 修复:贴边多隐藏几次后失效(自移动 Moved 被误判为用户拖动,污染 edge)
+
+- **现象**:贴边能用,但多收起/唤出几次后失灵;点「显示并居中」立刻恢复。
+- **根因**:`show_main`(显示并居中)会**重置** edge/hidden/pending/moving,故能临时复原——说明这些状态被逐次污染。污染来自 `Moved` 事件处理器:它在**每次**窗口位置变化时跑(用户拖动 + 程序滑入滑出/对齐的 set_position 都会触发)。收起动画结束时 `moving` 先置 false、`hidden` 后置 true,二者之间有缝;**尾随的自移动 Moved 在这条缝里被当成用户拖动**,按收起态的窗口坐标把 `edge` 改错(如 LEFT→TOP)、`pending` 置真,几次累积后 edge 与实际不符 → reveal 永不触发 → 卡死。
+- **修复(参考 WPF `TitleBar_MouseLeftButtonDown`)**:WPF 只在 `DragMove()`(用户按住左键拖动)结束后才 `TryDockAfterDrag` 检测贴边,程序自身的隐藏/唤出动画从不触发检测。照此:`Moved` 处理器加 `lbutton_down()` 闸——**只在用户按住左键拖动时才检测贴边**。所有程序自移动都在左键松开状态发生,天然排除,根除污染。`lbutton_down()` 已被 pending 分支依赖、确证可靠。
+- 验证:`cargo check` 无警告。版本保持 2.0.0。
