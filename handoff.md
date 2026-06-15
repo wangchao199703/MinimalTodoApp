@@ -340,3 +340,19 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 
 ## 待办(未完成):贴边隐藏间歇失灵
 用户先提了「贴边隐藏功能间歇失灵」,排查中被「重装」需求打断,**尚未修复**。window.rs 轮询线程 reveal 触发判定(at_edge 仅 2~3px 边缘命中 + current_monitor 偶发 None continue)疑似漏拍。下一步从这两点入手。
+
+---
+
+## 双屏贴边完全失灵 → 照 WPF 用「光标所在屏工作区」 (v2.0.0)
+
+**根因**:贴边几何用窗口 current_monitor() + 整屏边界。窗口收起会滑过屏边界跨到邻屏,再取窗口所在屏→取到邻屏,几何全错→reveal/hide 永不成立→完全失灵。上一版「缓存窗口显示器」治标不治本(缓存的还是窗口屏)。
+
+**修复(对齐 WPF _dockedWa + GetCursorScreenWorkArea)**:
+- 新增 MonitorFromPoint(NEAREST)+GetMonitorInfo().rcWork(user32 直链,结构体 size=40 本机实测正确,rcWork 排任务栏)。`point_work_area`/`cursor_work_area`。
+- Moved 贴边判定用 cursor_work_area。
+- 贴边时把贴附屏工作区记进 DockState.wa_l/t/r/b,收起/唤出/对齐全程复用;启动恢复用窗口位置补捕获。删掉上一版 mon_x/y/w/h 缓存。
+- 所有几何(hide 目标/对齐/reveal 触发带/reveal 目标)改工作区坐标 + WPF ±1/±2 边距。
+
+**验证**:cargo check 无警告;wa_test 例本机实测 GetMonitorInfo 正确(size=40、work 排任务栏)。本机单屏无法复现双屏交互。
+
+**未决**:需用户在双屏机实测确认贴边收起/唤出(上/左/右边、主屏+副屏)。
