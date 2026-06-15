@@ -215,3 +215,14 @@
 - **需求**:应用永远不在任务栏显示,只在通知栏(托盘)。
 - **实现**:`tauri.conf.json` 主窗口加 `"skipTaskbar": true`(创建期静态设置,跨 hide/show 持久;window.rs 的 show()/set_focus() 不会重置)。窗口仅经托盘图标(双击「显示并居中」)唤出。
 - 验证:发布构建通过;需运行确认任务栏始终无图标、托盘可正常唤出。版本保持 2.0.0。
+
+## v2.0.0 — 重新安装/更新逻辑照搬 WPF(弃用自创的就地替换/bat)
+
+- **背景**:此前自创的「就地替换运行中 exe + bat 重启」反复出问题。改为**原封不动照搬旧版 WPF `UpdateService` 的安装逻辑**。
+- **WPF 模型(本次严格对齐)**:
+  1. **下载到独立文件**(`resolve_download_path` ← WPF `ResolveDownloadPath`):exe 同目录可写优先,但**绝不写正在运行的 exe**(运行中被文件锁→覆盖必失败,这正是旧 bug),同名冲突退 `%LOCALAPPDATA%`,再冲突加 pid 前缀。
+  2. **直接拉起新版**(`start_new_and_exit` ← WPF `TryStartNewVersion` 的 `Process.Start`,**不用脚本/bat**):传 `--updated-from <旧exe>` + `--old-pid <旧进程>`,随后本进程优雅退出。
+  3. **新版接管旧版**(`takeover_old_instance` ← WPF `EnsureSingleInstance(fromUpdate)`):新版启动**先**等旧实例退出(~5s)、超时强杀,**再**注册单实例插件——否则单实例会让新版直接退出。kernel32 直链 OpenProcess/WaitForSingleObject/TerminateProcess。
+  4. **回收旧 exe**(`cleanup_after_update` ← WPF `CleanupAfterUpdate`):旧进程消失后删旧 exe(带重试)。
+- **删除**自创的 `swap_and_restart`/`spawn_restart_bat`(就地改名 + bat)。`download_update`/`apply_update` 改调 `start_new_and_exit`;`lib.rs` 在单实例插件注册前调 `takeover_old_instance`。
+- **本机实测**:takeover 端到端跑通——OLD 拉起 NEW、NEW 等 3s 后强杀 OLD、确认 `old_alive_after=false`、NEW(子进程)在父被杀后仍存活并完成。正常路径下旧实例 ~400ms 优雅退出,无需强杀。`cargo check` 无警告。版本保持 2.0.0。

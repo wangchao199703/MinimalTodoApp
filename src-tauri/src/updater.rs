@@ -1,14 +1,32 @@
-//! 自动更新落地侧:版本检查由前端完成(api.github.com 允许跨域),
-//! 但**资产下载必须走 Rust**——GitHub 资产 CDN(release-assets.githubusercontent.com)
-//! 不返回 CORS 头,前端 fetch 会被 WebView2 拦截(下载立即失败、无任何进度)。
-//! 本模块负责:Rust 侧流式下载新版 exe(带进度事件)→ 写盘 → bat 换壳重启
-//! → 新版启动后回收旧 exe。保留旧版「便携单 exe」分发模型,不走安装包。
+//! 自动更新落地侧(**逻辑对齐旧版 WPF `UpdateService`**):
+//! 版本检查由前端完成;资产下载走 Rust(GitHub 资产 CDN 无 CORS 头,前端 fetch 会被 WebView2 拦)。
+//! 安装严格照搬 WPF:
+//!  1. **下载到独立文件**(`resolve_download_path`,对齐 WPF `ResolveDownloadPath`)——
+//!     **绝不写正在运行的 exe**(运行中的 exe 被文件锁,覆盖必失败),同名冲突退到 `%LOCALAPPDATA%`;
+//!  2. **直接拉起新版**(对齐 WPF `TryStartNewVersion` 的 `Process.Start`,不用脚本/bat),
+//!     传 `--updated-from <旧exe>` 与 `--old-pid <旧进程>`;
+//!  3. **新版接管旧版**(对齐 WPF `EnsureSingleInstance(fromUpdate)`):新版启动先等/强杀旧实例,
+//!     再注册单实例,确保新版一定起来(`takeover_old_instance`);
+//!  4. **回收旧 exe**(对齐 WPF `CleanupAfterUpdate`,`cleanup_after_update`)。
+//! 保留「便携单 exe」分发模型,不走安装包。
 
 use tauri::{AppHandle, Emitter};
 
 fn err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
+
+// 进程操作(接管旧实例用):kernel32 直链,免新增依赖。对齐 WPF「新版静默接管旧版」。
+#[link(name = "kernel32")]
+extern "system" {
+    fn OpenProcess(access: u32, inherit: i32, pid: u32) -> isize;
+    fn TerminateProcess(handle: isize, exit_code: u32) -> i32;
+    fn WaitForSingleObject(handle: isize, ms: u32) -> u32;
+    fn CloseHandle(handle: isize) -> i32;
+}
+const PROCESS_TERMINATE: u32 = 0x0001;
+const SYNCHRONIZE: u32 = 0x0010_0000;
+const WAIT_OBJECT_0: u32 = 0x0000_0000;
 
 /// 用系统默认浏览器打开 URL(「手动下载」用):把下载地址交给浏览器自行下载,
 /// 作为应用内自动更新失败时的兜底。explorer.exe 接单个参数,免 cmd 的 `&` 转义坑。
@@ -25,79 +43,70 @@ pub fn open_url(url: String) -> Result<(), String> {
     Ok(())
 }
 
-/// 写 bat 并执行:等本进程(pid)退出后,删掉 `to_delete`(若有),启动 `launch`(可带参数),自删。
-/// chcp 65001 防中文路径乱码;轮询等待旧进程退出再动手(规避运行中文件锁与单实例冲突)。
-fn spawn_restart_bat(
-    app: &AppHandle,
-    launch: &std::path::Path,
-    launch_args: &str,
-    to_delete: Option<&std::path::Path>,
-) -> Result<(), String> {
-    let pid = std::process::id();
-    let del_line = match to_delete {
-        // 删旧版可能因句柄释放滞后而短暂失败,重试几次
-        Some(p) => format!(
-            "set i=0\r\n:del\r\ndel /f /q \"{p}\" >nul 2>nul\r\nif exist \"{p}\" if %i% lss 10 (set /a i+=1 & timeout /t 1 /nobreak >nul & goto del)\r\n",
-            p = p.display()
-        ),
-        None => String::new(),
-    };
-    let bat = std::env::temp_dir().join("minimal-todo-update.bat");
-    let script = format!(
-        "@echo off\r\nchcp 65001 >nul\r\n:wait\r\ntasklist /FI \"PID eq {pid}\" 2>nul | find \"{pid}\" >nul\r\nif not errorlevel 1 (\r\n  timeout /t 1 /nobreak >nul\r\n  goto wait\r\n)\r\n{del_line}start \"\" \"{launch}\"{args}\r\ndel \"%~f0\"\r\n",
-        pid = pid,
-        del_line = del_line,
-        launch = launch.display(),
-        args = launch_args,
-    );
-    std::fs::write(&bat, script).map_err(err)?;
-    std::process::Command::new("cmd")
-        .args(["/C", bat.to_str().unwrap_or_default()])
+/// 目录是否可写(探针文件)。
+fn is_writable(dir: &std::path::Path) -> bool {
+    let probe = dir.join(".w_probe");
+    match std::fs::write(&probe, b"x") {
+        Ok(_) => {
+            let _ = std::fs::remove_file(&probe);
+            true
+        }
+        Err(_) => false,
+    }
+}
+
+/// 选下载落地路径(对齐 WPF `ResolveDownloadPath`):exe 同目录可写优先;
+/// 但**绝不**落到正在运行的 exe(否则文件锁导致写盘失败,这正是旧实现的 bug)——
+/// 冲突则退到 `%LOCALAPPDATA%\MinimalTodoApp`,仍冲突则加 pid 前缀确保唯一。
+fn resolve_download_path(asset_name: &str) -> std::path::PathBuf {
+    let cur = std::env::current_exe().ok();
+    let mut candidates: Vec<std::path::PathBuf> = Vec::new();
+    if let Some(dir) = cur.as_ref().and_then(|e| e.parent()) {
+        if is_writable(dir) {
+            candidates.push(dir.join(asset_name));
+        }
+    }
+    let local = std::path::PathBuf::from(std::env::var("LOCALAPPDATA").unwrap_or_default())
+        .join("MinimalTodoApp");
+    let _ = std::fs::create_dir_all(&local);
+    candidates.push(local.join(asset_name));
+    candidates.push(local.join(format!("{}-{}", std::process::id(), asset_name)));
+    for c in candidates {
+        if cur.as_deref() != Some(c.as_path()) {
+            return c;
+        }
+    }
+    local.join(format!("{}-{}", std::process::id(), asset_name))
+}
+
+/// 把新版字节写到独立文件并拉起新版,然后退出本进程(对齐 WPF `DownloadAsync`+`TryStartNewVersion`)。
+/// 新版带 `--updated-from <旧exe>`(供回收旧 exe)与 `--old-pid <本进程>`(供新版接管旧版)。
+/// **全程不碰正在运行的 exe**,不写脚本。
+fn start_new_and_exit(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<(), String> {
+    let new_exe = resolve_download_path(file_name);
+    if let Some(p) = new_exe.parent() {
+        let _ = std::fs::create_dir_all(p);
+    }
+    std::fs::write(&new_exe, bytes).map_err(err)?;
+
+    let old_exe = std::env::current_exe().map_err(err)?;
+    let old_pid = std::process::id();
+    // 直接拉起新版(独立进程,父进程退出后仍存活);新版会等/强杀本进程后接管单实例
+    std::process::Command::new(&new_exe)
+        .arg("--updated-from")
+        .arg(&old_exe)
+        .arg("--old-pid")
+        .arg(old_pid.to_string())
         .spawn()
         .map_err(err)?;
 
-    // 给前端一点时间收到返回,再优雅退出
+    // 给前端收到返回的时间,然后优雅退出(SQLite 已逐操作持久化,无需额外保存)
     let app = app.clone();
     std::thread::spawn(move || {
-        std::thread::sleep(std::time::Duration::from_millis(300));
+        std::thread::sleep(std::time::Duration::from_millis(400));
         app.exit(0);
     });
     Ok(())
-}
-
-/// 用新版 exe 字节替换当前运行的 exe,并重启。
-///
-/// **要点(经本机实测确认):正在运行的 exe 无法被覆盖/删除(os error 32/5),但可被改名。**
-/// 故首选「就地替换」:把运行中的 exe 改名挪开 → 原路径写入新版 → bat 等旧进程退出后删掉挪开的旧文件并启动新版。
-/// 这样新版与旧版同路径同名(便携模型不变),且不依赖资产文件名。
-/// 若就地替换不可行(目录不可写等),回退到「写入 %LOCALAPPDATA% 并从那启动、用 --updated-from 回收旧 exe」。
-fn swap_and_restart(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<(), String> {
-    let cur = std::env::current_exe().map_err(err)?;
-
-    // ---- 方案 A:就地替换(改名挪开运行中的 exe → 原路径写新版)----
-    let aside = cur.with_file_name(format!(
-        "{}.old-{}",
-        cur.file_name().and_then(|s| s.to_str()).unwrap_or("app.exe"),
-        std::process::id()
-    ));
-    if std::fs::rename(&cur, &aside).is_ok() {
-        match std::fs::write(&cur, bytes) {
-            Ok(()) => return spawn_restart_bat(app, &cur, "", Some(&aside)),
-            Err(_) => {
-                // 写新版失败:务必把挪开的旧 exe 改回原位,绝不能让应用变成"缺文件"
-                let _ = std::fs::rename(&aside, &cur);
-            }
-        }
-    }
-
-    // ---- 方案 B(兜底):写到 %LOCALAPPDATA% 并从那启动新版,--updated-from 回收旧 exe ----
-    let local = std::env::var("LOCALAPPDATA").unwrap_or_default();
-    let dir = std::path::PathBuf::from(local).join("MinimalTodoApp");
-    let _ = std::fs::create_dir_all(&dir);
-    let new_exe = dir.join(file_name);
-    std::fs::write(&new_exe, bytes).map_err(err)?;
-    let args = format!(" --updated-from \"{}\"", cur.display());
-    spawn_restart_bat(app, &new_exe, &args, None)
 }
 
 /// 流式下载新版 exe 并换壳重启:从 `url`(GitHub 资产直链,会 302 到无 CORS 的 CDN,
@@ -132,7 +141,7 @@ pub async fn download_update(app: AppHandle, url: String, file_name: String) -> 
         }
     }
     let _ = app.emit("update-progress", 1.0_f64);
-    swap_and_restart(&app, &file_name, &buf)
+    start_new_and_exit(&app, &file_name, &buf)
 }
 
 /// 旧的「前端下载 → 传原始字节」入口,保留兼容:接收新版 exe 字节(Raw body + x-file-name header)。
@@ -148,7 +157,31 @@ pub fn apply_update(app: AppHandle, request: tauri::ipc::Request) -> Result<(), 
         .and_then(|v| v.to_str().ok())
         .unwrap_or("MinimalTodoApp-update.exe")
         .to_string();
-    swap_and_restart(&app, &file_name, bytes)
+    start_new_and_exit(&app, &file_name, bytes)
+}
+
+/// 新版启动时**接管旧版**(对齐 WPF `EnsureSingleInstance(fromUpdate)`):
+/// 由 `--old-pid` 指定旧实例,先等其自行退出,超时则强杀,直到旧实例完全消失。
+/// **必须在注册 tauri-plugin-single-instance 之前调用**——否则单实例插件会因旧实例仍在而让新版直接退出。
+pub fn takeover_old_instance() {
+    let args: Vec<String> = std::env::args().collect();
+    let Some(pos) = args.iter().position(|a| a == "--old-pid") else { return };
+    let Some(pid) = args.get(pos + 1).and_then(|s| s.parse::<u32>().ok()) else { return };
+    if pid == 0 || pid == std::process::id() {
+        return;
+    }
+    unsafe {
+        let h = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, 0, pid);
+        if h == 0 {
+            return; // 旧进程已不存在
+        }
+        // 先给旧实例 ~5s 优雅退出;仍在则强杀,再等其消失
+        if WaitForSingleObject(h, 5000) != WAIT_OBJECT_0 {
+            let _ = TerminateProcess(h, 0);
+            WaitForSingleObject(h, 5000);
+        }
+        CloseHandle(h);
+    }
 }
 
 /// 新版启动时回收旧 exe(由 --updated-from 参数传入)。

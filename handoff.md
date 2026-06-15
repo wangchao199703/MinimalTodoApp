@@ -319,3 +319,24 @@ HEAD = `9774cd2`。近期工作已全部提交,工作树干净:
 **验证**:端到端实测(改名→写新→bat→删旧→重启)本机跑通,新版重启写出 `RESTARTED OK` marker、旧文件清理。`cargo check` 无警告。
 
 **注意**:dev 模式 exe 名 `minimal-todo.exe` 与资产名不同,不触发该冲突,所以只有跑真实已发布 exe 才复现。GUI 点击无法在本无头环境驱动,故用等价 OS 操作的端到端实测代替。
+
+---
+
+## 重新安装/更新照搬 WPF UpdateService (v2.0.0)
+
+弃用自创的「就地替换运行中 exe + bat」,改为严格对齐 WPF:
+- `resolve_download_path`(←ResolveDownloadPath):下载到独立文件,**绝不写运行中的 exe**,同名冲突退 LOCALAPPDATA→再加 pid 前缀。
+- `start_new_and_exit`(←TryStartNewVersion):直接 Process.Start 新版(无脚本),传 `--updated-from <旧exe> --old-pid <旧进程>`,本进程 400ms 后 app.exit。
+- `takeover_old_instance`(←EnsureSingleInstance(fromUpdate)):**在 lib.rs 注册单实例插件之前**调用,等/强杀 --old-pid 旧实例(kernel32 OpenProcess/WaitForSingleObject/TerminateProcess)。否则单实例插件会让新版直接退。
+- `cleanup_after_update`(←CleanupAfterUpdate):旧进程死后删旧 exe(重试)。
+- 删 swap_and_restart/spawn_restart_bat;download_update/apply_update 改调 start_new_and_exit。
+
+**实测**:takeover 端到端通过(NEW 3s 强杀 OLD、old_alive_after=false、子进程存活)。cargo check 无警告。
+
+**注意/取舍**:
+- 重装(同名 exe)会把新副本下到 LOCALAPPDATA 并从那运行、旧 exe 被删——这是 WPF 的原生行为(便携 exe 会"搬家"到 LOCALAPPDATA)。正常版本更新(异名)仍留在原目录。
+- cleanup 用 remove_file(WPF 是 MoveToRecycleBin);如需回收站可后续加 SHFileOperationW。
+- 单实例顺序是关键:takeover 必须先于 plugin(tauri_plugin_single_instance) 注册。
+
+## 待办(未完成):贴边隐藏间歇失灵
+用户先提了「贴边隐藏功能间歇失灵」,排查中被「重装」需求打断,**尚未修复**。window.rs 轮询线程 reveal 触发判定(at_edge 仅 2~3px 边缘命中 + current_monitor 偶发 None continue)疑似漏拍。下一步从这两点入手。

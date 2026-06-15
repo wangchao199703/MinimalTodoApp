@@ -8,6 +8,9 @@ mod updater;
 mod window;
 
 pub fn run() {
+    // 更新重启:新版先接管旧实例(等/强杀 --old-pid 指定的旧进程)。
+    // 必须在注册单实例插件之前,否则旧实例还在会让本新版被单实例直接退出。
+    updater::takeover_old_instance();
     // 更新换壳后回收旧 exe(无 --updated-from 参数时为空操作)
     updater::cleanup_after_update();
 
