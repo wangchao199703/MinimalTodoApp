@@ -211,7 +211,7 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ClipBrowseExit": "退出浏览",
     "S.X.ClipBrowsePrev": "上一条",
     "S.X.ClipBrowseNext": "下一条",
-    "S.X.ClipBrowseHint": "滚轮 / ↑↓ 翻看,Esc 退出",
+    "S.X.ClipBrowseHint": "滚轮 / ←→ 翻看(最左为最新),Esc 退出",
   },
   en: {
     "S.MenuTheme": "Theme",
@@ -421,7 +421,7 @@ const EXTRA: Record<Lang, Record<string, string>> = {
     "S.X.ClipBrowseExit": "Exit browse",
     "S.X.ClipBrowsePrev": "Previous",
     "S.X.ClipBrowseNext": "Next",
-    "S.X.ClipBrowseHint": "Wheel / ↑↓ to flip, Esc to exit",
+    "S.X.ClipBrowseHint": "Wheel / ←→ to flip (newest on left), Esc to exit",
   },
 };
 

@@ -7,8 +7,8 @@ import {
 import {
   CalendarDays,
   CheckSquare,
-  ChevronDown,
-  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Clipboard as ClipboardIcon,
   Copy,
   Download,
@@ -107,11 +107,13 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
 /** 浏览模式:一次只看一条剪贴项,图片/文本铺满区域,滚轮 / 方向键翻看(相册式),Esc 退出 */
 function ClipBrowser({
   clips,
+  tags,
   index,
   setIndex,
   onExit,
 }: {
   clips: ClipItem[];
+  tags: ClipTag[];
   index: number;
   setIndex: React.Dispatch<React.SetStateAction<number>>;
   onExit: () => void;
@@ -119,8 +121,11 @@ function ClipBrowser({
   const areaRef = useRef<HTMLDivElement | null>(null);
   const total = clips.length;
   const clip = clips[index];
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [preview, setPreview] = useState(false);
 
-  // 滚轮翻看(节流;须用原生非被动监听才能 preventDefault 拦住页面滚动)
+  // 左右翻看:index 0 = 最新 = 最左;往后(index+)= 更旧 = 往右。
+  // 滚轮(纵向或横向皆可)与方向键映射到上一条/下一条,节流防跳。
   useEffect(() => {
     const el = areaRef.current;
     if (!el) return;
@@ -129,18 +134,20 @@ function ClipBrowser({
       e.preventDefault();
       const now = Date.now();
       if (now - lock < 160) return;
+      const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+      if (d === 0) return;
       lock = now;
-      setIndex((i) => Math.min(total - 1, Math.max(0, i + (e.deltaY > 0 ? 1 : -1))));
+      setIndex((i) => Math.min(total - 1, Math.max(0, i + (d > 0 ? 1 : -1))));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [total, setIndex]);
 
-  // 方向键翻看 + Esc 退出
+  // 方向键翻看(←上一条/新,→下一条/旧;上下作别名)+ Esc 退出
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowDown" || e.key === "ArrowRight") setIndex((i) => Math.min(total - 1, i + 1));
-      else if (e.key === "ArrowUp" || e.key === "ArrowLeft") setIndex((i) => Math.max(0, i - 1));
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") setIndex((i) => Math.min(total - 1, i + 1));
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") setIndex((i) => Math.max(0, i - 1));
       else if (e.key === "Escape") onExit();
     };
     window.addEventListener("keydown", onKey);
@@ -162,7 +169,13 @@ function ClipBrowser({
 
   return (
     <div ref={areaRef} className="relative flex min-h-0 flex-1 select-none flex-col">
-      <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+      <div
+        className="flex min-h-0 flex-1 items-center justify-center px-12 py-4"
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenu({ x: e.clientX, y: e.clientY });
+        }}
+      >
         {clip.kind === "image" ? (
           fullImg ? (
             <img
@@ -180,22 +193,22 @@ function ClipBrowser({
         )}
       </div>
 
-      {/* 上一条(↑)/ 下一条(↓)浮层按钮,与滚轮方向一致 */}
+      {/* 上一条(←,更新)/ 下一条(→,更旧)浮层按钮,贴左右边缘 */}
       <button
         title={t("S.X.ClipBrowsePrev")}
         disabled={index <= 0}
         onClick={() => setIndex((i) => Math.max(0, i - 1))}
-        className="absolute top-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-card/80 text-text-2 shadow ring-1 ring-divider backdrop-blur hover:bg-card-hover disabled:opacity-30"
+        className="absolute top-1/2 left-2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-card/80 text-text-2 shadow ring-1 ring-divider backdrop-blur hover:bg-card-hover disabled:opacity-30"
       >
-        <ChevronUp size={16} />
+        <ChevronLeft size={18} />
       </button>
       <button
         title={t("S.X.ClipBrowseNext")}
         disabled={index >= total - 1}
         onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
-        className="absolute bottom-11 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full bg-card/80 text-text-2 shadow ring-1 ring-divider backdrop-blur hover:bg-card-hover disabled:opacity-30"
+        className="absolute top-1/2 right-2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-card/80 text-text-2 shadow ring-1 ring-divider backdrop-blur hover:bg-card-hover disabled:opacity-30"
       >
-        <ChevronDown size={16} />
+        <ChevronRight size={18} />
       </button>
 
       <div className="flex shrink-0 items-center justify-center gap-2 border-t border-divider/60 py-1.5 text-xs text-muted">
@@ -205,7 +218,197 @@ function ClipBrowser({
         <span>·</span>
         <span>{t("S.X.ClipBrowseHint")}</span>
       </div>
+
+      {menu && (
+        <ClipMenu
+          clip={clip}
+          tags={tags}
+          at={menu}
+          onClose={() => setMenu(null)}
+          onPreview={() => setPreview(true)}
+        />
+      )}
+      {preview && fullImg && <ImageLightbox src={fullImg} onClose={() => setPreview(false)} />}
     </div>
+  );
+}
+
+/** 剪贴项右键菜单(列表 & 浏览模式共用):预览/复制/编辑/另存为/加入待办·便签/分组/删除 */
+function ClipMenu({
+  clip,
+  tags,
+  at,
+  onClose,
+  onPreview,
+}: {
+  clip: ClipItem;
+  tags: ClipTag[];
+  at: { x: number; y: number };
+  onClose: () => void;
+  onPreview: () => void;
+}) {
+  const removeClip = useAppStore((s) => s.removeClip);
+  const setClipItemTag = useAppStore((s) => s.setClipItemTag);
+  const copyClip = useAppStore((s) => s.copyClip);
+  const clipToTask = useAppStore((s) => s.clipToTask);
+  const clipToNote = useAppStore((s) => s.clipToNote);
+  const pushToast = useAppStore((s) => s.pushToast);
+  // 标签二级菜单:打开时主菜单让位(组件保持挂载,故内部切换而非卸载)
+  const [tagAt, setTagAt] = useState<{ x: number; y: number } | null>(null);
+  const isText = clip.kind !== "image";
+
+  const saveAsTxt = async () => {
+    try {
+      const path = await ipc.exportFile(`剪贴文本-${fileStamp()}.txt`, clip.text ?? "");
+      pushToast(f("S.X.ClipSaved", path));
+    } catch {
+      pushToast(t("S.X.ClipSaveFailed"));
+    }
+  };
+  const saveImage = async () => {
+    if (!clip.image_path) return;
+    try {
+      const path = await ipc.saveClipImage(clip.image_path, `剪贴图片-${fileStamp()}.png`);
+      pushToast(f("S.X.ClipSaved", path));
+    } catch {
+      pushToast(t("S.X.ClipSaveFailed"));
+    }
+  };
+
+  if (tagAt) {
+    return (
+      <Popover at={tagAt} anchor={null} onClose={onClose} zIndex={200}>
+        <div className="max-h-64 w-44 overflow-y-auto">
+          <MenuItem
+            onClick={() => {
+              onClose();
+              void setClipItemTag(clip.id, null);
+            }}
+          >
+            <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider" />
+            <span className="min-w-0 flex-1 truncate opacity-70">{t("S.X.ClipNoTag")}</span>
+            {clip.tag_ids.length === 0 && <CheckSquare size={12} className="text-accent" />}
+          </MenuItem>
+          <div className="my-1 h-px bg-divider" />
+          {tags.map((tg) => {
+            const on = clip.tag_ids.includes(tg.id);
+            return (
+              <MenuItem
+                key={tg.id}
+                onClick={() => {
+                  onClose();
+                  void setClipItemTag(clip.id, tg.id);
+                }}
+              >
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider"
+                  style={{ background: tg.color || "transparent" }}
+                />
+                <span className="min-w-0 flex-1 truncate">{tg.name}</span>
+                {on && <CheckSquare size={12} className="text-accent" />}
+              </MenuItem>
+            );
+          })}
+        </div>
+      </Popover>
+    );
+  }
+
+  return (
+    <Popover at={at} anchor={null} onClose={onClose} zIndex={200}>
+      <div className="w-40">
+        {clip.kind === "image" && (
+          <MenuItem
+            onClick={() => {
+              onClose();
+              onPreview();
+            }}
+          >
+            <Eye size={13} />
+            {t("S.X.ClipPreview")}
+          </MenuItem>
+        )}
+        <MenuItem
+          onClick={() => {
+            onClose();
+            void copyClip(clip);
+          }}
+        >
+          <Copy size={13} />
+          {t("S.X.ClipCopy")}
+        </MenuItem>
+        {isText && (
+          <MenuItem
+            onClick={() => {
+              onClose();
+              void ipc.openClipEditorWindow(clip.id);
+            }}
+          >
+            <Pencil size={13} />
+            {t("S.X.ClipEdit")}
+          </MenuItem>
+        )}
+        {isText ? (
+          <MenuItem
+            onClick={() => {
+              onClose();
+              void saveAsTxt();
+            }}
+          >
+            <Download size={13} />
+            {t("S.X.ClipSaveAsTxt")}
+          </MenuItem>
+        ) : (
+          clip.image_path && (
+            <MenuItem
+              onClick={() => {
+                onClose();
+                void saveImage();
+              }}
+            >
+              <Download size={13} />
+              {t("S.X.ClipSaveImage")}
+            </MenuItem>
+          )
+        )}
+        <div className="my-1 h-px bg-divider" />
+        <MenuItem
+          onClick={() => {
+            onClose();
+            void clipToTask(clip);
+          }}
+        >
+          <CheckSquare size={13} />
+          {t("S.X.ClipAddToTask")}
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onClose();
+            void clipToNote(clip);
+          }}
+        >
+          <NotebookPen size={13} />
+          {t("S.X.ClipAddToNote")}
+        </MenuItem>
+        {tags.length > 0 && (
+          <MenuItem onClick={() => setTagAt({ x: at.x + 12, y: at.y + 12 })}>
+            <Tag size={13} />
+            {t("S.X.ClipTagsMenu")}
+          </MenuItem>
+        )}
+        <div className="my-1 h-px bg-divider" />
+        <MenuItem
+          danger
+          onClick={() => {
+            onClose();
+            void removeClip(clip.id);
+          }}
+        >
+          <Trash2 size={13} />
+          {t("S.X.Delete")}
+        </MenuItem>
+      </div>
+    </Popover>
   );
 }
 
@@ -213,13 +416,7 @@ function ClipBrowser({
 function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: ClipSize }) {
   const removeClip = useAppStore((s) => s.removeClip);
   const toggleClipPin = useAppStore((s) => s.toggleClipPin);
-  const setClipItemTag = useAppStore((s) => s.setClipItemTag);
-  const copyClip = useAppStore((s) => s.copyClip);
-  const clipToTask = useAppStore((s) => s.clipToTask);
-  const clipToNote = useAppStore((s) => s.clipToNote);
-  const pushToast = useAppStore((s) => s.pushToast);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
-  const [tagMenu, setTagMenu] = useState<{ x: number; y: number } | null>(null);
   const [preview, setPreview] = useState(false);
   const [dragging, setDragging] = useState(false);
   const rowRef = useRef<HTMLDivElement | null>(null);
@@ -249,25 +446,6 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
       : undefined;
   const clipTags = tags.filter((tg) => clip.tag_ids.includes(tg.id));
   const isText = clip.kind !== "image";
-
-  // 右键「另存为」:文本 → 桌面 .txt;图片 → 桌面 .png(库内 PNG 拷贝)
-  const saveAsTxt = async () => {
-    try {
-      const path = await ipc.exportFile(`剪贴文本-${fileStamp()}.txt`, clip.text ?? "");
-      pushToast(f("S.X.ClipSaved", path));
-    } catch {
-      pushToast(t("S.X.ClipSaveFailed"));
-    }
-  };
-  const saveImage = async () => {
-    if (!clip.image_path) return;
-    try {
-      const path = await ipc.saveClipImage(clip.image_path, `剪贴图片-${fileStamp()}.png`);
-      pushToast(f("S.X.ClipSaved", path));
-    } catch {
-      pushToast(t("S.X.ClipSaveFailed"));
-    }
-  };
 
   const primaryText = isText
     ? (clip.text ?? "").replace(/\s+/g, " ").trim() || "(空白)"
@@ -347,144 +525,13 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
       </button>
 
       {menu && (
-        <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
-          <div className="w-40">
-            {clip.kind === "image" && fullImgSrc && (
-              <MenuItem
-                onClick={() => {
-                  setMenu(null);
-                  setPreview(true);
-                }}
-              >
-                <Eye size={13} />
-                {t("S.X.ClipPreview")}
-              </MenuItem>
-            )}
-            <MenuItem
-              onClick={() => {
-                setMenu(null);
-                void copyClip(clip);
-              }}
-            >
-              <Copy size={13} />
-              {t("S.X.ClipCopy")}
-            </MenuItem>
-            {isText && (
-              <MenuItem
-                onClick={() => {
-                  setMenu(null);
-                  void ipc.openClipEditorWindow(clip.id);
-                }}
-              >
-                <Pencil size={13} />
-                {t("S.X.ClipEdit")}
-              </MenuItem>
-            )}
-            {isText ? (
-              <MenuItem
-                onClick={() => {
-                  setMenu(null);
-                  void saveAsTxt();
-                }}
-              >
-                <Download size={13} />
-                {t("S.X.ClipSaveAsTxt")}
-              </MenuItem>
-            ) : (
-              clip.image_path && (
-                <MenuItem
-                  onClick={() => {
-                    setMenu(null);
-                    void saveImage();
-                  }}
-                >
-                  <Download size={13} />
-                  {t("S.X.ClipSaveImage")}
-                </MenuItem>
-              )
-            )}
-            <div className="my-1 h-px bg-divider" />
-            <MenuItem
-              onClick={() => {
-                setMenu(null);
-                void clipToTask(clip);
-              }}
-            >
-              <CheckSquare size={13} />
-              {t("S.X.ClipAddToTask")}
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                setMenu(null);
-                void clipToNote(clip);
-              }}
-            >
-              <NotebookPen size={13} />
-              {t("S.X.ClipAddToNote")}
-            </MenuItem>
-            {tags.length > 0 && (
-              <MenuItem
-                onClick={() => {
-                  const at = menu;
-                  setMenu(null);
-                  // 二级标签菜单在主菜单原位稍右下展开
-                  setTagMenu({ x: at.x + 12, y: at.y + 12 });
-                }}
-              >
-                <Tag size={13} />
-                {t("S.X.ClipTagsMenu")}
-              </MenuItem>
-            )}
-            <div className="my-1 h-px bg-divider" />
-            <MenuItem
-              danger
-              onClick={() => {
-                setMenu(null);
-                void removeClip(clip.id);
-              }}
-            >
-              <Trash2 size={13} />
-              {t("S.X.Delete")}
-            </MenuItem>
-          </div>
-        </Popover>
-      )}
-      {tagMenu && (
-        <Popover at={tagMenu} anchor={null} onClose={() => setTagMenu(null)} zIndex={200}>
-          <div className="max-h-64 w-44 overflow-y-auto">
-            {/* 单标签:点某标签即设为该标签(替换原标签);「无标签」清空 */}
-            <MenuItem
-              onClick={() => {
-                setTagMenu(null);
-                void setClipItemTag(clip.id, null);
-              }}
-            >
-              <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider" />
-              <span className="min-w-0 flex-1 truncate opacity-70">{t("S.X.ClipNoTag")}</span>
-              {clip.tag_ids.length === 0 && <CheckSquare size={12} className="text-accent" />}
-            </MenuItem>
-            <div className="my-1 h-px bg-divider" />
-            {tags.map((tg) => {
-              const on = clip.tag_ids.includes(tg.id);
-              return (
-                <MenuItem
-                  key={tg.id}
-                  onClick={() => {
-                    setTagMenu(null);
-                    void setClipItemTag(clip.id, tg.id);
-                  }}
-                >
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider"
-                    style={{ background: tg.color || "transparent" }}
-                  />
-                  <span className="min-w-0 flex-1 truncate">{tg.name}</span>
-                  {on && <CheckSquare size={12} className="text-accent" />}
-                </MenuItem>
-              );
-            })}
-          </div>
-        </Popover>
+        <ClipMenu
+          clip={clip}
+          tags={tags}
+          at={menu}
+          onClose={() => setMenu(null)}
+          onPreview={() => setPreview(true)}
+        />
       )}
       {preview && fullImgSrc && (
         <ImageLightbox src={fullImgSrc} onClose={() => setPreview(false)} />
@@ -1067,6 +1114,7 @@ export default function ClipboardView() {
         {browseMode ? (
           <ClipBrowser
             clips={filtered}
+            tags={clipTags}
             index={browseIdx}
             setIndex={setBrowseIndex}
             onExit={() => saveSetting("clip_browse_mode", "0")}
