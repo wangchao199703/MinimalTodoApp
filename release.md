@@ -287,3 +287,9 @@
   - 加速键写法实测:`Alt+1`/`Control+Shift+K`/`Alt+F1` 均被 `Shortcut::from_str` 接受。
   - 前端:`main.tsx` 仅主窗口 `listen("summon-view")`→`setView`;设置「通用」段加 5 个**快捷键录制按钮**(点一下→按组合键即存并重注册;录制期间先 `pause_hotkeys` 放开全局热键,否则按键被系统吞掉录不到;需含 Alt/Ctrl/Shift;Esc/失焦取消)。保存先 `await setSetting` 落库再 `update_hotkeys`,避免读到旧值。i18n 双语。
 - 验证:`npm run build` + `cargo check` 全过;加速键解析本机实测通过。GUI 全局热键触发需运行实测。版本保持 2.0.0。
+
+## v2.0.0 — 修:更新后仍是旧版 + 贴边隐藏支持快捷键唤出
+
+1. **更新后跑起来的还是旧版(手动退出再开新版才正常)**:更新时新版是作为旧版的**子进程**被拉起的,会继承旧版的控制台/句柄/进程组,行为与全新启动不同(经典的「子进程异常、全新启动正常」征象)。改为**完全脱离父进程**启动新版:`stdin/out/err` 置 null + `DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP` 创建标志(`updater.rs` start_new_and_exit)。
+2. **贴边隐藏后快捷键唤不出**:`summon_main` 原来只 show+focus,对贴边收起态只会把屏幕外的细条 show 出来。改为:召唤时若处于贴边收起态,先把窗口**滑回完整可见位置 + 清 hidden**(`reveal_docked`),并给 ≈2s 的「召唤宽限」——这段时间内轮询不自动收起(新增 `DockState.summon_grace`),给鼠标移过去的时间;之后回归正常贴边自动隐藏。
+- 验证:`cargo check` 无警告。版本保持 2.0.0。

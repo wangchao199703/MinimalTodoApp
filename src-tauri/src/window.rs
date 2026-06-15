@@ -94,11 +94,47 @@ pub struct HotkeyMap(pub std::sync::Mutex<Vec<(tauri_plugin_global_shortcut::Sho
 
 /// 召唤主窗口:从隐藏/最小化恢复并置前(浮到最上层一次),**不居中、不常驻置顶**。
 /// 即:取消隐藏 + 若在其他窗口底层则浮到最前;之后点别处会正常退到后面(不锁定置顶)。
+/// **贴边收起态**:先把窗口从屏幕外滑回完整可见 + 清 hidden + 给一段宽限(否则 show 只露细条、且立刻又被收起)。
 pub fn summon_main(app: &AppHandle) {
     let Some(w) = main_window(app) else { return };
+    if let Some(state) = app.try_state::<Arc<DockState>>() {
+        let edge = state.edge.load(Ordering::SeqCst);
+        if edge != EDGE_NONE && state.hidden.load(Ordering::SeqCst) {
+            reveal_docked(&w, &state, edge);
+            // ≈2s @90ms 内不自动收起,给鼠标移过去的时间(对齐用户「唤出后别立刻又躲起来」)
+            state.summon_grace.store(22, Ordering::SeqCst);
+        }
+    }
     let _ = w.unminimize();
     let _ = w.show();
     let _ = w.set_focus();
+}
+
+/// 把贴边收起的窗口移回「完整可见」位置并清掉 hidden(供快捷键召唤用)。
+fn reveal_docked(win: &WebviewWindow, state: &DockState, edge: i32) {
+    let (Ok(pos), Ok(size)) = (win.outer_position(), win.outer_size()) else { return };
+    let w = size.width as i32;
+    // 显示器几何:优先 current_monitor,回退缓存(收起态 current_monitor 可能取不到)
+    let (mx, my, mw) = if let Ok(Some(mon)) = win.current_monitor() {
+        let p = *mon.position();
+        let s = *mon.size();
+        (p.x, p.y, s.width as i32)
+    } else {
+        let cw = state.mon_w.load(Ordering::SeqCst);
+        if cw <= 0 {
+            return;
+        }
+        (state.mon_x.load(Ordering::SeqCst), state.mon_y.load(Ordering::SeqCst), cw)
+    };
+    let target = match edge {
+        EDGE_TOP => PhysicalPosition::new(pos.x, my),
+        EDGE_LEFT => PhysicalPosition::new(mx, pos.y),
+        _ => PhysicalPosition::new(mx + mw - w, pos.y),
+    };
+    state.moving.store(true, Ordering::SeqCst);
+    let _ = win.set_position(target);
+    state.moving.store(false, Ordering::SeqCst);
+    state.hidden.store(false, Ordering::SeqCst);
 }
 
 /// 按设置注册全局快捷键(默认 Alt+1..5);设置为「none」或解析失败则跳过该项。
@@ -346,6 +382,8 @@ struct DockState {
     mon_y: AtomicI32,
     mon_w: AtomicI32,
     mon_h: AtomicI32,
+    /// 快捷键召唤后,这么多拍内不自动收起(给鼠标移过去的时间)。>0 时轮询不累计「鼠标在外」。
+    summon_grace: AtomicI32,
 }
 
 /// 旧版 CubicEase EaseInOut(收起用)
@@ -407,6 +445,7 @@ pub fn setup_dock(app: &AppHandle) {
         mon_y: AtomicI32::new(0),
         mon_w: AtomicI32::new(0),
         mon_h: AtomicI32::new(0),
+        summon_grace: AtomicI32::new(0),
     });
     // 注册为 Tauri 托管状态,供 show_main(托盘「显示并居中」)复用同一忽略标志居中
     app.manage(state.clone());
@@ -558,11 +597,16 @@ pub fn setup_dock(app: &AppHandle) {
                     outside_ticks = 0;
                 } else if !hidden {
                     // 显示态(唤出后):鼠标带缓冲连续离开窗口若干拍才再次收起(旧版探针)
+                    // 召唤宽限内(快捷键刚唤出)不收起,给鼠标移过去的时间。
+                    let grace = state.summon_grace.load(Ordering::SeqCst);
+                    if grace > 0 {
+                        state.summon_grace.store(grace - 1, Ordering::SeqCst);
+                    }
                     let over = cx >= pos.x - HIDE_BUFFER_PX
                         && cx <= pos.x + w + HIDE_BUFFER_PX
                         && cy >= pos.y - HIDE_BUFFER_PX
                         && cy <= pos.y + h + HIDE_BUFFER_PX;
-                    if over || lbutton_down() {
+                    if over || lbutton_down() || grace > 0 {
                         outside_ticks = 0;
                     } else {
                         outside_ticks += 1;

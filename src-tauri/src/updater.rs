@@ -91,12 +91,21 @@ fn start_new_and_exit(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<
 
     let old_exe = std::env::current_exe().map_err(err)?;
     let old_pid = std::process::id();
-    // 直接拉起新版(独立进程,父进程退出后仍存活);新版会等/强杀本进程后接管单实例
+    // 直接拉起新版,**完全脱离父进程**:不继承控制台/句柄、独立进程组。
+    // 否则新版作为旧版的子进程,会继承旧版的句柄(含单实例锁等),行为与全新启动不同——
+    // 这正是「更新后跑起来的还是旧版/异常,手动退出再开新版才正常」的根因。
+    use std::os::windows::process::CommandExt;
+    const DETACHED_PROCESS: u32 = 0x0000_0008;
+    const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
     std::process::Command::new(&new_exe)
         .arg("--updated-from")
         .arg(&old_exe)
         .arg("--old-pid")
         .arg(old_pid.to_string())
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
         .spawn()
         .map_err(err)?;
 
