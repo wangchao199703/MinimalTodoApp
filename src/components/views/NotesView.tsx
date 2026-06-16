@@ -30,6 +30,17 @@ function Editor({ note }: { note: Note }) {
   const [stats, setStats] = useState<{ words: number; chars: number }>({ words: 0, chars: 0 });
   const contentRef = useRef(note.content);
   const timer = useRef<number | null>(null);
+  // 显示为源码:整篇 Markdown 源码视图
+  const [sourceMode, setSourceMode] = useState(false);
+  const [srcText, setSrcText] = useState(note.content);
+  const [srcKey, setSrcKey] = useState(0); // 退出源码时 +1 强制 NoteEditor 重挂载,拿到最新正文
+
+  // 渲染期同步:切便签时立即把 contentRef 对齐新便签(供 NoteEditor 重载用正确内容)
+  const lastId = useRef(note.id);
+  if (lastId.current !== note.id) {
+    lastId.current = note.id;
+    contentRef.current = note.content;
+  }
 
   // 图片仓库目录就绪后再挂编辑器,确保首次渲染图片即可解析
   const [imgReady, setImgReady] = useState(false);
@@ -37,10 +48,11 @@ function Editor({ note }: { note: Note }) {
     void ensureNoteImageDir().then(() => setImgReady(true));
   }, []);
 
-  // 切换便签时重置本地草稿(正文由 NoteEditor 按 noteId 自行重载)
+  // 切换便签时重置本地草稿与源码态
   useEffect(() => {
     setTitle(note.custom_title);
     contentRef.current = note.content;
+    setSourceMode(false);
   }, [note.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 800ms 防抖自动保存(对齐旧版手感)
@@ -80,18 +92,51 @@ function Editor({ note }: { note: Note }) {
           className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-text-1 outline-none placeholder:text-muted"
         />
       </div>
-      {/* 所见即所得 Markdown 编辑器:输入 md 语法实时生效,正文持久化仍为 Markdown 文本 */}
-      {imgReady && (
-        <NoteEditor
-          noteId={note.id}
-          content={note.content}
-          style={style}
-          onChange={(md) => {
-            contentRef.current = md;
-            scheduleSave(md, title);
-          }}
-          onStats={setStats}
-        />
+      {/* 源码视图:整篇可编辑 Markdown 源码;否则所见即所得编辑器 */}
+      {sourceMode ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex shrink-0 items-center justify-between border-b border-divider px-3 py-1">
+            <span className="text-xs text-muted">Markdown</span>
+            <button
+              onClick={() => {
+                setSourceMode(false);
+                setSrcKey((k) => k + 1); // 强制 NoteEditor 重挂载,载入源码态编辑后的正文
+              }}
+              className="rounded-md px-2 py-1 text-xs text-text-2 ring-1 ring-divider hover:bg-card-hover"
+            >
+              {t("S.X.NoteShowWysiwyg")}
+            </button>
+          </div>
+          <textarea
+            value={srcText}
+            spellCheck={false}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSrcText(v);
+              contentRef.current = v;
+              scheduleSave(v, title);
+            }}
+            className="min-h-0 flex-1 resize-none bg-card p-4 font-mono text-sm leading-relaxed text-text-1 outline-none"
+          />
+        </div>
+      ) : (
+        imgReady && (
+          <NoteEditor
+            key={srcKey}
+            noteId={note.id}
+            content={contentRef.current}
+            style={style}
+            onChange={(md) => {
+              contentRef.current = md;
+              scheduleSave(md, title);
+            }}
+            onStats={setStats}
+            onShowSource={() => {
+              setSrcText(contentRef.current);
+              setSourceMode(true);
+            }}
+          />
+        )
       )}
       {/* 底部状态栏:字数 + 最后修改时间(弱化色) */}
       <div className="flex shrink-0 items-center justify-between gap-3 border-t border-divider px-3 py-1 text-xs text-text-2/70">

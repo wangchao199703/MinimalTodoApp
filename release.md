@@ -460,3 +460,10 @@
 - **导出 HTML(+ 打印转 PDF)**:便签右键「导出为 HTML」,marked(GFM)渲染 + 内联样式 + 图片转 file://;桌面落地,浏览器打开后打印→另存 PDF。`src/lib/notesExport.ts`。
 - 新增依赖:`@tiptap/suggestion`、`marked`(extension-link 由 StarterKit 提供)。i18n 双语补 ~35 键。
 - tsc + cargo check 通过;jsdom 实测 link/quote/codeblock 往返;dev 启动无报错、无重名告警。
+
+### 24) 便签:Toast 换行 + 大纲按钮反转 + Typora 源码显形 + 源码视图(版本仍 2.0.1)
+- **Toast 不再省略号**:`Toasts.tsx` 去 `truncate` 改 `break-words/whitespace-pre-wrap`,长路径多行显示。
+- **大纲按钮反转**:大纲默认显示;按钮语义改「不显示大纲」(高亮=已隐藏,默认不高亮),持久化 `note_toc_open`。
+- **Typora 源码显形**(常驻):新增 `SourceReveal.ts`(ProseMirror 装饰插件)——光标进入块/标记时用 widget 显示 Markdown 符号:标题 `#`、引用 `>`、列表 `-`/`N.`/`- [ ]`、行内 `**`/`*`/`` ` ``/`~~`、链接 `[文字](url)`、分割线选中 `---`;移走即纯富文本。装饰纯展示、不进文档(getMarkdown 不受影响)。`.md-syntax` 弱化样式。
+- **显示为源码**:工具栏按钮 → 整篇切成可编辑 Markdown `<textarea>` 源码视图,「返回编辑」切回(srcKey 强制 NoteEditor 重挂载载入最新正文);编辑走原防抖保存。
+- i18n 双语补键。tsc 通过,dev 启动无报错、无重名告警。

@@ -14,6 +14,7 @@ import {
   CheckSquare,
   Code,
   Code2,
+  FileCode2,
   Heading,
   Image as ImageIcon,
   Italic,
@@ -32,6 +33,7 @@ import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
 import { Popover, MenuItem } from "./ui/Popover";
 import { createSlashCommand } from "./notes/SlashCommand";
+import { SourceReveal } from "./notes/SourceReveal";
 
 /**
  * 便签所见即所得编辑器(tiptap):输入 Markdown 语法实时生效
@@ -102,6 +104,7 @@ export default function NoteEditor({
   style,
   onChange,
   onStats,
+  onShowSource,
 }: {
   noteId: string;
   /** Markdown 正文(含旧版自定义标记) */
@@ -111,6 +114,8 @@ export default function NoteEditor({
   onChange: (md: string) => void;
   /** 字数统计回调(状态栏用) */
   onStats?: (s: { words: number; chars: number }) => void;
+  /** 「显示为源码」:切到整篇 Markdown 源码视图(由 NotesView 包装层处理) */
+  onShowSource?: () => void;
 }) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -157,6 +162,8 @@ export default function NoteEditor({
       Color,
       // 斜杠命令(/ 弹出快捷插入菜单)
       createSlashCommand(() => pickImageRef.current()),
+      // Typora 式源码显形(光标进入块/标记时显示 Markdown 符号)
+      SourceReveal,
     ],
     content: legacyToMarkdown(content),
     contentType: "markdown",
@@ -535,14 +542,19 @@ export default function NoteEditor({
           )}
         </span>
         <span className="mx-1 h-4 w-px bg-divider" />
-        {/* 文档大纲开关(默认开,记住上次选择) */}
+        {/* 大纲默认显示;按钮语义为「不显示大纲」——高亮=已隐藏,默认不高亮 */}
         <Btn
-          title={t("S.X.NoteOutline")}
-          active={tocOpen}
+          title={t("S.X.NoteOutlineHide")}
+          active={!tocOpen}
           onClick={() => saveSetting("note_toc_open", tocOpen ? "0" : "1")}
         >
           <ListTree size={13} />
         </Btn>
+        {onShowSource && (
+          <Btn title={t("S.X.NoteShowSource")} onClick={onShowSource}>
+            <FileCode2 size={13} />
+          </Btn>
+        )}
       </div>
       <div
         style={style}

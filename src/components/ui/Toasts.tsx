@@ -17,7 +17,9 @@ export default function Toasts() {
             className="toast-in flex items-center gap-2 rounded-lg border border-divider bg-popup px-3 py-2 shadow-lg"
           >
             <Bell size={14} className="shrink-0 text-accent" />
-            <span className="max-w-64 truncate text-sm text-text-1">{t.message}</span>
+            <span className="max-w-72 text-sm break-words whitespace-pre-wrap text-text-1">
+              {t.message}
+            </span>
             <button
               onClick={() => dismiss(t.id)}
               className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:text-text-1"
