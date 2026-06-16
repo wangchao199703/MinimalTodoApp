@@ -850,17 +850,7 @@ body {
   box-shadow: var(--hover-shadow);
   z-index: 1;
 }
-/* 主侧栏导航项同款 hover 抬起高亮 */
-.nav-lift {
-  transition: transform 0.14s ease, box-shadow 0.14s ease,
-    background-color 0.15s ease, color 0.15s ease;
-}
-.nav-lift:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--hover-shadow);
-  position: relative;
-  z-index: 1;
-}
+/* 第一/第二侧栏的 hover 抬起动画已取消(.nav-lift 类仍挂在元素上但无效果,便于日后恢复) */
 
 /* ========== 苹果 Things 风:无边框 + 留白 + 圆形细线勾选 + 小圆点优先级 ========== */
 .design-apple .task-item {
