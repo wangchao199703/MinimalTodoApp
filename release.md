@@ -475,4 +475,5 @@
 ### 26) 便签:显示为源码保留光标位置 + 源码态不隐藏大纲(版本仍 2.0.1)
 - **光标不跳行首**:进源码态时在光标处插入私有区标记字符 U+E000 → `getMarkdown()` 序列化 → `indexOf` 得到精确源码偏移 → 撤掉标记(两次 dispatch 均 `addToHistory:false` 且 sourceModeRef 抑制保存,真实文档不受影响);`useEffect` 聚焦 textarea 并 `setSelectionRange` 到该精确偏移。返回编辑时若源码未改则不重建文档(保留编辑器原光标)、`editor.focus()`。
   - (先前用纯文本长度估算偏移会因缺少 `#`/`*`/`>` 等符号而漂移到行首,改为标记法取精确偏移。)
+  - **光标行垂直居中**:进源码态后按 `\n` 计行 × 行高估算光标纵坐标,设 `scrollTop` 使该行落在 textarea 视口中部(不再贴顶)。
 - **源码态保留大纲**:大纲浮层去掉 `!sourceMode` 守卫(`tocOpen && headings.length>0` 即显示),源码编辑时右上角大纲仍在。

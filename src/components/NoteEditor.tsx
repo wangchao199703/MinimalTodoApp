@@ -231,7 +231,7 @@ export default function NoteEditor({
     if (editor) onStatsRef.current?.(computeStats(editor.getText()));
   }, [editor, noteId]);
 
-  // 进入源码态:聚焦 textarea 并把光标放到映射出的偏移(不跳行首)
+  // 进入源码态:聚焦 textarea、把光标放到映射出的偏移,并把光标所在行垂直居中
   useEffect(() => {
     if (!sourceMode) return;
     const el = textareaRef.current;
@@ -239,6 +239,14 @@ export default function NoteEditor({
     const p = Math.min(sourceCaretRef.current, el.value.length);
     el.focus();
     el.setSelectionRange(p, p);
+    // 估算光标行的纵向位置(按 \n 计行,长行折行的少量误差可接受),滚动到视口居中
+    const cs = getComputedStyle(el);
+    let lh = parseFloat(cs.lineHeight);
+    if (Number.isNaN(lh)) lh = (parseFloat(cs.fontSize) || 14) * 1.625;
+    const padTop = parseFloat(cs.paddingTop) || 0;
+    const line = el.value.slice(0, p).split("\n").length - 1;
+    const caretY = padTop + line * lh;
+    el.scrollTop = Math.max(0, caretY - el.clientHeight / 2 + lh / 2);
   }, [sourceMode]);
 
   // 切换便签时重载内容(同一编辑器实例复用),并退出源码态
