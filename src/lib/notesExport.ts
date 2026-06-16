@@ -1,6 +1,9 @@
-import { marked } from "marked";
+import { Marked } from "marked";
 import { ipc, type Note } from "./tauri-ipc";
 import { t } from "./i18n";
+
+// 用独立实例(避免 marked 全局单例在打包后的 interop 怪异);GFM 默认开,渲染表格/任务列表
+const md2html = new Marked({ gfm: true, breaks: false });
 
 // 导出 HTML 用的 .note-prose 样式子集(接近编辑器观感,打印 / 另存 PDF 友好;不依赖主题变量)
 const EXPORT_CSS = `
@@ -36,7 +39,7 @@ export async function exportNoteHtml(note: Note): Promise<string> {
     /noteimg:\/\/([^\s)"']+)/g,
     (_m, name: string) => `file:///${dir}/${name}`,
   );
-  const body = await marked.parse(md, { gfm: true, breaks: false });
+  const body = await md2html.parse(md);
   const name = note.custom_title || note.title || t("S.X.UntitledNote");
   const html = `<!DOCTYPE html><html lang="zh"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(name)}</title><style>${EXPORT_CSS}</style></head><body>${body}</body></html>`;
   return ipc.exportFile(`${name}.html`, html);

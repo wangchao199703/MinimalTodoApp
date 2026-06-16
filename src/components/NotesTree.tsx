@@ -78,20 +78,22 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
       void removeNote(note.id);
   };
   const exportMd = async () => {
+    const file = `${displayTitle(note)}.md`;
     try {
       // 单篇便签导出为 .md(正文已是 Markdown 文本),落到桌面;文件名=便签标题
-      const path = await ipc.exportFile(`${displayTitle(note)}.md`, note.content ?? "");
-      pushToast(`${t("S.X.NoteExported")}:${path}`);
-    } catch {
-      pushToast(t("S.X.NoteExportFailed"));
+      await ipc.exportFile(file, note.content ?? "");
+      pushToast(f("S.X.NoteExportedTo", file));
+    } catch (e) {
+      pushToast(`${t("S.X.NoteExportFailed")}:${String((e as Error)?.message ?? e)}`);
     }
   };
   const exportHtml = async () => {
     try {
       const path = await exportNoteHtml(note);
-      pushToast(`${t("S.X.NoteExportedHtml")}:${path}`);
-    } catch {
-      pushToast(t("S.X.NoteExportFailed"));
+      const file = path.split(/[\\/]/).pop() ?? path;
+      pushToast(f("S.X.NoteExportedHtmlTo", file));
+    } catch (e) {
+      pushToast(`${t("S.X.NoteExportFailed")}:${String((e as Error)?.message ?? e)}`);
     }
   };
 

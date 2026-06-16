@@ -120,6 +120,8 @@ export default function NoteEditor({
   const pickImageRef = useRef<() => void>(() => {});
   const addTask = useAppStore((s) => s.addTask);
   const pushToast = useAppStore((s) => s.pushToast);
+  const settings = useAppStore((s) => s.settings);
+  const saveSetting = useAppStore((s) => s.saveSetting);
   // 选中文本右键菜单(加入待办):仅在有选区时弹出,空选区放行系统默认菜单
   const [selMenu, setSelMenu] = useState<{ x: number; y: number; text: string } | null>(null);
   // 插入表格小面板:输入行 / 列后生成
@@ -129,8 +131,8 @@ export default function NoteEditor({
   // 插入链接小面板(Ctrl+K 或工具栏)
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
-  // 文档大纲悬浮面板开关
-  const [tocOpen, setTocOpen] = useState(false);
+  // 文档大纲悬浮面板:默认展示,跟随用户上次选择(持久化 note_toc_open;"0"=关)
+  const tocOpen = settings["note_toc_open"] !== "0";
 
   const editor = useEditor({
     extensions: [
@@ -533,8 +535,12 @@ export default function NoteEditor({
           )}
         </span>
         <span className="mx-1 h-4 w-px bg-divider" />
-        {/* 文档大纲开关 */}
-        <Btn title={t("S.X.NoteOutline")} active={tocOpen} onClick={() => setTocOpen((o) => !o)}>
+        {/* 文档大纲开关(默认开,记住上次选择) */}
+        <Btn
+          title={t("S.X.NoteOutline")}
+          active={tocOpen}
+          onClick={() => saveSetting("note_toc_open", tocOpen ? "0" : "1")}
+        >
           <ListTree size={13} />
         </Btn>
       </div>
@@ -581,24 +587,20 @@ export default function NoteEditor({
           </div>
         </Popover>
       )}
-      {/* 文档大纲悬浮面板:右上角,点击标题滚动定位 */}
-      {tocOpen && (
+      {/* 文档大纲悬浮面板:右上角,点击标题滚动定位(默认开;无标题时不显示浮层) */}
+      {tocOpen && headings.length > 0 && (
         <div className="absolute top-10 right-3 z-30 max-h-[70%] w-56 overflow-y-auto rounded-md border border-divider bg-popup/95 p-1.5 shadow-lg backdrop-blur">
           <div className="mb-1 px-1.5 text-xs font-semibold text-muted">{t("S.X.NoteOutline")}</div>
-          {headings.length === 0 ? (
-            <div className="px-1.5 py-1 text-xs text-muted">{t("S.X.NoteOutlineEmpty")}</div>
-          ) : (
-            headings.map((h, i) => (
-              <button
-                key={i}
-                onClick={() => scrollToHeading(h.pos)}
-                style={{ paddingLeft: `${(h.level - 1) * 12 + 6}px` }}
-                className="block w-full truncate rounded py-1 pr-1.5 text-left text-xs text-text-2 hover:bg-card-hover hover:text-text-1"
-              >
-                {h.text}
-              </button>
-            ))
-          )}
+          {headings.map((h, i) => (
+            <button
+              key={i}
+              onClick={() => scrollToHeading(h.pos)}
+              style={{ paddingLeft: `${(h.level - 1) * 12 + 6}px` }}
+              className="block w-full truncate rounded py-1 pr-1.5 text-left text-xs text-text-2 hover:bg-card-hover hover:text-text-1"
+            >
+              {h.text}
+            </button>
+          ))}
         </div>
       )}
     </div>
