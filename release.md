@@ -446,3 +446,17 @@
   - **系统代理**:`WinHttpGetIEProxyConfigForCurrentUser`(winhttp.dll)取当前用户 IE/系统代理,解析后喂给 `reqwest::Proxy::all`(与浏览器/WPF 同源);
   - **重试**:下载失败最多重试 3 次(每次复位进度,退避 800ms,用 tokio time)。
 - 检查更新与重新安装共用 `download_update`,一处修复两处生效。检查的 JSON 拉取仍走前端 WebView fetch(本就用系统代理)。cargo check 通过。
+
+### 23) 便签对标 Obsidian/Notion 能力补齐(版本仍 2.0.1)
+一次性补齐 10 项:
+- **全局搜索**:第二侧栏搜索框(标题 + 正文,正则可选,Ctrl+F 聚焦),结果列表带片段,点击打开。
+- **插入链接**:工具栏链接按钮 + Ctrl+K 地址面板;StarterKit 自带 Link(配 openOnClick:false/autolink,避免重名),Markdown 往返 `[文字](url)`(jsdom 实测)。
+- **撤销/重做**:工具栏按钮(按 can() 置灰)。
+- **引用 / 代码块**:工具栏按钮(StarterKit 已含,往返已验证)。
+- **文档大纲(TOC)**:工具栏「大纲」开关 → 右上角悬浮面板,列 H1–H3、点击滚动定位。
+- **斜杠命令**:正文输入 `/` 弹菜单(标题/列表/任务/引用/代码块/分割线/表格/图片);`@tiptap/suggestion` + coordsAtPos 自定位(createRoot 挂 SlashMenu,不引 tippy)。`src/components/notes/SlashCommand.tsx`。
+- **字数 + 最后修改时间**:编辑区底部弱化状态栏(字数/字符 + updated_at)。
+- **回收站(软删除)**:DB 迁移 v5(is_deleted/deleted_at);删除改软删,第二侧栏「回收站」入口 → 编辑区列已删便签,可恢复/彻底删除/清空(不自动清理)。后端 get_deleted_notes/restore_note/purge_note/empty_note_trash;`src/components/notes/NotesTrash.tsx`。
+- **导出 HTML(+ 打印转 PDF)**:便签右键「导出为 HTML」,marked(GFM)渲染 + 内联样式 + 图片转 file://;桌面落地,浏览器打开后打印→另存 PDF。`src/lib/notesExport.ts`。
+- 新增依赖:`@tiptap/suggestion`、`marked`(extension-link 由 StarterKit 提供)。i18n 双语补 ~35 键。
+- tsc + cargo check 通过;jsdom 实测 link/quote/codeblock 往返;dev 启动无报错、无重名告警。

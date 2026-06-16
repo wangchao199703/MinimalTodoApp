@@ -7,14 +7,19 @@ import {
   LocateFixed,
   PanelLeftClose,
   PanelLeftOpen,
+  Regex,
+  Search,
+  Trash2,
+  X,
 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { deriveTitle } from "../../lib/markdown";
 import { readMarkdownDrop } from "../../lib/markdownIO";
-import { t } from "../../lib/i18n";
+import { f, t } from "../../lib/i18n";
 import type { Note } from "../../lib/tauri-ipc";
 import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
 import NotesTree, { noteGroupColor } from "../NotesTree";
+import NotesTrash from "../notes/NotesTrash";
 
 // 便签视图 = 第二侧边栏(便签树 + 新建)+ 右侧编辑区
 
@@ -22,6 +27,7 @@ function Editor({ note }: { note: Note }) {
   const patchNote = useAppStore((s) => s.patchNote);
   const settings = useAppStore((s) => s.settings);
   const [title, setTitle] = useState(note.custom_title);
+  const [stats, setStats] = useState<{ words: number; chars: number }>({ words: 0, chars: 0 });
   const contentRef = useRef(note.content);
   const timer = useRef<number | null>(null);
 
@@ -84,8 +90,14 @@ function Editor({ note }: { note: Note }) {
             contentRef.current = md;
             scheduleSave(md, title);
           }}
+          onStats={setStats}
         />
       )}
+      {/* 底部状态栏:字数 + 最后修改时间(弱化色) */}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-divider px-3 py-1 text-xs text-text-2/70">
+        <span>{f("S.X.NoteWordCount", stats.words, stats.chars)}</span>
+        <span className="truncate">{f("S.X.NoteLastModified", note.updated_at)}</span>
+      </div>
     </div>
   );
 }
@@ -114,6 +126,59 @@ export default function NotesView() {
         .querySelector(`[data-note-row="${selected.id}"]`)
         ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     });
+  };
+
+  // 回收站(软删除便签)
+  const notesTrashOpen = useAppStore((s) => s.notesTrashOpen);
+  const setNotesTrashOpen = useAppStore((s) => s.setNotesTrashOpen);
+
+  // 全局搜索:标题 + 正文,支持正则;Ctrl+F 聚焦
+  const [query, setQuery] = useState("");
+  const [regexOn, setRegexOn] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+  const q = query.trim();
+  // 匹配器:正则非法时吞掉(返回永不匹配),不崩
+  const matcher: ((s: string) => boolean) | null = !q
+    ? null
+    : regexOn
+      ? (() => {
+          try {
+            const re = new RegExp(q, "i");
+            return (s: string) => re.test(s);
+          } catch {
+            return () => false;
+          }
+        })()
+      : (s: string) => s.toLowerCase().includes(q.toLowerCase());
+  const results = matcher
+    ? notes.filter((n) => matcher(n.custom_title || n.title || "") || matcher(n.content || ""))
+    : [];
+  const snippet = (n: Note): string => {
+    const text = (n.content || "").replace(/\s+/g, " ").trim();
+    let idx = -1;
+    if (q) {
+      if (regexOn) {
+        try {
+          idx = text.search(new RegExp(q, "i"));
+        } catch {
+          idx = -1;
+        }
+      } else idx = text.toLowerCase().indexOf(q.toLowerCase());
+    }
+    if (idx <= 0) return text.slice(0, 70);
+    const start = Math.max(0, idx - 20);
+    return (start > 0 ? "…" : "") + text.slice(start, start + 70);
   };
 
   // 从资源管理器拖入 .md/.markdown → 新建便签(标题=文件名,正文=Markdown 文本);
@@ -288,10 +353,84 @@ export default function NotesView() {
               >
                 <FolderPlus size={14} />
               </button>
+              <button
+                title={t("S.X.NoteTrash")}
+                onClick={() => void setNotesTrashOpen(!notesTrashOpen)}
+                className={`flex h-6 w-6 items-center justify-center rounded hover:bg-sidebar-hover hover:text-sidebar-strong ${
+                  notesTrashOpen ? "text-accent" : "text-sidebar-muted"
+                }`}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+          {/* 搜索框(标题 + 正文,正则可选;Ctrl+F 聚焦) */}
+          <div className="shrink-0 px-2 pb-1.5">
+            <div className="relative">
+              <Search
+                size={13}
+                className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-sidebar-muted"
+              />
+              <input
+                ref={searchRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("S.X.NoteSearch")}
+                className="w-full rounded-md border border-sidebar-border bg-sidebar-hover py-1 pr-12 pl-7 text-xs text-sidebar-strong outline-none focus:border-accent"
+              />
+              <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center gap-0.5">
+                <button
+                  title={t("S.X.NoteSearchRegex")}
+                  onClick={() => setRegexOn((v) => !v)}
+                  className={`flex h-5 w-5 items-center justify-center rounded ${
+                    regexOn ? "bg-accent text-on-accent" : "text-sidebar-muted hover:bg-sidebar-hover"
+                  }`}
+                >
+                  <Regex size={12} />
+                </button>
+                {query && (
+                  <button
+                    title={t("S.Clear")}
+                    onClick={() => setQuery("")}
+                    className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto pr-1 pb-2">
-            <NotesTree />
+            {q ? (
+              // 搜索结果列表(命中标题 / 正文)
+              results.length === 0 ? (
+                <div className="px-3 py-2 text-xs text-sidebar-muted">{t("S.X.NoteSearchEmpty")}</div>
+              ) : (
+                <div className="flex flex-col gap-0.5 px-2">
+                  {results.map((n) => (
+                    <button
+                      key={n.id}
+                      onClick={() => {
+                        if (notesTrashOpen) void setNotesTrashOpen(false);
+                        selectNote(n.id);
+                      }}
+                      className={`flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left ${
+                        n.id === selectedNoteId
+                          ? "bg-sidebar-selected text-sidebar-selected-fg"
+                          : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+                      }`}
+                    >
+                      <span className="truncate text-sm">
+                        {n.custom_title || n.title || t("S.X.UntitledNote")}
+                      </span>
+                      <span className="truncate text-xs text-sidebar-muted">{snippet(n)}</span>
+                    </button>
+                  ))}
+                </div>
+              )
+            ) : (
+              <NotesTree />
+            )}
           </div>
           {/* 折叠按钮统一放底部(对齐主侧栏) */}
           <div className="shrink-0 p-2 pt-1">
@@ -307,8 +446,10 @@ export default function NotesView() {
         </aside>
       )}
 
-      {/* 右侧编辑区 */}
-      {selected ? (
+      {/* 右侧:回收站 / 便签编辑区 */}
+      {notesTrashOpen ? (
+        <NotesTrash />
+      ) : selected ? (
         <Editor note={selected} />
       ) : (
         <div className="flex min-w-0 flex-1 items-center justify-center text-sm text-muted">

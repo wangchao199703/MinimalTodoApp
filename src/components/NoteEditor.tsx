@@ -13,18 +13,25 @@ import {
   Bold,
   CheckSquare,
   Code,
+  Code2,
   Heading,
   Image as ImageIcon,
   Italic,
+  Link as LinkIcon,
   List,
   ListTodo,
+  ListTree,
+  Quote,
+  Redo2,
   Strikethrough,
   Table as TableIcon,
+  Undo2,
 } from "lucide-react";
 import { ipc } from "../lib/tauri-ipc";
 import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
 import { Popover, MenuItem } from "./ui/Popover";
+import { createSlashCommand } from "./notes/SlashCommand";
 
 /**
  * 便签所见即所得编辑器(tiptap):输入 Markdown 语法实时生效
@@ -82,11 +89,19 @@ function isImageFile(file: File): boolean {
   return file.type.startsWith("image/") || IMG_EXT.has(file.name.split(".").pop()?.toLowerCase() ?? "");
 }
 
+/** 字数统计:词 = CJK 字 + 拉丁词串;字符 = 去空白后的长度 */
+function computeStats(text: string): { words: number; chars: number } {
+  const cjk = text.match(/[㐀-鿿぀-ヿ]/g)?.length ?? 0;
+  const latin = text.match(/[A-Za-z0-9]+/g)?.length ?? 0;
+  return { words: cjk + latin, chars: text.replace(/\s/g, "").length };
+}
+
 export default function NoteEditor({
   noteId,
   content,
   style,
   onChange,
+  onStats,
 }: {
   noteId: string;
   /** Markdown 正文(含旧版自定义标记) */
@@ -94,9 +109,15 @@ export default function NoteEditor({
   style?: React.CSSProperties;
   /** 内容变化回调(已序列化回 Markdown) */
   onChange: (md: string) => void;
+  /** 字数统计回调(状态栏用) */
+  onStats?: (s: { words: number; chars: number }) => void;
 }) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const onStatsRef = useRef(onStats);
+  onStatsRef.current = onStats;
+  // 斜杠命令「图片」项调起文件选择:用 ref 桥接到下方 pickImage(扩展在 useEditor 时就需引用)
+  const pickImageRef = useRef<() => void>(() => {});
   const addTask = useAppStore((s) => s.addTask);
   const pushToast = useAppStore((s) => s.pushToast);
   // 选中文本右键菜单(加入待办):仅在有选区时弹出,空选区放行系统默认菜单
@@ -105,10 +126,22 @@ export default function NoteEditor({
   const [tableOpen, setTableOpen] = useState(false);
   const [tableRows, setTableRows] = useState(3);
   const [tableCols, setTableCols] = useState(3);
+  // 插入链接小面板(Ctrl+K 或工具栏)
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  // 文档大纲悬浮面板开关
+  const [tocOpen, setTocOpen] = useState(false);
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      // StarterKit v3 自带 Link:配置为不在编辑器内点击跳转 + 自动识别裸链(不要再单独加 Link,会重名)
+      StarterKit.configure({
+        link: {
+          openOnClick: false,
+          autolink: true,
+          HTMLAttributes: { rel: "noopener noreferrer nofollow", target: "_blank" },
+        },
+      }),
       Markdown,
       TaskList,
       TaskItem.configure({ nested: true }),
@@ -120,11 +153,24 @@ export default function NoteEditor({
       TableCell,
       TextStyle,
       Color,
+      // 斜杠命令(/ 弹出快捷插入菜单)
+      createSlashCommand(() => pickImageRef.current()),
     ],
     content: legacyToMarkdown(content),
     contentType: "markdown",
     editorProps: {
       attributes: { class: "note-prose" },
+      // Ctrl/Cmd+K:打开插入链接面板(选区在链接上则预填其地址)
+      handleKeyDown: (view, event) => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+          event.preventDefault();
+          const link = view.state.selection.$from.marks().find((m) => m.type.name === "link");
+          setLinkUrl((link?.attrs.href as string) ?? "");
+          setLinkOpen(true);
+          return true;
+        }
+        return false;
+      },
       // 复制纯文本:用 ProseMirror 原生取文本(块间单换行、软换行 \n),再**逐行裁掉行尾空白**
       // ——这是用户反馈「每行末尾多一个空格」的根因(正文 / 序列化里残留的行尾空格)。
       // 最后折叠多余空行 + 裁掉首尾空白。只影响 text/plain,text/html 仍由 PM 生成,粘到富文本不丢格式。
@@ -163,8 +209,14 @@ export default function NoteEditor({
     },
     onUpdate: ({ editor }) => {
       onChangeRef.current(editor.getMarkdown());
+      onStatsRef.current?.(computeStats(editor.getText()));
     },
   });
+
+  // 切换便签 / 首次挂载后上报一次字数(onUpdate 不会在加载时触发)
+  useEffect(() => {
+    if (editor) onStatsRef.current?.(computeStats(editor.getText()));
+  }, [editor, noteId]);
 
   // 切换便签时重载内容(同一编辑器实例复用)
   const loadedFor = useRef(noteId);
@@ -196,8 +248,25 @@ export default function NoteEditor({
     };
     input.click();
   };
+  pickImageRef.current = pickImage; // 供斜杠命令「图片」项调用
 
   if (!editor) return null;
+
+  // 文档大纲:遍历正文 H1–H3,点击滚动到对应标题(随编辑器更新重算)
+  const headings: { level: number; text: string; pos: number }[] = [];
+  if (tocOpen) {
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === "heading" && (node.attrs.level as number) <= 3) {
+        headings.push({ level: node.attrs.level as number, text: node.textContent || "—", pos });
+      }
+    });
+  }
+  const scrollToHeading = (pos: number) => {
+    editor.chain().focus().setTextSelection(pos + 1).run();
+    const dom = editor.view.domAtPos(pos + 1).node;
+    const el = dom instanceof HTMLElement ? dom : (dom.parentElement ?? null);
+    el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // 标题循环:普通 → H1 → H2 → H3 → 普通(对齐旧版 HeadingButton)
   const cycleHeading = () => {
@@ -212,12 +281,19 @@ export default function NoteEditor({
     "#2563EB", "#7C3AED", "#DB2777",
   ];
 
-  const Btn = (p: { title: string; active?: boolean; onClick: () => void; children: React.ReactNode }) => (
+  const Btn = (p: {
+    title: string;
+    active?: boolean;
+    disabled?: boolean;
+    onClick: () => void;
+    children: React.ReactNode;
+  }) => (
     <button
       title={p.title}
+      disabled={p.disabled}
       onMouseDown={(e) => e.preventDefault()} // 不抢编辑器焦点
       onClick={p.onClick}
-      className={`flex h-6 w-6 items-center justify-center rounded hover:bg-card-hover ${
+      className={`flex h-6 w-6 items-center justify-center rounded hover:bg-card-hover disabled:pointer-events-none disabled:opacity-35 ${
         p.active ? "bg-selected text-accent" : "text-text-2"
       }`}
     >
@@ -225,10 +301,44 @@ export default function NoteEditor({
     </button>
   );
 
+  // 应用链接面板:空地址=移除链接;无选区=插入「地址即文字」的链接;有选区=给选区加链接
+  const applyLink = () => {
+    const url = linkUrl.trim();
+    setLinkOpen(false);
+    if (!url) {
+      editor.chain().focus().unsetLink().run();
+      return;
+    }
+    if (editor.state.selection.empty) {
+      editor
+        .chain()
+        .focus()
+        .insertContent({ type: "text", text: url, marks: [{ type: "link", attrs: { href: url } }] })
+        .run();
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    }
+  };
+
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
       {/* 工具栏(对齐旧版便签工具栏);窄窗口自动换行,避免字色/插图按钮被裁 */}
       <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-divider px-2 py-1">
+        <Btn
+          title={t("S.X.NoteUndo")}
+          disabled={!editor.can().undo()}
+          onClick={() => editor.chain().focus().undo().run()}
+        >
+          <Undo2 size={13} />
+        </Btn>
+        <Btn
+          title={t("S.X.NoteRedo")}
+          disabled={!editor.can().redo()}
+          onClick={() => editor.chain().focus().redo().run()}
+        >
+          <Redo2 size={13} />
+        </Btn>
+        <span className="mx-1 h-4 w-px bg-divider" />
         <Btn title={t("S.Note.Heading")} active={editor.isActive("heading")} onClick={cycleHeading}>
           <Heading size={13} />
         </Btn>
@@ -274,6 +384,20 @@ export default function NoteEditor({
           onClick={() => editor.chain().focus().toggleTaskList().run()}
         >
           <ListTodo size={13} />
+        </Btn>
+        <Btn
+          title={t("S.X.NoteQuote")}
+          active={editor.isActive("blockquote")}
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+        >
+          <Quote size={13} />
+        </Btn>
+        <Btn
+          title={t("S.X.NoteCodeBlock")}
+          active={editor.isActive("codeBlock")}
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        >
+          <Code2 size={13} />
         </Btn>
         <span className="mx-1 h-4 w-px bg-divider" />
         {/* 字体颜色:小色板,点选给选区着色;再点当前色清除 */}
@@ -359,6 +483,60 @@ export default function NoteEditor({
             </>
           )}
         </span>
+        {/* 插入链接(Ctrl+K):点击弹出地址输入面板 */}
+        <span className="relative">
+          <Btn
+            title={t("S.X.NoteLink")}
+            active={editor.isActive("link")}
+            onClick={() => {
+              setLinkUrl((editor.getAttributes("link").href as string) ?? "");
+              setLinkOpen(true);
+            }}
+          >
+            <LinkIcon size={13} />
+          </Btn>
+          {linkOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setLinkOpen(false)} />
+              <div className="absolute top-full left-0 z-50 mt-1 w-64 rounded-md border border-divider bg-popup p-2 shadow-lg">
+                <input
+                  autoFocus
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") applyLink();
+                    if (e.key === "Escape") setLinkOpen(false);
+                  }}
+                  placeholder={t("S.X.NoteLinkPlaceholder")}
+                  className="w-full rounded border border-divider bg-input px-2 py-1 text-xs text-text-1 outline-none focus:border-accent"
+                />
+                <div className="mt-2 flex items-center justify-end gap-1.5">
+                  <button
+                    onClick={() => {
+                      setLinkUrl("");
+                      setLinkOpen(false);
+                      editor.chain().focus().unsetLink().run();
+                    }}
+                    className="rounded px-2 py-1 text-xs text-muted hover:bg-card-hover"
+                  >
+                    {t("S.X.NoteLinkRemove")}
+                  </button>
+                  <button
+                    onClick={applyLink}
+                    className="rounded-md bg-accent px-2.5 py-1 text-xs text-on-accent hover:opacity-90"
+                  >
+                    {t("S.X.NoteLinkApply")}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+        </span>
+        <span className="mx-1 h-4 w-px bg-divider" />
+        {/* 文档大纲开关 */}
+        <Btn title={t("S.X.NoteOutline")} active={tocOpen} onClick={() => setTocOpen((o) => !o)}>
+          <ListTree size={13} />
+        </Btn>
       </div>
       <div
         style={style}
@@ -402,6 +580,26 @@ export default function NoteEditor({
             </MenuItem>
           </div>
         </Popover>
+      )}
+      {/* 文档大纲悬浮面板:右上角,点击标题滚动定位 */}
+      {tocOpen && (
+        <div className="absolute top-10 right-3 z-30 max-h-[70%] w-56 overflow-y-auto rounded-md border border-divider bg-popup/95 p-1.5 shadow-lg backdrop-blur">
+          <div className="mb-1 px-1.5 text-xs font-semibold text-muted">{t("S.X.NoteOutline")}</div>
+          {headings.length === 0 ? (
+            <div className="px-1.5 py-1 text-xs text-muted">{t("S.X.NoteOutlineEmpty")}</div>
+          ) : (
+            headings.map((h, i) => (
+              <button
+                key={i}
+                onClick={() => scrollToHeading(h.pos)}
+                style={{ paddingLeft: `${(h.level - 1) * 12 + 6}px` }}
+                className="block w-full truncate rounded py-1 pr-1.5 text-left text-xs text-text-2 hover:bg-card-hover hover:text-text-1"
+              >
+                {h.text}
+              </button>
+            ))
+          )}
+        </div>
       )}
     </div>
   );

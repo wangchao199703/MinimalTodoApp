@@ -8,6 +8,7 @@ import { extractClosestEdge } from "@atlaskit/pragmatic-drag-and-drop-hitbox/clo
 import {
   ChevronRight,
   Download,
+  FileCode,
   Eraser,
   FilePlus2,
   FileText,
@@ -20,6 +21,7 @@ import { useAppStore } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
 import { readMarkdownDrop } from "../lib/markdownIO";
+import { exportNoteHtml } from "../lib/notesExport";
 import { f, t } from "../lib/i18n";
 import { ipc, type Note, type NoteGroup } from "../lib/tauri-ipc";
 import { confirm } from "./ui/ConfirmDialog";
@@ -84,6 +86,14 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
       pushToast(t("S.X.NoteExportFailed"));
     }
   };
+  const exportHtml = async () => {
+    try {
+      const path = await exportNoteHtml(note);
+      pushToast(`${t("S.X.NoteExportedHtml")}:${path}`);
+    } catch {
+      pushToast(t("S.X.NoteExportFailed"));
+    }
+  };
 
   return (
     <div
@@ -133,6 +143,15 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
             >
               <Download size={13} />
               {t("S.X.NoteExportMd")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                void exportHtml();
+              }}
+            >
+              <FileCode size={13} />
+              {t("S.X.NoteExportHtml")}
             </MenuItem>
             <div className="my-1 h-px bg-divider" />
             <MenuItem

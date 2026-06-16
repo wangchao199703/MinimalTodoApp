@@ -378,6 +378,19 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         )?;
     }
 
+    if version < 5 {
+        // 便签回收站:软删除(is_deleted/deleted_at),删除不再物理移除,进回收站可恢复/彻底删。
+        conn.execute_batch(
+            r#"
+            BEGIN;
+            ALTER TABLE notes ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE notes ADD COLUMN deleted_at TEXT;
+            PRAGMA user_version = 5;
+            COMMIT;
+            "#,
+        )?;
+    }
+
     Ok(())
 }
 

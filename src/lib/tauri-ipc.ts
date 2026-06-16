@@ -88,6 +88,8 @@ export interface Note {
   order_index: number;
   created_at: string;
   updated_at: string;
+  /** 软删除时间(回收站);null = 未删除 */
+  deleted_at: string | null;
 }
 
 export interface NoteGroup {
@@ -152,6 +154,11 @@ export const ipc = {
   updateNote: (req: UpdateNoteRequest) => invoke<Note>("update_note", { req }),
   deleteNote: (id: string) => invoke<void>("delete_note", { id }),
   reorderNotes: (ids: string[]) => invoke<void>("reorder_notes", { ids }),
+  /** 回收站:已软删除便签列表 */
+  getDeletedNotes: () => invoke<Note[]>("get_deleted_notes"),
+  restoreNote: (id: string) => invoke<Note>("restore_note", { id }),
+  purgeNote: (id: string) => invoke<void>("purge_note", { id }),
+  emptyNoteTrash: () => invoke<void>("empty_note_trash"),
   getNoteGroups: () => invoke<NoteGroup[]>("get_note_groups"),
   createNoteGroup: (name: string) => invoke<NoteGroup>("create_note_group", { name }),
   updateNoteGroup: (id: string, fields: { name?: string; is_collapsed?: boolean }) =>

@@ -344,6 +344,7 @@ fn row_to_note(row: &Row) -> rusqlite::Result<Note> {
         order_index: row.get("order_index")?,
         created_at: row.get("created_at")?,
         updated_at: row.get("updated_at")?,
+        deleted_at: row.get("deleted_at")?,
     })
 }
 
@@ -354,9 +355,52 @@ pub fn get_notes(db: State<Db>) -> CmdResult<Vec<Note>> {
 }
 
 pub(crate) fn get_notes_impl(conn: &Connection) -> CmdResult<Vec<Note>> {
-    let mut stmt = conn.prepare("SELECT * FROM notes ORDER BY order_index").map_err(err)?;
+    // 正常列表只取未删除便签;已删除的进回收站(get_deleted_notes)
+    let mut stmt = conn
+        .prepare("SELECT * FROM notes WHERE is_deleted = 0 ORDER BY order_index")
+        .map_err(err)?;
     let rows = stmt.query_map([], row_to_note).map_err(err)?;
     rows.collect::<Result<Vec<_>, _>>().map_err(err)
+}
+
+/// 回收站:已软删除的便签,按删除时间倒序。
+#[tauri::command]
+pub fn get_deleted_notes(db: State<Db>) -> CmdResult<Vec<Note>> {
+    let conn = db.0.lock().map_err(err)?;
+    let mut stmt = conn
+        .prepare("SELECT * FROM notes WHERE is_deleted = 1 ORDER BY deleted_at DESC")
+        .map_err(err)?;
+    let rows = stmt.query_map([], row_to_note).map_err(err)?;
+    rows.collect::<Result<Vec<_>, _>>().map_err(err)
+}
+
+/// 从回收站恢复一条便签(清除软删标记)。
+#[tauri::command]
+pub fn restore_note(db: State<Db>, id: String) -> CmdResult<Note> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute(
+        "UPDATE notes SET is_deleted = 0, deleted_at = NULL WHERE id = ?1",
+        params![id],
+    )
+    .map_err(err)?;
+    conn.query_row("SELECT * FROM notes WHERE id = ?1", params![id], row_to_note)
+        .map_err(err)
+}
+
+/// 彻底删除一条便签(物理删除,不可恢复)。
+#[tauri::command]
+pub fn purge_note(db: State<Db>, id: String) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("DELETE FROM notes WHERE id = ?1", params![id]).map_err(err)?;
+    Ok(())
+}
+
+/// 清空回收站(物理删除所有已软删除便签)。
+#[tauri::command]
+pub fn empty_note_trash(db: State<Db>) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("DELETE FROM notes WHERE is_deleted = 1", []).map_err(err)?;
+    Ok(())
 }
 
 // 多词裸参数必须显式 snake_case(Tauri 默认期望 camelCase,缺键的 Option 会静默变 None)
@@ -429,7 +473,12 @@ pub fn delete_note(db: State<Db>, id: String) -> CmdResult<()> {
 }
 
 pub(crate) fn delete_note_impl(conn: &Connection, id: String) -> CmdResult<()> {
-    conn.execute("DELETE FROM notes WHERE id = ?1", params![id]).map_err(err)?;
+    // 软删除:标记进回收站(可恢复 / 彻底删除),不物理移除
+    conn.execute(
+        "UPDATE notes SET is_deleted = 1, deleted_at = ?2 WHERE id = ?1",
+        params![id, now_text()],
+    )
+    .map_err(err)?;
     Ok(())
 }
 

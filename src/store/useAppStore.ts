@@ -64,6 +64,10 @@ interface AppState {
   notes: Note[];
   noteGroups: NoteGroup[];
   selectedNoteId: string | null;
+  /** 回收站:已软删除便签(进入回收站时按需拉取) */
+  deletedNotes: Note[];
+  /** 便签编辑区是否在显示回收站 */
+  notesTrashOpen: boolean;
   /** 剪贴板记录(后台监听写入,init 拉取 + clip-added 事件追加) */
   clips: ClipItem[];
   /** 剪贴板标签 */
@@ -92,6 +96,11 @@ interface AppState {
   importNotesToImportGroup: (files: { name: string; content: string }[]) => Promise<void>;
   patchNote: (req: UpdateNoteRequest) => Promise<void>;
   removeNote: (id: string) => Promise<void>;
+  /** 回收站:打开/关闭(打开时拉取已删便签),恢复,彻底删除,清空 */
+  setNotesTrashOpen: (open: boolean) => Promise<void>;
+  restoreNote: (id: string) => Promise<void>;
+  purgeNote: (id: string) => Promise<void>;
+  emptyNoteTrash: () => Promise<void>;
   /** 清空某便签分组下的所有便签 */
   clearNoteGroupNotes: (groupId: string) => Promise<void>;
   addNoteGroup: (name: string) => Promise<void>;
@@ -209,6 +218,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   notes: [],
   noteGroups: [],
   selectedNoteId: null,
+  deletedNotes: [],
+  notesTrashOpen: false,
   clips: [],
   clipTags: [],
   clipFilterTagId: null,
@@ -410,11 +421,40 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   removeNote: async (id) => {
+    // 软删除:从正常列表移除(后端标记进回收站,可恢复)
     await ipc.deleteNote(id);
     set((s) => ({
       notes: s.notes.filter((n) => n.id !== id),
       selectedNoteId: s.selectedNoteId === id ? null : s.selectedNoteId,
     }));
+  },
+
+  setNotesTrashOpen: async (open) => {
+    if (open) {
+      const deletedNotes = await ipc.getDeletedNotes();
+      set({ deletedNotes, notesTrashOpen: true });
+    } else {
+      set({ notesTrashOpen: false });
+    }
+  },
+
+  restoreNote: async (id) => {
+    const restored = await ipc.restoreNote(id);
+    // 从回收站移除 + 放回正常列表(置顶,与新建一致)
+    set((s) => ({
+      deletedNotes: s.deletedNotes.filter((n) => n.id !== id),
+      notes: [restored, ...s.notes.filter((n) => n.id !== id)],
+    }));
+  },
+
+  purgeNote: async (id) => {
+    await ipc.purgeNote(id);
+    set((s) => ({ deletedNotes: s.deletedNotes.filter((n) => n.id !== id) }));
+  },
+
+  emptyNoteTrash: async () => {
+    await ipc.emptyNoteTrash();
+    set({ deletedNotes: [] });
   },
 
   clearGroupTasks: async (groupId) => {

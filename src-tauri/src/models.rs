@@ -84,6 +84,8 @@ pub struct Note {
     pub order_index: i64,
     pub created_at: String,
     pub updated_at: String,
+    /// 软删除时间(回收站);None = 未删除
+    pub deleted_at: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
