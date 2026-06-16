@@ -104,7 +104,6 @@ export default function NoteEditor({
   style,
   onChange,
   onStats,
-  onShowSource,
 }: {
   noteId: string;
   /** Markdown 正文(含旧版自定义标记) */
@@ -114,8 +113,6 @@ export default function NoteEditor({
   onChange: (md: string) => void;
   /** 字数统计回调(状态栏用) */
   onStats?: (s: { words: number; chars: number }) => void;
-  /** 「显示为源码」:切到整篇 Markdown 源码视图(由 NotesView 包装层处理) */
-  onShowSource?: () => void;
 }) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
@@ -138,6 +135,9 @@ export default function NoteEditor({
   const [linkUrl, setLinkUrl] = useState("");
   // 文档大纲悬浮面板:默认展示,跟随用户上次选择(持久化 note_toc_open;"0"=关)
   const tocOpen = settings["note_toc_open"] !== "0";
+  // 「显示为源码」:就地把正文区换成可编辑的 Markdown 源码(工具栏不变,非单独页面)
+  const [sourceMode, setSourceMode] = useState(false);
+  const [sourceText, setSourceText] = useState("");
 
   const editor = useEditor({
     extensions: [
@@ -227,11 +227,12 @@ export default function NoteEditor({
     if (editor) onStatsRef.current?.(computeStats(editor.getText()));
   }, [editor, noteId]);
 
-  // 切换便签时重载内容(同一编辑器实例复用)
+  // 切换便签时重载内容(同一编辑器实例复用),并退出源码态
   const loadedFor = useRef(noteId);
   useEffect(() => {
     if (!editor || loadedFor.current === noteId) return;
     loadedFor.current = noteId;
+    setSourceMode(false);
     editor.commands.setContent(legacyToMarkdown(content), { contentType: "markdown" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [noteId, editor]);
@@ -310,6 +311,16 @@ export default function NoteEditor({
     </button>
   );
 
+  // 进入源码:用当前 Markdown 填充 textarea;退出:把源码解析回所见即所得(并触发保存)
+  const enterSource = () => {
+    setSourceText(editor.getMarkdown());
+    setSourceMode(true);
+  };
+  const exitSource = () => {
+    editor.commands.setContent(sourceText, { contentType: "markdown" }); // 触发 onUpdate → 保存
+    setSourceMode(false);
+  };
+
   // 应用链接面板:空地址=移除链接;无选区=插入「地址即文字」的链接;有选区=给选区加链接
   const applyLink = () => {
     const url = linkUrl.trim();
@@ -333,6 +344,8 @@ export default function NoteEditor({
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
       {/* 工具栏(对齐旧版便签工具栏);窄窗口自动换行,避免字色/插图按钮被裁 */}
       <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-divider px-2 py-1">
+        {!sourceMode && (
+          <>
         <Btn
           title={t("S.X.NoteUndo")}
           disabled={!editor.can().undo()}
@@ -542,38 +555,60 @@ export default function NoteEditor({
           )}
         </span>
         <span className="mx-1 h-4 w-px bg-divider" />
-        {/* 大纲默认显示;按钮语义为「不显示大纲」——高亮=已隐藏,默认不高亮 */}
+        {/* 大纲默认显示;按钮=「不显示大纲」,图标为大纲加一道斜杠划掉;高亮=已隐藏 */}
         <Btn
           title={t("S.X.NoteOutlineHide")}
           active={!tocOpen}
           onClick={() => saveSetting("note_toc_open", tocOpen ? "0" : "1")}
         >
-          <ListTree size={13} />
+          <span className="relative inline-flex">
+            <ListTree size={13} />
+            <span className="pointer-events-none absolute top-1/2 left-1/2 h-[1.5px] w-[150%] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current" />
+          </span>
         </Btn>
-        {onShowSource && (
-          <Btn title={t("S.X.NoteShowSource")} onClick={onShowSource}>
-            <FileCode2 size={13} />
-          </Btn>
+          </>
         )}
+        {/* 显示为源码 / 返回编辑:就地切换正文区,工具栏不变(非单独页面) */}
+        <Btn
+          title={sourceMode ? t("S.X.NoteShowWysiwyg") : t("S.X.NoteShowSource")}
+          active={sourceMode}
+          onClick={sourceMode ? exitSource : enterSource}
+        >
+          <FileCode2 size={13} />
+        </Btn>
+        {sourceMode && <span className="ml-1.5 text-xs text-muted">Markdown</span>}
       </div>
-      <div
-        style={style}
-        className="note-editor min-h-0 flex-1 overflow-y-auto"
-        onClick={() => editor.chain().focus().run()}
-        onContextMenu={(e) => {
-          // 取当前选区纯文本;有选中才接管右键(加入待办),否则放行浏览器默认菜单
-          const { from, to } = editor.state.selection;
-          if (from === to) return;
-          const text = editor.state.doc
-            .textBetween(from, to, "\n", (leaf) => (leaf.type.name === "hardBreak" ? "\n" : ""))
-            .trim();
-          if (!text) return;
-          e.preventDefault();
-          setSelMenu({ x: e.clientX, y: e.clientY, text });
-        }}
-      >
-        <EditorContent editor={editor} />
-      </div>
+      {sourceMode ? (
+        // 源码视图:就地把正文区换成可编辑的 Markdown textarea(# 等符号可直接改)
+        <textarea
+          value={sourceText}
+          spellCheck={false}
+          onChange={(e) => {
+            setSourceText(e.target.value);
+            onChangeRef.current(e.target.value);
+          }}
+          className="min-h-0 flex-1 resize-none bg-card p-4 font-mono text-sm leading-relaxed text-text-1 outline-none"
+        />
+      ) : (
+        <div
+          style={style}
+          className="note-editor min-h-0 flex-1 overflow-y-auto"
+          onClick={() => editor.chain().focus().run()}
+          onContextMenu={(e) => {
+            // 取当前选区纯文本;有选中才接管右键(加入待办),否则放行浏览器默认菜单
+            const { from, to } = editor.state.selection;
+            if (from === to) return;
+            const text = editor.state.doc
+              .textBetween(from, to, "\n", (leaf) => (leaf.type.name === "hardBreak" ? "\n" : ""))
+              .trim();
+            if (!text) return;
+            e.preventDefault();
+            setSelMenu({ x: e.clientX, y: e.clientY, text });
+          }}
+        >
+          <EditorContent editor={editor} />
+        </div>
+      )}
       {selMenu && (
         <Popover at={selMenu} anchor={null} onClose={() => setSelMenu(null)} zIndex={200}>
           <div className="w-44">
@@ -600,7 +635,7 @@ export default function NoteEditor({
         </Popover>
       )}
       {/* 文档大纲悬浮面板:右上角,点击标题滚动定位(默认开;无标题时不显示浮层) */}
-      {tocOpen && headings.length > 0 && (
+      {!sourceMode && tocOpen && headings.length > 0 && (
         <div className="absolute top-10 right-3 z-30 max-h-[70%] w-56 overflow-y-auto rounded-md border border-divider bg-popup/95 p-1.5 shadow-lg backdrop-blur">
           <div className="mb-1 px-1.5 text-xs font-semibold text-muted">{t("S.X.NoteOutline")}</div>
           {headings.map((h, i) => (
