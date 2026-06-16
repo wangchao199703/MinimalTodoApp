@@ -467,3 +467,7 @@
 - **Typora 源码显形**(常驻):新增 `SourceReveal.ts`(ProseMirror 装饰插件)——光标进入块/标记时用 widget 显示 Markdown 符号:标题 `#`、引用 `>`、列表 `-`/`N.`/`- [ ]`、行内 `**`/`*`/`` ` ``/`~~`、链接 `[文字](url)`、分割线选中 `---`;移走即纯富文本。装饰纯展示、不进文档(getMarkdown 不受影响)。`.md-syntax` 弱化样式。
 - **显示为源码**:工具栏按钮 → 整篇切成可编辑 Markdown `<textarea>` 源码视图,「返回编辑」切回(srcKey 强制 NoteEditor 重挂载载入最新正文);编辑走原防抖保存。
 - i18n 双语补键。tsc 通过,dev 启动无报错、无重名告警。
+
+### 25) 便签:移除 Typora 源码显形(只读提示)(版本仍 2.0.1)
+- 「显示为源码」已就地可编辑,常驻的只读源码显形(光标进块浮现 `#`/`>`/`**` 等装饰)与之重复且不可改,故整体移除。
+- 删 `src/components/notes/SourceReveal.ts`,撤 `NoteEditor.tsx` 的导入与 extensions 注册,删 `index.css` 的 `.md-syntax`/`.md-hr-reveal` 样式。tsc 通过,构建成功。

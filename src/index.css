@@ -760,20 +760,6 @@ body {
   background: var(--accent);
   cursor: col-resize;
 }
-/* 源码显形(Typora 式):光标进入块 / 行内标记时显示的 Markdown 符号(弱化、不可选) */
-.note-prose .md-syntax {
-  color: var(--secondary-text);
-  opacity: 0.5;
-  font-weight: 400;
-  font-style: normal;
-  white-space: pre;
-  user-select: none;
-}
-.note-prose .md-hr-reveal::before {
-  content: "---";
-  color: var(--secondary-text);
-  opacity: 0.5;
-}
 /* 任务列表:复选框行(对齐旧版可勾选任务项) */
 .note-prose ul[data-type="taskList"] {
   margin: 0.2em 0;

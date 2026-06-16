@@ -33,7 +33,6 @@ import { useAppStore } from "../store/useAppStore";
 import { t } from "../lib/i18n";
 import { Popover, MenuItem } from "./ui/Popover";
 import { createSlashCommand } from "./notes/SlashCommand";
-import { SourceReveal } from "./notes/SourceReveal";
 
 /**
  * 便签所见即所得编辑器(tiptap):输入 Markdown 语法实时生效
@@ -165,8 +164,6 @@ export default function NoteEditor({
       Color,
       // 斜杠命令(/ 弹出快捷插入菜单)
       createSlashCommand(() => pickImageRef.current()),
-      // Typora 式源码显形(光标进入块/标记时显示 Markdown 符号)
-      SourceReveal,
     ],
     content: legacyToMarkdown(content),
     contentType: "markdown",
