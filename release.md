@@ -471,3 +471,7 @@
 ### 25) 便签:移除 Typora 源码显形(只读提示)(版本仍 2.0.1)
 - 「显示为源码」已就地可编辑,常驻的只读源码显形(光标进块浮现 `#`/`>`/`**` 等装饰)与之重复且不可改,故整体移除。
 - 删 `src/components/notes/SourceReveal.ts`,撤 `NoteEditor.tsx` 的导入与 extensions 注册,删 `index.css` 的 `.md-syntax`/`.md-hr-reveal` 样式。tsc 通过,构建成功。
+
+### 26) 便签:显示为源码保留光标位置 + 源码态不隐藏大纲(版本仍 2.0.1)
+- **光标不跳行首**:进源码态时按选区前纯文本长度估算偏移,`useEffect` 聚焦 textarea 并 `setSelectionRange` 到该偏移;返回编辑时若源码未改则不重建文档(保留编辑器原光标)、`editor.focus()`。
+- **源码态保留大纲**:大纲浮层去掉 `!sourceMode` 守卫(`tocOpen && headings.length>0` 即显示),源码编辑时右上角大纲仍在。

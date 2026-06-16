@@ -140,6 +140,9 @@ export default function NoteEditor({
   const [sourceMode, setSourceMode] = useState(false);
   const [sourceText, setSourceText] = useState("");
   sourceModeRef.current = sourceMode;
+  // 进入源码态时把编辑器光标位置映射到 textarea(避免跳行首)
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sourceCaretRef = useRef(0);
 
   const editor = useEditor({
     extensions: [
@@ -228,6 +231,16 @@ export default function NoteEditor({
     if (editor) onStatsRef.current?.(computeStats(editor.getText()));
   }, [editor, noteId]);
 
+  // 进入源码态:聚焦 textarea 并把光标放到映射出的偏移(不跳行首)
+  useEffect(() => {
+    if (!sourceMode) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    const p = Math.min(sourceCaretRef.current, el.value.length);
+    el.focus();
+    el.setSelectionRange(p, p);
+  }, [sourceMode]);
+
   // 切换便签时重载内容(同一编辑器实例复用),并退出源码态
   const loadedFor = useRef(noteId);
   useEffect(() => {
@@ -314,12 +327,20 @@ export default function NoteEditor({
 
   // 进入源码:用当前 Markdown 填充 textarea;退出:把源码解析回所见即所得(并触发保存)
   const enterSource = () => {
-    setSourceText(editor.getMarkdown());
+    const md = editor.getMarkdown();
+    // 估算光标在源码中的偏移:选区前的纯文本长度(块以换行分隔),不精确但保证不跳行首
+    const pos = editor.state.selection.head;
+    sourceCaretRef.current = editor.state.doc.textBetween(0, pos, "\n", "\n").length;
+    setSourceText(md);
     setSourceMode(true);
   };
   const exitSource = () => {
-    editor.commands.setContent(sourceText, { contentType: "markdown" }); // 触发 onUpdate → 保存
+    // 内容没改就不重建,保留编辑器原有光标位置;改了才解析回(触发 onUpdate → 保存)
+    if (sourceText !== editor.getMarkdown()) {
+      editor.commands.setContent(sourceText, { contentType: "markdown" });
+    }
     setSourceMode(false);
+    editor.commands.focus();
   };
 
   // 应用链接面板:空地址=移除链接;无选区=插入「地址即文字」的链接;有选区=给选区加链接
@@ -596,6 +617,7 @@ export default function NoteEditor({
       {/* 源码视图:就地可编辑 Markdown(# 等符号可直接改),覆盖在编辑器位置 */}
       {sourceMode && (
         <textarea
+          ref={textareaRef}
           value={sourceText}
           spellCheck={false}
           onChange={(e) => {
@@ -630,8 +652,8 @@ export default function NoteEditor({
           </div>
         </Popover>
       )}
-      {/* 文档大纲悬浮面板:右上角,点击标题滚动定位(默认开;无标题时不显示浮层) */}
-      {!sourceMode && tocOpen && headings.length > 0 && (
+      {/* 文档大纲悬浮面板:右上角,点击标题滚动定位(默认开;源码态也保留;无标题时不显示浮层) */}
+      {tocOpen && headings.length > 0 && (
         <div className="absolute top-10 right-3 z-30 max-h-[70%] w-56 overflow-y-auto rounded-md border border-divider bg-popup/95 p-1.5 shadow-lg backdrop-blur">
           <div className="mb-1 px-1.5 text-xs font-semibold text-muted">{t("S.X.NoteOutline")}</div>
           {headings.map((h, i) => (
