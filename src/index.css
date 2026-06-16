@@ -848,7 +848,7 @@ body {
 }
 .task-item:hover,
 .clip-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: var(--hover-shadow);
   z-index: 1;
 }
