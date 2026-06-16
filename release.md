@@ -425,3 +425,8 @@
 ### 18) 便签:第二侧栏「定位到当前便签」按钮(版本仍 2.0.1)
 - 便签第二侧栏头部新增「定位」按钮(LocateFixed 图标):点击后**展开当前便签所在分组**(若已折叠)并**滚动到该行**(scrollIntoView)。无选中便签时按钮置灰。
 - 实现:NoteRow 加 `data-note-row` 锚点;NotesView `locateCurrent` 先 await 展开分组再 rAF 滚动定位。tsc 通过、HMR 无报错。
+
+### 19) 便签:粘贴 GFM 管道表格自动渲染成表格(版本仍 2.0.1)
+- `NoteEditor` handlePaste 新增:粘贴文本含 GFM 表格「分隔行」(`| --- |` / `| :--: |`,≥2 列)时,用 `insertContent(text, { contentType: "markdown" })` 解析为真正的表格(而非纯文本)。
+- 支持对齐(`:--:` 居中等)与单元格内 emoji / 文本;非表格文本仍走默认粘贴,行为不变。
+- jsdom 实测用户给的示例表格:解析出 table/tableHeader、4 行、首列居中、内容与 emoji 完整。tsc 通过、HMR 无报错。

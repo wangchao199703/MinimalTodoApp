@@ -63,6 +63,12 @@ function legacyToMarkdown(s: string): string {
     .replace(/<\/color>/g, "</span>");
 }
 
+// GFM 表格「分隔行」签名(| --- | :--: | … 至少两列):粘贴文本含此行即视为含 Markdown 表格
+const MD_TABLE_DELIM = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/m;
+function looksLikeMarkdownTable(s: string): boolean {
+  return MD_TABLE_DELIM.test(s);
+}
+
 const IMG_EXT = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp"]);
 
 function extOf(file: File): string {
@@ -132,12 +138,17 @@ export default function NoteEditor({
           .join("\n")
           .replace(/\n{3,}/g, "\n\n")
           .replace(/^\s+|\s+$/g, ""),
-      // 粘贴图片:存盘 note-images 后以 noteimg:// 引用插入(对齐旧版 Editor_Pasting)
       handlePaste: (_view, event) => {
+        const text = event.clipboardData?.getData("text/plain") ?? "";
+        // 粘贴含 GFM 管道表格的 Markdown → 解析成真正的表格渲染(而非纯文本)
+        if (text && looksLikeMarkdownTable(text)) {
+          editor?.chain().focus().insertContent(text, { contentType: "markdown" }).run();
+          return true;
+        }
+        // 粘贴图片(无文本时):存盘 note-images 后以 noteimg:// 引用插入(对齐旧版 Editor_Pasting)
         const files = Array.from(event.clipboardData?.files ?? []);
         const images = files.filter(isImageFile);
-        // 同时含文本时走默认文本粘贴(对齐旧版)
-        if (images.length === 0 || event.clipboardData?.getData("text/plain")) return false;
+        if (images.length === 0 || text) return false; // 同时含文本走默认文本粘贴
         void insertImageFiles(images);
         return true;
       },
