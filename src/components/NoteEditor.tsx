@@ -325,12 +325,26 @@ export default function NoteEditor({
     </button>
   );
 
-  // 进入源码:用当前 Markdown 填充 textarea;退出:把源码解析回所见即所得(并触发保存)
+  // 进入源码:用当前 Markdown 填充 textarea,并把光标精确映射到源码偏移。
+  // 做法:在光标处插入一个私有区标记字符 → 序列化成 Markdown → indexOf 得到精确偏移 → 撤掉标记
+  // (不进 undo 历史、sourceModeRef 抑制 onUpdate 保存,真实文档不受影响)。
   const enterSource = () => {
-    const md = editor.getMarkdown();
-    // 估算光标在源码中的偏移:选区前的纯文本长度(块以换行分隔),不精确但保证不跳行首
+    const MARK = ""; // 私有区字符,正文几乎不可能出现
     const pos = editor.state.selection.head;
-    sourceCaretRef.current = editor.state.doc.textBetween(0, pos, "\n", "\n").length;
+    sourceModeRef.current = true; // 先抑制接下来两次 dispatch 的保存
+    let md = editor.getMarkdown();
+    try {
+      editor.view.dispatch(editor.state.tr.insertText(MARK, pos).setMeta("addToHistory", false));
+      const withMark = editor.getMarkdown();
+      editor.view.dispatch(
+        editor.state.tr.delete(pos, pos + MARK.length).setMeta("addToHistory", false),
+      );
+      md = editor.getMarkdown();
+      const caret = withMark.indexOf(MARK);
+      sourceCaretRef.current = caret >= 0 ? caret : 0;
+    } catch {
+      sourceCaretRef.current = 0;
+    }
     setSourceText(md);
     setSourceMode(true);
   };
