@@ -203,7 +203,7 @@ export default function NotesView() {
             <button
               title={t("S.X.NewNote")}
               onClick={() => void addNote()}
-              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
+              className="nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
             >
               <FilePlus2 size={14} />
             </button>
@@ -216,7 +216,7 @@ export default function NotesView() {
                     key={g.id}
                     title={g.name}
                     onClick={() => void toggleNoteGroupCollapse(g)}
-                    className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
+                    className="nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
                   >
                     <Folder size={14} style={{ color }} />
                   </button>
@@ -230,7 +230,7 @@ export default function NotesView() {
                     key={n.id}
                     title={n.custom_title || n.title || t("S.X.UntitledNote")}
                     onClick={() => selectNote(n.id)}
-                    className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+                    className={`nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
                       active
                         ? "bg-sidebar-selected text-sidebar-selected-fg"
                         : "text-sidebar-strong hover:bg-sidebar-hover"
@@ -247,7 +247,7 @@ export default function NotesView() {
             <button
               title={t("S.X.ExpandSidebar")}
               onClick={toggleCollapsed}
-              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
+              className="nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
             >
               <PanelLeftOpen size={14} />
             </button>
@@ -298,7 +298,7 @@ export default function NotesView() {
             <button
               title={t("S.X.CollapseSidebar")}
               onClick={toggleCollapsed}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+              className="nav-lift flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
             >
               <PanelLeftClose size={14} className="shrink-0" />
               <span className="min-w-0 flex-1 truncate text-left">{t("S.X.CollapseSidebar")}</span>

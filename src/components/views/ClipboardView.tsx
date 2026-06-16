@@ -622,7 +622,7 @@ function ClipTagRow({ tag, active }: { tag: ClipTag; active: boolean }) {
             e.preventDefault();
             setMenu({ x: e.clientX, y: e.clientY });
           }}
-          className={`flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+          className={`nav-lift flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
             dropOver
               ? "bg-sidebar-selected text-sidebar-selected-fg ring-1 ring-accent"
               : active
@@ -830,7 +830,7 @@ export default function ClipboardView() {
             <button
               title={t("S.X.ClipDefault")}
               onClick={() => setClipFilterTag(null)}
-              className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+              className={`nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
                 clipFilterTagId == null
                   ? "bg-sidebar-selected text-sidebar-selected-fg"
                   : "text-sidebar-strong hover:bg-sidebar-hover"
@@ -846,7 +846,7 @@ export default function ClipboardView() {
             <button
               title={t("S.X.ExpandSidebar")}
               onClick={toggleCollapsed}
-              className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
+              className="nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
             >
               <PanelLeftOpen size={14} />
             </button>
@@ -881,7 +881,7 @@ export default function ClipboardView() {
                 e.preventDefault();
                 setDefaultMenu({ x: e.clientX, y: e.clientY });
               }}
-              className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium ${
+              className={`nav-lift flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium ${
                 clipFilterTagId == null
                   ? "bg-sidebar-selected text-sidebar-selected-fg"
                   : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
@@ -914,7 +914,7 @@ export default function ClipboardView() {
             <button
               title={t("S.X.CollapseSidebar")}
               onClick={toggleCollapsed}
-              className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+              className="nav-lift flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
             >
               <PanelLeftClose size={14} className="shrink-0" />
               <span className="min-w-0 flex-1 truncate text-left">{t("S.X.CollapseSidebar")}</span>
@@ -1163,7 +1163,7 @@ function CollapsedTagButton({ tag, active }: { tag: ClipTag; active: boolean }) 
       ref={ref}
       title={tag.name}
       onClick={() => setClipFilterTag(tag.id)}
-      className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+      className={`nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
         dropOver
           ? "bg-sidebar-selected text-sidebar-selected-fg ring-1 ring-accent"
           : active

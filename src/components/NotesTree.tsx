@@ -97,7 +97,7 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
-      className={`group relative flex cursor-default items-center gap-2 rounded-md py-1.5 pr-1 pl-7 text-sm ${
+      className={`nav-lift group relative flex cursor-default items-center gap-2 rounded-md py-1.5 pr-1 pl-7 text-sm ${
         active
           ? "bg-sidebar-selected text-sidebar-selected-fg"
           : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
@@ -213,7 +213,7 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
           onDragOver={onFileDragOver}
           onDragLeave={() => setFileOver(false)}
           onDrop={onFileDrop}
-          className={`flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+          className={`nav-lift flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
             isOver || fileOver
               ? "bg-sidebar-selected ring-1 ring-accent"
               : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"

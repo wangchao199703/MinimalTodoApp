@@ -123,7 +123,7 @@ function TagRow({ group, count, active }: { group: Group; count: number; active:
             e.preventDefault();
             setMenu({ x: e.clientX, y: e.clientY });
           }}
-          className={`flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+          className={`nav-lift flex w-full cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
             taskOver
               ? "bg-sidebar-hover text-sidebar-strong ring-1 ring-inset ring-accent"
               : active
@@ -217,7 +217,7 @@ function CollapsedTag({ group, active }: { group: Group; active: boolean }) {
       ref={ref}
       title={group.name}
       onClick={() => setView({ kind: "group", groupId: group.id })}
-      className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+      className={`nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
         taskOver
           ? "bg-sidebar-hover ring-1 ring-inset ring-accent"
           : active
@@ -316,7 +316,7 @@ export default function TagSidebar() {
           <button
             title={t("S.X.TagBoardRoot")}
             onClick={() => setView({ kind: "tagboard" })}
-            className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+            className={`nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
               view.kind === "tagboard"
                 ? "bg-sidebar-selected text-sidebar-selected-fg"
                 : "text-sidebar-strong hover:bg-sidebar-hover"
@@ -337,7 +337,7 @@ export default function TagSidebar() {
           <button
             title={t("S.X.ExpandSidebar")}
             onClick={toggleCollapsed}
-            className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
+            className="nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-strong hover:bg-sidebar-hover"
           >
             <PanelLeftOpen size={14} />
           </button>
@@ -375,7 +375,7 @@ export default function TagSidebar() {
         {/* 标签看板入口(全宽):进入标签默认选中 */}
         <button
           onClick={() => setView({ kind: "tagboard" })}
-          className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium ${
+          className={`nav-lift flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium ${
             view.kind === "tagboard"
               ? "bg-sidebar-selected text-sidebar-selected-fg"
               : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
@@ -399,7 +399,7 @@ export default function TagSidebar() {
         <button
           title={t("S.X.CollapseSidebar")}
           onClick={toggleCollapsed}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+          className="nav-lift flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
         >
           <PanelLeftClose size={14} className="shrink-0" />
           <span className="min-w-0 flex-1 truncate text-left">{t("S.X.CollapseSidebar")}</span>
