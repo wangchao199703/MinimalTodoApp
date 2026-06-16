@@ -438,3 +438,11 @@
 
 ### 21) 所有第二侧栏加 hover 抬起动画(版本仍 2.0.1)
 - 标签看板 / 剪切板 / 便签 三个第二侧栏的导航行(标签行、分组头、便签行、入口/默认按钮、折叠态图标、底部折叠按钮)统一加 `.nav-lift`,与第一侧栏同款 hover 抬起(-1px)+ 投影。
+
+### 22) 自动更新下载稳健化:超时 + 系统代理 + 重试(版本仍 2.0.1)
+- 现象:应用内下载(检查更新 / 重新安装)常卡 0%,但浏览器手动下载正常。根因:reqwest 客户端**没设超时**(连不上 CDN 就无限卡)、**不走 Windows 系统代理**(clash/公司网只在系统代理里设)、撞 schannel 抖动不重试。
+- 修复(对齐 WPF/.NET HttpClient):`updater.rs`
+  - **超时**:`connect_timeout(30s)` + `read_timeout(60s)`,不再无限卡 0%;
+  - **系统代理**:`WinHttpGetIEProxyConfigForCurrentUser`(winhttp.dll)取当前用户 IE/系统代理,解析后喂给 `reqwest::Proxy::all`(与浏览器/WPF 同源);
+  - **重试**:下载失败最多重试 3 次(每次复位进度,退避 800ms,用 tokio time)。
+- 检查更新与重新安装共用 `download_update`,一处修复两处生效。检查的 JSON 拉取仍走前端 WebView fetch(本就用系统代理)。cargo check 通过。

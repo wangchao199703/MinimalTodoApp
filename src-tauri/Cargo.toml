@@ -36,6 +36,8 @@ anyhow = "1"
 # 自动更新资产下载走 Rust(GitHub 资产 CDN 无 CORS 头,前端 fetch 会被拦);
 # native-tls=Windows SChannel,免装 OpenSSL/NASM,便携 exe 构建链路最稳
 reqwest = { version = "0.12", default-features = false, features = ["native-tls"] }
+# 仅用其异步定时器做下载重试退避(tokio 已是 tauri 的传递依赖,这里只显式取 time 特性)
+tokio = { version = "1", features = ["time"] }
 
 [features]
 default = ["custom-protocol"]

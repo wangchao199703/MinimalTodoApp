@@ -23,6 +23,7 @@ extern "system" {
     fn TerminateProcess(handle: isize, exit_code: u32) -> i32;
     fn WaitForSingleObject(handle: isize, ms: u32) -> u32;
     fn CloseHandle(handle: isize) -> i32;
+    fn GlobalFree(mem: *mut core::ffi::c_void) -> *mut core::ffi::c_void;
 }
 const PROCESS_TERMINATE: u32 = 0x0001;
 const SYNCHRONIZE: u32 = 0x0010_0000;
@@ -223,18 +224,114 @@ fn start_new_and_exit(app: &AppHandle, file_name: &str, bytes: &[u8]) -> Result<
     Ok(())
 }
 
-/// 流式下载新版 exe 并换壳重启:从 `url`(GitHub 资产直链,会 302 到无 CORS 的 CDN,
-/// 故必须在 Rust 侧下载)读取字节,边下边 emit `update-progress`(0~1),完成后写盘 + 重启。
-/// async 命令在后台线程池执行,阻塞下载放进 spawn_blocking,绝不卡主线程消息循环。
-#[tauri::command]
-pub async fn download_update(app: AppHandle, url: String, file_name: String) -> Result<(), String> {
-    // 命令本身是 async,直接用 reqwest 异步客户端跑在 Tauri 的 tokio 运行时上;
-    // 切忌在此用 reqwest::blocking(它会在异步运行时内再起阻塞运行时,导致下载未开始即失败)。
-    let client = reqwest::Client::builder()
+// ---- 系统代理探测(对齐 .NET HttpClient / 浏览器:走 WinINET/IE 代理设置)----
+// reqwest 默认只认环境变量代理,不读 Windows 系统代理;而 clash/公司网等常只在系统代理(注册表)里设。
+// 用 WinHttpGetIEProxyConfigForCurrentUser 取当前用户的 IE/系统代理(浏览器走的就是这套)。
+#[repr(C)]
+struct IeProxyConfig {
+    f_auto_detect: i32,
+    lpsz_auto_config_url: *mut u16,
+    lpsz_proxy: *mut u16,
+    lpsz_proxy_bypass: *mut u16,
+}
+#[link(name = "winhttp")]
+extern "system" {
+    fn WinHttpGetIEProxyConfigForCurrentUser(cfg: *mut IeProxyConfig) -> i32;
+}
+
+unsafe fn wstr(p: *const u16) -> Option<String> {
+    if p.is_null() {
+        return None;
+    }
+    let mut len = 0usize;
+    while *p.add(len) != 0 {
+        len += 1;
+    }
+    if len == 0 {
+        return None;
+    }
+    Some(String::from_utf16_lossy(std::slice::from_raw_parts(p, len)))
+}
+
+/// 把 IE 代理串解析成 reqwest 能用的代理 URL。
+/// 形如 "host:port"(全协议同代理)或 "http=h:p;https=h:p;...";优先取 https=,否则 http=,否则整串。
+fn parse_proxy(raw: &str) -> Option<String> {
+    let raw = raw.trim();
+    if raw.is_empty() {
+        return None;
+    }
+    let hostport: Option<&str> = if raw.contains('=') {
+        let mut http_only: Option<&str> = None;
+        let mut found: Option<&str> = None;
+        for part in raw.split(';') {
+            let part = part.trim();
+            if let Some(rest) = part.strip_prefix("https=") {
+                found = Some(rest);
+                break;
+            }
+            if http_only.is_none() {
+                if let Some(rest) = part.strip_prefix("http=") {
+                    http_only = Some(rest);
+                }
+            }
+        }
+        found.or(http_only)
+    } else {
+        Some(raw)
+    };
+    let hp = hostport?.trim();
+    if hp.is_empty() {
+        return None;
+    }
+    if hp.starts_with("http://") || hp.starts_with("https://") {
+        Some(hp.to_string())
+    } else {
+        Some(format!("http://{hp}"))
+    }
+}
+
+/// 当前用户的系统代理(无则 None)。PAC / 自动检测暂不解析(退回直连 + 环境变量代理)。
+fn system_proxy() -> Option<String> {
+    unsafe {
+        let mut cfg = IeProxyConfig {
+            f_auto_detect: 0,
+            lpsz_auto_config_url: std::ptr::null_mut(),
+            lpsz_proxy: std::ptr::null_mut(),
+            lpsz_proxy_bypass: std::ptr::null_mut(),
+        };
+        if WinHttpGetIEProxyConfigForCurrentUser(&mut cfg) == 0 {
+            return None;
+        }
+        let proxy = wstr(cfg.lpsz_proxy);
+        for p in [cfg.lpsz_auto_config_url, cfg.lpsz_proxy, cfg.lpsz_proxy_bypass] {
+            if !p.is_null() {
+                GlobalFree(p as *mut core::ffi::c_void);
+            }
+        }
+        proxy.and_then(|s| parse_proxy(&s))
+    }
+}
+
+/// 构建下载用 reqwest 客户端:对齐 WPF/.NET 的稳健性——连接超时 + 读空闲超时 + 系统代理。
+fn build_update_client() -> Result<reqwest::Client, String> {
+    let mut b = reqwest::Client::builder()
         .user_agent("MinimalTodoApp-update")
-        .build()
-        .map_err(err)?;
-    let mut resp = client.get(&url).send().await.map_err(err)?;
+        // 连不上 CDN 不再无限卡 0%:30s 连接超时;读到一半断流 60s 无数据即失败(再由上层重试)。
+        .connect_timeout(std::time::Duration::from_secs(30))
+        .read_timeout(std::time::Duration::from_secs(60));
+    // 走系统代理(对齐浏览器/WPF);没有就保持默认(直连 + 环境变量代理)。
+    if let Some(p) = system_proxy() {
+        if let Ok(proxy) = reqwest::Proxy::all(&p) {
+            b = b.proxy(proxy);
+            eprintln!("[update] 使用系统代理:{p}");
+        }
+    }
+    b.build().map_err(err)
+}
+
+/// 单次下载:发请求 + 边下边 emit 进度,成功返回字节,失败返回错误(供上层重试)。
+async fn download_once(client: &reqwest::Client, app: &AppHandle, url: &str) -> Result<Vec<u8>, String> {
+    let mut resp = client.get(url).send().await.map_err(err)?;
     if !resp.status().is_success() {
         return Err(format!("HTTP {}", resp.status()));
     }
@@ -247,15 +344,40 @@ pub async fn download_update(app: AppHandle, url: String, file_name: String) -> 
         received += chunk.len() as u64;
         if total > 0 {
             let ratio = received as f64 / total as f64;
-            // 节流:每涨 1% 才上报一次(末尾必报)
             if ratio - last_emit >= 0.01 || ratio >= 1.0 {
                 last_emit = ratio;
                 let _ = app.emit("update-progress", ratio);
             }
         }
     }
-    let _ = app.emit("update-progress", 1.0_f64);
-    start_new_and_exit(&app, &file_name, &buf)
+    Ok(buf)
+}
+
+/// 流式下载新版 exe 并换壳重启:从 `url`(GitHub 资产直链,会 302 到无 CORS 的 CDN,
+/// 故必须在 Rust 侧下载)读取字节,边下边 emit `update-progress`(0~1),完成后写盘 + 重启。
+/// **检查更新与重新安装共用此命令**。稳健性对齐 WPF:超时 + 系统代理 + 失败重试,避免无限卡 0%。
+#[tauri::command]
+pub async fn download_update(app: AppHandle, url: String, file_name: String) -> Result<(), String> {
+    let client = build_update_client()?;
+    let mut last_err = String::new();
+    // 最多 3 次:撞上 schannel 抖动 / 瞬断时重试(每次重试把进度复位到 0)。
+    for attempt in 0..3u32 {
+        match download_once(&client, &app, &url).await {
+            Ok(buf) => {
+                let _ = app.emit("update-progress", 1.0_f64);
+                return start_new_and_exit(&app, &file_name, &buf);
+            }
+            Err(e) => {
+                last_err = e;
+                eprintln!("[update] 下载第 {} 次失败:{last_err}", attempt + 1);
+                let _ = app.emit("update-progress", 0.0_f64);
+                if attempt + 1 < 3 {
+                    tokio::time::sleep(std::time::Duration::from_millis(800)).await;
+                }
+            }
+        }
+    }
+    Err(format!("下载失败(已重试 3 次):{last_err}"))
 }
 
 /// 旧的「前端下载 → 传原始字节」入口,保留兼容:接收新版 exe 字节(Raw body + x-file-name header)。
