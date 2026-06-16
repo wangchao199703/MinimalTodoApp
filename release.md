@@ -430,3 +430,8 @@
 - `NoteEditor` handlePaste 新增:粘贴文本含 GFM 表格「分隔行」(`| --- |` / `| :--: |`,≥2 列)时,用 `insertContent(text, { contentType: "markdown" })` 解析为真正的表格(而非纯文本)。
 - 支持对齐(`:--:` 居中等)与单元格内 emoji / 文本;非表格文本仍走默认粘贴,行为不变。
 - jsdom 实测用户给的示例表格:解析出 table/tableHeader、4 行、首列居中、内容与 emoji 完整。tsc 通过、HMR 无报错。
+
+### 20) hover 突出动画扩展:可爱/流体统一 + 主侧栏(版本仍 2.0.1)
+- hover 投影抽成 `--hover-shadow` 变量,挂到主题根(`:root` 弱 / `.dark`、`.glassy` 强),待办与主侧栏共用。
+- 可爱 / 流体 hover 改用统一「抬起 + 投影」(粗野仍保留硬投影)。
+- 主侧栏导航项加 `.nav-lift`(展开 + 折叠态)→ 同款 hover 抬起高亮。

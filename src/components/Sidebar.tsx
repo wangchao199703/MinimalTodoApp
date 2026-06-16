@@ -110,7 +110,7 @@ function NavRow(props: {
         title={props.label}
         onClick={props.onClick}
         onContextMenu={props.onContextMenu}
-        className={`mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
+        className={`nav-lift mx-auto flex h-9 w-9 items-center justify-center rounded-lg ${
           props.active
             ? "bg-sidebar-selected text-sidebar-selected-fg"
             : "text-sidebar-strong hover:bg-sidebar-hover"
@@ -124,7 +124,7 @@ function NavRow(props: {
     <button
       onClick={props.onClick}
       onContextMenu={props.onContextMenu}
-      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
+      className={`nav-lift flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm ${
         props.active
           ? "bg-sidebar-selected text-sidebar-selected-fg"
           : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"

@@ -832,18 +832,33 @@ body {
 /* 悬停「突出」动画:鼠标移到待办上轻微抬起 + 投影(借鉴粗野版式的高亮手感,套到所有版式)。
    各版式若自带 :hover 位移/投影(粗野、可爱、流体)因更高特异性保留自己的风格;
    transition 同时保留颜色过渡,故默认背景 hover 仍平滑。 */
-.task-item {
+/* hover「突出」投影强度:浅色弱、暗色/玻璃强。挂在主题根 / 玻璃面板上,
+   这样待办列表与主侧栏等非待办元素都能取到同一个 --hover-shadow。 */
+:root {
   --hover-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.22);
+}
+.dark,
+.glassy {
+  --hover-shadow: 0 7px 20px -7px rgb(0 0 0 / 0.5);
+}
+.task-item {
   transition: transform 0.14s ease, box-shadow 0.14s ease,
     background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-}
-.dark .task-item,
-.glassy .task-item {
-  --hover-shadow: 0 7px 20px -7px rgb(0 0 0 / 0.5);
 }
 .task-item:hover {
   transform: translateY(-2px);
   box-shadow: var(--hover-shadow);
+  z-index: 1;
+}
+/* 主侧栏导航项同款 hover 抬起高亮 */
+.nav-lift {
+  transition: transform 0.14s ease, box-shadow 0.14s ease,
+    background-color 0.15s ease, color 0.15s ease;
+}
+.nav-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--hover-shadow);
+  position: relative;
   z-index: 1;
 }
 
