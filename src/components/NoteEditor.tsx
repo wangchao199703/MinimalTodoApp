@@ -5,6 +5,7 @@ import { Markdown } from "@tiptap/markdown";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Image from "@tiptap/extension-image";
+import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import {
@@ -18,6 +19,7 @@ import {
   List,
   ListTodo,
   Strikethrough,
+  Table as TableIcon,
 } from "lucide-react";
 import { ipc } from "../lib/tauri-ipc";
 import { useAppStore } from "../store/useAppStore";
@@ -93,6 +95,10 @@ export default function NoteEditor({
   const pushToast = useAppStore((s) => s.pushToast);
   // 选中文本右键菜单(加入待办):仅在有选区时弹出,空选区放行系统默认菜单
   const [selMenu, setSelMenu] = useState<{ x: number; y: number; text: string } | null>(null);
+  // 插入表格小面板:输入行 / 列后生成
+  const [tableOpen, setTableOpen] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
 
   const editor = useEditor({
     extensions: [
@@ -101,6 +107,11 @@ export default function NoteEditor({
       TaskList,
       TaskItem.configure({ nested: true }),
       NoteImage,
+      // 表格(可拖动列宽);序列化经 @tiptap/markdown 的 HTML 兜底嵌入正文,可往返持久化
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
       TextStyle,
       Color,
     ],
@@ -108,16 +119,19 @@ export default function NoteEditor({
     contentType: "markdown",
     editorProps: {
       attributes: { class: "note-prose" },
-      // 复制纯文本去掉多余尾部空行:用 ProseMirror 原生取文本(段间 \n\n、软换行 \n),
-      // 再裁掉末尾空白。只影响 text/plain,text/html 仍由 PM 生成,粘到富文本不丢格式。
-      // (此前 @tiptap/markdown 的文本序列化会带一行多余空行,即用户反馈的「复制多一行空格」)
+      // 复制纯文本:用 ProseMirror 原生取文本(块间单换行、软换行 \n),再**逐行裁掉行尾空白**
+      // ——这是用户反馈「每行末尾多一个空格」的根因(正文 / 序列化里残留的行尾空格)。
+      // 最后折叠多余空行 + 裁掉首尾空白。只影响 text/plain,text/html 仍由 PM 生成,粘到富文本不丢格式。
       clipboardTextSerializer: (slice) =>
         slice.content
-          .textBetween(0, slice.content.size, "\n\n", (leaf) =>
+          .textBetween(0, slice.content.size, "\n", (leaf) =>
             leaf.type.name === "hardBreak" ? "\n" : "",
           )
+          .split("\n")
+          .map((line) => line.replace(/[ \t]+$/, ""))
+          .join("\n")
           .replace(/\n{3,}/g, "\n\n")
-          .replace(/[ \t\n]+$/, ""),
+          .replace(/^\s+|\s+$/g, ""),
       // 粘贴图片:存盘 note-images 后以 noteimg:// 引用插入(对齐旧版 Editor_Pasting)
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []);
@@ -275,6 +289,65 @@ export default function NoteEditor({
         <Btn title={t("S.Note.InsertImage")} onClick={pickImage}>
           <ImageIcon size={13} />
         </Btn>
+        {/* 插入表格:点击弹出小面板,输入行 / 列后生成 */}
+        <span className="relative">
+          <Btn
+            title={t("S.X.NoteTable")}
+            active={editor.isActive("table")}
+            onClick={() => setTableOpen((o) => !o)}
+          >
+            <TableIcon size={13} />
+          </Btn>
+          {tableOpen && (
+            <>
+              {/* 点击空白处关闭 */}
+              <div className="fixed inset-0 z-40" onClick={() => setTableOpen(false)} />
+              <div className="absolute top-full left-0 z-50 mt-1 w-44 rounded-md border border-divider bg-popup p-2 shadow-lg">
+                <div className="mb-2 flex items-center gap-2 text-xs text-text-2">
+                  <label className="flex items-center gap-1">
+                    {t("S.X.NoteTableRows")}
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={tableRows}
+                      onChange={(e) =>
+                        setTableRows(Math.min(30, Math.max(1, Number(e.target.value) || 1)))
+                      }
+                      className="w-12 rounded border border-divider bg-input px-1 py-0.5 text-text-1 outline-none focus:border-accent"
+                    />
+                  </label>
+                  <label className="flex items-center gap-1">
+                    {t("S.X.NoteTableCols")}
+                    <input
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={tableCols}
+                      onChange={(e) =>
+                        setTableCols(Math.min(10, Math.max(1, Number(e.target.value) || 1)))
+                      }
+                      className="w-12 rounded border border-divider bg-input px-1 py-0.5 text-text-1 outline-none focus:border-accent"
+                    />
+                  </label>
+                </div>
+                <button
+                  onClick={() => {
+                    editor
+                      .chain()
+                      .focus()
+                      .insertTable({ rows: tableRows, cols: tableCols, withHeaderRow: true })
+                      .run();
+                    setTableOpen(false);
+                  }}
+                  className="w-full rounded-md bg-accent px-2 py-1 text-xs text-on-accent hover:opacity-90"
+                >
+                  {t("S.X.NoteTableInsert")}
+                </button>
+              </div>
+            </>
+          )}
+        </span>
       </div>
       <div
         style={style}

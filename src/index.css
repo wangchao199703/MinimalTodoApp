@@ -723,6 +723,43 @@ body {
   margin: 0.3em 0;
 }
 .note-prose img.ProseMirror-selectednode { outline: 2px solid var(--accent); }
+/* 表格(@tiptap/extension-table):细边框 + 表头底色 + 选中单元格高亮 */
+.note-prose table {
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  width: auto;
+  table-layout: fixed;
+  overflow: hidden;
+}
+.note-prose table td,
+.note-prose table th {
+  border: 1px solid var(--divider);
+  padding: 0.3em 0.5em;
+  vertical-align: top;
+  min-width: 3em;
+  position: relative;
+}
+.note-prose table th {
+  background: var(--card-hover);
+  font-weight: 600;
+  text-align: left;
+}
+.note-prose table .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, var(--accent) 16%, transparent);
+  pointer-events: none;
+}
+.note-prose table .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  cursor: col-resize;
+}
 /* 任务列表:复选框行(对齐旧版可勾选任务项) */
 .note-prose ul[data-type="taskList"] {
   margin: 0.2em 0;
