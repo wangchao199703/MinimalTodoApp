@@ -829,6 +829,23 @@ body {
 .task-tag { display: none; }
 .task-tag::before { content: "#"; opacity: 0.7; }
 
+/* 悬停「突出」动画:鼠标移到待办上轻微抬起 + 投影(借鉴粗野版式的高亮手感,套到所有版式)。
+   各版式若自带 :hover 位移/投影(粗野、可爱、流体)因更高特异性保留自己的风格;
+   transition 同时保留颜色过渡,故默认背景 hover 仍平滑。 */
+.task-item {
+  transition: transform 0.14s ease, box-shadow 0.14s ease,
+    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.task-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -6px rgb(0 0 0 / 0.22);
+  z-index: 1;
+}
+.dark .task-item:hover,
+.glassy .task-item:hover {
+  box-shadow: 0 7px 20px -7px rgb(0 0 0 / 0.5);
+}
+
 /* ========== 苹果 Things 风:无边框 + 留白 + 圆形细线勾选 + 小圆点优先级 ========== */
 .design-apple .task-item {
   border-color: transparent;
