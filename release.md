@@ -421,3 +421,7 @@
 - **复制每行末尾多一个空格**:`clipboardTextSerializer` 改为**逐行裁掉行尾空白**(块间单换行 + 折叠空行 + 首尾 trim),根因是正文 / 序列化残留的行尾空格;与「行宽」无关。
 - **表格按钮**:工具栏新增「插入表格」,点击弹出小面板输入行 / 列(行 1–30、列 1–10)→ `insertTable` 生成带表头的表格(可拖列宽)。新增依赖 `@tiptap/extension-table`(Table/Row/Header/Cell)+ 表格 CSS(细边框 / 表头底色 / 选中单元格高亮 / 列宽手柄)。
 - **持久化已验证**:用 jsdom 跑了往返测试,`getMarkdown()` 输出标准 GFM 管道表格(`| | |` / `| --- |`),重载能还原 table 节点 —— 表格随便签 Markdown 正常保存/读取。tsc 通过、HMR/启动无报错。
+
+### 18) 便签:第二侧栏「定位到当前便签」按钮(版本仍 2.0.1)
+- 便签第二侧栏头部新增「定位」按钮(LocateFixed 图标):点击后**展开当前便签所在分组**(若已折叠)并**滚动到该行**(scrollIntoView)。无选中便签时按钮置灰。
+- 实现:NoteRow 加 `data-note-row` 锚点;NotesView `locateCurrent` 先 await 展开分组再 rAF 滚动定位。tsc 通过、HMR 无报错。

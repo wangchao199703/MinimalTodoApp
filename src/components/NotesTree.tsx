@@ -88,6 +88,7 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
   return (
     <div
       ref={ref}
+      data-note-row={note.id}
       onClick={() => {
         selectNote(note.id);
         setView({ kind: "notes" });

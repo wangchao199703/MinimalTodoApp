@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { FilePlus2, FileText, Folder, FolderPlus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import {
+  FilePlus2,
+  FileText,
+  Folder,
+  FolderPlus,
+  LocateFixed,
+  PanelLeftClose,
+  PanelLeftOpen,
+} from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
 import { deriveTitle } from "../../lib/markdown";
 import { readMarkdownDrop } from "../../lib/markdownIO";
@@ -94,6 +102,19 @@ export default function NotesView() {
   const saveSetting = useAppStore((s) => s.saveSetting);
   const importNotesFromFiles = useAppStore((s) => s.importNotesFromFiles);
   const selected = notes.find((n) => n.id === selectedNoteId) ?? null;
+
+  // 定位到当前便签:展开其所在分组(若已折叠)并滚动到该行
+  const locateCurrent = async () => {
+    if (!selected) return;
+    const g = noteGroups.find((x) => x.id === selected.group_id);
+    if (g?.is_collapsed) await toggleNoteGroupCollapse(g);
+    // 等分组展开后该行渲染出来再滚动
+    requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-note-row="${selected.id}"]`)
+        ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
+  };
 
   // 从资源管理器拖入 .md/.markdown → 新建便签(标题=文件名,正文=Markdown 文本);
   // 落在便签区空白处 = 不指定分组(后端落默认分组);落在某分组上由 NotesTree 处理(stopPropagation 截断,不冒泡到此)。
@@ -245,6 +266,14 @@ export default function NotesView() {
           <div className="flex h-9 shrink-0 items-center justify-between pr-2 pl-3">
             <span className="text-xs font-semibold text-sidebar-strong">{t("S.X.Notes")}</span>
             <div className="flex items-center gap-0.5">
+              <button
+                title={t("S.X.NoteLocate")}
+                disabled={!selected}
+                onClick={() => void locateCurrent()}
+                className="flex h-6 w-6 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong disabled:opacity-40 disabled:hover:bg-transparent"
+              >
+                <LocateFixed size={14} />
+              </button>
               <button
                 title={t("S.X.NewNote")}
                 onClick={() => void addNote()}
