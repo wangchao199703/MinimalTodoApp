@@ -351,6 +351,27 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
   );
 }
 
+/** 回收站行:置于分组列表底部,作为一个分组式入口(替代原工具栏按钮),点击进入回收站视图 */
+function TrashRow() {
+  const notesTrashOpen = useAppStore((s) => s.notesTrashOpen);
+  const setNotesTrashOpen = useAppStore((s) => s.setNotesTrashOpen);
+  return (
+    <div className="mt-0.5 border-t border-sidebar-border pt-1">
+      <div
+        onClick={() => void setNotesTrashOpen(!notesTrashOpen)}
+        className={`nav-lift flex w-full min-w-0 cursor-default items-center gap-2 rounded-md px-2 py-1.5 text-sm ${
+          notesTrashOpen
+            ? "bg-sidebar-selected text-sidebar-selected-fg"
+            : "text-sidebar-fg hover:bg-sidebar-hover hover:text-sidebar-strong"
+        }`}
+      >
+        <Trash2 size={14} className="shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{t("S.X.NoteTrash")}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function NotesTree() {
   const notes = useAppStore((s) => s.notes);
   const noteGroups = useAppStore((s) => s.noteGroups);
@@ -411,6 +432,8 @@ export default function NotesTree() {
       {noteGroups.map((g) => (
         <GroupSection key={g.id} group={g} notes={byGroup.get(g.id) ?? []} />
       ))}
+      {/* 回收站:分组式入口,固定在分组列表底部 */}
+      <TrashRow />
     </div>
   );
 }

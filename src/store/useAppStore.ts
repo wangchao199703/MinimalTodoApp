@@ -365,7 +365,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     void emit("settings-reset");
   },
 
-  selectNote: (selectedNoteId) => set({ selectedNoteId }),
+  // 选中便签即退出回收站视图(回收站现为侧栏分组项,点便签应回到编辑区)
+  selectNote: (selectedNoteId) => set({ selectedNoteId, notesTrashOpen: false }),
 
   addNote: async (groupId) => {
     const note = await ipc.createNote(groupId);

@@ -9,7 +9,6 @@ import {
   PanelLeftOpen,
   Regex,
   Search,
-  Trash2,
   X,
 } from "lucide-react";
 import { useAppStore } from "../../store/useAppStore";
@@ -352,15 +351,6 @@ export default function NotesView() {
                 className="flex h-6 w-6 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
               >
                 <FolderPlus size={14} />
-              </button>
-              <button
-                title={t("S.X.NoteTrash")}
-                onClick={() => void setNotesTrashOpen(!notesTrashOpen)}
-                className={`flex h-6 w-6 items-center justify-center rounded hover:bg-sidebar-hover hover:text-sidebar-strong ${
-                  notesTrashOpen ? "text-accent" : "text-sidebar-muted"
-                }`}
-              >
-                <Trash2 size={14} />
               </button>
             </div>
           </div>
