@@ -118,6 +118,8 @@ export default function NoteEditor({
   onChangeRef.current = onChange;
   const onStatsRef = useRef(onStats);
   onStatsRef.current = onStats;
+  // 源码态标记(供 onUpdate 闭包判断):源码态下编辑器是隐藏的「旧副本」,其变更不应保存,以 textarea 为准
+  const sourceModeRef = useRef(false);
   // 斜杠命令「图片」项调起文件选择:用 ref 桥接到下方 pickImage(扩展在 useEditor 时就需引用)
   const pickImageRef = useRef<() => void>(() => {});
   const addTask = useAppStore((s) => s.addTask);
@@ -138,6 +140,7 @@ export default function NoteEditor({
   // 「显示为源码」:就地把正文区换成可编辑的 Markdown 源码(工具栏不变,非单独页面)
   const [sourceMode, setSourceMode] = useState(false);
   const [sourceText, setSourceText] = useState("");
+  sourceModeRef.current = sourceMode;
 
   const editor = useEditor({
     extensions: [
@@ -217,6 +220,7 @@ export default function NoteEditor({
       },
     },
     onUpdate: ({ editor }) => {
+      if (sourceModeRef.current) return; // 源码态以 textarea 为准,忽略隐藏编辑器的变更
       onChangeRef.current(editor.getMarkdown());
       onStatsRef.current?.(computeStats(editor.getText()));
     },
@@ -344,8 +348,6 @@ export default function NoteEditor({
     <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
       {/* 工具栏(对齐旧版便签工具栏);窄窗口自动换行,避免字色/插图按钮被裁 */}
       <div className="flex shrink-0 flex-wrap items-center gap-0.5 border-b border-divider px-2 py-1">
-        {!sourceMode && (
-          <>
         <Btn
           title={t("S.X.NoteUndo")}
           disabled={!editor.can().undo()}
@@ -563,12 +565,10 @@ export default function NoteEditor({
         >
           <span className="relative inline-flex">
             <ListTree size={13} />
-            <span className="pointer-events-none absolute top-1/2 left-1/2 h-[1.5px] w-[150%] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current" />
+            <span className="pointer-events-none absolute top-1/2 left-1/2 h-[1.5px] w-[75%] -translate-x-1/2 -translate-y-1/2 rotate-45 rounded-full bg-current" />
           </span>
         </Btn>
-          </>
-        )}
-        {/* 显示为源码 / 返回编辑:就地切换正文区,工具栏不变(非单独页面) */}
+        {/* 显示为源码 / 返回编辑:就地切换正文区,工具栏保持与平时一致 */}
         <Btn
           title={sourceMode ? t("S.X.NoteShowWysiwyg") : t("S.X.NoteShowSource")}
           active={sourceMode}
@@ -576,10 +576,28 @@ export default function NoteEditor({
         >
           <FileCode2 size={13} />
         </Btn>
-        {sourceMode && <span className="ml-1.5 text-xs text-muted">Markdown</span>}
       </div>
-      {sourceMode ? (
-        // 源码视图:就地把正文区换成可编辑的 Markdown textarea(# 等符号可直接改)
+      {/* 编辑器始终挂载(源码态仅隐藏),保证工具栏按钮操作的编辑器视图有效、不崩 */}
+      <div
+        style={style}
+        className={`note-editor min-h-0 flex-1 overflow-y-auto ${sourceMode ? "hidden" : ""}`}
+        onClick={() => editor.chain().focus().run()}
+        onContextMenu={(e) => {
+          // 取当前选区纯文本;有选中才接管右键(加入待办),否则放行浏览器默认菜单
+          const { from, to } = editor.state.selection;
+          if (from === to) return;
+          const text = editor.state.doc
+            .textBetween(from, to, "\n", (leaf) => (leaf.type.name === "hardBreak" ? "\n" : ""))
+            .trim();
+          if (!text) return;
+          e.preventDefault();
+          setSelMenu({ x: e.clientX, y: e.clientY, text });
+        }}
+      >
+        <EditorContent editor={editor} />
+      </div>
+      {/* 源码视图:就地可编辑 Markdown(# 等符号可直接改),覆盖在编辑器位置 */}
+      {sourceMode && (
         <textarea
           value={sourceText}
           spellCheck={false}
@@ -589,25 +607,6 @@ export default function NoteEditor({
           }}
           className="min-h-0 flex-1 resize-none bg-card p-4 font-mono text-sm leading-relaxed text-text-1 outline-none"
         />
-      ) : (
-        <div
-          style={style}
-          className="note-editor min-h-0 flex-1 overflow-y-auto"
-          onClick={() => editor.chain().focus().run()}
-          onContextMenu={(e) => {
-            // 取当前选区纯文本;有选中才接管右键(加入待办),否则放行浏览器默认菜单
-            const { from, to } = editor.state.selection;
-            if (from === to) return;
-            const text = editor.state.doc
-              .textBetween(from, to, "\n", (leaf) => (leaf.type.name === "hardBreak" ? "\n" : ""))
-              .trim();
-            if (!text) return;
-            e.preventDefault();
-            setSelMenu({ x: e.clientX, y: e.clientY, text });
-          }}
-        >
-          <EditorContent editor={editor} />
-        </div>
       )}
       {selMenu && (
         <Popover at={selMenu} anchor={null} onClose={() => setSelMenu(null)} zIndex={200}>
