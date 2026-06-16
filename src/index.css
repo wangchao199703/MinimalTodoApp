@@ -856,7 +856,7 @@ body {
     background-color 0.15s ease, color 0.15s ease;
 }
 .nav-lift:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   box-shadow: var(--hover-shadow);
   position: relative;
   z-index: 1;
