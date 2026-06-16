@@ -477,3 +477,12 @@
   - (先前用纯文本长度估算偏移会因缺少 `#`/`*`/`>` 等符号而漂移到行首,改为标记法取精确偏移。)
   - **光标行垂直居中**:进源码态后按 `\n` 计行 × 行高估算光标纵坐标,设 `scrollTop` 使该行落在 textarea 视口中部(不再贴顶)。
 - **源码态保留大纲**:大纲浮层去掉 `!sourceMode` 守卫(`tocOpen && headings.length>0` 即显示),源码编辑时右上角大纲仍在。
+
+### 27) 弹窗文案全部改自动换行,不用省略号(版本仍 2.0.1)
+排查所有弹窗类 UI,把动态内容的 `truncate`(省略号)改成换行完整展示:
+- `ConfirmDialog`:消息加 `break-words whitespace-pre-wrap`,长文/含换行完整显示。
+- `UpdateDialog`:下载失败原因从「省略号标签 + tooltip」改为独立一行 `break-words whitespace-pre-wrap` 完整展示真实错误。
+- `QuickAdd` 三处弹层(分组选择、父任务选择、新建后快捷设置标题):`truncate`→`break-words`。
+- `ClipboardView` 标签选择弹层(无标签 / 各标签名):`truncate`→`break-words`。
+- `SlashCommand` 斜杠菜单项标题:`truncate`→`break-words`。
+- (Toast 早前已改 `break-words`。)持久面板/侧栏/日历/象限/版式卡片等非弹窗的 `truncate` 为布局需要,保留不动。

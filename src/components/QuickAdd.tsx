@@ -248,7 +248,7 @@ export default function QuickAdd() {
                 }`}
               >
                 <TagIcon icon={g.icon} iconImage={g.icon_image} color={g.color} size={13} />
-                <span className="min-w-0 flex-1 truncate">{g.name}</span>
+                <span className="min-w-0 flex-1 break-words">{g.name}</span>
               </button>
             ))}
             {groups.length === 0 && (
@@ -276,7 +276,7 @@ export default function QuickAdd() {
                 }`}
               >
                 <ListTree size={12} className="shrink-0 text-muted" />
-                <span className="min-w-0 flex-1 truncate">
+                <span className="min-w-0 flex-1 break-words">
                   {tk.title || t("S.X.UntitledNote")}
                 </span>
               </button>
@@ -290,7 +290,7 @@ export default function QuickAdd() {
         <Popover anchor={rowRef.current} onClose={closePostAdd}>
           <div className="w-60 p-2">
             <div className="mb-2 flex items-center gap-1.5 px-0.5">
-              <span className="min-w-0 flex-1 truncate text-xs font-medium text-text-1">
+              <span className="min-w-0 flex-1 break-words text-xs font-medium text-text-1">
                 {postTask.title || t("S.X.UntitledNote")}
               </span>
               <span className="shrink-0 text-[11px] text-muted">{t("S.X.QuickSetTitle")}</span>

@@ -286,7 +286,7 @@ function ClipMenu({
             }}
           >
             <span className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider" />
-            <span className="min-w-0 flex-1 truncate opacity-70">{t("S.X.ClipNoTag")}</span>
+            <span className="min-w-0 flex-1 break-words opacity-70">{t("S.X.ClipNoTag")}</span>
             {clip.tag_ids.length === 0 && <CheckSquare size={12} className="text-accent" />}
           </MenuItem>
           <div className="my-1 h-px bg-divider" />
@@ -304,7 +304,7 @@ function ClipMenu({
                   className="h-3 w-3 shrink-0 rounded-full ring-1 ring-divider"
                   style={{ background: tg.color || "transparent" }}
                 />
-                <span className="min-w-0 flex-1 truncate">{tg.name}</span>
+                <span className="min-w-0 flex-1 break-words">{tg.name}</span>
                 {on && <CheckSquare size={12} className="text-accent" />}
               </MenuItem>
             );

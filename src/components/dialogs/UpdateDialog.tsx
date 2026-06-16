@@ -60,13 +60,15 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
           </div>
         </div>
       ) : (
-        <div className="mt-3 flex items-center justify-end gap-2">
+        <>
+          {/* 失败原因:完整换行展示(设置窗无 Toast 宿主),不再省略号 + tooltip */}
           {failMsg && (
-            <span className="mr-auto max-w-56 truncate text-xs text-red-500" title={failMsg}>
-              {t("S.Update.DownloadFailed")}
-            </span>
+            <p className="mt-3 rounded-md bg-input p-2 text-xs break-words whitespace-pre-wrap text-red-500">
+              {t("S.Update.DownloadFailed")}:{failMsg}
+            </p>
           )}
-          {/* 重装当前版本时无「跳过此版本」语义,只保留取消 + 立即重装 */}
+          <div className="mt-3 flex items-center justify-end gap-2">
+            {/* 重装当前版本时无「跳过此版本」语义,只保留取消 + 立即重装 */}
           {!reinstall && (
             <button
               onClick={() => {
@@ -92,7 +94,8 @@ export default function UpdateDialog(props: { info: UpdateInfo; onClose: () => v
           >
             {reinstall ? t("S.Settings.ReinstallBtn") : t("S.Update.Now")}
           </button>
-        </div>
+          </div>
+        </>
       )}
     </Modal>
   );

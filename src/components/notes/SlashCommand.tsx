@@ -76,7 +76,7 @@ function SlashMenu({
           }`}
         >
           <span className="text-muted">{it.icon}</span>
-          <span className="min-w-0 flex-1 truncate">{it.title}</span>
+          <span className="min-w-0 flex-1 break-words">{it.title}</span>
         </button>
       ))}
     </div>
