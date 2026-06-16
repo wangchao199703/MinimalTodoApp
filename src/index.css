@@ -841,11 +841,13 @@ body {
 .glassy {
   --hover-shadow: 0 7px 20px -7px rgb(0 0 0 / 0.5);
 }
-.task-item {
+.task-item,
+.clip-lift {
   transition: transform 0.14s ease, box-shadow 0.14s ease,
     background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.task-item:hover {
+.task-item:hover,
+.clip-lift:hover {
   transform: translateY(-2px);
   box-shadow: var(--hover-shadow);
   z-index: 1;

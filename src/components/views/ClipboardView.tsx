@@ -458,7 +458,7 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
       }}
-      className={`group relative flex items-center gap-2.5 rounded-lg border px-2.5 text-text-1 transition-colors ${sz.row} ${sz.text} ${
+      className={`clip-lift group relative flex items-center gap-2.5 rounded-lg border px-2.5 text-text-1 ${sz.row} ${sz.text} ${
         clip.pinned
           ? "border-accent/30 bg-accent/5"
           : "border-transparent hover:border-divider hover:bg-card-hover"
