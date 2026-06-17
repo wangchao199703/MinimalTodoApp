@@ -330,6 +330,12 @@ export default function SettingsPanel() {
         {section === "todo" && (
           <>
             <Toggle
+              label={t("S.Settings.CompleteUndo")}
+              desc={t("S.Settings.CompleteUndoDesc")}
+              checked={flag("complete_undo_enabled", true)}
+              onChange={setFlag("complete_undo_enabled")}
+            />
+            <Toggle
               label={t("S.Settings.Effects")}
               desc={t("S.Settings.EffectsDesc")}
               checked={flag("effects_enabled", true)}

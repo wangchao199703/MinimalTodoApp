@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   Calendar,
@@ -57,6 +57,9 @@ const DUE_CLASS: Record<string, string> = {
   normal: "text-text-2",
 };
 
+/** 完成「撤销窗口」时长:点勾后划线变灰、原地停留这么久,期间再点即撤销(Apple/Things 风) */
+const UNDO_DELAY_MS = 3000;
+
 export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const tasks = useAppStore((s) => s.tasks);
   const groups = useAppStore((s) => s.groups);
@@ -80,11 +83,43 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const [dueAnchor, setDueAnchor] = useState<HTMLElement | null>(null);
   const [completing, setCompleting] = useState(false);
   const [editDialog, setEditDialog] = useState(false);
+  // 「待落定完成」:点勾后划线变灰、原地停留 UNDO_DELAY_MS,期间再点即撤销(库里仍未完成)
+  const [pendingDone, setPendingDone] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const pendingRef = useRef(false);
+  pendingRef.current = pendingDone;
+
+  // 卸载(如切换视图)时若仍在撤销窗口内 → 立即落定完成(不播动画,避免对已卸载组件 setState)
+  useEffect(
+    () => () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      if (pendingRef.current) void toggleComplete(task);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // 3 秒后真正落定:滑出动画 → 写库完成
+  const commitComplete = () => {
+    setCompleting(true);
+    timerRef.current = window.setTimeout(() => {
+      setCompleting(false);
+      setPendingDone(false);
+      void toggleComplete(task);
+    }, 380);
+  };
 
   // 完成:烟花 + 音效(按设置)。活子待办(父未完成、非全部子完成)只打钩留原位、不播滑出动画(对齐旧版)
   const completeWithEffects = (e: React.MouseEvent) => {
     if (task.is_completed) {
       void toggleComplete(task);
+      return;
+    }
+    // 撤销窗口内再点勾选框 → 取消完成(恢复原状,不动库、不重复播特效)
+    if (pendingDone) {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      timerRef.current = null;
+      setPendingDone(false);
       return;
     }
     const s = useAppStore.getState().settings;
@@ -98,11 +133,19 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       void toggleComplete(task);
       return;
     }
-    setCompleting(true);
-    setTimeout(() => {
-      setCompleting(false);
-      void toggleComplete(task);
-    }, 380);
+    const undoEnabled = (s["complete_undo_enabled"] ?? "1") !== "0";
+    if (!undoEnabled) {
+      // 关掉撤销窗口:旧行为,立即滑出并完成
+      setCompleting(true);
+      timerRef.current = window.setTimeout(() => {
+        setCompleting(false);
+        void toggleComplete(task);
+      }, 380);
+      return;
+    }
+    // 留撤销窗口:立即划线变灰、原地停留,UNDO_DELAY_MS 后才落定
+    setPendingDone(true);
+    timerRef.current = window.setTimeout(commitComplete, UNDO_DELAY_MS);
   };
 
   const [doneChildren, totalChildren] = childStats(tasks, task.id);
@@ -113,6 +156,8 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
   const indeterminate =
     !task.is_completed && totalChildren > 0 && doneChildren > 0 && doneChildren < totalChildren;
   const progress = totalChildren > 0 ? Math.round((doneChildren / totalChildren) * 100) : 0;
+  // 展示态完成 = 真完成 或 处于撤销窗口(后者库里仍未完成,只是视觉先划线变灰)
+  const showDone = task.is_completed || pendingDone;
 
   const commit = () => {
     setEditing(false);
@@ -149,7 +194,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       }
       className={`task-item group relative flex items-center gap-2 rounded-lg border border-divider bg-card py-2 pr-3 pl-1.5 transition-colors hover:bg-card-hover ${
         isDragging ? "dragging" : ""
-      } ${completing ? "completing" : ""}`}
+      } ${completing ? "completing" : ""} ${pendingDone ? "opacity-70" : ""}`}
     >
       {closestEdge && (
         <div
@@ -160,28 +205,28 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
       )}
 
       {/* 优先级信号图标:仅「信号强度」优先级展示显示(CSS 控制),按 --pri 着色 */}
-      {!task.is_completed && (
+      {!showDone && (
         <span className="task-pri-icon shrink-0" style={{ color: "var(--pri)" }}>
           <PriIcon size={14} />
         </span>
       )}
 
       <button
-        title={task.is_completed ? t("S.X.Uncomplete") : t("S.X.Complete")}
+        title={showDone ? t("S.X.Uncomplete") : t("S.X.Complete")}
         onClick={completeWithEffects}
         className={`task-check flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
-          task.is_completed ? "is-done" : ""
+          showDone ? "is-done" : ""
         } ${indeterminate ? "is-indeterminate" : ""} ${
-          totalChildren > 0 && !task.is_completed ? "is-parent" : ""
+          totalChildren > 0 && !showDone ? "is-parent" : ""
         }`}
       >
-        {task.is_completed ? (
+        {showDone ? (
           <Check size={10} strokeWidth={3} />
         ) : (
           indeterminate && <Minus className="task-half" size={11} strokeWidth={3} />
         )}
         {/* 进度环(仅「勾选框」进度模式显示,CSS 控制):按勾选框形状渲染 圆 / 圆角方 */}
-        {totalChildren > 0 && !task.is_completed && (
+        {totalChildren > 0 && !showDone && (
           <svg className="task-ring" viewBox="0 0 36 36" aria-hidden="true">
             {isRoundCheckbox(design, customDesigns) ? (
               <>
@@ -234,7 +279,7 @@ export default function TaskItem({ task, now }: { task: Task; now: Date }) {
                 setEditing(true);
               }}
               className={`task-title min-w-0 break-words text-sm ${
-                task.is_completed ? "text-muted line-through" : "text-text-1"
+                showDone ? "text-muted line-through" : "text-text-1"
               }`}
             >
               {task.title}

@@ -510,6 +510,13 @@
 - 之前 release body 只写了四象限输入、漏了图片预览修复。补正:`release-notes.md` 的 v2.0.3 段补「剪贴板图片预览修复」一条;强移 v2.0.3 tag 到补正提交;**PATCH GitHub v2.0.3 release body** 用新说明。
 - 资产无需重传:现网 v2.0.3 资产已是含修复的构建(SHA256 `D1DC5475…`,FileVersion 2.0.3),与本次代码一致。
 
+### v2.0.3 新增:待办完成「延迟 3 秒 + 可撤销」(Apple/Things 风)(版本仍 2.0.3,未发版)
+- 点勾完成顶层/整族待办:立即划线变灰、原地停留 3 秒(撤销窗口),期间再点勾选框即撤销恢复;3 秒无操作才滑出折叠、真正写库完成进「已完成」。切视图(卸载)即立刻落定完成。
+- 实现(纯前端,无库/store 改):`TaskItem.tsx` 加本地态 `pendingDone` + `timerRef`,派生 `showDone = is_completed || pendingDone` 驱动勾选框/标题/优先级图标/进度环的完成态外观;延迟期**不写库**(`is_completed` 仍 false)故任务自然留原位、无脏数据;卸载 cleanup 用 `pendingRef` 落定,避免对已卸载组件 setState。活子待办、已完成反勾、开关关 均维持原即时行为。
+- 特效:烟花/音效**点击当下立即播**(用户选定)。
+- 开关:设置→通用新增「完成前留撤销窗口」(`complete_undo_enabled`,**默认开**);关掉回到点勾立即消失的旧行为。i18n 双语补 `S.Settings.CompleteUndo`/`Desc`。
+- tsc 通过。
+
 ### 27) 弹窗文案全部改自动换行,不用省略号(版本仍 2.0.1)
 排查所有弹窗类 UI,把动态内容的 `truncate`(省略号)改成换行完整展示:
 - `ConfirmDialog`:消息加 `break-words whitespace-pre-wrap`,长文/含换行完整显示。
