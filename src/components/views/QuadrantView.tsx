@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import {
   dropTargetForElements,
@@ -29,6 +29,15 @@ function Cell({ q, tasks, now }: { q: Quadrant; tasks: Task[]; now: Date }) {
   const Icon = QUADRANT_ICONS[q];
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const [listRef] = useAutoAnimate<HTMLDivElement>({ duration: 150 });
+  // 象限内「+ 添加」:回车以本象限建一条待办(对齐标签看板每列底部输入)
+  const addTaskToQuadrant = useAppStore((s) => s.addTaskToQuadrant);
+  const [newText, setNewText] = useState("");
+  const submitNew = () => {
+    const title = newText.trim();
+    if (!title) return;
+    void addTaskToQuadrant(title, q);
+    setNewText("");
+  };
 
   // 单元格空白区也可作为释放目标(拖到空象限)
   useEffect(() => {
@@ -71,6 +80,16 @@ function Cell({ q, tasks, now }: { q: Quadrant; tasks: Task[]; now: Date }) {
           <TaskItem key={t.id} task={t} now={now} />
         ))}
       </div>
+      {/* 象限内底部「+ 添加」输入(对齐标签看板每列底部);回车以本象限建待办 */}
+      <input
+        value={newText}
+        onChange={(e) => setNewText(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submitNew();
+        }}
+        placeholder={t("S.Tag.AddPlaceholder")}
+        className="mt-2 w-full shrink-0 rounded-md border border-divider bg-input px-2 py-1 text-[13px] text-text-1 outline-none placeholder:text-muted focus:border-accent"
+      />
     </div>
   );
 }

@@ -491,6 +491,14 @@
   - `useAppStore.ts`:`selectNote` 选中便签时一并 `notesTrashOpen:false`——点任意便签即退出回收站回到编辑区。
 - tsc 通过、构建成功。版本号不变(仍 2.0.2),按用户要求重发 v2.0.2。
 
+## v2.0.3 — 四象限支持输入待办(对齐标签看板)
+- 三处版本号 2.0.2 → 2.0.3(tauri.conf.json / Cargo.toml / package.json);release-notes.md 顶部加 v2.0.3 段。
+- 需求:四象限每个象限都支持直接输入新建待办,参考标签看板「每列底部输入框」的设计。
+- 改动:
+  - `useAppStore.ts`:新增 `addTaskToQuadrant(title, quadrant)`——`createTask` 无 quadrant 字段,故先建顶层待办,乐观插入时即带 `quadrant_override`(直接落目标象限、不闪 Q4),再异步 `updateTask` 持久化覆盖。
+  - `QuadrantView.tsx`:每个 `Cell` 底部加「+ 添加」输入(`mt-2`,与标签看板同款样式),回车调 `addTaskToQuadrant(title, q)` 后清空;占位复用 `S.Tag.AddPlaceholder`。
+- tsc 通过、构建成功。发布:新建 v2.0.3 release(说明 + 资产),按惯例只发当前版本。
+
 ### 27) 弹窗文案全部改自动换行,不用省略号(版本仍 2.0.1)
 排查所有弹窗类 UI,把动态内容的 `truncate`(省略号)改成换行完整展示:
 - `ConfirmDialog`:消息加 `break-words whitespace-pre-wrap`,长文/含换行完整显示。

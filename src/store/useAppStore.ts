@@ -136,6 +136,8 @@ interface AppState {
       parent_id?: string;
     },
   ) => Promise<Task | undefined>;
+  /** 四象限内新建待办:建顶层待办并钉到指定象限(1~4),乐观直接落该象限不闪 Q4 */
+  addTaskToQuadrant: (title: string, quadrant: number) => Promise<void>;
   patchTask: (req: UpdateTaskRequest) => Promise<void>;
   toggleComplete: (task: Task) => Promise<void>;
   renameTask: (id: string, title: string) => Promise<void>;
@@ -628,6 +630,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     // 新任务排在最前(order_index 为全局最小);子待办由 sortTree 按 parent_id 归位到父下
     set((s) => ({ tasks: [task, ...s.tasks] }));
     return task;
+  },
+
+  addTaskToQuadrant: async (title, quadrant) => {
+    // createTask 无 quadrant 字段:先建顶层待办,乐观插入时即带 quadrant_override(直接落目标象限,不闪 Q4),再异步持久化覆盖
+    const task = await ipc.createTask({ title });
+    set((s) => ({ tasks: [{ ...task, quadrant_override: quadrant }, ...s.tasks] }));
+    void ipc.updateTask({ id: task.id, quadrant_override: quadrant });
   },
 
   patchTask: async (req) => {

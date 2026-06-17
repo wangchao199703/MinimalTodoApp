@@ -1,7 +1,7 @@
 {
   "name": "minimal-todo",
   "private": true,
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "极简 Windows 本地待办 —— Tauri v2 + Rust/SQLite + React 19",
   "type": "module",
   "scripts": {
