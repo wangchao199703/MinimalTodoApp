@@ -252,6 +252,8 @@ function ClipMenu({
   onPreview: () => void;
 }) {
   const removeClip = useAppStore((s) => s.removeClip);
+  const restoreClip = useAppStore((s) => s.restoreClip);
+  const showUndoToast = useAppStore((s) => s.showUndoToast);
   const setClipItemTag = useAppStore((s) => s.setClipItemTag);
   const copyClip = useAppStore((s) => s.copyClip);
   const clipToTask = useAppStore((s) => s.clipToTask);
@@ -406,6 +408,7 @@ function ClipMenu({
           onClick={() => {
             onClose();
             void removeClip(clip.id);
+            showUndoToast(t("S.X.UndoToast.ClipDeleted"), () => void restoreClip(clip.id));
           }}
         >
           <Trash2 size={13} />
@@ -419,6 +422,8 @@ function ClipMenu({
 /** 单行剪贴项:文本/图片缩略图 + 标签点 + 置顶/删除按钮 + 右键菜单 + 可拖到标签打标签 */
 function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: ClipSize }) {
   const removeClip = useAppStore((s) => s.removeClip);
+  const restoreClip = useAppStore((s) => s.restoreClip);
+  const showUndoToast = useAppStore((s) => s.showUndoToast);
   const toggleClipPin = useAppStore((s) => s.toggleClipPin);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [preview, setPreview] = useState(false);
@@ -522,7 +527,10 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
       <button
         type="button"
         title={t("S.X.Delete")}
-        onClick={() => void removeClip(clip.id)}
+        onClick={() => {
+          void removeClip(clip.id);
+          showUndoToast(t("S.X.UndoToast.ClipDeleted"), () => void restoreClip(clip.id));
+        }}
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-muted opacity-0 transition-colors hover:bg-card-hover hover:text-overdue group-hover:opacity-100"
       >
         <X size={14} />

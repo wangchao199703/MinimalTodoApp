@@ -634,6 +634,15 @@ body {
     toast-slide 0.28s cubic-bezier(0.18, 0.89, 0.32, 1.1) both;
 }
 
+/* 撤回 Toast 底部 5 秒倒计时进度条:宽度从满到空(随 toast id 重挂重置) */
+@keyframes undo-countdown {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+.undo-bar {
+  animation: undo-countdown 5s linear forwards;
+}
+
 /* 便签 Markdown 预览样式 */
 .md-body .md-h1 { font-size: 1.4em; font-weight: 700; margin: 0.4em 0; }
 .md-body .md-h2 { font-size: 1.25em; font-weight: 700; margin: 0.4em 0; }

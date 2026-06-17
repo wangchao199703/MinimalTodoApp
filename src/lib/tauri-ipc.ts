@@ -209,6 +209,8 @@ export const ipc = {
 
   // ---- 剪贴板 ----
   getClips: () => invoke<ClipItem[]>("get_clips"),
+  softDeleteClip: (id: number) => invoke<void>("soft_delete_clip", { id }),
+  restoreClip: (id: number) => invoke<ClipItem | null>("restore_clip", { id }),
   deleteClip: (id: number) => invoke<void>("delete_clip", { id }),
   pinClip: (id: number, pinned: boolean) => invoke<void>("pin_clip", { id, pinned }),
   getClipTags: () => invoke<ClipTag[]>("get_clip_tags"),

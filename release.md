@@ -516,6 +516,18 @@
 - 特效:烟花/音效**点击当下立即播**(用户选定)。
 - 开关:设置→通用新增「完成前留撤销窗口」(`complete_undo_enabled`,**默认开**);关掉回到点勾立即消失的旧行为。i18n 双语补 `S.Settings.CompleteUndo`/`Desc`。
 - tsc 通过。
+- **(已被下条取代)** 此「3 秒原地划线」方案按用户新要求回退,改为下面的全局撤回 Toast。
+
+### v2.0.3 改版:全局「撤回 Toast」——删除/完成立刻消失 + 底部撤回条(版本仍 2.0.3,未发版)
+- 交互:操作立刻生效(乐观 UI),底部居中弹一条带「撤回」按钮 + 5 秒倒计时进度条的 Toast,过时自动消失;连续操作覆盖更新(只留最后一次可撤回)。
+  - 待办完成:点勾立即归档消失 → 弹「待办已完成 [撤回]」,撤回 = 反勾整族。
+  - 便签删除:**去掉二次确认弹窗**,点删立即软删进回收站消失 → 弹「便签已移至回收站 [撤回]」,撤回 = `restoreNote`。
+  - 剪切板删除:点删立即消失 → 弹「剪贴项已删除 [撤回]」,撤回 = 恢复。
+- 后端(剪切板软删除,迁移 v6):`clips` 加 `is_deleted`;`get_clips` 过滤 `is_deleted=0`;新 `soft_delete_clip`/`restore_clip`;启动 `purge_deleted_clips` 落定清理上次会话残留软删项(+ 孤儿图片),实现「秒关软件=删除生效」;去重 `clip_latest_hash`/`clip_dup_info` 也过滤软删行。`delete_clip`(硬删)保留给去重/过期/清空等内部用。
+- 前端:新增全局 `UndoToast.tsx`(Portal 到 body,底部居中,项目 token,`@keyframes undo-countdown` 进度条)+ store 单槽 `undoToast` + `showUndoToast/dismissUndoToast/runUndo`(模块级计时器,覆盖更新);`removeClip` 改软删、新增 `restoreClip`(撤回后重拉 `getClips` 对齐顺序)。
+- 待办:回退上一版 TaskItem 的 3 秒原地延迟逻辑,恢复点勾即完成 + 完成后 `showUndoToast`。
+- 设置:上一版的 `complete_undo_enabled` 改名 `undo_toast_enabled`(设置→通用「操作后显示撤回提示」,默认开),关闭则三处都不弹 Toast、动作即时生效。i18n 双语补 `S.Settings.UndoToast`/`Desc`、`S.X.Undo`、`S.X.UndoToast.*`。
+- 验证:`npm run build`(tsc)+ `cargo check` + `cargo test --lib`(40 passed,迁移断言更新到 v6)全过。
 
 ### 27) 弹窗文案全部改自动换行,不用省略号(版本仍 2.0.1)
 排查所有弹窗类 UI,把动态内容的 `truncate`(省略号)改成换行完整展示:

@@ -47,6 +47,13 @@ export interface Toast {
   message: string;
 }
 
+/** 底部「撤回」Toast(单槽、覆盖更新):删除/完成立刻生效,5 秒内可点撤回 */
+export interface UndoToast {
+  id: number;
+  message: string;
+  onUndo: () => void;
+}
+
 interface AppState {
   loaded: boolean;
   tasks: Task[];
@@ -61,6 +68,7 @@ interface AppState {
   language: Lang;
   sortMode: SortMode;
   toasts: Toast[];
+  undoToast: UndoToast | null;
   notes: Note[];
   noteGroups: NoteGroup[];
   selectedNoteId: string | null;
@@ -122,6 +130,10 @@ interface AppState {
   saveSetting: (key: string, value: string) => void;
   pushToast: (message: string) => void;
   dismissToast: (id: number) => void;
+  /** 底部撤回 Toast:动作已生效后调用,关「撤回提示」开关时不弹;覆盖更新(只留最后一次) */
+  showUndoToast: (message: string, onUndo: () => void) => void;
+  dismissUndoToast: () => void;
+  runUndo: () => void;
 
   addTask: (
     title: string,
@@ -167,6 +179,8 @@ interface AppState {
   // ---- 剪贴板 ----
   setClipFilterTag: (tagId: number | null) => void;
   removeClip: (id: number) => Promise<void>;
+  /** 撤回剪贴项软删除:置回 is_deleted=0 并回填列表 */
+  restoreClip: (id: number) => Promise<void>;
   /** 清空某剪切板标签下的所有剪贴项 */
   clearClipTagItems: (tagId: number) => Promise<void>;
   /** 清空「默认」分组(未归入任何分组)的所有剪贴项 */
@@ -203,6 +217,8 @@ function rootOfTask(byId: Map<string, Task>, t: Task): Task {
 }
 
 let toastSeq = 0;
+// 撤回 Toast 的自动消失计时器(模块级,覆盖更新时先清旧的)
+let undoTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useAppStore = create<AppState>((set, get) => ({
   loaded: false,
@@ -217,6 +233,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   language: "zh-CN",
   sortMode: "custom",
   toasts: [],
+  undoToast: null,
   notes: [],
   noteGroups: [],
   selectedNoteId: null,
@@ -612,6 +629,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
   },
 
+  showUndoToast: (message, onUndo) => {
+    // 开关关闭则不弹(动作已生效:便签进回收站、剪贴项软删、待办已完成)
+    if (get().settings["undo_toast_enabled"] === "0") return;
+    if (undoTimer) clearTimeout(undoTimer);
+    const id = ++toastSeq;
+    set({ undoToast: { id, message, onUndo } });
+    undoTimer = setTimeout(() => get().dismissUndoToast(), 5000);
+  },
+
+  dismissUndoToast: () => {
+    if (undoTimer) clearTimeout(undoTimer);
+    undoTimer = null;
+    set({ undoToast: null });
+  },
+
+  runUndo: () => {
+    const u = get().undoToast;
+    if (!u) return;
+    get().dismissUndoToast();
+    u.onUndo();
+  },
+
   addTask: async (title, extra) => {
     const { view, tasks } = get();
     const { group_id: tagId, parent_id, ...rest } = extra ?? {};
@@ -890,8 +929,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   setClipFilterTag: (clipFilterTagId) => set({ clipFilterTagId }),
 
   removeClip: async (id) => {
-    await ipc.deleteClip(id);
+    // 软删除:标记 is_deleted=1(乐观移出列表),撤回可恢复;启动落定真正清除
+    await ipc.softDeleteClip(id);
     set((s) => ({ clips: s.clips.filter((c) => c.id !== id) }));
+  },
+
+  restoreClip: async (id) => {
+    await ipc.restoreClip(id);
+    // 重拉对齐顺序(置顶在前、按 id 倒序),量小最稳
+    const clips = await ipc.getClips();
+    set({ clips });
   },
 
   clearClipTagItems: async (tagId) => {

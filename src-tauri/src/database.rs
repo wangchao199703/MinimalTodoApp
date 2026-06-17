@@ -117,8 +117,12 @@ pub(crate) fn migrate_for_test(conn: &Connection) -> rusqlite::Result<()> {
 
 /// 最近一条剪贴记录的 hash,用于连续复制去重
 pub fn clip_latest_hash(conn: &Connection) -> Option<String> {
-    conn.query_row("SELECT hash FROM clips ORDER BY id DESC LIMIT 1", [], |r| r.get(0))
-        .ok()
+    conn.query_row(
+        "SELECT hash FROM clips WHERE is_deleted = 0 ORDER BY id DESC LIMIT 1",
+        [],
+        |r| r.get(0),
+    )
+    .ok()
 }
 
 /// 读取一项标量设置(供监听线程读「去重 / 过期」开关,不经命令层)
@@ -139,7 +143,7 @@ pub struct ClipDupInfo {
 }
 
 pub fn clip_dup_info(conn: &Connection, hash: &str) -> rusqlite::Result<ClipDupInfo> {
-    let mut stmt = conn.prepare("SELECT id, pinned FROM clips WHERE hash = ?1")?;
+    let mut stmt = conn.prepare("SELECT id, pinned FROM clips WHERE hash = ?1 AND is_deleted = 0")?;
     let rows: Vec<(i64, i64)> = stmt
         .query_map(rusqlite::params![hash], |r| Ok((r.get(0)?, r.get(1)?)))?
         .collect::<Result<_, _>>()?;
@@ -391,6 +395,42 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
         )?;
     }
 
+    if version < 6 {
+        // 剪贴项软删除:删除先标记 is_deleted=1(从列表隐藏),撤回置回 0;启动时落定清除残留。
+        conn.execute_batch(
+            r#"
+            BEGIN;
+            ALTER TABLE clips ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;
+            PRAGMA user_version = 6;
+            COMMIT;
+            "#,
+        )?;
+    }
+
+    Ok(())
+}
+
+/// 启动落定:删除上次会话里被软删但未撤回的剪贴项(撤回只在同会话 Toast 期内有效),
+/// 并清理由此产生的孤儿图片(无其他行引用的 image_path)。
+pub fn purge_deleted_clips(conn: &Connection) -> rusqlite::Result<()> {
+    let mut stmt = conn.prepare("SELECT id, image_path FROM clips WHERE is_deleted = 1")?;
+    let rows: Vec<(i64, Option<String>)> = stmt
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+        .filter_map(Result::ok)
+        .collect();
+    for (id, _) in &rows {
+        conn.execute("DELETE FROM clips WHERE id = ?1", rusqlite::params![id])?;
+    }
+    // 删除后再判孤儿:image_path 不再被任何行引用 → 删文件
+    for (_, path) in &rows {
+        if let Some(p) = path {
+            let cnt: i64 = conn
+                .query_row("SELECT COUNT(*) FROM clips WHERE image_path = ?1", rusqlite::params![p], |r| r.get(0))?;
+            if cnt == 0 {
+                let _ = std::fs::remove_file(p);
+            }
+        }
+    }
     Ok(())
 }
 
@@ -409,10 +449,10 @@ mod tests {
     #[test]
     fn migrate_is_idempotent() {
         let conn = mem_db();
-        // 再跑一次不应报错(版本已是 4,各分支跳过)
+        // 再跑一次不应报错(版本已是最新,各分支跳过)
         migrate(&conn).unwrap();
         let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 4);
+        assert_eq!(v, 6);
     }
 
     #[test]

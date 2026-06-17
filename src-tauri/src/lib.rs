@@ -35,6 +35,11 @@ pub fn run() {
         eprintln!("便签分组自愈失败:{e}");
     }
 
+    // 落定上次会话里被软删但未撤回的剪贴项(撤回只在同会话 Toast 期内有效)
+    if let Err(e) = database::purge_deleted_clips(&conn) {
+        eprintln!("剪贴项软删落定清理失败:{e}");
+    }
+
     tauri::Builder::default()
         // 单实例必须最先注册:第二个实例启动时唤起已运行的主窗口
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -115,6 +120,8 @@ pub fn run() {
             commands::migrate_data_dir,
             commands::restart_app,
             commands::get_clips,
+            commands::soft_delete_clip,
+            commands::restore_clip,
             commands::delete_clip,
             commands::pin_clip,
             commands::get_clip_tags,

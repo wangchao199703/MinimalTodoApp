@@ -69,13 +69,16 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
   const selectNote = useAppStore((s) => s.selectNote);
   const setView = useAppStore((s) => s.setView);
   const removeNote = useAppStore((s) => s.removeNote);
+  const restoreNote = useAppStore((s) => s.restoreNote);
+  const showUndoToast = useAppStore((s) => s.showUndoToast);
   const pushToast = useAppStore((s) => s.pushToast);
   const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("note", note.id);
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
-  const confirmDelete = async () => {
-    if (await confirm({ title: t("S.Note.Delete"), message: t("S.Note.DeleteConfirm") }))
-      void removeNote(note.id);
+  // 删除立即生效(软删 → 进回收站,瞬间消失),底部弹「撤回」(撤回 = restoreNote)
+  const deleteWithUndo = () => {
+    void removeNote(note.id);
+    showUndoToast(t("S.X.UndoToast.NoteDeleted"), () => void restoreNote(note.id));
   };
   const exportMd = async () => {
     const file = `${displayTitle(note)}.md`;
@@ -128,7 +131,7 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
         title={t("S.X.Delete")}
         onClick={(e) => {
           e.stopPropagation();
-          void confirmDelete();
+          deleteWithUndo();
         }}
         className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-overdue group-hover:flex"
       >
@@ -160,7 +163,7 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
               danger
               onClick={() => {
                 setMenu(null);
-                void confirmDelete();
+                deleteWithUndo();
               }}
             >
               <Trash2 size={13} />

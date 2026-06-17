@@ -880,14 +880,32 @@ pub fn get_clips(db: State<Db>) -> CmdResult<Vec<ClipItem>> {
 }
 
 pub(crate) fn get_clips_impl(conn: &Connection) -> CmdResult<Vec<ClipItem>> {
-    // 置顶在前,其余按时间倒序
+    // 置顶在前,其余按时间倒序;软删除的(is_deleted=1)不出现在列表
     let mut stmt = conn
-        .prepare("SELECT * FROM clips ORDER BY pinned DESC, id DESC LIMIT 500")
+        .prepare("SELECT * FROM clips WHERE is_deleted = 0 ORDER BY pinned DESC, id DESC LIMIT 500")
         .map_err(err)?;
     let rows = stmt.query_map([], row_to_clip).map_err(err)?;
     let mut clips = rows.collect::<Result<Vec<_>, _>>().map_err(err)?;
     attach_clip_tags(conn, &mut clips)?;
     Ok(clips)
+}
+
+/// 软删除剪贴项:标记 is_deleted=1(从列表隐藏,图片留待撤回);撤回置回 0。
+#[tauri::command]
+pub fn soft_delete_clip(db: State<Db>, id: i64) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("UPDATE clips SET is_deleted = 1 WHERE id = ?1", params![id])
+        .map_err(err)?;
+    Ok(())
+}
+
+/// 撤回软删除:置回 is_deleted=0 并返回该剪贴项(含 tag_ids)供前端插回列表。
+#[tauri::command]
+pub fn restore_clip(db: State<Db>, id: i64) -> CmdResult<Option<ClipItem>> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("UPDATE clips SET is_deleted = 0 WHERE id = ?1", params![id])
+        .map_err(err)?;
+    get_clip_impl(&conn, id)
 }
 
 #[tauri::command]
@@ -1188,7 +1206,7 @@ mod tests {
     fn migration_sets_version_4_and_creates_tables() {
         let conn = mem_db();
         let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 4);
+        assert_eq!(v, 6);
         // 既有六表 + 剪贴板三表都在
         for t in [
             "groups", "tasks", "note_groups", "notes", "custom_themes", "settings",

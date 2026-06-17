@@ -19,6 +19,7 @@ import NotesView from "./components/views/NotesView";
 import ClipboardView from "./components/views/ClipboardView";
 import CalendarView from "./components/views/CalendarView";
 import Toasts from "./components/ui/Toasts";
+import UndoToast from "./components/ui/UndoToast";
 import { ConfirmHost } from "./components/ui/ConfirmDialog";
 import UpdateDialog from "./components/dialogs/UpdateDialog";
 import { checkForUpdate, type UpdateInfo } from "./lib/updater";
@@ -377,6 +378,7 @@ export default function App() {
         </div>
       </div>
       <Toasts />
+      <UndoToast />
       <ConfirmHost />
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
       <ResizeBorders />
