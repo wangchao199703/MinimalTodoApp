@@ -32,7 +32,7 @@ import {
 import { useAppStore } from "../../store/useAppStore";
 import { f, t } from "../../lib/i18n";
 import { ipc, type ClipItem, type ClipTag } from "../../lib/tauri-ipc";
-import { Popover, MenuItem } from "../ui/Popover";
+import { Popover, MenuItem, Portal } from "../ui/Popover";
 import { confirm } from "../ui/ConfirmDialog";
 import ColorDialog from "../dialogs/ColorDialog";
 
@@ -80,27 +80,31 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+  // Portal 到 body:避免被祖先(如带 hover transform 的 .clip-lift 行)创建的包含块
+  // 影响 position:fixed 定位,导致灯箱被裁到行内(图片预览「打不开」的根因)。
   return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-8"
-      role="dialog"
-      aria-label={t("S.X.ClipPreviewTitle")}
-    >
-      <img
-        src={src}
-        alt={t("S.X.ClipPreviewTitle")}
-        onClick={(e) => e.stopPropagation()}
-        className="max-h-full max-w-full rounded-md object-contain shadow-2xl ring-1 ring-white/10"
-      />
-      <button
-        title={t("S.Close")}
+    <Portal>
+      <div
         onClick={onClose}
-        className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+        className="fixed inset-0 z-[300] flex items-center justify-center bg-black/70 p-8"
+        role="dialog"
+        aria-label={t("S.X.ClipPreviewTitle")}
       >
-        <X size={18} />
-      </button>
-    </div>
+        <img
+          src={src}
+          alt={t("S.X.ClipPreviewTitle")}
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-full max-w-full rounded-md object-contain shadow-2xl ring-1 ring-white/10"
+        />
+        <button
+          title={t("S.Close")}
+          onClick={onClose}
+          className="absolute top-4 right-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25"
+        >
+          <X size={18} />
+        </button>
+      </div>
+    </Portal>
   );
 }
 

@@ -499,6 +499,12 @@
   - `QuadrantView.tsx`:每个 `Cell` 底部加「+ 添加」输入(`mt-2`,与标签看板同款样式),回车调 `addTaskToQuadrant(title, q)` 后清空;占位复用 `S.Tag.AddPlaceholder`。
 - tsc 通过、构建成功。发布:新建 v2.0.3 release(说明 + 资产),按惯例只发当前版本。
 
+### v2.0.3 修复:剪贴板图片预览打不开(灯箱被 hover transform 裁住)
+- 现象:点剪贴图片缩略图,大图灯箱不显示/被裁;旧版本可以。
+- 根因(非补丁定位):`ImageLightbox` 是 `ClipRow` 的**子元素**(未走 Portal),而 8d12f75 给剪切项加了 `.clip-lift:hover { transform: translateY(-1px) }`。灯箱打开后鼠标停在灯箱上,祖先 `ClipRow` 仍处 `:hover` → `transform` 非 none 使其成为 `position:fixed` 的**包含块**,`fixed inset-0` 不再相对视口,灯箱被定位/裁剪到那一行内 → 看着像「预览打不开」。该回归出现在 8d12f75(hover 动画)之后、032b488(单击预览)之前能用,正好对上「之前版本可以」。
+- 修复(对齐项目「弹层一律 Portal 到 body」约定):`ImageLightbox` 返回值用 `Portal` 包裹,挂到 body,不再受任何祖先 transform 影响。列表与浏览模式两处灯箱同时修复。
+- tsc 通过。版本不变(2.0.3),仅修复未发版。
+
 ### 27) 弹窗文案全部改自动换行,不用省略号(版本仍 2.0.1)
 排查所有弹窗类 UI,把动态内容的 `truncate`(省略号)改成换行完整展示:
 - `ConfirmDialog`:消息加 `break-words whitespace-pre-wrap`,长文/含换行完整显示。
