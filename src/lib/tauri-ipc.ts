@@ -190,6 +190,8 @@ export const ipc = {
   getAutostart: () => invoke<boolean>("get_autostart"),
   /** 切语言后即时重建托盘菜单 */
   rebuildTray: (en: boolean) => invoke<void>("rebuild_tray", { en }),
+  /** 有弹层打开时置位:贴边窗口编辑期间不自动收起 */
+  setDockHold: (hold: boolean) => invoke<void>("set_dock_hold", { hold }),
   /** 改了快捷键设置后,按最新设置重新注册全局快捷键 */
   updateHotkeys: () => invoke<void>("update_hotkeys"),
   /** 录制快捷键期间暂停全局热键(否则会被系统吞掉,录不到) */
@@ -231,6 +233,9 @@ export const ipc = {
     invoke<void>("update_clip_text", { clip_id: clipId, text }),
   /** 把剪贴项内容写回系统剪贴板(右键复制) */
   copyClip: (clipId: number) => invoke<void>("copy_clip", { clip_id: clipId }),
+  /** 双击剪贴项:写剪贴板 + 还原上一个外部窗口焦点 + 模拟 Ctrl+V 粘贴 */
+  pasteClipToPrevious: (clipId: number) =>
+    invoke<void>("paste_clip_to_previous", { clip_id: clipId }),
 
   // ---- 剪贴项编辑窗口 ----
   /** 打开/聚焦独立的剪贴项编辑窗口,编辑指定剪贴项 */

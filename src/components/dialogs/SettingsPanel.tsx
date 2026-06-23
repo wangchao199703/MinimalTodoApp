@@ -822,6 +822,28 @@ export default function SettingsPanel() {
               checked={flag("clip_dedup", true)}
               onChange={setFlag("clip_dedup")}
             />
+            <Toggle
+              label={t("S.Settings.ClipPasteDblClick")}
+              desc={t("S.Settings.ClipPasteDblClickDesc")}
+              checked={flag("clip_paste_double_click", true)}
+              onChange={setFlag("clip_paste_double_click")}
+            />
+            <label className="flex items-start justify-between gap-3 py-2">
+              <span className="min-w-0">
+                <span className="block text-sm text-text-1">{t("S.Settings.ClipPasteKeys")}</span>
+                <span className="mt-0.5 block text-xs text-muted">
+                  {t("S.Settings.ClipPasteKeysDesc")}
+                </span>
+              </span>
+              <select
+                value={settings["clip_paste_keys"] || "ctrl_v"}
+                onChange={(e) => saveSetting("clip_paste_keys", e.target.value)}
+                className="mt-0.5 shrink-0 rounded-md border border-divider bg-input px-2 py-1 text-xs text-text-1 outline-none focus:border-accent"
+              >
+                <option value="ctrl_v">Ctrl+V</option>
+                <option value="shift_insert">Shift+Insert</option>
+              </select>
+            </label>
           </>
         )}
 

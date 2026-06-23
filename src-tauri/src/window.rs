@@ -212,6 +212,14 @@ pub fn rebuild_tray(app: AppHandle, en: bool) -> Result<(), String> {
     Ok(())
 }
 
+/// 前端弹层开/关时调用:开时置位 hold,贴边窗口在编辑期间不自动收起;全关后解除。
+#[tauri::command]
+pub fn set_dock_hold(app: AppHandle, hold: bool) {
+    if let Some(state) = app.try_state::<Arc<DockState>>() {
+        state.hold.store(hold, Ordering::SeqCst);
+    }
+}
+
 pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     // 托盘菜单按启动时语言构建,切语言时经 rebuild_tray 即时重建
     let en = read_setting(app, "language").as_deref() == Some("en");
@@ -233,8 +241,10 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
+            // 左键单击 = 召唤(隐藏则取消隐藏、浮到最上层,**不居中、不改位置大小**);
+            // 「显示并居中」仅走右键菜单的 show_main,二者刻意区分。
             if let TrayIconEvent::Click { button: MouseButton::Left, .. } = event {
-                show_main(tray.app_handle());
+                summon_main(tray.app_handle());
             }
         })
         .build(app)?;
@@ -384,6 +394,9 @@ struct DockState {
     mon_h: AtomicI32,
     /// 快捷键召唤后,这么多拍内不自动收起(给鼠标移过去的时间)。>0 时轮询不累计「鼠标在外」。
     summon_grace: AtomicI32,
+    /// 有弹层(截止/提醒等上拉框)打开时置位:编辑期间不自动收起,避免点原生下拉/日历
+    /// (OS 级弹出层在窗口矩形外)被误判「鼠标在外」而中途收起。全关后由鼠标移开正常收起。
+    hold: AtomicBool,
 }
 
 /// 旧版 CubicEase EaseInOut(收起用)
@@ -446,6 +459,7 @@ pub fn setup_dock(app: &AppHandle) {
         mon_w: AtomicI32::new(0),
         mon_h: AtomicI32::new(0),
         summon_grace: AtomicI32::new(0),
+        hold: AtomicBool::new(false),
     });
     // 注册为 Tauri 托管状态,供 show_main(托盘「显示并居中」)复用同一忽略标志居中
     app.manage(state.clone());
@@ -609,7 +623,8 @@ pub fn setup_dock(app: &AppHandle) {
                         && cx <= pos.x + w + HIDE_BUFFER_PX
                         && cy >= pos.y - HIDE_BUFFER_PX
                         && cy <= pos.y + h + HIDE_BUFFER_PX;
-                    if over || lbutton_down() || grace > 0 {
+                    // hold:有弹层打开,编辑中不收起(点原生下拉/日历鼠标会移出窗口矩形)
+                    if over || lbutton_down() || grace > 0 || state.hold.load(Ordering::SeqCst) {
                         outside_ticks = 0;
                     } else {
                         outside_ticks += 1;

@@ -3,6 +3,7 @@ mod commands;
 mod database;
 mod import;
 mod models;
+mod paste;
 mod storage;
 mod updater;
 mod window;
@@ -68,7 +69,23 @@ pub fn run() {
         .manage(window::ClipEditorTarget(std::sync::Mutex::new(None)))
         // 已注册的全局快捷键 → 目标视图 映射(触发时查表)
         .manage(window::HotkeyMap(std::sync::Mutex::new(Vec::new())))
+        // 「上一个外部前台窗口」追踪:供双击剪贴项自动粘贴还原焦点
+        .manage(std::sync::Arc::new(paste::ForegroundTracker::new()))
         .setup(|app| {
+            use tauri::Manager;
+            // 把「实际」数据目录下的图片目录动态加入 asset 协议白名单:数据目录可迁移、
+            // 企业环境 APPDATA 可能被重定向,tauri.conf.json 写死的默认 scope 覆盖不到时,
+            // convertFileSrc(image_path) 的大图预览会被拒载(列表缩略图走 base64 仍正常),
+            // 表现为「部分机器预览不了」。按运行时解析到的真实路径放行,根治此问题。
+            {
+                let scope = app.asset_protocol_scope();
+                let data = database::data_dir();
+                for sub in ["clipboard-images", "note-images", "group-icons"] {
+                    if let Err(e) = scope.allow_directory(data.join(sub), true) {
+                        eprintln!("asset scope 放行 {sub} 失败:{e}");
+                    }
+                }
+            }
             window::setup_tray(app.handle())?;
             window::setup_dock(app.handle());
             // 按设置注册全局快捷键(默认 Alt+1..5)
@@ -77,6 +94,10 @@ pub fn run() {
             clipboard::purge_expired_on_startup(app.handle());
             // 后台剪贴板监听(默认开启):独立线程跑阻塞式 watcher,变化即入库 + emit
             clipboard::start_watching(app.handle().clone());
+            // 后台追踪外部前台窗口(供双击剪贴项自动粘贴还原焦点)
+            if let Some(tracker) = app.try_state::<std::sync::Arc<paste::ForegroundTracker>>() {
+                paste::start_tracking(tracker.inner().clone());
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -134,6 +155,7 @@ pub fn run() {
             commands::set_clip_item_tag,
             commands::update_clip_text,
             commands::copy_clip,
+            commands::paste_clip_to_previous,
             window::open_clip_editor_window,
             window::take_clip_editor_target,
             window::set_acrylic,
@@ -141,6 +163,7 @@ pub fn run() {
             window::get_autostart,
             window::open_settings_window,
             window::rebuild_tray,
+            window::set_dock_hold,
             window::update_hotkeys,
             window::pause_hotkeys,
             updater::apply_update,

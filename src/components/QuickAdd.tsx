@@ -8,6 +8,7 @@ import DuePicker from "./DuePicker";
 import ReminderPicker, { formatInterval } from "./ReminderPicker";
 import { PRIORITY_KEY } from "./TaskItem";
 import { Popover } from "./ui/Popover";
+import PopoverTitle from "./ui/PopoverTitle";
 import TagIcon from "./ui/TagIcon";
 
 const PRIORITY_COLOR: Record<number, string> = {
@@ -34,6 +35,7 @@ export default function QuickAdd() {
   const [parentId, setParentId] = useState<string | null>(null);
   const [dueAnchor, setDueAnchor] = useState<HTMLElement | null>(null);
   const [reminderAnchor, setReminderAnchor] = useState<HTMLElement | null>(null);
+  const [priorityAnchor, setPriorityAnchor] = useState<HTMLElement | null>(null);
   const [tagAnchor, setTagAnchor] = useState<HTMLElement | null>(null);
   const [parentAnchor, setParentAnchor] = useState<HTMLElement | null>(null);
   // 新建后弹层:锚定到输入栏,作用于刚建的这条任务(只存 id,实时从 tasks 取最新值)
@@ -158,9 +160,10 @@ export default function QuickAdd() {
           placeholder={t("S.Tag.AddPlaceholder")}
           className="min-w-0 flex-1 bg-transparent text-sm text-text-1 outline-none placeholder:text-muted"
         />
+        {/* 优先级选择:点击弹上拉框选 高 / 中 / 低(对齐标签的交互与风格) */}
         <button
           title={`${t("S.Label.Priority")}:${t(PRIORITY_KEY[priority])}`}
-          onClick={() => setPriorityLocal(priority === 3 ? 1 : priority + 1)}
+          onClick={(e) => setPriorityAnchor(e.currentTarget)}
           className="flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-card-hover"
         >
           <Flag size={13} style={{ color: PRIORITY_COLOR[priority] }} />
@@ -223,9 +226,35 @@ export default function QuickAdd() {
           onClose={() => setReminderAnchor(null)}
         />
       )}
+      {priorityAnchor && (
+        <Popover anchor={priorityAnchor} onClose={() => setPriorityAnchor(null)}>
+          <div className="w-32">
+            <PopoverTitle>{t("S.Label.Priority")}</PopoverTitle>
+            <div className="p-1">
+              {[3, 2, 1].map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setPriorityLocal(p);
+                  setPriorityAnchor(null);
+                }}
+                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs hover:bg-card-hover ${
+                  priority === p ? "text-accent" : "text-text-1"
+                }`}
+              >
+                <Flag size={13} style={{ color: PRIORITY_COLOR[p] }} />
+                <span className="min-w-0 flex-1 break-words">{t(PRIORITY_KEY[p])}</span>
+              </button>
+              ))}
+            </div>
+          </div>
+        </Popover>
+      )}
       {tagAnchor && (
         <Popover anchor={tagAnchor} onClose={() => setTagAnchor(null)}>
-          <div className="max-h-72 w-44 overflow-y-auto p-1">
+          <div className="w-44">
+            <PopoverTitle>{t("S.X.NewTaskTag")}</PopoverTitle>
+            <div className="max-h-72 overflow-y-auto p-1">
             <button
               onClick={() => {
                 setTagId(null);
@@ -254,12 +283,15 @@ export default function QuickAdd() {
             {groups.length === 0 && (
               <p className="px-2 py-1.5 text-xs text-muted">{t("S.Tag.Untagged")}</p>
             )}
+            </div>
           </div>
         </Popover>
       )}
       {parentAnchor && (
         <Popover anchor={parentAnchor} onClose={() => setParentAnchor(null)}>
-          <div className="max-h-72 w-56 overflow-y-auto p-1">
+          <div className="w-56">
+            <PopoverTitle>{t("S.X.NewTaskParent")}</PopoverTitle>
+            <div className="max-h-72 overflow-y-auto p-1">
             {parentCandidates.length === 0 && (
               <p className="px-2 py-1.5 text-xs text-muted">{t("S.X.EmptyList")}</p>
             )}
@@ -281,6 +313,7 @@ export default function QuickAdd() {
                 </span>
               </button>
             ))}
+            </div>
           </div>
         </Popover>
       )}

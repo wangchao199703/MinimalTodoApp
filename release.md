@@ -4,6 +4,25 @@
 
 ---
 
+## v2.0.4(2026-06-23 发布)
+
+本轮按用户逐条反馈打磨,版本 2.0.3 → 2.0.4。
+
+- **托盘左键单击改为「召唤」**(`window.rs`):单击从 `show_main`(居中)改为复用 `summon_main`——隐藏则取消隐藏并置前,**不居中、不改窗口位置大小**;右键「显示并居中」保持 `show_main`,两者区分。
+- **版本号** 三处同步 2.0.3 → 2.0.4。
+- **新建待办优先级改上拉框**(`QuickAdd.tsx`):旗标按钮从循环切换改为点击弹 `Popover`(高/中/低),对齐标签交互与样式。
+- **新建待办各弹框加标题**:新增共享 `ui/PopoverTitle.tsx`,优先级/标签/父待办/截止/提醒 5 个弹框统一加标题;滚动列表(标签/父待办)标题置于滚动区外。
+- **截止/提醒上拉框优化**(`DuePicker.tsx`/`ReminderPicker.tsx`,Gemini 方案):快捷项「短周期/常规/长周期」三段分组(通用键 `S.X.Period.*`);截止分钟 5 步长 + 「精准」开关切 60 项 + 选完日期自动聚焦小时;提醒「将每 X 提醒一次」实时预览 + 数值/单位一体胶囊;选中档 `bg-accent` 高亮 + 过渡。**去掉了一度加入的「定点时间」**(按用户要求,改三段分组)。
+- **贴边窗口编辑时不自动收起**(`window.rs` + `ui/Popover.tsx`):`DockState` 加 `hold` 标志 + 命令 `set_dock_hold`,轮询显示态分支 hold 时不收起;`Popover` 模块级计数,任一弹层打开置 hold、全关解除——根治「点原生下拉/日历鼠标移出窗口被误判收起」。
+- **便签/分组重命名**(`NotesTree.tsx`):便签新增双击 + 右键「重命名」(inline 改 `custom_title`,Esc 取消、空/未变不动),分组右键加「重命名分组」;`useSortableItem` 加 `canDrag` 参数,编辑期间禁拖拽。
+- **便签标题同步修复**(`NotesView.tsx`):自动保存改 pending 合并,**正文保存不再携带 `custom_title`**(三态省略=不变),正文编辑不再覆盖侧栏改的名;新增 effect 让外部改的 `custom_title` 同步到标题栏(输入中不打断)。
+- **侧栏计数**(`Sidebar.tsx`):已完成/四象限补数字;全部/标签/四象限/已完成统一为「只数父任务」(`!parent_id`),移除不再用的 `groups` 选择器。
+- **剪贴板图片预览根治**(`lib.rs` + `ClipboardView.tsx`):启动时按运行时真实数据目录动态 `allow_directory` 把 clipboard-images/note-images/group-icons 加入 asset scope(数据目录可迁移/APPDATA 重定向时写死的 scope 覆盖不到=部分机器预览不了的根因);灯箱加 `onError` 回退缩略图兜底。
+- **双击剪贴项自动粘贴**(新 `paste.rs` + `commands.rs`/`clipboard.rs`/`lib.rs`/前端):Ditto 同款——后台线程追踪「上一个外部前台窗口+焦点控件」(按进程 ID 排除自身),双击 → 写剪贴板(置「忽略下次记录」标记)→ 绕前台锁 + AttachThreadInput + SetForegroundWindow/SetFocus 还原 → 模拟粘贴键。全裸 FFI 零新依赖。设置「双击剪贴项自动粘贴」(默认开)+ 「粘贴按键」Ctrl+V/Shift+Insert。**边界适配**:目标完整性级别高于本进程(管理员窗口)时不硬发键,弹系统通知提示手动粘贴。
+- **CLAUDE.md** 工作约定更新(称呼、prompts_origin.md 双文件记录、环境约定、Clean Code 规范等)。
+
+---
+
 ## 开发中(v2.0.0 之后,未发版)
 
 自 v2.0.0 起按用户逐轮反馈打磨,累积变更(详见 `prompts.md`):

@@ -14,6 +14,7 @@ import {
   FileText,
   Folder,
   Palette,
+  Pencil,
   Trash2,
   X,
 } from "lucide-react";
@@ -70,10 +71,30 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
   const setView = useAppStore((s) => s.setView);
   const removeNote = useAppStore((s) => s.removeNote);
   const restoreNote = useAppStore((s) => s.restoreNote);
+  const patchNote = useAppStore((s) => s.patchNote);
   const showUndoToast = useAppStore((s) => s.showUndoToast);
   const pushToast = useAppStore((s) => s.pushToast);
-  const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>("note", note.id);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  // 行内重命名期间禁止拖拽,避免在输入框里按下被当成拖拽
+  const { ref, isDragging, closestEdge } = useSortableItem<HTMLDivElement>(
+    "note",
+    note.id,
+    "vertical",
+    () => !editing,
+  );
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // 重命名 = 改 custom_title(用户标题);留空或未变则不动(对齐分组双击重命名)
+  const beginRename = () => {
+    setDraft(displayTitle(note));
+    setEditing(true);
+  };
+  const commitRename = () => {
+    setEditing(false);
+    const v = draft.trim();
+    if (v && v !== displayTitle(note)) void patchNote({ id: note.id, custom_title: v });
+  };
 
   // 删除立即生效(软删 → 进回收站,瞬间消失),底部弹「撤回」(撤回 = restoreNote)
   const deleteWithUndo = () => {
@@ -105,9 +126,11 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
       ref={ref}
       data-note-row={note.id}
       onClick={() => {
+        if (editing) return;
         selectNote(note.id);
         setView({ kind: "notes" });
       }}
+      onDoubleClick={beginRename}
       onContextMenu={(e) => {
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
@@ -126,20 +149,48 @@ function NoteRow({ note, active, color }: { note: Note; active: boolean; color?:
         />
       )}
       <FileText size={14} className="shrink-0" style={{ color }} />
-      <span className="min-w-0 flex-1 truncate">{displayTitle(note)}</span>
-      <button
-        title={t("S.X.Delete")}
-        onClick={(e) => {
-          e.stopPropagation();
-          deleteWithUndo();
-        }}
-        className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-overdue group-hover:flex"
-      >
-        <X size={12} />
-      </button>
+      {editing ? (
+        <input
+          autoFocus
+          value={draft}
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.currentTarget.blur();
+            else if (e.key === "Escape") setEditing(false);
+          }}
+          className="min-w-0 flex-1 rounded bg-sidebar-hover px-1 text-sm text-sidebar-strong outline-none"
+        />
+      ) : (
+        <span className="min-w-0 flex-1 truncate">{displayTitle(note)}</span>
+      )}
+      {!editing && (
+        <button
+          title={t("S.X.Delete")}
+          onClick={(e) => {
+            e.stopPropagation();
+            deleteWithUndo();
+          }}
+          className="hidden h-5 w-5 shrink-0 items-center justify-center rounded text-sidebar-muted hover:text-overdue group-hover:flex"
+        >
+          <X size={12} />
+        </button>
+      )}
       {menu && (
         <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
           <div className="w-44">
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                beginRename();
+              }}
+            >
+              <Pencil size={13} />
+              {t("S.Note.Rename")}
+            </MenuItem>
+            <div className="my-1 h-px bg-divider" />
             <MenuItem
               onClick={() => {
                 setMenu(null);
@@ -315,6 +366,16 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
       {menu && (
         <Popover at={menu} anchor={null} onClose={() => setMenu(null)} zIndex={200}>
           <div className="w-32">
+            <MenuItem
+              onClick={() => {
+                setMenu(null);
+                setDraft(group.name);
+                setEditing(true);
+              }}
+            >
+              <Pencil size={13} />
+              {t("S.Note.RenameGroup")}
+            </MenuItem>
             <MenuItem
               onClick={() => {
                 setMenu(null);

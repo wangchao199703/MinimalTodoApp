@@ -74,7 +74,18 @@ function clipTimeLabel(ms: number): string {
 }
 
 /** 图片预览灯箱:全屏暗底 + 居中原图,点任意处 / Esc 关闭 */
-function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+function ImageLightbox({
+  src,
+  fallback,
+  onClose,
+}: {
+  src: string;
+  /** 原图(asset 协议)加载失败时回退的内嵌缩略图,兜底极端环境仍能看图 */
+  fallback?: string;
+  onClose: () => void;
+}) {
+  const [curSrc, setCurSrc] = useState(src);
+  useEffect(() => setCurSrc(src), [src]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -91,9 +102,13 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
         aria-label={t("S.X.ClipPreviewTitle")}
       >
         <img
-          src={src}
+          src={curSrc}
           alt={t("S.X.ClipPreviewTitle")}
           onClick={(e) => e.stopPropagation()}
+          onError={() => {
+            // 原图加载失败(极端环境 asset 仍受限)→ 回退内嵌缩略图,避免裂图
+            if (fallback && curSrc !== fallback) setCurSrc(fallback);
+          }}
           className="max-h-full max-w-full rounded-md object-contain shadow-2xl ring-1 ring-white/10"
         />
         <button
@@ -232,7 +247,13 @@ function ClipBrowser({
           onPreview={() => setPreview(true)}
         />
       )}
-      {preview && fullImg && <ImageLightbox src={fullImg} onClose={() => setPreview(false)} />}
+      {preview && fullImg && (
+        <ImageLightbox
+          src={fullImg}
+          fallback={clip.thumbnail_b64 ?? undefined}
+          onClose={() => setPreview(false)}
+        />
+      )}
     </div>
   );
 }
@@ -425,6 +446,9 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
   const restoreClip = useAppStore((s) => s.restoreClip);
   const showUndoToast = useAppStore((s) => s.showUndoToast);
   const toggleClipPin = useAppStore((s) => s.toggleClipPin);
+  const settings = useAppStore((s) => s.settings);
+  // 双击粘贴:默认开启(用户可在设置关闭)
+  const pasteOnDoubleClick = settings["clip_paste_double_click"] !== "0";
   const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
   const [preview, setPreview] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -463,6 +487,10 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
   return (
     <div
       ref={rowRef}
+      title={pasteOnDoubleClick ? t("S.X.ClipDblClickPaste") : undefined}
+      onDoubleClick={() => {
+        if (pasteOnDoubleClick) void ipc.pasteClipToPrevious(clip.id);
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         setMenu({ x: e.clientX, y: e.clientY });
@@ -483,6 +511,7 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
               e.stopPropagation();
               setPreview(true);
             }}
+            onDoubleClick={(e) => e.stopPropagation()}
             className={`${sz.thumb} shrink-0 cursor-zoom-in rounded-md border border-divider object-cover`}
           />
         ) : (
@@ -546,7 +575,11 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
         />
       )}
       {preview && fullImgSrc && (
-        <ImageLightbox src={fullImgSrc} onClose={() => setPreview(false)} />
+        <ImageLightbox
+          src={fullImgSrc}
+          fallback={clip.thumbnail_b64 ?? undefined}
+          onClose={() => setPreview(false)}
+        />
       )}
     </div>
   );

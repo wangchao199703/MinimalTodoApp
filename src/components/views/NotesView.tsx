@@ -28,6 +28,7 @@ function Editor({ note }: { note: Note }) {
   const [title, setTitle] = useState(note.custom_title);
   const [stats, setStats] = useState<{ words: number; chars: number }>({ words: 0, chars: 0 });
   const contentRef = useRef(note.content);
+  const titleRef = useRef<HTMLInputElement | null>(null);
   const timer = useRef<number | null>(null);
 
   // 图片仓库目录就绪后再挂编辑器,确保首次渲染图片即可解析
@@ -42,16 +43,21 @@ function Editor({ note }: { note: Note }) {
     contentRef.current = note.content;
   }, [note.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 800ms 防抖自动保存(对齐旧版手感)
-  const scheduleSave = (nextContent: string, nextTitle: string) => {
+  // 外部(侧栏重命名等)改了 custom_title:同步到标题栏;用户正在输入标题时不打断
+  useEffect(() => {
+    if (document.activeElement !== titleRef.current) setTitle(note.custom_title);
+  }, [note.custom_title]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 800ms 防抖自动保存:正文与标题分别累积到 pending 合并提交。
+  // 正文保存绝不携带 custom_title(三态:省略=不变),避免用旧的本地标题覆盖侧栏刚改的名。
+  const pending = useRef<{ content?: string; title?: string; custom_title?: string }>({});
+  const scheduleSave = (patch: { content?: string; title?: string; custom_title?: string }) => {
+    pending.current = { ...pending.current, ...patch };
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
-      void patchNote({
-        id: note.id,
-        content: nextContent,
-        title: deriveTitle(nextContent),
-        custom_title: nextTitle,
-      });
+      const next = pending.current;
+      pending.current = {};
+      void patchNote({ id: note.id, ...next });
     }, 800);
   };
 
@@ -70,11 +76,12 @@ function Editor({ note }: { note: Note }) {
     <div className="flex min-w-0 flex-1 flex-col">
       <div className="flex shrink-0 items-center gap-2 border-b border-divider px-3 py-2">
         <input
+          ref={titleRef}
           value={title}
           placeholder={note.title || t("S.X.UntitledNote")}
           onChange={(e) => {
             setTitle(e.target.value);
-            scheduleSave(contentRef.current, e.target.value);
+            scheduleSave({ custom_title: e.target.value });
           }}
           className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-text-1 outline-none placeholder:text-muted"
         />
@@ -87,7 +94,7 @@ function Editor({ note }: { note: Note }) {
           style={style}
           onChange={(md) => {
             contentRef.current = md;
-            scheduleSave(md, title);
+            scheduleSave({ content: md, title: deriveTitle(md) });
           }}
           onStats={setStats}
         />

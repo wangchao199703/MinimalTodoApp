@@ -142,7 +142,6 @@ function NavRow(props: {
 export default function Sidebar() {
   const view = useAppStore((s) => s.view);
   const setView = useAppStore((s) => s.setView);
-  const groups = useAppStore((s) => s.groups);
   const tasks = useAppStore((s) => s.tasks);
   const notes = useAppStore((s) => s.notes);
   const clips = useAppStore((s) => s.clips);
@@ -191,7 +190,9 @@ export default function Sidebar() {
     });
   }, [saveSetting]);
 
-  const uncompleted = tasks.filter((t) => !t.is_completed);
+  // 全部 / 四象限 / 已完成统一口径:只数顶层父任务(不含子待办)
+  const topLevelUncompleted = tasks.filter((t) => !t.is_completed && !t.parent_id).length;
+  const completedCount = tasks.filter((t) => t.is_completed && !t.parent_id).length;
   const activeKey = viewKey(view);
 
   const collapsed = settings["sidebar_collapsed"] === "1";
@@ -217,7 +218,7 @@ export default function Sidebar() {
           <NavRow
             icon={<Inbox size={14} className="shrink-0" />}
             label={t("S.Group.AllUncompleted")}
-            count={uncompleted.length}
+            count={topLevelUncompleted}
             active={activeKey === "all"}
             collapsed={collapsed}
             color={navColor("all")}
@@ -230,6 +231,7 @@ export default function Sidebar() {
           <NavRow
             icon={<LayoutGrid size={14} className="shrink-0" />}
             label={t("S.Group.Quadrant")}
+            count={topLevelUncompleted}
             active={activeKey === "quadrant"}
             collapsed={collapsed}
             color={navColor("quadrant")}
@@ -242,6 +244,7 @@ export default function Sidebar() {
           <NavRow
             icon={<CheckCircle2 size={14} className="shrink-0" />}
             label={t("S.Group.Completed")}
+            count={completedCount}
             active={activeKey === "completed"}
             collapsed={collapsed}
             color={navColor("completed")}
@@ -256,7 +259,7 @@ export default function Sidebar() {
           <NavRow
             icon={<Kanban size={14} className="shrink-0" />}
             label={t("S.Group.TagBoard")}
-            count={groups.length}
+            count={topLevelUncompleted}
             active={activeKey === "tagboard" || view.kind === "group"}
             collapsed={collapsed}
             color={navColor("tagboard")}

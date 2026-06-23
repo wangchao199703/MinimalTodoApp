@@ -18,10 +18,14 @@ export function useSortableItem<T extends HTMLElement>(
   type: string,
   id: string,
   axis: "vertical" | "horizontal" = "vertical",
+  /** 返回 false 时禁止拖拽(如行内重命名编辑期间);用 ref 持最新值,不触发重订阅 */
+  canDrag?: () => boolean,
 ) {
   const ref = useRef<T | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [closestEdge, setClosestEdge] = useState<Edge | null>(null);
+  const canDragRef = useRef(canDrag);
+  canDragRef.current = canDrag;
 
   useEffect(() => {
     const el = ref.current;
@@ -30,6 +34,7 @@ export function useSortableItem<T extends HTMLElement>(
     return combine(
       draggable({
         element: el,
+        canDrag: () => (canDragRef.current ? canDragRef.current() : true),
         getInitialData: () => ({ type, id }),
         onDragStart: () => setIsDragging(true),
         onDrop: () => setIsDragging(false),

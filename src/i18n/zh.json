@@ -189,7 +189,7 @@
  "S.Tip.Drag": "拖动可排序",
  "S.Tip.ReminderBell": "已开启周期提醒（右键可切换）",
  "S.Label.Priority": "优先级",
- "S.Label.DueTime": "截至时间",
+ "S.Label.DueTime": "截止时间",
  "S.Label.Reminder": "周期提醒",
  "S.Label.Parent": "父待办",
  "S.Tip.Parent": "选择父待办后，新任务将作为子待办创建",

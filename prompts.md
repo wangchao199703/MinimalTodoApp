@@ -762,3 +762,45 @@
 
 ## 改为「删除/完成立刻消失 + 全局撤回 Toast」
 设计:全局 Toast(底部居中、z 高、深色卡 + 项目 token)带高亮「撤回」按钮 + 5 秒递减进度条、到时自动消失。待办完成→立即归档弹「待办已完成 [撤回]」;便签/剪切板删除→乐观 UI 立即消失弹「已移至回收站/已删除 [撤回]」;连续删除覆盖更新(只留最后一次撤回)。技术:便签走软删除(is_deleted,已有回收站)、剪切板加 is_deleted 软删除(秒关软件也正确)、待办完成撤回=反勾。封装全局 showUndoToast(message,onUndo)。确认:三处全做、剪切板软删除、Toast 底部居中。
+
+---
+
+# v2.0.4 批次(2026-06-23)
+
+> 提炼 + 落地;原始原文见 `prompts_origin.md`。
+
+## CLAUDE.md 工作约定更新
+落地:CLAUDE.md 新增「称呼主人」「双文件提示词记录(prompts_origin 原文 / prompts 提炼)」「环境约定(token 在桌面 tk.txt、软件装 D:\BaiduSyncdisk\app)」「Clean Code 规范四条」,并把工作流顺序明确为「做完→先 run 验证→再记文档→commit 不 push」。
+
+## 托盘单击与「显示并居中」区分
+落地:`window.rs` 托盘左键单击由 `show_main`(居中)改复用 `summon_main`(取消隐藏+置前,不居中、不改位置大小);右键「显示并居中」保持。
+
+## 版本号 → 2.0.4
+落地:tauri.conf.json / Cargo.toml / package.json 三处同步。
+
+## 新建待办优先级改上拉框
+落地:`QuickAdd.tsx` 旗标按钮改为弹 Popover 选高/中/低,对齐标签交互。
+
+## 新建待办各弹框加标题
+落地:新增共享 `ui/PopoverTitle.tsx`,优先级/标签/父待办/截止/提醒 5 个弹框统一加标题(滚动列表标题置滚动区外)。
+
+## 截止/提醒上拉框优化(Gemini 方案)
+落地:三段分组(短/常规/长,通用键 `S.X.Period.*`);截止分钟 5 步长 + 精准开关 + 选完日期聚焦小时;提醒实时「将每 X 提醒一次」预览 + 数值/单位胶囊 + 选中 bg-accent 高亮。后续按用户要求**移除一度加入的「定点时间」**,截止也改三段分组。
+
+## 贴边窗口编辑时不自动收起
+落地:`DockState` 加 `hold` + 命令 `set_dock_hold`;`ui/Popover.tsx` 模块级计数,任一弹层打开置 hold、全关解除,轮询显示态 hold 时不收起。根因:点原生下拉/日历鼠标移出窗口矩形被误判收起。
+
+## 便签/分组重命名
+落地:`NotesTree.tsx` 便签双击 + 右键「重命名」(改 custom_title),分组右键「重命名分组」;`useSortableItem` 加 `canDrag`,编辑期间禁拖。
+
+## 便签标题同步修复
+落地:`NotesView.tsx` 自动保存改 pending 合并,正文保存不带 custom_title(三态省略=不变);新增 effect 同步外部改的 custom_title 到标题栏(输入中不打断)。根因:正文自动保存用旧本地标题覆盖了侧栏改的名 → 回退到第一行派生标题。
+
+## 侧栏计数统一
+落地:`Sidebar.tsx` 已完成/四象限补数字;全部/标签/四象限/已完成统一「只数父任务」(!parent_id)。
+
+## 剪贴板图片预览根治(部分机器打不开)
+落地:`lib.rs` 启动按运行时真实数据目录 `allow_directory` 动态放行 clipboard-images/note-images/group-icons 到 asset scope;灯箱加 onError 回退缩略图。根因:迁移数据目录 / APPDATA 重定向后图片落在写死 scope 外。
+
+## 双击剪贴项自动粘贴到原光标处(参考 Ditto)
+落地:新 `paste.rs`(后台追踪上一个外部前台窗口+焦点控件,按进程 ID 排除自身;还原焦点=绕前台锁+AttachThreadInput+SetForegroundWindow/SetFocus;模拟粘贴键,全裸 FFI 零依赖)+ `commands::paste_clip_to_previous`(写剪贴板+置忽略下次记录标记)+ `clipboard.rs` skip 标记。设置「双击剪贴项自动粘贴」(默认开)+「粘贴按键」Ctrl+V/Shift+Insert。边界:目标完整性级别高于本进程(管理员窗口)不硬发键,弹系统通知提示手动粘贴。

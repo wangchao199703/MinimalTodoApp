@@ -1,8 +1,20 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { ipc } from "../../lib/tauri-ipc";
 
 export function Portal({ children }: { children: React.ReactNode }) {
   return createPortal(children, document.body);
+}
+
+// 当前打开的弹层数:贴边窗口在有弹层时不自动收起(编辑期间)。计数避免多个弹层时提前解除。
+let openPopoverCount = 0;
+function holdDockWhileOpen() {
+  openPopoverCount += 1;
+  if (openPopoverCount === 1) void ipc.setDockHold(true);
+  return () => {
+    openPopoverCount -= 1;
+    if (openPopoverCount === 0) void ipc.setDockHold(false);
+  };
 }
 
 /**
@@ -19,6 +31,9 @@ export function Popover(props: {
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  // 弹层存在期间挂起贴边自动收起,关闭即解除(编辑结束后由鼠标移开正常收起)
+  useEffect(() => holdDockWhileOpen(), []);
 
   useLayoutEffect(() => {
     const el = ref.current;

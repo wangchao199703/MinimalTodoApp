@@ -1070,6 +1070,11 @@ pub fn update_clip_text(db: State<Db>, clip_id: i64, text: String) -> CmdResult<
 /// 注:写回会被后台监听线程当作一次新复制再入库到顶部——与 ShellPicker「粘贴即置顶」一致,可接受。
 #[tauri::command(rename_all = "snake_case")]
 pub fn copy_clip(db: State<Db>, clip_id: i64) -> CmdResult<()> {
+    set_clipboard_to_clip(&db, clip_id)
+}
+
+/// 把某条剪贴项内容写到系统剪贴板(copy_clip 与自动粘贴共用)。
+fn set_clipboard_to_clip(db: &Db, clip_id: i64) -> CmdResult<()> {
     use clipboard_rs::{Clipboard, ClipboardContext};
     let (kind, text, image_path): (String, Option<String>, Option<String>) = {
         let conn = db.0.lock().map_err(err)?;
@@ -1090,6 +1095,54 @@ pub fn copy_clip(db: State<Db>, clip_id: i64) -> CmdResult<()> {
         ctx.set_text(text.unwrap_or_default()).map_err(err)?;
     }
     Ok(())
+}
+
+/// 双击剪贴项:写好系统剪贴板 → 还原上一个外部窗口的焦点 → 模拟 Ctrl+V 粘贴到原光标处。
+/// 写剪贴板后置「忽略下次记录」标记,避免把刚粘贴的内容当新复制重复入库。
+#[tauri::command(rename_all = "snake_case")]
+pub fn paste_clip_to_previous(app: tauri::AppHandle, db: State<Db>, clip_id: i64) -> CmdResult<()> {
+    use tauri::Manager;
+    crate::clipboard::skip_next_record();
+    set_clipboard_to_clip(&db, clip_id)?;
+    // 粘贴按键(默认 Ctrl+V,可设 Shift+Insert)+ 语言(被拦时提示用)
+    let (paste_keys, en) = {
+        let conn = db.0.lock().map_err(err)?;
+        let pk = crate::database::read_setting(&conn, "clip_paste_keys").unwrap_or_default();
+        let en = crate::database::read_setting(&conn, "language").as_deref() == Some("en");
+        (crate::paste::PasteKeys::from_setting(&pk), en)
+    };
+    // 还原焦点 + 发键放到独立线程:先让本次命令返回、剪贴板写入落定,再切前台粘贴
+    if let Some(tracker) = app.try_state::<std::sync::Arc<crate::paste::ForegroundTracker>>() {
+        let tracker = tracker.inner().clone();
+        let app = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(80));
+            // 目标是管理员窗口被系统拦:剪贴板已写好,弹系统通知提示手动粘贴(此时焦点已在目标窗口,应用内 toast 看不到)
+            if let crate::paste::PasteOutcome::BlockedElevated =
+                crate::paste::paste_to_previous(&tracker, paste_keys)
+            {
+                notify_paste_blocked(&app, en);
+            }
+        });
+    }
+    Ok(())
+}
+
+/// 目标为管理员权限窗口、自动粘贴被系统拦时,弹系统通知提示手动粘贴。
+fn notify_paste_blocked(app: &tauri::AppHandle, en: bool) {
+    use tauri_plugin_notification::NotificationExt;
+    let (title, body) = if en {
+        (
+            "Copied to clipboard",
+            "Target is an administrator window — Ditto-style auto-paste is blocked. Press Ctrl+V to paste manually.",
+        )
+    } else {
+        (
+            "已复制到剪贴板",
+            "目标是管理员权限窗口,无法自动粘贴。请手动按 Ctrl+V 粘贴。",
+        )
+    };
+    let _ = app.notification().builder().title(title).body(body).show();
 }
 
 // ---------- 数据存储位置(可配置数据根 + 迁移)----------

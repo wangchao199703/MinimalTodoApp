@@ -13,7 +13,17 @@ use clipboard_rs::{
     ContentFormat,
 };
 use sha2::{Digest, Sha256};
+use std::sync::atomic::{AtomicI64, Ordering};
 use tauri::{AppHandle, Emitter, Manager};
+
+/// 自动粘贴时本应用主动写了系统剪贴板:在此截止时刻前的下一次变化不再入库,
+/// 否则会把刚粘贴的内容当成新复制重复记录 / 打乱顺序。带超时自动失效,避免卡住后续真实复制。
+static SKIP_RECORD_UNTIL_MS: AtomicI64 = AtomicI64::new(0);
+
+/// 标记「忽略接下来一次剪贴板变化」(供自动粘贴前调用)。
+pub fn skip_next_record() {
+    SKIP_RECORD_UNTIL_MS.store(database::now_ms() + 1500, Ordering::SeqCst);
+}
 
 /// 图片捕获开关:已修复延迟渲染竞态(见 image_ready),默认开启,文本/图片都监听。
 const IMAGE_CAPTURE_ENABLED: bool = true;
@@ -88,6 +98,10 @@ impl ClipboardHandler for ClipWatcher {
 
 impl ClipWatcher {
     fn handle(&self) -> anyhow::Result<()> {
+        // 自动粘贴刚写过剪贴板:本次变化是自己造成的,跳过入库(超时窗口内只跳一次)
+        if database::now_ms() < SKIP_RECORD_UNTIL_MS.swap(0, Ordering::SeqCst) {
+            return Ok(());
+        }
         // 先按「有文本即文本」:① 富文本复制(网页/Office 常同时带图)优先存文本,
         // 不把用户复制的文字误存成图;② 纯文本场景立即返回,不进图片轮询(否则每次复制都白等 ~200ms)。
         if let Ok(text) = self.ctx.get_text() {
