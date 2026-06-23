@@ -745,8 +745,8 @@ export default function SettingsPanel() {
             <div className="py-1">
               <span className="block text-sm text-text-1">{t("S.X.Hotkeys")}</span>
               <span className="mt-0.5 mb-1 block text-xs text-muted">{t("S.X.HotkeysDesc")}</span>
-              <HotkeyRecorder label={t("S.X.HotkeyNotes")} settingKey="hotkey_notes" def="Alt+1" />
-              <HotkeyRecorder label={t("S.X.HotkeyClipboard")} settingKey="hotkey_clipboard" def="Alt+2" />
+              <HotkeyRecorder label={t("S.X.HotkeyClipboard")} settingKey="hotkey_clipboard" def="Alt+1" />
+              <HotkeyRecorder label={t("S.X.HotkeyNotes")} settingKey="hotkey_notes" def="Alt+2" />
               <HotkeyRecorder label={t("S.X.HotkeyTagboard")} settingKey="hotkey_tagboard" def="Alt+3" />
               <HotkeyRecorder label={t("S.X.HotkeyQuadrant")} settingKey="hotkey_quadrant" def="Alt+4" />
               <HotkeyRecorder label={t("S.X.HotkeyAll")} settingKey="hotkey_all" def="Alt+5" />

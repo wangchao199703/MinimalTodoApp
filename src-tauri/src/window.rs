@@ -82,8 +82,8 @@ fn write_setting(app: &AppHandle, key: &str, value: &str) {
 
 /// 5 个快捷键:设置键 / 默认加速键 / 目标视图 key。
 const HOTKEY_DEFS: [(&str, &str, &str); 5] = [
-    ("hotkey_notes", "Alt+1", "notes"),
-    ("hotkey_clipboard", "Alt+2", "clipboard"),
+    ("hotkey_clipboard", "Alt+1", "clipboard"),
+    ("hotkey_notes", "Alt+2", "notes"),
     ("hotkey_tagboard", "Alt+3", "tagboard"),
     ("hotkey_quadrant", "Alt+4", "quadrant"),
     ("hotkey_all", "Alt+5", "all"),

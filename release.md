@@ -20,6 +20,8 @@
 - **剪贴板图片预览根治**(`lib.rs` + `ClipboardView.tsx`):启动时按运行时真实数据目录动态 `allow_directory` 把 clipboard-images/note-images/group-icons 加入 asset scope(数据目录可迁移/APPDATA 重定向时写死的 scope 覆盖不到=部分机器预览不了的根因);灯箱加 `onError` 回退缩略图兜底。
 - **双击剪贴项自动粘贴**(新 `paste.rs` + `commands.rs`/`clipboard.rs`/`lib.rs`/前端):Ditto 同款——后台线程追踪「上一个外部前台窗口+焦点控件」(按进程 ID 排除自身),双击 → 写剪贴板(置「忽略下次记录」标记)→ 绕前台锁 + AttachThreadInput + SetForegroundWindow/SetFocus 还原 → 模拟粘贴键。全裸 FFI 零新依赖。设置「双击剪贴项自动粘贴」(默认开)+ 「粘贴按键」Ctrl+V/Shift+Insert。**边界适配**:目标完整性级别高于本进程(管理员窗口)时不硬发键,弹系统通知提示手动粘贴。
 - **CLAUDE.md** 工作约定更新(称呼、prompts_origin.md 双文件记录、环境约定、Clean Code 规范等)。
+- **默认快捷键对调**(`window.rs` HOTKEY_DEFS + `SettingsPanel.tsx`):剪切板 Alt+2→**Alt+1**、便签 Alt+1→**Alt+2**,其余不变;只改默认值(`register_hotkeys` 读 setting 否则用默认且不回写,HotkeyRecorder 也只在录入时保存),自定义过的用户不受影响。**v2.0.4 同版本重发**。
+- **修正**:`S.Label.DueTime`「截至时间」→「截止时间」(随 v2.0.4 重发)。
 
 ---
 

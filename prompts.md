@@ -804,3 +804,6 @@
 
 ## 双击剪贴项自动粘贴到原光标处(参考 Ditto)
 落地:新 `paste.rs`(后台追踪上一个外部前台窗口+焦点控件,按进程 ID 排除自身;还原焦点=绕前台锁+AttachThreadInput+SetForegroundWindow/SetFocus;模拟粘贴键,全裸 FFI 零依赖)+ `commands::paste_clip_to_previous`(写剪贴板+置忽略下次记录标记)+ `clipboard.rs` skip 标记。设置「双击剪贴项自动粘贴」(默认开)+「粘贴按键」Ctrl+V/Shift+Insert。边界:目标完整性级别高于本进程(管理员窗口)不硬发键,弹系统通知提示手动粘贴。
+
+## 修正「截止时间」错别字 + 默认快捷键对调(v2.0.4 重发)
+落地:① `zh.json` 的 `S.Label.DueTime`「截至时间」→「截止时间」。② 默认快捷键剪切板↔便签对调——`window.rs` HOTKEY_DEFS 与 `SettingsPanel.tsx` def 改为 Alt+1=剪切板、Alt+2=便签(其余 Alt+3 标签/Alt+4 四象限/Alt+5 全部待办不变);只改默认值,自定义过的用户不受影响。均随 v2.0.4 同版本重发。
