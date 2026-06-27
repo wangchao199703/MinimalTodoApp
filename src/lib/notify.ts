@@ -10,6 +10,7 @@ import {
   requestPermission,
   sendNotification,
 } from "@tauri-apps/plugin-notification";
+import { isTauri } from "./env";
 import { f } from "./i18n";
 
 /** 缓存通知权限,避免每次提醒都走一次 IPC */
@@ -28,6 +29,7 @@ function buildBody(intervalMinutes: number, dueDate: string | null): string {
 
 /** 仅当窗口当前不可见(隐藏/贴边收起)或最小化时返回 true —— 此时 app 内 toast 看不见,需 OS 通知补位 */
 async function windowHidden(): Promise<boolean> {
+  if (!isTauri) return document.hidden; // Web:页面切走/标签隐藏才补 OS 通知
   try {
     const win = getCurrentWindow();
     const [visible, minimized] = await Promise.all([win.isVisible(), win.isMinimized()]);
@@ -36,6 +38,14 @@ async function windowHidden(): Promise<boolean> {
     // 拿不到窗口状态时保守发通知,确保「最小化必弹」不漏
     return true;
   }
+}
+
+/** Web Notification 权限(已授权/申请一次);无 API 或被拒返回 false。 */
+async function ensureWebPermission(): Promise<boolean> {
+  if (!("Notification" in window)) return false;
+  if (Notification.permission === "granted") return true;
+  if (Notification.permission === "denied") return false;
+  return (await Notification.requestPermission()) === "granted";
 }
 
 /**
@@ -49,6 +59,13 @@ export async function notifyReminder(
 ): Promise<void> {
   try {
     if (!(await windowHidden())) return;
+    const notifTitle = f("S.Fmt.ReminderToastTitle", title);
+    const body = buildBody(intervalMinutes, dueDate);
+
+    if (!isTauri) {
+      if (await ensureWebPermission()) new Notification(notifTitle, { body });
+      return;
+    }
 
     if (permission === "unknown") {
       permission = (await isPermissionGranted()) ? "granted" : "unknown";
@@ -59,10 +76,7 @@ export async function notifyReminder(
     }
     if (permission !== "granted") return;
 
-    sendNotification({
-      title: f("S.Fmt.ReminderToastTitle", title),
-      body: buildBody(intervalMinutes, dueDate),
-    });
+    sendNotification({ title: notifTitle, body });
   } catch {
     // 通知失败不影响提醒主流程
   }

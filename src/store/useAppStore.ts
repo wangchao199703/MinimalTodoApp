@@ -16,6 +16,8 @@ import { deriveTitle } from "../lib/markdown";
 import { nowText } from "../lib/date";
 import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { isTauri } from "../lib/env";
+import { preloadImages } from "../lib/backend/objectUrl";
 import {
   applyTheme,
   migrateThemeKey,
@@ -258,6 +260,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       ensureGroupIconDir(),
     ]);
 
+    // Web 版:把 IndexedDB 里的便签插图/分组图标 Blob 预热成 objectURL(同步渲染可命中)
+    if (!isTauri) await preloadImages();
+
     // 后台监听到的新剪贴项:实时插到列表最前(模块层注册一次,避免 StrictMode/HMR 重复)
     setupClipboardListener();
 
@@ -380,8 +385,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   resetSettings: async () => {
     await ipc.resetSettings(); // 清空设置表(保留 language / imported_at)
     void ipc.setAutostart(true).catch(() => {}); // 自启存于系统,复位为默认(开)
-    // 广播给所有窗口(含自身):各自重载,套用默认主题/字体/行距/侧栏等
-    void emit("settings-reset");
+    // 桌面:广播给所有窗口(含自身)各自重载;Web 单窗口直接重新 init 套用默认
+    if (isTauri) void emit("settings-reset");
+    else await useAppStore.getState().init();
   },
 
   // 选中便签即退出回收站视图(回收站现为侧栏分组项,点便签应回到编辑区)
@@ -615,8 +621,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   saveSetting: (key, value) => {
     set((s) => ({ settings: { ...s.settings, [key]: value } }));
     void ipc.setSetting(key, value);
-    // 广播给其他窗口(主窗口 ↔ 独立设置窗口)实时同步
-    void emit("settings-changed", { key, value });
+    // 广播给其他窗口(主窗口 ↔ 独立设置窗口)实时同步;Web 单窗口无需
+    if (isTauri) void emit("settings-changed", { key, value });
   },
 
   pushToast: (message) => {
@@ -1087,6 +1093,7 @@ export const useAppStore = create<AppState>((set, get) => ({
  */
 let clipboardListenerSetup = false;
 function setupClipboardListener(): void {
+  if (!isTauri) return; // Web 无后台剪贴板监听(也没有 Tauri 窗口/事件)
   if (clipboardListenerSetup) return;
   if (getCurrentWindow().label === "settings") return;
   clipboardListenerSetup = true;
@@ -1120,6 +1127,7 @@ function setupClipboardListener(): void {
 
 let settingsSyncSetup = false;
 export function setupSettingsSync(): void {
+  if (!isTauri) return; // Web 单窗口,无跨窗口设置同步
   if (settingsSyncSetup) return;
   settingsSyncSetup = true;
   void listen<{ key: string; value: string }>("settings-changed", (e) => {

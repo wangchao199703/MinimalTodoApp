@@ -1,6 +1,6 @@
 [package]
 name = "minimal-todo"
-version = "2.0.4"
+version = "2.0.5"
 edition = "2021"
 description = "极简 Windows 本地待办(Tauri v2 重写版)"
 authors = ["wangchao199703"]

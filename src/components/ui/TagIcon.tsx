@@ -2,6 +2,8 @@ import { Tag } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { ICON_FONT } from "../../lib/groupIcons";
 import { ipc } from "../../lib/tauri-ipc";
+import { isTauri } from "../../lib/env";
+import { imageUrl } from "../../lib/backend/objectUrl";
 
 /** 分组图标仓库目录(首次渲染自定义图标前由 IconPickerDialog/App 预取一次) */
 let iconDir = "";
@@ -17,10 +19,13 @@ export async function ensureGroupIconDir(): Promise<void> {
 export function resolveGroupIcon(src: string | null | undefined): string {
   if (!src) return "";
   if (src.startsWith("groupicon://")) {
-    if (!iconDir) return "";
-    return convertFileSrc(`${iconDir}\\${src.slice("groupicon://".length)}`);
+    const name = src.slice("groupicon://".length);
+    // Web:IndexedDB Blob 的 objectURL 缓存;桌面:asset 协议
+    if (!isTauri) return imageUrl(name);
+    return iconDir ? convertFileSrc(`${iconDir}\\${name}`) : "";
   }
-  return convertFileSrc(src);
+  // 旧版绝对路径仅桌面有意义;Web 无法解析,返回空
+  return isTauri ? convertFileSrc(src) : "";
 }
 
 /** 标签图标:优先自定义图片,其次自定义字形(Segoe Fluent Icons),否则回退 lucide Tag */

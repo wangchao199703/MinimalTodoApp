@@ -1073,6 +1073,16 @@ pub fn copy_clip(db: State<Db>, clip_id: i64) -> CmdResult<()> {
     set_clipboard_to_clip(&db, clip_id)
 }
 
+/// 把一张图片文件写入系统剪贴板(剪贴项「复制」与截图「复制」共用,DRY)。
+pub fn set_clipboard_image_from_path(path: &str) -> CmdResult<()> {
+    use clipboard_rs::common::RustImage;
+    use clipboard_rs::{Clipboard, ClipboardContext};
+    let ctx = ClipboardContext::new().map_err(err)?;
+    let img = clipboard_rs::RustImageData::from_path(path).map_err(err)?;
+    ctx.set_image(img).map_err(err)?;
+    Ok(())
+}
+
 /// 把某条剪贴项内容写到系统剪贴板(copy_clip 与自动粘贴共用)。
 fn set_clipboard_to_clip(db: &Db, clip_id: i64) -> CmdResult<()> {
     use clipboard_rs::{Clipboard, ClipboardContext};
@@ -1085,13 +1095,11 @@ fn set_clipboard_to_clip(db: &Db, clip_id: i64) -> CmdResult<()> {
         )
         .map_err(err)?
     };
-    let ctx = ClipboardContext::new().map_err(err)?;
     if kind == "image" {
-        use clipboard_rs::common::RustImage;
         let path = image_path.ok_or("CLIP_NO_IMAGE")?;
-        let img = clipboard_rs::RustImageData::from_path(&path).map_err(err)?;
-        ctx.set_image(img).map_err(err)?;
+        set_clipboard_image_from_path(&path)?;
     } else {
+        let ctx = ClipboardContext::new().map_err(err)?;
         ctx.set_text(text.unwrap_or_default()).map_err(err)?;
     }
     Ok(())

@@ -45,8 +45,24 @@ MinimalTodoApp-v*-win-x64.exe
 # Node / Vite 前端
 node_modules/
 dist/
+dist-web/
 
 # Rust / Tauri
 src-tauri/target/
 src-tauri/gen/schemas/
 *.tsbuildinfo
+
+# 参考用的第三方源码(flameshot,仅本地参考,不入库)
+flameshot-master/
+
+# 内部文档:公开仓库,这些只在本地保留、绝不推送(提示词/交接/内部发布记录)
+/CLAUDE.md
+/handoff.md
+/prompts.md
+/prompts_origin.md
+/release.md
+/release-notes.md
+/legacy/CLAUDE.md
+/legacy/release-notes.md
+/legacy/MinimalTodoApp/release.md
+/legacy/MinimalTodoApp/优化记录.md

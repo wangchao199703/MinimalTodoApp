@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { getCurrentWindow, LogicalSize } from "@tauri-apps/api/window";
+import { isTauri } from "./lib/env";
 import { useAppStore } from "./store/useAppStore";
 import { parseDue, nowText } from "./lib/date";
 import { applyFontSettings } from "./lib/font";
@@ -22,6 +23,7 @@ import Toasts from "./components/ui/Toasts";
 import UndoToast from "./components/ui/UndoToast";
 import { ConfirmHost } from "./components/ui/ConfirmDialog";
 import UpdateDialog from "./components/dialogs/UpdateDialog";
+import InstallGuide from "./components/web/InstallGuide";
 import { checkForUpdate, type UpdateInfo } from "./lib/updater";
 import { useState } from "react";
 
@@ -187,6 +189,7 @@ export default function App() {
     const was = prevSchedule.current;
     prevSchedule.current = scheduleOpen;
     if (was === scheduleOpen) return;
+    if (!isTauri) return; // Web 无法程序化改窗口尺寸:日历面板靠 flex 布局自适应
 
     const win = getCurrentWindow();
     void (async () => {
@@ -228,6 +231,7 @@ export default function App() {
   //
   // onResized 在 resize 与最大化/还原时都会触发;防抖到尺寸停止变化后再重绘一次,避免拖动中频繁抖动。
   useEffect(() => {
+    if (!isTauri) return; // 透明窗重绘 hack 是桌面专属;Web 不透明、无 onResized
     let timer: number | undefined;
     let unlisten: (() => void) | undefined;
     let disposed = false;
@@ -278,7 +282,7 @@ export default function App() {
   useEffect(() => {
     if (!loaded) return;
     const s = useAppStore.getState().settings;
-    if (s["always_on_top"] === "1") void getCurrentWindow().setAlwaysOnTop(true);
+    if (isTauri && s["always_on_top"] === "1") void getCurrentWindow().setAlwaysOnTop(true);
     applyFontSettings(
       s["font_family"] || "Microsoft YaHei UI",
       Number(s["font_size"] || "14"),
@@ -381,7 +385,8 @@ export default function App() {
       <UndoToast />
       <ConfirmHost />
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
-      <ResizeBorders />
+      {isTauri && <ResizeBorders />}
+      {!isTauri && <InstallGuide />}
     </div>
   );
 }

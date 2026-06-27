@@ -1,4 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
+import { isTauri } from "./env";
+import { dexieBackend } from "./backend/dexie";
 
 // 字段名与 Rust serde 输出(snake_case)严格一致,不要做命名转换
 
@@ -33,6 +35,22 @@ export interface Group {
   icon: string;
   icon_image: string;
   is_collapsed: boolean;
+}
+
+/** 截图冻结帧元数据:合成 PNG 路径 + 虚拟桌面物理矩形(x/y 可为负) */
+export interface CaptureTarget {
+  path: string;
+  vx: number;
+  vy: number;
+  vw: number;
+  vh: number;
+}
+
+/** 单个桌面贴图的图片元数据:PNG 路径 + 图像物理尺寸 */
+export interface PinTarget {
+  path: string;
+  phys_w: number;
+  phys_h: number;
 }
 
 export interface CreateTaskRequest {
@@ -133,7 +151,8 @@ export interface ClipTag {
   color: string;
 }
 
-export const ipc = {
+/** Tauri 桌面后端:全部命令经 invoke 调 Rust。也是 Backend 接口的类型基准。 */
+const tauriBackend = {
   getGroups: () => invoke<Group[]>("get_groups"),
   createGroup: (name: string) => invoke<Group>("create_group", { name }),
   updateGroup: (req: UpdateGroupRequest) => invoke<Group>("update_group", { req }),
@@ -243,4 +262,49 @@ export const ipc = {
     invoke<void>("open_clip_editor_window", { clip_id: clipId }),
   /** 编辑窗口挂载后取走待编辑的剪贴项 id(并清空) */
   takeClipEditorTarget: () => invoke<number | null>("take_clip_editor_target"),
+
+  // ---- 截图 + 桌面贴图 ----
+  /** 遮罩窗挂载后取走本次冻结帧元数据(路径 + 虚拟桌面物理矩形) */
+  takeCaptureTarget: () => invoke<CaptureTarget | null>("take_capture_target"),
+  /** 写一张 PNG(canvas 导出的「选区+标注」字节)到截图临时目录,返回绝对路径 */
+  saveCapturePng: (bytes: Uint8Array) => invoke<string>("save_capture_png", bytes, { headers: {} }),
+  /** 把截图 PNG 写入系统剪贴板 */
+  copyCaptureToClipboard: (pngPath: string) =>
+    invoke<void>("copy_capture_to_clipboard", { png_path: pngPath }),
+  /** 另存:把临时 PNG 复制到用户选定的目标路径 */
+  saveCaptureAs: (srcPath: string, destPath: string) =>
+    invoke<void>("save_capture_as", { src_path: srcPath, dest_path: destPath }),
+  /** 删除截图临时文件(遮罩取消/确认后清 cap-*.png) */
+  discardCapture: (path: string) => invoke<void>("discard_capture", { path }),
+  /** 开一个桌面贴图悬浮窗(物理位置/尺寸) */
+  openPinWindow: (
+    pngPath: string,
+    physX: number,
+    physY: number,
+    physW: number,
+    physH: number,
+  ) =>
+    invoke<void>("open_pin_window", {
+      png_path: pngPath,
+      phys_x: physX,
+      phys_y: physY,
+      phys_w: physW,
+      phys_h: physH,
+    }),
+  /** 贴图窗挂载后按 label 取走图片元数据 */
+  takePinTarget: (label: string) => invoke<PinTarget | null>("take_pin_target", { label }),
+  /** 贴图窗关闭前:出活跃集合 + 删其临时 PNG */
+  unregisterPin: (label: string, pngPath: string) =>
+    invoke<void>("unregister_pin", { label, png_path: pngPath }),
+  /** 关闭所有贴图窗 */
+  closeAllPins: () => invoke<void>("close_all_pins"),
 };
+
+/** 后端接口:以 Tauri 实现为类型基准,Dexie/IndexedDB 实现据此对齐。 */
+export type Backend = typeof tauriBackend;
+
+/**
+ * 按运行环境选后端:桌面(Tauri)= invoke 调 Rust;浏览器(Web/PWA)= Dexie/IndexedDB。
+ * 导入方 `import { ipc } from "../lib/tauri-ipc"` 的用法完全不变。
+ */
+export const ipc: Backend = isTauri ? tauriBackend : dexieBackend;

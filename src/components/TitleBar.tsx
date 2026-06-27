@@ -38,6 +38,9 @@ import { Popover, MenuItem } from "./ui/Popover";
 import UpdateDialog from "./dialogs/UpdateDialog";
 import HelpDialog from "./dialogs/HelpDialog";
 import ImportExportDialog from "./dialogs/ImportExportDialog";
+import Modal from "./ui/Modal";
+import SettingsPanel from "./dialogs/SettingsPanel";
+import { isTauri } from "../lib/env";
 
 /** 两个家族,排序:浅色 → 深色 → 渐变玻璃(分组间插分隔线) */
 const THEME_OPTIONS: { key: Theme; icon: typeof Palette; divider?: boolean }[] = [
@@ -58,9 +61,9 @@ const THEME_OPTIONS: { key: Theme; icon: typeof Palette; divider?: boolean }[] =
   { key: "glass-dark", icon: CircleDot },
 ];
 
-const win = getCurrentWindow();
-
 export default function TitleBar() {
+  // 延迟到组件内取窗口句柄(Web 无 Tauri,模块加载期调 getCurrentWindow() 会抛)
+  const win = isTauri ? getCurrentWindow() : null;
   const language = useAppStore((s) => s.language);
   const setLanguage = useAppStore((s) => s.setLanguage);
   const settings = useAppStore((s) => s.settings);
@@ -73,6 +76,7 @@ export default function TitleBar() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [ioOpen, setIoOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const manualCheck = () => {
     pushToast(t("S.Update.Checking"));
@@ -89,7 +93,7 @@ export default function TitleBar() {
   const setScheduleOpen = useAppStore((s) => s.setScheduleOpen);
   const onTop = settings["always_on_top"] === "1";
   const toggleOnTop = () => {
-    void win.setAlwaysOnTop(!onTop);
+    void win?.setAlwaysOnTop(!onTop);
     saveSetting("always_on_top", onTop ? "0" : "1");
   };
 
@@ -115,15 +119,17 @@ export default function TitleBar() {
         >
           <CalendarDays size={13} />
         </button>
-        <button
-          title={t("S.AlwaysOnTop")}
-          onClick={toggleOnTop}
-          className={`flex h-7 w-7 items-center justify-center rounded hover:bg-card-hover ${
-            onTop ? "text-accent" : "text-text-2"
-          }`}
-        >
-          <Pin size={13} fill={onTop ? "currentColor" : "none"} />
-        </button>
+        {isTauri && (
+          <button
+            title={t("S.AlwaysOnTop")}
+            onClick={toggleOnTop}
+            className={`flex h-7 w-7 items-center justify-center rounded hover:bg-card-hover ${
+              onTop ? "text-accent" : "text-text-2"
+            }`}
+          >
+            <Pin size={13} fill={onTop ? "currentColor" : "none"} />
+          </button>
+        )}
         <button
           title={`${t("S.MenuTheme")}: ${THEME_LABELS[theme]}`}
           onClick={(e) => setThemeAnchor(e.currentTarget)}
@@ -141,27 +147,31 @@ export default function TitleBar() {
         >
           <Menu size={14} />
         </button>
-        <button
-          title={t("S.X.Minimize")}
-          onClick={() => void win.hide()}
-          className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
-        >
-          <Minus size={14} />
-        </button>
-        <button
-          title={t("S.X.ToggleMax")}
-          onClick={() => void win.toggleMaximize()}
-          className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
-        >
-          <Square size={11} />
-        </button>
-        <button
-          title={t("S.Close")}
-          onClick={() => void win.hide()}
-          className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-red-500 hover:text-white"
-        >
-          <X size={14} />
-        </button>
+        {isTauri && (
+          <>
+            <button
+              title={t("S.X.Minimize")}
+              onClick={() => void win?.hide()}
+              className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
+            >
+              <Minus size={14} />
+            </button>
+            <button
+              title={t("S.X.ToggleMax")}
+              onClick={() => void win?.toggleMaximize()}
+              className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-card-hover"
+            >
+              <Square size={11} />
+            </button>
+            <button
+              title={t("S.Close")}
+              onClick={() => void win?.hide()}
+              className="flex h-7 w-7 items-center justify-center rounded text-text-2 hover:bg-red-500 hover:text-white"
+            >
+              <X size={14} />
+            </button>
+          </>
+        )}
       </div>
 
       {menuAnchor && (
@@ -169,7 +179,9 @@ export default function TitleBar() {
           <div className="w-44">
             <MenuItem
               onClick={() => {
-                void ipc.openSettingsWindow();
+                // 桌面:独立设置窗口;Web:内联模态(单窗口环境)
+                if (isTauri) void ipc.openSettingsWindow();
+                else setSettingsOpen(true);
                 setMenuAnchor(null);
               }}
             >
@@ -260,6 +272,11 @@ export default function TitleBar() {
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
       {ioOpen && <ImportExportDialog onClose={() => setIoOpen(false)} />}
       {updateInfo && <UpdateDialog info={updateInfo} onClose={() => setUpdateInfo(null)} />}
+      {settingsOpen && (
+        <Modal title={t("S.MenuSettings")} onClose={() => setSettingsOpen(false)} width={640}>
+          <SettingsPanel />
+        </Modal>
+      )}
     </header>
   );
 }

@@ -1,14 +1,17 @@
 {
   "name": "minimal-todo",
   "private": true,
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "极简 Windows 本地待办 —— Tauri v2 + Rust/SQLite + React 19",
   "type": "module",
   "scripts": {
     "dev": "vite --port 1420",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "dev:web": "vite --port 5173",
+    "build:web": "tsc -b && vite build --outDir dist-web --base ./",
+    "preview:web": "vite preview --outDir dist-web --port 5173"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.7.7",
@@ -30,6 +33,7 @@
     "@tiptap/react": "^3.26.1",
     "@tiptap/starter-kit": "^3.26.1",
     "@tiptap/suggestion": "^3.26.1",
+    "dexie": "^4.4.4",
     "lucide-react": "^1.16.0",
     "marked": "^17.0.6",
     "react": "^19.2.6",

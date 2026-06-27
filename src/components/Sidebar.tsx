@@ -17,6 +17,7 @@ import { useAppStore, type View } from "../store/useAppStore";
 import { useSortableItem } from "../hooks/useSortableItem";
 import { reorderIds } from "../lib/dnd";
 import { t } from "../lib/i18n";
+import { isTauri } from "../lib/env";
 import { Popover, MenuItem } from "./ui/Popover";
 import ColorDialog from "./dialogs/ColorDialog";
 
@@ -65,7 +66,8 @@ function parseNavOrder(raw: string | undefined): NavKey[] {
     result.splice(insertAt, 0, k);
     seen.add(k);
   }
-  return result;
+  // Web 无系统剪贴板监听:隐藏剪切板入口
+  return isTauri ? result : result.filter((k) => k !== "clipboard");
 }
 
 /** 导航项拖拽外壳:整行作为拖拽源 + 释放目标,命中时高亮 closestEdge 指示线 */

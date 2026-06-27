@@ -1,3 +1,4 @@
+mod capture;
 mod clipboard;
 mod commands;
 mod database;
@@ -71,6 +72,11 @@ pub fn run() {
         .manage(window::HotkeyMap(std::sync::Mutex::new(Vec::new())))
         // 「上一个外部前台窗口」追踪:供双击剪贴项自动粘贴还原焦点
         .manage(std::sync::Arc::new(paste::ForegroundTracker::new()))
+        // 截图:本次冻结帧元数据(overlay 挂载后 take 走)
+        .manage(capture::CaptureTarget::new())
+        // 桌面贴图:label→图片元数据(贴图窗挂载后 take 走)+ 活跃贴图 label 集合
+        .manage(capture::PinTargets::new())
+        .manage(capture::ActivePins::new())
         .setup(|app| {
             use tauri::Manager;
             // 把「实际」数据目录下的图片目录动态加入 asset 协议白名单:数据目录可迁移、
@@ -80,7 +86,7 @@ pub fn run() {
             {
                 let scope = app.asset_protocol_scope();
                 let data = database::data_dir();
-                for sub in ["clipboard-images", "note-images", "group-icons"] {
+                for sub in ["clipboard-images", "note-images", "group-icons", "screenshots"] {
                     if let Err(e) = scope.allow_directory(data.join(sub), true) {
                         eprintln!("asset scope 放行 {sub} 失败:{e}");
                     }
@@ -92,6 +98,8 @@ pub fn run() {
             window::register_hotkeys(app.handle());
             // 启动时按「过期时间」设置清理一次旧剪贴项(运行中由 commit 实时清理)
             clipboard::purge_expired_on_startup(app.handle());
+            // 启动时清理上次遗留的截图冻结帧(崩溃/异常退出的孤儿 cap-*.png)
+            capture::cleanup_orphan_captures();
             // 后台剪贴板监听(默认开启):独立线程跑阻塞式 watcher,变化即入库 + emit
             clipboard::start_watching(app.handle().clone());
             // 后台追踪外部前台窗口(供双击剪贴项自动粘贴还原焦点)
@@ -166,6 +174,15 @@ pub fn run() {
             window::set_dock_hold,
             window::update_hotkeys,
             window::pause_hotkeys,
+            capture::take_capture_target,
+            capture::save_capture_png,
+            capture::copy_capture_to_clipboard,
+            capture::save_capture_as,
+            capture::discard_capture,
+            capture::open_pin_window,
+            capture::take_pin_target,
+            capture::unregister_pin,
+            capture::close_all_pins,
             updater::apply_update,
             updater::download_update,
             updater::open_url,

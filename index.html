@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>极简待办</title>
+    <!-- PWA(Web 版生效;Tauri 桌面壳忽略 manifest、也不注册 SW) -->
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="apple-touch-icon" href="./icons/icon-256.png" />
   </head>
   <body>
     <div id="root"></div>

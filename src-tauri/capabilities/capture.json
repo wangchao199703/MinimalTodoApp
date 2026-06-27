@@ -1,0 +1,18 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "capture",
+  "description": "截图遮罩窗(capture-overlay)与桌面贴图窗(pin-*)所需权限:窗口定位/缩放/拖动/关闭 + 保存对话框",
+  "windows": ["capture-overlay", "pin-*"],
+  "permissions": [
+    "core:default",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
+    "core:window:allow-scale-factor",
+    "core:window:allow-set-size",
+    "core:window:allow-set-position",
+    "core:window:allow-outer-position",
+    "core:window:allow-outer-size",
+    "core:window:allow-start-dragging",
+    "dialog:allow-save"
+  ]
+}

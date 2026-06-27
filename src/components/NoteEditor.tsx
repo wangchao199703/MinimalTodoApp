@@ -8,6 +8,8 @@ import Image from "@tiptap/extension-image";
 import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { isTauri } from "../lib/env";
+import { imageUrl } from "../lib/backend/objectUrl";
 import {
   Baseline,
   Bold,
@@ -50,8 +52,11 @@ export async function ensureNoteImageDir(): Promise<void> {
 
 function resolveNoteImg(src: string | null | undefined): string {
   if (!src) return "";
-  if (src.startsWith("noteimg://") && imageDir) {
-    return convertFileSrc(`${imageDir}\\${src.slice("noteimg://".length)}`);
+  if (src.startsWith("noteimg://")) {
+    const name = src.slice("noteimg://".length);
+    // Web:从 IndexedDB Blob 的 objectURL 缓存同步取;桌面:asset 协议
+    if (!isTauri) return imageUrl(name);
+    return imageDir ? convertFileSrc(`${imageDir}\\${name}`) : "";
   }
   return src;
 }

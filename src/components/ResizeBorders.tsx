@@ -1,7 +1,5 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 
-const win = getCurrentWindow();
-
 /**
  * 自绘窗口(decorations:false)的边缘缩放手柄:8 个方向贴在窗口四边四角,
  * 按下时调 Tauri startResizeDragging 触发系统级缩放。z 在内容之上、模态之下。
@@ -21,8 +19,8 @@ export default function ResizeBorders() {
   const start = (dir: string) => (e: React.MouseEvent) => {
     if (e.button !== 0) return;
     e.preventDefault();
-    // 类型由 Tauri 校验;传方向字符串
-    void win.startResizeDragging(dir as never);
+    // 类型由 Tauri 校验;传方向字符串。getCurrentWindow() 延迟到事件里调,避免模块加载即触发(Web 无 Tauri)
+    void getCurrentWindow().startResizeDragging(dir as never);
   };
   return (
     <>

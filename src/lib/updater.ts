@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../store/useAppStore";
+import { isTauri } from "./env";
 
 const REPO_SLUG = "wangchao199703/MinimalTodoApp";
 const RELEASES_LATEST =
@@ -51,6 +52,7 @@ function newer(a: [number, number, number], b: [number, number, number]): boolea
  * manual=true 时无视 auto_update_enabled 与 ignored_update_version(手动检查必查、必显示结果)。
  */
 export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null> {
+  if (!isTauri) return null; // Web/PWA 自更新走 Service Worker,不走桌面的 GitHub exe 替换
   const s = useAppStore.getState();
   if (!manual && s.settings["auto_update_enabled"] === "0") return null;
 
