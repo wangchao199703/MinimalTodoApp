@@ -202,13 +202,11 @@ pub fn pause_hotkeys(app: AppHandle) {
 #[tauri::command]
 pub fn rebuild_tray(app: AppHandle, en: bool) -> Result<(), String> {
     let Some(tray) = app.tray_by_id("main") else { return Ok(()) };
-    let capture_label = if en { "Screenshot" } else { "截图" };
     let show_label = if en { "Show & center" } else { "显示并居中" };
     let quit_label = if en { "Exit" } else { "退出" };
-    let capture = MenuItem::with_id(&app, "capture", capture_label, true, None::<&str>).map_err(err)?;
     let show = MenuItem::with_id(&app, "show", show_label, true, None::<&str>).map_err(err)?;
     let quit = MenuItem::with_id(&app, "quit", quit_label, true, None::<&str>).map_err(err)?;
-    let menu = Menu::with_items(&app, &[&capture, &show, &quit]).map_err(err)?;
+    let menu = Menu::with_items(&app, &[&show, &quit]).map_err(err)?;
     tray.set_menu(Some(menu)).map_err(err)?;
     tray.set_tooltip(Some(if en { "Todo" } else { "待办" })).map_err(err)?;
     Ok(())
@@ -225,14 +223,12 @@ pub fn set_dock_hold(app: AppHandle, hold: bool) {
 pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
     // 托盘菜单按启动时语言构建,切语言时经 rebuild_tray 即时重建
     let en = read_setting(app, "language").as_deref() == Some("en");
-    let capture_label = if en { "Screenshot" } else { "截图" };
     let show_label = if en { "Show & center" } else { "显示并居中" };
     let quit_label = if en { "Exit" } else { "退出" };
 
-    let capture = MenuItem::with_id(app, "capture", capture_label, true, None::<&str>)?;
     let show = MenuItem::with_id(app, "show", show_label, true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", quit_label, true, None::<&str>)?;
-    let menu = Menu::with_items(app, &[&capture, &show, &quit])?;
+    let menu = Menu::with_items(app, &[&show, &quit])?;
 
     TrayIconBuilder::with_id("main")
         .icon(app.default_window_icon().expect("缺少应用图标").clone())
@@ -240,16 +236,14 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, e| match e.id.as_ref() {
-            "capture" => crate::capture::start_capture(app),
             "show" => show_main(app),
             "quit" => app.exit(0),
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
-            // 左键单击 = 截图(用户指定:点最小化的托盘图标即触发截图)。
-            // 恢复主窗口改走右键菜单「显示并居中」或全局快捷键 Alt+1~5,二者刻意区分。
+            // 左键单击 = 唤出主窗口(取消隐藏 + 置顶,不居中);截图功能已下线入口
             if let TrayIconEvent::Click { button: MouseButton::Left, .. } = event {
-                crate::capture::start_capture(tray.app_handle());
+                summon_main(tray.app_handle());
             }
         })
         .build(app)?;

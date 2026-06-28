@@ -94,6 +94,8 @@ pub struct NoteGroup {
     pub name: String,
     pub order_index: i64,
     pub is_collapsed: bool,
+    /// 父分组 id(None = 顶层分组);支持无限嵌套子分组
+    pub parent_id: Option<String>,
 }
 
 /// 补丁式更新便签:None=不变;可清空文本字段传空串

@@ -503,6 +503,7 @@ fn row_to_note_group(row: &Row) -> rusqlite::Result<NoteGroup> {
         name: row.get("name")?,
         order_index: row.get("order_index")?,
         is_collapsed: row.get("is_collapsed")?,
+        parent_id: row.get("parent_id")?,
     })
 }
 
@@ -520,24 +521,68 @@ pub(crate) fn get_note_groups_impl(conn: &Connection) -> CmdResult<Vec<NoteGroup
     rows.collect::<Result<Vec<_>, _>>().map_err(err)
 }
 
-#[tauri::command]
-pub fn create_note_group(db: State<Db>, name: String) -> CmdResult<NoteGroup> {
+#[tauri::command(rename_all = "snake_case")]
+pub fn create_note_group(
+    db: State<Db>,
+    name: String,
+    parent_id: Option<String>,
+) -> CmdResult<NoteGroup> {
     let conn = db.0.lock().map_err(err)?;
-    create_note_group_impl(&conn, name)
+    create_note_group_impl(&conn, name, parent_id)
 }
 
-pub(crate) fn create_note_group_impl(conn: &Connection, name: String) -> CmdResult<NoteGroup> {
+pub(crate) fn create_note_group_impl(
+    conn: &Connection,
+    name: String,
+    parent_id: Option<String>,
+) -> CmdResult<NoteGroup> {
     let id = uuid::Uuid::new_v4().to_string();
-    let order: i64 = conn
-        .query_row("SELECT COALESCE(MAX(order_index), -1) + 1 FROM note_groups", [], |r| r.get(0))
-        .map_err(err)?;
+    // order_index 在「同一父级」内计算。子分组插到兄弟最前(MIN-1),顶层分组追加到末尾(MAX+1)。
+    let order: i64 = if parent_id.is_some() {
+        conn.query_row(
+            "SELECT COALESCE(MIN(order_index), 1) - 1 FROM note_groups WHERE parent_id IS ?1",
+            params![parent_id],
+            |r| r.get(0),
+        )
+        .map_err(err)?
+    } else {
+        conn.query_row(
+            "SELECT COALESCE(MAX(order_index), -1) + 1 FROM note_groups WHERE parent_id IS ?1",
+            params![parent_id],
+            |r| r.get(0),
+        )
+        .map_err(err)?
+    };
     conn.execute(
-        "INSERT INTO note_groups (id, name, order_index) VALUES (?1, ?2, ?3)",
-        params![id, name, order],
+        "INSERT INTO note_groups (id, name, order_index, parent_id) VALUES (?1, ?2, ?3, ?4)",
+        params![id, name, order, parent_id],
     )
     .map_err(err)?;
     conn.query_row("SELECT * FROM note_groups WHERE id = ?1", params![id], row_to_note_group)
         .map_err(err)
+}
+
+/// 收集从 `root` 出发的所有后代分组 id(含自身),用于环检测/级联。
+fn note_group_descendants(conn: &Connection, root: &str) -> rusqlite::Result<Vec<String>> {
+    let mut all = vec![root.to_string()];
+    let mut frontier = vec![root.to_string()];
+    let mut guard = 0;
+    while let Some(cur) = frontier.pop() {
+        guard += 1;
+        if guard > 10_000 {
+            break; // 防御:理论无环,但脏数据兜底
+        }
+        let mut stmt = conn.prepare("SELECT id FROM note_groups WHERE parent_id = ?1")?;
+        let children: Vec<String> =
+            stmt.query_map(params![cur], |r| r.get(0))?.filter_map(Result::ok).collect();
+        for c in children {
+            if !all.contains(&c) {
+                all.push(c.clone());
+                frontier.push(c);
+            }
+        }
+    }
+    Ok(all)
 }
 
 #[tauri::command(rename_all = "snake_case")]
@@ -546,9 +591,10 @@ pub fn update_note_group(
     id: String,
     name: Option<String>,
     is_collapsed: Option<bool>,
+    parent_id: Option<Option<String>>,
 ) -> CmdResult<NoteGroup> {
     let conn = db.0.lock().map_err(err)?;
-    update_note_group_impl(&conn, id, name, is_collapsed)
+    update_note_group_impl(&conn, id, name, is_collapsed, parent_id)
 }
 
 pub(crate) fn update_note_group_impl(
@@ -556,6 +602,7 @@ pub(crate) fn update_note_group_impl(
     id: String,
     name: Option<String>,
     is_collapsed: Option<bool>,
+    parent_id: Option<Option<String>>,
 ) -> CmdResult<NoteGroup> {
     let mut g = conn
         .query_row("SELECT * FROM note_groups WHERE id = ?1", params![id], row_to_note_group)
@@ -566,12 +613,38 @@ pub(crate) fn update_note_group_impl(
     if let Some(v) = is_collapsed {
         g.is_collapsed = v;
     }
+    // parent_id 是双层 Option:外 Some 表示「要改」,内层 Some(x)=移到 x 下、None=升为顶层。
+    if let Some(new_parent) = parent_id {
+        // 环检测:不能把分组移到自己或自己的后代下
+        if let Some(ref p) = new_parent {
+            let descendants = note_group_descendants(conn, &g.id).map_err(err)?;
+            if descendants.contains(p) {
+                return Err("不能把分组移动到自身或其子分组下".into());
+            }
+        }
+        g.parent_id = new_parent;
+    }
     conn.execute(
-        "UPDATE note_groups SET name=?2, is_collapsed=?3 WHERE id=?1",
-        params![g.id, g.name, g.is_collapsed],
+        "UPDATE note_groups SET name=?2, is_collapsed=?3, parent_id=?4 WHERE id=?1",
+        params![g.id, g.name, g.is_collapsed, g.parent_id],
     )
     .map_err(err)?;
     Ok(g)
+}
+
+#[tauri::command]
+pub fn reorder_note_groups(db: State<Db>, ids: Vec<String>) -> CmdResult<()> {
+    let mut conn = db.0.lock().map_err(err)?;
+    let tx = conn.transaction().map_err(err)?;
+    for (i, id) in ids.iter().enumerate() {
+        tx.execute(
+            "UPDATE note_groups SET order_index = ?1 WHERE id = ?2",
+            params![i as i64, id],
+        )
+        .map_err(err)?;
+    }
+    tx.commit().map_err(err)?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -1273,10 +1346,10 @@ mod tests {
     // ---- 迁移 / 模式 ----
 
     #[test]
-    fn migration_sets_version_4_and_creates_tables() {
+    fn migration_sets_latest_version_and_creates_tables() {
         let conn = mem_db();
         let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 6);
+        assert_eq!(v, 8);
         // 既有六表 + 剪贴板三表都在
         for t in [
             "groups", "tasks", "note_groups", "notes", "custom_themes", "settings",
@@ -1462,7 +1535,7 @@ mod tests {
     #[test]
     fn update_note_sets_fields_and_touches_updated_at() {
         let conn = mem_db();
-        let g = create_note_group_impl(&conn, "笔记".into()).unwrap();
+        let g = create_note_group_impl(&conn, "笔记".into(), None).unwrap();
         let n = create_note_impl(&conn, Some(g.id.clone())).unwrap();
         let req = UpdateNoteRequest {
             id: n.id.clone(),
@@ -1481,7 +1554,7 @@ mod tests {
     #[test]
     fn update_note_empty_group_falls_back_to_default() {
         let conn = mem_db();
-        let g = create_note_group_impl(&conn, "默认".into()).unwrap();
+        let g = create_note_group_impl(&conn, "默认".into(), None).unwrap();
         let n = create_note_impl(&conn, Some(g.id.clone())).unwrap();
         // 传空串 = 清空 → 回落默认分组(便签不允许无分组)
         let req = UpdateNoteRequest {
@@ -1498,8 +1571,8 @@ mod tests {
     #[test]
     fn delete_note_group_regroups_orphans() {
         let conn = mem_db();
-        let g1 = create_note_group_impl(&conn, "一".into()).unwrap();
-        let _g2 = create_note_group_impl(&conn, "二".into()).unwrap();
+        let g1 = create_note_group_impl(&conn, "一".into(), None).unwrap();
+        let _g2 = create_note_group_impl(&conn, "二".into(), None).unwrap();
         let n = create_note_impl(&conn, Some(g1.id.clone())).unwrap();
         // 删掉便签所在分组:便签不应丢失,应被并入剩余分组
         delete_note_group_impl(&conn, g1.id.clone()).unwrap();
@@ -1511,9 +1584,9 @@ mod tests {
     #[test]
     fn note_group_update_and_reorder() {
         let conn = mem_db();
-        let a = create_note_group_impl(&conn, "A".into()).unwrap();
-        let b = create_note_group_impl(&conn, "B".into()).unwrap();
-        update_note_group_impl(&conn, a.id.clone(), Some("AA".into()), Some(true)).unwrap();
+        let a = create_note_group_impl(&conn, "A".into(), None).unwrap();
+        let b = create_note_group_impl(&conn, "B".into(), None).unwrap();
+        update_note_group_impl(&conn, a.id.clone(), Some("AA".into()), Some(true), None).unwrap();
         let groups = get_note_groups_impl(&conn).unwrap();
         let aa = groups.iter().find(|g| g.id == a.id).unwrap();
         assert_eq!(aa.name, "AA");

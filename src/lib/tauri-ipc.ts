@@ -115,6 +115,8 @@ export interface NoteGroup {
   name: string;
   order_index: number;
   is_collapsed: boolean;
+  /** 父分组 id(null = 顶层);支持无限嵌套子分组 */
+  parent_id: string | null;
 }
 
 export interface UpdateNoteRequest {
@@ -181,10 +183,21 @@ const tauriBackend = {
   purgeNote: (id: string) => invoke<void>("purge_note", { id }),
   emptyNoteTrash: () => invoke<void>("empty_note_trash"),
   getNoteGroups: () => invoke<NoteGroup[]>("get_note_groups"),
-  createNoteGroup: (name: string) => invoke<NoteGroup>("create_note_group", { name }),
-  updateNoteGroup: (id: string, fields: { name?: string; is_collapsed?: boolean }) =>
-    invoke<NoteGroup>("update_note_group", { id, ...fields }),
+  createNoteGroup: (name: string, parentId?: string | null) =>
+    invoke<NoteGroup>("create_note_group", { name, parent_id: parentId ?? null }),
+  updateNoteGroup: (
+    id: string,
+    fields: { name?: string; is_collapsed?: boolean; parent_id?: string | null },
+  ) => {
+    // parent_id 是双层语义:字段存在(即便为 null)才下发,告诉后端「要改 parent」
+    const payload: Record<string, unknown> = { id };
+    if (fields.name !== undefined) payload.name = fields.name;
+    if (fields.is_collapsed !== undefined) payload.is_collapsed = fields.is_collapsed;
+    if ("parent_id" in fields) payload.parent_id = fields.parent_id ?? null;
+    return invoke<NoteGroup>("update_note_group", payload);
+  },
   deleteNoteGroup: (id: string) => invoke<void>("delete_note_group", { id }),
+  reorderNoteGroups: (ids: string[]) => invoke<void>("reorder_note_groups", { ids }),
 
   /** 导出文本到桌面,返回完整路径 */
   exportFile: (fileName: string, content: string) =>

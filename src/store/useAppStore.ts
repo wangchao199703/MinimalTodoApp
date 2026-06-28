@@ -113,9 +113,12 @@ interface AppState {
   emptyNoteTrash: () => Promise<void>;
   /** 清空某便签分组下的所有便签 */
   clearNoteGroupNotes: (groupId: string) => Promise<void>;
-  addNoteGroup: (name: string) => Promise<void>;
+  addNoteGroup: (name: string, parentId?: string | null) => Promise<void>;
   renameNoteGroup: (id: string, name: string) => Promise<void>;
   toggleNoteGroupCollapse: (g: NoteGroup) => Promise<void>;
+  moveNoteGroup: (id: string, parentId: string | null) => Promise<void>;
+  /** 把分组 id 重排到 targetId 的前/后(同级);跨级时先归到目标的父级再排序 */
+  reorderNoteGroup: (id: string, targetId: string, edge: "before" | "after") => Promise<void>;
   removeNoteGroup: (id: string) => Promise<void>;
   setScheduleOpen: (open: boolean) => void;
   setView: (v: View) => void;
@@ -539,8 +542,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  addNoteGroup: async (name) => {
-    const g = await ipc.createNoteGroup(name);
+  addNoteGroup: async (name, parentId) => {
+    const g = await ipc.createNoteGroup(name, parentId ?? null);
     set((s) => ({ noteGroups: [...s.noteGroups, g] }));
   },
 
@@ -552,6 +555,59 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleNoteGroupCollapse: async (g) => {
     const next = await ipc.updateNoteGroup(g.id, { is_collapsed: !g.is_collapsed });
     set((s) => ({ noteGroups: s.noteGroups.map((x) => (x.id === g.id ? next : x)) }));
+  },
+
+  moveNoteGroup: async (id, parentId) => {
+    // 改父分组(reparent),后端做环检测;失败(成环)则忽略
+    try {
+      const next = await ipc.updateNoteGroup(id, { parent_id: parentId });
+      set((s) => ({ noteGroups: s.noteGroups.map((x) => (x.id === id ? next : x)) }));
+    } catch {
+      /* 成环等非法移动:静默忽略,树保持原样 */
+    }
+  },
+
+  reorderNoteGroup: async (id, targetId, edge) => {
+    const groups = get().noteGroups;
+    const src = groups.find((g) => g.id === id);
+    const tgt = groups.find((g) => g.id === targetId);
+    if (!src || !tgt) return;
+    const destParent = tgt.parent_id ?? null;
+    // 环检测:不能把分组排到自己后代所在的层级(即目标父级是 src 的后代)
+    if (destParent) {
+      const descendants = new Set<string>([id]);
+      let grew = true;
+      while (grew) {
+        grew = false;
+        for (const g of groups) {
+          if (g.parent_id && descendants.has(g.parent_id) && !descendants.has(g.id)) {
+            descendants.add(g.id);
+            grew = true;
+          }
+        }
+      }
+      if (descendants.has(destParent)) return; // 非法:会成环
+    }
+    try {
+      // 1) 跨级:先把 src 归到目标的父级
+      if ((src.parent_id ?? null) !== destParent) {
+        await ipc.updateNoteGroup(id, { parent_id: destParent });
+      }
+      // 2) 计算目标父级下的兄弟顺序(排除 src),把 src 插到 target 前/后
+      const siblings = get()
+        .noteGroups.filter((g) => (g.parent_id ?? null) === destParent && g.id !== id)
+        .sort((a, b) => a.order_index - b.order_index)
+        .map((g) => g.id);
+      const tgtIdx = siblings.indexOf(targetId);
+      const insertAt = edge === "before" ? tgtIdx : tgtIdx + 1;
+      siblings.splice(insertAt, 0, id);
+      await ipc.reorderNoteGroups(siblings);
+      // 3) 回灌最新分组顺序
+      const noteGroups = await ipc.getNoteGroups();
+      set({ noteGroups });
+    } catch {
+      /* 非法移动:静默忽略 */
+    }
   },
 
   removeNoteGroup: async (id) => {

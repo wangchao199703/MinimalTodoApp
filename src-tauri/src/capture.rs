@@ -3,6 +3,11 @@
 //! 设计:Rust 只做「捕获 + 文件 + 窗口 + 剪贴板」,所有绘图/裁剪/标注在前端 canvas 完成。
 //! 捕获用 **GDI BitBlt** 抓整个虚拟桌面(跨所有显示器),走原始 Win32 FFI
 //! (对齐 window.rs / paste.rs 的 `#[link]` 风格),**零新依赖、零联网**;PNG 编码用已有的 image crate。
+//!
+//! 注:截图功能前端入口已下线(托盘左键/右键不再触发),本模块代码暂时保留待修复,
+//! 故整体 allow(dead_code) 抑制"未使用"告警。
+
+#![allow(dead_code)]
 
 use std::collections::{HashMap, HashSet};
 use std::ffi::c_void;

@@ -39,6 +39,19 @@ class WebDB extends Dexie {
       settings: "&key",
       images: "&name, kind",
     });
+    // v2:便签子分组——noteGroups 加 parent_id 索引(无限嵌套)。已存分组 parent_id 缺省置 null。
+    this.version(2)
+      .stores({
+        noteGroups: "&id, order_index, parent_id",
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table("noteGroups")
+          .toCollection()
+          .modify((g: NoteGroup) => {
+            if (g.parent_id === undefined) g.parent_id = null;
+          });
+      });
   }
 }
 

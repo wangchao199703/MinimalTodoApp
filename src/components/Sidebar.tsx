@@ -316,7 +316,7 @@ export default function Sidebar() {
         data-tauri-drag-region
         className="flex h-9 shrink-0 items-center px-3 text-xs font-semibold text-sidebar-strong"
       >
-        {!collapsed && t("S.AppName")}
+        {!collapsed && t("S.X.SidebarTitle")}
       </div>
       <div
         ref={listRef}

@@ -132,6 +132,7 @@ pub fn run() {
             commands::create_note_group,
             commands::update_note_group,
             commands::delete_note_group,
+            commands::reorder_note_groups,
             commands::get_custom_themes,
             commands::save_custom_theme,
             commands::delete_custom_theme,

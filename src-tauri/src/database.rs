@@ -360,9 +360,7 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
                 thumbnail_b64 TEXT,
                 hash          TEXT    NOT NULL,
                 created_at    INTEGER NOT NULL,
-                pinned        INTEGER NOT NULL DEFAULT 0,
-                is_deleted    INTEGER NOT NULL DEFAULT 0,
-                note          TEXT
+                pinned        INTEGER NOT NULL DEFAULT 0
             );
             CREATE INDEX IF NOT EXISTS idx_clips_created ON clips(created_at DESC);
 
@@ -378,7 +376,7 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
                 PRIMARY KEY (clip_id, tag_id)
             );
 
-            PRAGMA user_version = 7;
+            PRAGMA user_version = 4;
             COMMIT;
             "#,
         )?;
@@ -416,6 +414,19 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
             BEGIN;
             ALTER TABLE clips ADD COLUMN note TEXT;
             PRAGMA user_version = 7;
+            COMMIT;
+            "#,
+        )?;
+    }
+
+    // v8:便签子分组——note_groups 加自引用 parent_id(删父级联删子树),支持无限嵌套
+    if version < 8 {
+        conn.execute_batch(
+            r#"
+            BEGIN;
+            ALTER TABLE note_groups ADD COLUMN parent_id TEXT REFERENCES note_groups(id) ON DELETE CASCADE;
+            CREATE INDEX IF NOT EXISTS idx_note_groups_parent ON note_groups(parent_id);
+            PRAGMA user_version = 8;
             COMMIT;
             "#,
         )?;
@@ -466,7 +477,7 @@ mod tests {
         // 再跑一次不应报错(版本已是最新,各分支跳过)
         migrate(&conn).unwrap();
         let v: i64 = conn.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, 6);
+        assert_eq!(v, 8);
     }
 
     #[test]

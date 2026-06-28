@@ -40,6 +40,7 @@ async function defaultNoteGroupId(): Promise<string> {
     name: lang === "en" ? "Inbox" : "收集箱",
     order_index: 0,
     is_collapsed: false,
+    parent_id: null,
   };
   await db.noteGroups.add(group);
   return group.id;
@@ -59,6 +60,23 @@ function withDescendants(all: Task[], rootId: string): string[] {
     }
   }
   return [...ids];
+}
+
+/** 收集便签分组及其全部后代分组 id(删除级联 / reparent 环检测用)。 */
+async function noteGroupDescendantIds(rootId: string): Promise<Set<string>> {
+  const all = await db.noteGroups.toArray();
+  const ids = new Set<string>([rootId]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const g of all) {
+      if (g.parent_id && ids.has(g.parent_id) && !ids.has(g.id)) {
+        ids.add(g.id);
+        grew = true;
+      }
+    }
+  }
+  return ids;
 }
 
 /** Web 不支持的桌面专属命令:统一返回安全默认值(不抛,避免 Web 下偶发调用崩溃)。 */
@@ -238,12 +256,22 @@ export const dexieBackend: Backend = {
     await db.notes.where("is_deleted").equals(1).delete();
   },
   getNoteGroups: () => db.noteGroups.orderBy("order_index").toArray(),
-  createNoteGroup: async (name) => {
+  createNoteGroup: async (name, parentId) => {
+    const parent = parentId ?? null;
+    // 同父级内计算 order:子分组插到兄弟最前(min-1),顶层分组追加到末尾(max+1)
+    const siblings = (await db.noteGroups.toArray()).filter((g) => (g.parent_id ?? null) === parent);
+    let order: number;
+    if (parent) {
+      order = siblings.length ? Math.min(...siblings.map((g) => g.order_index)) - 1 : 0;
+    } else {
+      order = siblings.length ? Math.max(...siblings.map((g) => g.order_index)) + 1 : 0;
+    }
     const group: NoteGroup = {
       id: uuid(),
       name,
-      order_index: await bottomOrderIndex(() => db.noteGroups.orderBy("order_index").last(), 0),
+      order_index: order,
       is_collapsed: false,
+      parent_id: parent,
     };
     await db.noteGroups.add(group);
     return group;
@@ -254,25 +282,52 @@ export const dexieBackend: Backend = {
     const next: NoteGroup = { ...g };
     if (fields.name !== undefined) next.name = fields.name;
     if (fields.is_collapsed !== undefined) next.is_collapsed = fields.is_collapsed;
+    if ("parent_id" in fields) {
+      const newParent = fields.parent_id ?? null;
+      // 环检测:不能移到自身或后代下
+      if (newParent) {
+        const desc = await noteGroupDescendantIds(id);
+        if (desc.has(newParent)) throw new Error("不能把分组移动到自身或其子分组下");
+      }
+      next.parent_id = newParent;
+    }
     await db.noteGroups.put(next);
     return next;
+  },
+  reorderNoteGroups: async (ids: string[]) => {
+    await db.transaction("rw", db.noteGroups, async () => {
+      for (let i = 0; i < ids.length; i++) {
+        await db.noteGroups.update(ids[i], { order_index: i });
+      }
+    });
   },
   deleteNoteGroup: async (id) => {
     const lang = (await db.settings.get("language"))?.value;
     const inboxName = lang === "en" ? "Inbox" : "收集箱";
     await db.transaction("rw", db.notes, db.noteGroups, async () => {
-      await db.noteGroups.delete(id);
+      // 级联:收集该分组的所有后代分组 id,一并删除(对齐 Rust 的 ON DELETE CASCADE)
+      const toDelete = await noteGroupDescendantIds(id);
+      for (const gid of toDelete) await db.noteGroups.delete(gid);
       const remaining = await db.noteGroups.orderBy("order_index").first();
       let targetId: string;
       if (remaining) {
         targetId = remaining.id;
       } else {
-        const inbox: NoteGroup = { id: uuid(), name: inboxName, order_index: 0, is_collapsed: false };
+        const inbox: NoteGroup = {
+          id: uuid(),
+          name: inboxName,
+          order_index: 0,
+          is_collapsed: false,
+          parent_id: null,
+        };
         await db.noteGroups.add(inbox);
         targetId = inbox.id;
       }
-      const orphans = await db.notes.where("group_id").equals(id).toArray();
-      for (const o of orphans) await db.notes.update(o.id, { group_id: targetId });
+      // 被删分组(含后代)下的便签归入剩余首个分组
+      for (const gid of toDelete) {
+        const orphans = await db.notes.where("group_id").equals(gid).toArray();
+        for (const o of orphans) await db.notes.update(o.id, { group_id: targetId });
+      }
     });
   },
 

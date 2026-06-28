@@ -82,14 +82,14 @@ export async function checkForUpdate(manual: boolean): Promise<UpdateInfo | null
 }
 
 /**
- * 「重新安装当前版本」:资产名/下载地址由 release.ps1 的命名约定**完全确定**
- * (tag=`v{version}`、资产 `MinimalTodoApp-v{version}-win-x64.exe`),故**直接拼直链、
+ * 「重新安装当前版本」:资产名/下载地址由 release 脚本的命名约定**完全确定**
+ * (tag=`v{version}`、资产 `DeskHelper-v{version}-win-x64.exe`),故**直接拼直链、
  * 不调 GitHub API**——既不消耗匿名接口 60 次/小时配额,也能在接口被限流(403)时照常重装。
  * 真实下载在 Rust 侧(避开资产 CDN 的 CORS);资产不存在则 Rust 下载报 HTTP 404,对话框内可见。
  */
-/** 某版本便携 exe 的 GitHub 资产直链(release.ps1 命名约定):重装走当前版本直链。 */
+/** 某版本便携 exe 的 GitHub 资产直链(release 脚本命名约定):重装走当前版本直链。 */
 export function releaseAssetUrl(version: string): { url: string; name: string } {
-  const name = `MinimalTodoApp-v${version}-win-x64.exe`;
+  const name = `DeskHelper-v${version}-win-x64.exe`;
   return { url: `https://github.com/${REPO_SLUG}/releases/download/v${version}/${name}`, name };
 }
 
