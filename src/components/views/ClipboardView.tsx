@@ -547,18 +547,16 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
         )}
       </div>
 
-      {/* 备注:统一显示备注区域(有内容显示内容,无内容显示灰色占位) */}
-      <span
-        className="shrink-0 rounded px-1.5 py-0.5 text-[11px]"
-        style={
-          clip.note
-            ? { background: "var(--accent)22", color: "var(--accent)" }
-            : { background: "var(--card-hover)", color: "var(--muted-text)" }
-        }
-        title={clip.note || t("S.X.ClipNoteEmpty")}
-      >
-        {clip.note || t("S.X.ClipNote")}
-      </span>
+      {/* 备注:仅在有内容时显示 */}
+      {clip.note && (
+        <span
+          className="shrink-0 rounded px-1.5 py-0.5 text-[11px]"
+          style={{ background: "var(--accent)22", color: "var(--accent)" }}
+          title={clip.note}
+        >
+          {clip.note}
+        </span>
+      )}
 
       <button
         type="button"
