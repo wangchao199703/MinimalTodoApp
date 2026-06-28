@@ -20,7 +20,12 @@ jobs:
       - name: Push to Gitee
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GIT_TERMINAL_PROMPT: 0
         run: |
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "ERROR: GITEE_TOKEN secret is empty"
+            exit 1
+          fi
           git remote add gitee https://oauth2:${GITEE_TOKEN}@gitee.com/wangchao199703/desk-helper.git
           git push gitee main --force
           git push gitee --tags --force || true
