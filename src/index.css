@@ -678,35 +678,60 @@ body {
 /* ===== 便签所见即所得编辑器(tiptap):输入 md 语法实时渲染 ===== */
 .note-editor .note-prose {
   min-height: 100%;
-  padding: 0.75rem 1rem 2rem;
+  padding: 0.75rem var(--note-padding-side, 1rem) 2rem;
   outline: none;
   color: var(--primary-text);
-  /* 便签字体/字号/行距:由 NotesView 在 .note-editor 上设 --note-* 变量,
-     直接落在 .note-prose 自身(否则 prose 的 font-size 会盖掉父级继承值);
-     未设时回退默认字号 / 全局行距 / 继承全局字体 */
+  /* 便签字体/字号/行距/内边距等:由 NotesView 在 .note-editor 上设 --note-* 变量
+     (noteFormat.ts 的 default 映射决定具体值);直接落在 .note-prose 自身
+     (否则 prose 的 font-size 会盖掉父级继承值)。未设时回退紧凑模式默认。 */
   font-family: var(--note-font-family, inherit);
-  font-size: var(--note-font-size, 0.875rem);
-  line-height: var(--note-line-height, var(--app-line-height, 1.55));
+  font-size: var(--note-font-size, 14px);
+  line-height: var(--note-line-height, 1.45);
   caret-color: var(--accent);
   word-break: break-word;
 }
-.note-prose h1 { font-size: 1.4em; font-weight: 700; margin: 0.4em 0; }
-.note-prose h2 { font-size: 1.25em; font-weight: 700; margin: 0.4em 0; }
-.note-prose h3 { font-size: 1.1em; font-weight: 600; margin: 0.3em 0; }
-.note-prose h4 { font-size: 1em; font-weight: 600; margin: 0.3em 0; }
-.note-prose p { margin: 0.15em 0; }
+/* 标题:绝对字号(px)由设置独立控制;标题行距单独一套紧凑变量 */
+.note-prose h1 {
+  font-size: var(--note-h1-size, 22px);
+  line-height: var(--note-heading-line-height, 1.15);
+  font-weight: 700;
+  margin: 0.4em 0;
+}
+.note-prose h2 {
+  font-size: var(--note-h2-size, 18px);
+  line-height: var(--note-heading-line-height, 1.15);
+  font-weight: 700;
+  margin: 0.4em 0;
+}
+.note-prose h3 {
+  font-size: var(--note-h3-size, 16px);
+  line-height: var(--note-heading-line-height, 1.15);
+  font-weight: 600;
+  margin: 0.3em 0;
+}
+.note-prose h4 {
+  font-size: 1em;
+  line-height: var(--note-heading-line-height, 1.15);
+  font-weight: 600;
+  margin: 0.3em 0;
+}
+.note-prose p { margin: var(--note-paragraph-spacing, 1em) 0; }
 .note-prose ul:not([data-type="taskList"]) {
   margin: 0.2em 0;
-  padding-left: 1.4em;
+  padding-left: var(--note-list-indent, 24px);
   list-style: disc;
 }
-.note-prose ol { margin: 0.2em 0; padding-left: 1.4em; list-style: decimal; }
+.note-prose ol {
+  margin: 0.2em 0;
+  padding-left: var(--note-list-indent, 24px);
+  list-style: decimal;
+}
 .note-prose code {
   background: var(--input-bg);
   border-radius: 4px;
   padding: 0.1em 0.35em;
   font-family: Consolas, monospace;
-  font-size: 0.9em;
+  font-size: var(--note-code-font-size, 13px);
 }
 .note-prose pre {
   background: var(--input-bg);
@@ -714,7 +739,8 @@ body {
   padding: 0.6em 0.8em;
   margin: 0.4em 0;
   font-family: Consolas, monospace;
-  font-size: 0.9em;
+  font-size: var(--note-code-font-size, 13px);
+  line-height: var(--note-code-line-height, 1.4);
   overflow-x: auto;
 }
 .note-prose pre code { background: transparent; padding: 0; }

@@ -206,6 +206,20 @@ function replaceTask(tasks: Task[], next: Task): Task[] {
   return tasks.map((t) => (t.id === next.id ? next : t));
 }
 
+/**
+ * 清理便签格式旧键(v2.0.5 重构):旧实现给 note_font_size 填系统默认 14、
+ * 用废弃键 note_line_spacing 存行距。这两个键无法区分「用户自定义」与「系统默认」,
+ * 故按主人约定:存量值一律清空,让老用户统一跳到新的紧凑模式默认(default 映射)。
+ */
+async function clearLegacyNoteFormat(settings: Record<string, string>): Promise<void> {
+  for (const key of ["note_font_size", "note_line_spacing"]) {
+    if (settings[key] !== undefined && settings[key] !== "") {
+      settings[key] = "";
+      await ipc.setSetting(key, "").catch(() => {});
+    }
+  }
+}
+
 /** 沿 parent_id 链找根任务(防环 16 层) */
 function rootOfTask(byId: Map<string, Task>, t: Task): Task {
   let cur = t;
@@ -273,6 +287,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     const theme = migrateThemeKey(settings["theme"]);
     if (settings["theme"] !== theme) void ipc.setSetting("theme", theme);
     applyTheme(theme);
+
+    // 便签格式重构(v2.0.5):旧 note_font_size(系统填的默认 14)与废弃键 note_line_spacing
+    // 一次性清掉,让老用户跳到新的紧凑模式默认(default 映射)。仅清系统旧默认值,
+    // 不动用户真正自定义过的值无从分辨——故按约定:这两个旧键的存量值全部视为系统默认并清除。
+    void clearLegacyNoteFormat(settings);
     // 内置键经 migrateDesign 归一(默认/已删旧键 → 经典 apple);custom:<id> 原样保留
     const rawDesign = settings["design"] || "apple";
     const design = rawDesign.startsWith("custom:") ? rawDesign : migrateDesign(rawDesign);

@@ -6,6 +6,12 @@ import { ipc } from "../../lib/tauri-ipc";
 import { t, f } from "../../lib/i18n";
 import { applyFontSettings } from "../../lib/font";
 import {
+  NOTE_FORMAT_RANGES,
+  resolveNoteFormat,
+  isDefaultValue,
+  type NoteFormatKey,
+} from "../../lib/noteFormat";
+import {
   DESIGNS,
   DESIGN_LABEL_KEY,
   DESIGN_DESC_KEY,
@@ -279,17 +285,8 @@ export default function SettingsPanel() {
     applyFontSettings(family, size, spacing);
   };
 
-  // 便签独立字体(空/0 = 继承全局)
+  // 便签独立字体(空 = 继承全局);格式参数走 noteFormat 的 default 映射
   const noteFont = settings["note_font_family"] || "";
-  const noteSize = Number(settings["note_font_size"] || "0");
-  const noteSpacing = Number(settings["note_line_spacing"] || "0");
-  // 字号、行距各自独立继承全局(各自 0 即继承);关闭继承时落到明确默认值好让滑块可调
-  const noteSizeInherit = noteSize <= 0;
-  const noteSpacingInherit = noteSpacing <= 0;
-  const setNoteSizeInherit = (v: boolean) =>
-    saveSetting("note_font_size", v ? "0" : "14");
-  const setNoteSpacingInherit = (v: boolean) =>
-    saveSetting("note_line_spacing", v ? "0" : "1.1");
 
   const fontSelect = (value: string, onChange: (v: string) => void, inheritOption?: boolean) => (
     <select
@@ -308,6 +305,41 @@ export default function SettingsPanel() {
       ))}
     </select>
   );
+
+  /**
+   * 便签格式参数滑块:跟随默认时拖动即写入具体值;点「恢复默认」清空该键回到 default。
+   * decimals>0 表示该参数是小数(行距/段距),显示保留对应位数。
+   */
+  const noteFormatSlider = (key: NoteFormatKey, labelKey: string, decimals = 0) => {
+    const raw = settings[key];
+    const isDefault = isDefaultValue(raw);
+    const value = resolveNoteFormat(key, settings);
+    const { min, max, step } = NOTE_FORMAT_RANGES[key];
+    const fmt = (n: number) => (decimals > 0 ? n.toFixed(decimals) : String(Math.round(n)));
+    return (
+      <label className="mt-1 mb-2 flex items-center gap-2">
+        <span className="w-20 shrink-0 text-xs text-text-2">{t(labelKey)}</span>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => saveSetting(key, e.target.value)}
+          className="min-w-0 flex-1 accent-(--accent)"
+        />
+        <span className="w-10 text-right text-xs text-muted">{fmt(value)}</span>
+        <button
+          onClick={() => saveSetting(key, "")}
+          disabled={isDefault}
+          title={t("S.X.NoteFmt.Reset")}
+          className="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-text-2 ring-1 ring-divider hover:bg-card-hover disabled:opacity-40"
+        >
+          {t("S.X.NoteFmt.Default")}
+        </button>
+      </label>
+    );
+  };
 
   return (
     <div className="flex gap-4">
@@ -436,59 +468,29 @@ export default function SettingsPanel() {
             <p className="mb-1 text-sm text-text-1">{t("S.Settings.NoteFont")}</p>
             <p className="mb-3 text-xs text-muted">{t("S.Settings.NoteFontDesc")}</p>
             <label className="mb-2 flex items-center gap-2">
-              <span className="w-12 shrink-0 text-xs text-text-2">{t("S.Settings.FontFamily")}</span>
+              <span className="w-20 shrink-0 text-xs text-text-2">{t("S.Settings.FontFamily")}</span>
               {fontSelect(noteFont, (v) => saveSetting("note_font_family", v), true)}
             </label>
-            {/* 字号:独立继承开关;继承时滑块显示全局值并置灰禁用 */}
-            <Toggle
-              label={t("S.X.NoteInheritSize")}
-              checked={noteSizeInherit}
-              onChange={setNoteSizeInherit}
-            />
-            <label
-              className={`mt-1 mb-2 flex items-center gap-2 ${noteSizeInherit ? "opacity-50" : ""}`}
-            >
-              <span className="w-12 shrink-0 text-xs text-text-2">{t("S.Settings.FontSize")}</span>
-              <input
-                type="range"
-                min={10}
-                max={22}
-                step={1}
-                disabled={noteSizeInherit}
-                value={noteSizeInherit ? fontSize : noteSize || 14}
-                onChange={(e) => saveSetting("note_font_size", e.target.value)}
-                className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
-              />
-              <span className="w-8 text-right text-xs text-muted">
-                {noteSizeInherit ? fontSize : noteSize || 14}
-              </span>
-            </label>
-            {/* 行距:独立继承开关;继承时滑块显示全局值并置灰禁用 */}
-            <Toggle
-              label={t("S.X.NoteInheritLineSpacing")}
-              checked={noteSpacingInherit}
-              onChange={setNoteSpacingInherit}
-            />
-            <label
-              className={`mt-1 flex items-center gap-2 ${noteSpacingInherit ? "opacity-50" : ""}`}
-            >
-              <span className="w-12 shrink-0 text-xs text-text-2">
-                {t("S.Settings.LineSpacing")}
-              </span>
-              <input
-                type="range"
-                min={0.9}
-                max={1.6}
-                step={0.05}
-                disabled={noteSpacingInherit}
-                value={noteSpacingInherit ? lineSpacing : noteSpacing || 1.1}
-                onChange={(e) => saveSetting("note_line_spacing", e.target.value)}
-                className="min-w-0 flex-1 accent-(--accent) disabled:cursor-not-allowed"
-              />
-              <span className="w-8 text-right text-xs text-muted">
-                {(noteSpacingInherit ? lineSpacing : noteSpacing || 1.1).toFixed(2)}
-              </span>
-            </label>
+
+            {/* 字号组:正文/代码/标题各级,绝对 px,均走 default 映射 */}
+            <p className="mt-4 mb-1 text-xs font-medium text-text-1">{t("S.X.NoteFmt.SizeGroup")}</p>
+            {noteFormatSlider("note_font_size", "S.X.NoteFmt.BodySize")}
+            {noteFormatSlider("note_code_font_size", "S.X.NoteFmt.CodeSize")}
+            {noteFormatSlider("note_h1_size", "S.X.NoteFmt.H1Size")}
+            {noteFormatSlider("note_h2_size", "S.X.NoteFmt.H2Size")}
+            {noteFormatSlider("note_h3_size", "S.X.NoteFmt.H3Size")}
+
+            {/* 行距组:正文/标题/代码 */}
+            <p className="mt-4 mb-1 text-xs font-medium text-text-1">{t("S.X.NoteFmt.LineGroup")}</p>
+            {noteFormatSlider("note_line_height", "S.X.NoteFmt.BodyLine", 2)}
+            {noteFormatSlider("note_heading_line_height", "S.X.NoteFmt.HeadingLine", 2)}
+            {noteFormatSlider("note_code_line_height", "S.X.NoteFmt.CodeLine", 2)}
+
+            {/* 间距组:左右内边距/段落间距/列表缩进 */}
+            <p className="mt-4 mb-1 text-xs font-medium text-text-1">{t("S.X.NoteFmt.SpacingGroup")}</p>
+            {noteFormatSlider("note_padding_side", "S.X.NoteFmt.PaddingSide")}
+            {noteFormatSlider("note_paragraph_spacing", "S.X.NoteFmt.ParaSpacing", 1)}
+            {noteFormatSlider("note_list_indent", "S.X.NoteFmt.ListIndent")}
           </>
         )}
 

@@ -15,6 +15,7 @@ import { useAppStore } from "../../store/useAppStore";
 import { deriveTitle } from "../../lib/markdown";
 import { readMarkdownDrop } from "../../lib/markdownIO";
 import { f, t } from "../../lib/i18n";
+import { noteFormatCssVars } from "../../lib/noteFormat";
 import type { Note } from "../../lib/tauri-ipc";
 import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
 import NotesTree, { noteGroupColor } from "../NotesTree";
@@ -61,15 +62,11 @@ function Editor({ note }: { note: Note }) {
     }, 800);
   };
 
-  // 便签独立字体(0/空 = 继承全局)
+  // 便签独立字体(空 = 继承全局);其余格式参数走 noteFormat 的 default 映射
   const noteFont = settings["note_font_family"] || "";
-  const noteSize = Number(settings["note_font_size"] || "0");
-  const noteSpacing = Number(settings["note_line_spacing"] || "0");
-  // 经 CSS 变量下发到 .note-prose 自身(见 index.css),空/0 则回退默认/全局
   const style = {
     "--note-font-family": noteFont ? `"${noteFont}", var(--app-font)` : undefined,
-    "--note-font-size": noteSize > 0 ? `${noteSize}px` : undefined,
-    "--note-line-height": noteSpacing > 0 ? String(noteSpacing * 1.4) : undefined,
+    ...noteFormatCssVars(settings),
   } as React.CSSProperties;
 
   return (
