@@ -6,7 +6,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { useAppStore } from "../store/useAppStore";
 import { isTauri } from "./env";
 
-const REPO_SLUG = "wangchao199703/MinimalTodoApp";
+const REPO_SLUG = "wangchao199703/desk-helper";
 const RELEASES_LATEST =
   `https://api.github.com/repos/${REPO_SLUG}/releases/latest`;
 
