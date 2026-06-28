@@ -27,5 +27,8 @@ jobs:
             exit 1
           fi
           git remote add gitee https://oauth2:${GITEE_TOKEN}@gitee.com/wangchao199703/desk-helper.git
-          git push gitee main --force
-          git push gitee --tags --force || true
+          # 从 origin(GitHub)取全量分支与 tag,再镜像推到 Gitee。
+          # 用 origin/main 显式推 main,避免 tag 触发时 detached HEAD 下无本地 main 分支。
+          git fetch origin --tags --force
+          git push gitee "refs/remotes/origin/main:refs/heads/main" --force
+          git push gitee --tags --force
