@@ -152,6 +152,9 @@ const FONTS = [
   "宋体",
   "楷体",
   "微软雅黑",
+  "HarmonyOS Sans SC",
+  "HarmonyOS Sans",
+  "JetBrains Mono",
   "Consolas",
   "system-ui",
 ];

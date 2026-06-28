@@ -340,23 +340,6 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
           >
             <FilePlus2 size={12} />
           </button>
-          <button
-            title={t("S.X.Delete")}
-            onClick={() => {
-              void (async () => {
-                if (
-                  await confirm({
-                    title: t("S.Note.DeleteGroup"),
-                    message: t("S.X.NoteGroupDeleteConfirm"),
-                  })
-                )
-                  void removeNoteGroup(group.id);
-              })();
-            }}
-            className="flex h-5 w-5 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-overdue"
-          >
-            <Trash2 size={12} />
-          </button>
         </span>
       </div>
       {!group.is_collapsed &&
@@ -399,6 +382,23 @@ function GroupSection({ group, notes }: { group: NoteGroup; notes: Note[] }) {
             >
               <Eraser size={13} />
               {t("S.X.Clear")}
+            </MenuItem>
+            <div className="my-1 h-px bg-divider" />
+            <MenuItem
+              danger
+              onClick={async () => {
+                setMenu(null);
+                if (
+                  await confirm({
+                    title: t("S.Note.DeleteGroup"),
+                    message: t("S.X.NoteGroupDeleteConfirm"),
+                  })
+                )
+                  void removeNoteGroup(group.id);
+              }}
+            >
+              <Trash2 size={13} />
+              {t("S.X.Delete")}
             </MenuItem>
           </div>
         </Popover>

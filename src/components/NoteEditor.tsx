@@ -16,6 +16,7 @@ import {
   CheckSquare,
   Code,
   Code2,
+  Copy,
   FileCode2,
   Heading,
   Image as ImageIcon,
@@ -26,6 +27,7 @@ import {
   ListTree,
   Quote,
   Redo2,
+  Scissors,
   Strikethrough,
   Table as TableIcon,
   Undo2,
@@ -80,6 +82,22 @@ function legacyToMarkdown(s: string): string {
 const MD_TABLE_DELIM = /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$/m;
 function looksLikeMarkdownTable(s: string): boolean {
   return MD_TABLE_DELIM.test(s);
+}
+
+// 块级 Markdown 语法特征(行首标志,误判率低):标题 / 无序·有序·任务列表 / 引用 / 代码块围栏 / 分隔线。
+// 命中即把粘贴文本当 Markdown 解析(对齐拖入 .md 文件的行为),普通文本不含这些标志故不受影响。
+const MD_BLOCK_SIGNS = [
+  /^#{1,6}\s+\S/m, // # 标题
+  /^\s*[-*+]\s+\S/m, // - 无序列表
+  /^\s*\d+\.\s+\S/m, // 1. 有序列表
+  /^\s*[-*+]\s+\[[ xX]\]\s/m, // - [ ] 任务
+  /^\s*>\s+\S/m, // > 引用
+  /^\s*```/m, // ``` 代码块围栏
+  /^\s*(---|\*\*\*|___)\s*$/m, // 分隔线
+];
+function looksLikeMarkdown(s: string): boolean {
+  if (looksLikeMarkdownTable(s)) return true;
+  return MD_BLOCK_SIGNS.some((re) => re.test(s));
 }
 
 const IMG_EXT = new Set(["png", "jpg", "jpeg", "gif", "bmp", "webp"]);
@@ -214,8 +232,9 @@ export default function NoteEditor({
           .replace(/^\s+|\s+$/g, ""),
       handlePaste: (_view, event) => {
         const text = event.clipboardData?.getData("text/plain") ?? "";
-        // 粘贴含 GFM 管道表格的 Markdown → 解析成真正的表格渲染(而非纯文本)
-        if (text && looksLikeMarkdownTable(text)) {
+        // 粘贴 Markdown 文本(标题/列表/引用/代码块/表格等)→ 解析成富文本渲染,对齐拖入 .md 文件。
+        // 仅块级语法命中才解析,普通文本不受影响(避免误把含 # / - 的普通文字转格式)。
+        if (text && looksLikeMarkdown(text)) {
           editor?.chain().focus().insertContent(text, { contentType: "markdown" }).run();
           return true;
         }
@@ -668,6 +687,29 @@ export default function NoteEditor({
       {selMenu && (
         <Popover at={selMenu} anchor={null} onClose={() => setSelMenu(null)} zIndex={200}>
           <div className="w-44">
+            <MenuItem
+              onClick={() => {
+                const { text } = selMenu;
+                setSelMenu(null);
+                void navigator.clipboard.writeText(text);
+              }}
+            >
+              <Copy size={13} />
+              {t("S.X.NoteSelCopy")}
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                const { text } = selMenu;
+                setSelMenu(null);
+                void navigator.clipboard.writeText(text);
+                // 剪切:复制后删除选区内容
+                editor?.chain().focus().deleteSelection().run();
+              }}
+            >
+              <Scissors size={13} />
+              {t("S.X.NoteSelCut")}
+            </MenuItem>
+            <div className="my-1 h-px bg-divider" />
             <MenuItem
               onClick={() => {
                 const { text } = selMenu;

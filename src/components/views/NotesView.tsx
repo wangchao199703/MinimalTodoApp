@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  ChevronsDownUp,
   FilePlus2,
   FileText,
   Folder,
@@ -16,7 +17,7 @@ import { deriveTitle } from "../../lib/markdown";
 import { readMarkdownDrop } from "../../lib/markdownIO";
 import { f, t } from "../../lib/i18n";
 import { noteFormatCssVars } from "../../lib/noteFormat";
-import type { Note } from "../../lib/tauri-ipc";
+import { ipc, type Note } from "../../lib/tauri-ipc";
 import NoteEditor, { ensureNoteImageDir } from "../NoteEditor";
 import NotesTree, { noteGroupColor } from "../NotesTree";
 import NotesTrash from "../notes/NotesTrash";
@@ -334,6 +335,22 @@ export default function NotesView() {
           <div className="flex h-9 shrink-0 items-center justify-between pr-2 pl-3">
             <span className="text-xs font-semibold text-sidebar-strong">{t("S.X.Notes")}</span>
             <div className="flex items-center gap-0.5">
+              <button
+                title={t("S.X.NoteExpandCollapseAll")}
+                onClick={async () => {
+                  // 判断当前状态:全部折叠则展开所有,否则折叠所有
+                  const allCollapsed = noteGroups.every((g) => g.is_collapsed);
+                  await Promise.all(
+                    noteGroups.map((g) => ipc.updateNoteGroup(g.id, { is_collapsed: !allCollapsed })),
+                  );
+                  // 重新加载分组状态
+                  const updated = await ipc.getNoteGroups();
+                  useAppStore.setState({ noteGroups: updated });
+                }}
+                className="flex h-6 w-6 items-center justify-center rounded text-sidebar-muted hover:bg-sidebar-hover hover:text-sidebar-strong"
+              >
+                <ChevronsDownUp size={14} />
+              </button>
               <button
                 title={t("S.X.NoteLocate")}
                 disabled={!selected}
