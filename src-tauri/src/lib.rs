@@ -153,6 +153,7 @@ pub fn run() {
             commands::restore_clip,
             commands::delete_clip,
             commands::pin_clip,
+            commands::update_clip_note,
             commands::get_clip_tags,
             commands::create_clip_tag,
             commands::rename_clip_tag,

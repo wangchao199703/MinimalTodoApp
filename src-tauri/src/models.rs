@@ -142,6 +142,8 @@ pub struct ClipItem {
     pub pinned: bool,
     /// 关联的剪贴板标签 id 列表(由 clip_tags 填充)
     pub tag_ids: Vec<i64>,
+    /// 用户备注(可选)
+    pub note: Option<String>,
 }
 
 /// 剪贴板标签(独立于待办「标签/分组」,自成一套,挂在剪贴板第二侧栏)

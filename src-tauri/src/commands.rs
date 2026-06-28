@@ -837,6 +837,7 @@ fn row_to_clip(row: &Row) -> rusqlite::Result<ClipItem> {
         created_at: row.get("created_at")?,
         pinned: row.get::<_, i64>("pinned")? != 0,
         tag_ids: Vec::new(),
+        note: row.get("note")?,
     })
 }
 
@@ -944,6 +945,14 @@ pub(crate) fn delete_clip_impl(conn: &Connection, id: i64) -> CmdResult<Option<S
 pub fn pin_clip(db: State<Db>, id: i64, pinned: bool) -> CmdResult<()> {
     let conn = db.0.lock().map_err(err)?;
     conn.execute("UPDATE clips SET pinned = ?1 WHERE id = ?2", params![pinned as i64, id])
+        .map_err(err)?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn update_clip_note(db: State<Db>, id: i64, note: Option<String>) -> CmdResult<()> {
+    let conn = db.0.lock().map_err(err)?;
+    conn.execute("UPDATE clips SET note = ?1 WHERE id = ?2", params![note, id])
         .map_err(err)?;
     Ok(())
 }

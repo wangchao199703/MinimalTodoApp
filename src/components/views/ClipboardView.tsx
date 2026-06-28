@@ -15,6 +15,7 @@ import {
   Eraser,
   Eye,
   Images,
+  MessageSquare,
   NotebookPen,
   Palette,
   PanelLeftClose,
@@ -417,6 +418,22 @@ function ClipMenu({
           <NotebookPen size={13} />
           {t("S.X.ClipAddToNote")}
         </MenuItem>
+        <MenuItem
+          onClick={() => {
+            onClose();
+            const newNote = prompt(t("S.X.ClipEditNote"), clip.note || "");
+            if (newNote !== null) {
+              void ipc.updateClipNote(clip.id, newNote.trim() || null);
+              // 乐观更新本地状态
+              useAppStore.setState((s) => ({
+                clips: s.clips.map((c) => (c.id === clip.id ? { ...c, note: newNote.trim() || null } : c)),
+              }));
+            }
+          }}
+        >
+          <MessageSquare size={13} />
+          {t("S.X.ClipEditNote")}
+        </MenuItem>
         {tags.length > 0 && (
           <MenuItem onClick={() => setTagAt({ x: at.x + 12, y: at.y + 12 })}>
             <Tag size={13} />
@@ -477,7 +494,6 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
     clip.kind === "image"
       ? clip.thumbnail_b64 ?? (clip.image_path ? convertFileSrc(clip.image_path) : undefined)
       : undefined;
-  const clipTags = tags.filter((tg) => clip.tag_ids.includes(tg.id));
   const isText = clip.kind !== "image";
 
   const primaryText = isText
@@ -487,7 +503,11 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
   return (
     <div
       ref={rowRef}
-      title={pasteOnDoubleClick ? t("S.X.ClipDblClickPaste") : undefined}
+      title={
+        pasteOnDoubleClick
+          ? `${t("S.X.ClipDblClickPaste")} · ${t("S.X.ClipRightClickNote")}`
+          : t("S.X.ClipRightClickNote")
+      }
       onDoubleClick={() => {
         if (pasteOnDoubleClick) void ipc.pasteClipToPrevious(clip.id);
       }}
@@ -527,19 +547,18 @@ function ClipRow({ clip, tags, size }: { clip: ClipItem; tags: ClipTag[]; size: 
         )}
       </div>
 
-      {clipTags.map((tg) => (
-        <span
-          key={tg.id}
-          className="shrink-0 rounded px-1.5 py-0.5 text-[11px]"
-          style={
-            tg.color
-              ? { background: `${tg.color}22`, color: tg.color }
-              : { background: "var(--card-hover)", color: "var(--text-2)" }
-          }
-        >
-          {tg.name}
-        </span>
-      ))}
+      {/* 备注:统一显示备注区域(有内容显示内容,无内容显示灰色占位) */}
+      <span
+        className="shrink-0 rounded px-1.5 py-0.5 text-[11px]"
+        style={
+          clip.note
+            ? { background: "var(--accent)22", color: "var(--accent)" }
+            : { background: "var(--card-hover)", color: "var(--muted-text)" }
+        }
+        title={clip.note || t("S.X.ClipNoteEmpty")}
+      >
+        {clip.note || t("S.X.ClipNote")}
+      </span>
 
       <button
         type="button"

@@ -750,7 +750,7 @@ body {
   margin: 0.3em 0;
   color: var(--secondary-text);
 }
-.note-prose a { color: var(--accent); text-decoration: underline; }
+.note-prose a { color: var(--accent); text-decoration: underline; cursor: pointer; }
 .note-prose hr { border: none; border-top: 1px solid var(--divider); margin: 0.6em 0; }
 .note-prose img {
   max-width: 100%;

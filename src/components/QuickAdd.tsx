@@ -164,9 +164,9 @@ export default function QuickAdd() {
         <button
           title={`${t("S.Label.Priority")}:${t(PRIORITY_KEY[priority])}`}
           onClick={(e) => setPriorityAnchor(e.currentTarget)}
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded hover:bg-card-hover"
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-muted hover:bg-card-hover hover:text-accent"
         >
-          <Flag size={13} style={{ color: PRIORITY_COLOR[priority] }} />
+          <Flag size={13} />
         </button>
         {/* 标签选择(选了父待办则隐藏:标签跟随父) */}
         {!parent && (

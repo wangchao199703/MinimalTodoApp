@@ -297,8 +297,36 @@ export const dexieBackend: Backend = {
     (await db.images.where("kind").equals("group").toArray()).map((i) => i.name),
 
   // ---- 桌面专属:Web 安全降级 ----
-  exportFile: async () => "",
-  saveClipImage: async () => "",
+  exportFile: async (fileName: string, content: string) => {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return fileName; // Web 版无实际路径,返回文件名供 toast 显示
+  },
+  saveClipImage: async (base64: string) => {
+    // Web 版剪贴板图片另存:转 Blob 触发下载
+    const [header, data] = base64.split(",");
+    const mime = header.match(/:(.*?);/)?.[1] || "image/png";
+    const bin = atob(data);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const blob = new Blob([arr], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clipboard-${Date.now()}.${mime.split("/")[1] || "png"}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return a.download;
+  },
   setAcrylic: noop,
   setAutostart: noop,
   getAutostart: async () => false,
@@ -318,6 +346,7 @@ export const dexieBackend: Backend = {
   restoreClip: async () => null,
   deleteClip: noop,
   pinClip: noop,
+  updateClipNote: noop,
   getClipTags: async () => [],
   createClipTag: async (name): Promise<ClipTag> => ({ id: 0, name, color: "" }),
   renameClipTag: noop,

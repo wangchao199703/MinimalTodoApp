@@ -360,7 +360,9 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
                 thumbnail_b64 TEXT,
                 hash          TEXT    NOT NULL,
                 created_at    INTEGER NOT NULL,
-                pinned        INTEGER NOT NULL DEFAULT 0
+                pinned        INTEGER NOT NULL DEFAULT 0,
+                is_deleted    INTEGER NOT NULL DEFAULT 0,
+                note          TEXT
             );
             CREATE INDEX IF NOT EXISTS idx_clips_created ON clips(created_at DESC);
 
@@ -376,7 +378,7 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
                 PRIMARY KEY (clip_id, tag_id)
             );
 
-            PRAGMA user_version = 4;
+            PRAGMA user_version = 7;
             COMMIT;
             "#,
         )?;
@@ -402,6 +404,18 @@ fn migrate(conn: &Connection) -> rusqlite::Result<()> {
             BEGIN;
             ALTER TABLE clips ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;
             PRAGMA user_version = 6;
+            COMMIT;
+            "#,
+        )?;
+    }
+
+    // v7:剪贴项备注字段(用户可右键添加备注,显示在标签位置)
+    if version < 7 {
+        conn.execute_batch(
+            r#"
+            BEGIN;
+            ALTER TABLE clips ADD COLUMN note TEXT;
+            PRAGMA user_version = 7;
             COMMIT;
             "#,
         )?;

@@ -7,7 +7,7 @@ import TaskItem from "@tiptap/extension-task-item";
 import Image from "@tiptap/extension-image";
 import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import { TextStyle, Color } from "@tiptap/extension-text-style";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { isTauri } from "../lib/env";
 import { imageUrl } from "../lib/backend/objectUrl";
 import {
@@ -187,6 +187,17 @@ export default function NoteEditor({
           return true;
         }
         return false;
+      },
+      // Ctrl/Cmd+点击链接:用系统默认浏览器打开(不干扰编辑时的光标定位)
+      handleClick: (view, pos, event) => {
+        if (!(event.ctrlKey || event.metaKey)) return false;
+        const link = view.state.doc.resolve(pos).marks().find((m) => m.type.name === "link");
+        const href = link?.attrs.href as string | undefined;
+        if (!href) return false;
+        event.preventDefault();
+        if (isTauri) void invoke("open_url", { url: href });
+        else window.open(href, "_blank", "noopener,noreferrer");
+        return true;
       },
       // 复制纯文本:用 ProseMirror 原生取文本(块间单换行、软换行 \n),再**逐行裁掉行尾空白**
       // ——这是用户反馈「每行末尾多一个空格」的根因(正文 / 序列化里残留的行尾空格)。

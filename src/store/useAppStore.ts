@@ -416,6 +416,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     const note = await ipc.createNote(groupId);
     // 未指定分组时后端落到默认分组(可能自动新建「收集箱」),同步分组列表
     const noteGroups = groupId ? get().noteGroups : await ipc.getNoteGroups();
+    // 新建便签后自动展开该分组(如果折叠的话)
+    const targetGroup = noteGroups.find((g) => g.id === (groupId || note.group_id));
+    if (targetGroup?.is_collapsed) {
+      await ipc.updateNoteGroup(targetGroup.id, { is_collapsed: false });
+      noteGroups.forEach((g) => {
+        if (g.id === targetGroup.id) g.is_collapsed = false;
+      });
+    }
     set((s) => ({ notes: [note, ...s.notes], noteGroups, selectedNoteId: note.id }));
   },
 

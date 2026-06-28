@@ -142,6 +142,8 @@ export interface ClipItem {
   pinned: boolean;
   /** 关联的剪贴板标签 id */
   tag_ids: number[];
+  /** 用户备注(可选) */
+  note: string | null;
 }
 
 /** 剪贴板标签(独立于待办标签) */
@@ -234,6 +236,7 @@ const tauriBackend = {
   restoreClip: (id: number) => invoke<ClipItem | null>("restore_clip", { id }),
   deleteClip: (id: number) => invoke<void>("delete_clip", { id }),
   pinClip: (id: number, pinned: boolean) => invoke<void>("pin_clip", { id, pinned }),
+  updateClipNote: (id: number, note: string | null) => invoke<void>("update_clip_note", { id, note }),
   getClipTags: () => invoke<ClipTag[]>("get_clip_tags"),
   createClipTag: (name: string) => invoke<ClipTag>("create_clip_tag", { name }),
   renameClipTag: (id: number, name: string) => invoke<void>("rename_clip_tag", { id, name }),
